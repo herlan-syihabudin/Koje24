@@ -17,6 +17,8 @@ import StickyCartBar from "@/components/StickyCartBar"
 import CartPopup from "@/components/CartPopup"
 import AnimateOnScroll from "@/components/AnimateOnScroll"
 import Link from "next/link"
+import CartPopup from "@/components/CartPopup"
+import PackagePopup from "@/components/PackagePopup"
 
 // ────────────────────────────────────────────────
 // Tiny UI Atoms
