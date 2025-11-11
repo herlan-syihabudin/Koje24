@@ -12,9 +12,10 @@ type CartContextType = {
   cart: CartItem[]
   addItem: (item: CartItem) => void
   removeItem: (id: number) => void
+  updateItemQty: (id: number, qty: number) => void // ✅ bisa revisi qty
   clearCart: () => void
   totalPrice: number
-  totalQty: number // ✅ ditambahkan biar StickyCartBar bisa baca
+  totalQty: number
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -22,12 +23,12 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([])
 
-  // ✅ Tambah item ke cart
+  // ✅ Tambah item
   const addItem = (item: CartItem) => {
-    setCart((prev) => {
-      const existing = prev.find((p) => p.id === item.id)
+    setCart(prev => {
+      const existing = prev.find(p => p.id === item.id)
       if (existing) {
-        return prev.map((p) =>
+        return prev.map(p =>
           p.id === item.id ? { ...p, qty: p.qty + item.qty } : p
         )
       } else {
@@ -38,19 +39,35 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // ✅ Hapus item
   const removeItem = (id: number) => {
-    setCart((prev) => prev.filter((p) => p.id !== id))
+    setCart(prev => prev.filter(p => p.id !== id))
+  }
+
+  // ✅ Update qty manual (misal dari 8 ke 5)
+  const updateItemQty = (id: number, qty: number) => {
+    setCart(prev => {
+      if (qty <= 0) return prev.filter(p => p.id !== id)
+      return prev.map(p => (p.id === id ? { ...p, qty } : p))
+    })
   }
 
   // ✅ Kosongkan cart
   const clearCart = () => setCart([])
 
-  // ✅ Hitung total harga & total qty otomatis
+  // ✅ Hitung total
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.qty, 0)
-  const totalQty = cart.reduce((sum, item) => sum + item.qty, 0) // ✅ baru ditambah
+  const totalQty = cart.reduce((sum, item) => sum + item.qty, 0)
 
   return (
     <CartContext.Provider
-      value={{ cart, addItem, removeItem, clearCart, totalPrice, totalQty }} // ✅ pastikan totalQty ikut di sini
+      value={{
+        cart,
+        addItem,
+        removeItem,
+        updateItemQty, // ✅ pastikan disertakan
+        clearCart,
+        totalPrice,
+        totalQty,
+      }}
     >
       {children}
     </CartContext.Provider>
