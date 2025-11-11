@@ -6,12 +6,11 @@ type FormState = { nama: string; alamat: string; catatan: string }
 type ChangeEvt = React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 
 export default function CartPopup() {
-  // Ambil data dari context (array of items)
   const { cart, addItem, removeItem, clearCart } = useCart()
 
-  // Hitung total secara lokal agar tidak tergantung properti tambahan di context
+  // ✅ pastikan konversi harga ke number
   const totalPrice = useMemo(
-    () => cart.reduce((sum, it) => sum + it.price * it.qty, 0),
+    () => cart.reduce((sum, it) => sum + Number(it.price) * it.qty, 0),
     [cart]
   )
 
@@ -19,7 +18,7 @@ export default function CartPopup() {
   const [open, setOpen] = useState(false)
   const items = useMemo(() => cart, [cart])
 
-  // Buka popup saat event custom "open-cart" dipublish dari StickyCartBar
+  // ✅ buka popup saat event 'open-cart' dipublish
   useEffect(() => {
     const handler = () => setOpen(true)
     window.addEventListener("open-cart", handler as EventListener)
@@ -34,6 +33,8 @@ export default function CartPopup() {
   const close = () => setOpen(false)
 
   const handleCheckout = () => {
+    if (!items.length) return alert("Keranjang masih kosong 🛒")
+
     const pesan = encodeURIComponent(
       `🍹 *Pesanan KOJE24*\n\n${items
         .map((i) => `• ${i.name} × ${i.qty}`)
@@ -53,7 +54,7 @@ export default function CartPopup() {
         onClick={close}
       />
 
-      {/* Modal card */}
+      {/* Modal */}
       <div
         className={`fixed inset-0 z-[61] grid place-items-center px-4 transition-all duration-200
           ${open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
@@ -66,7 +67,6 @@ export default function CartPopup() {
           <button
             onClick={close}
             className="absolute top-3 right-4 text-gray-500 hover:text-[#0FA3A8] font-bold text-lg"
-            aria-label="Tutup"
           >
             ✕
           </button>
@@ -75,31 +75,60 @@ export default function CartPopup() {
             Keranjang Kamu
           </h3>
 
-          {/* List Produk */}
-          <div className="space-y-2 max-h-64 overflow-y-auto border-y py-2 mb-4">
+          {/* ✅ List Produk (dengan + dan –) */}
+          <div className="space-y-3 max-h-64 overflow-y-auto border-y py-3 mb-4">
             {items.length ? (
               items.map((item) => (
                 <div
                   key={item.id}
-                  className="flex justify-between text-sm font-inter text-[#0B4B50]"
+                  className="flex justify-between items-center text-sm font-inter text-[#0B4B50] px-1"
                 >
-                  <span>
-                    {item.name} <b>× {item.qty}</b>
-                  </span>
-                  <span>Rp{(item.price * item.qty).toLocaleString("id-ID")}</span>
+                  <div className="flex flex-col">
+                    <span className="font-semibold">{item.name}</span>
+                    <span className="text-gray-500 text-xs">
+                      {item.qty} × Rp{Number(item.price).toLocaleString("id-ID")}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => removeItem(item.id)}
+                      className="bg-[#E8C46B] text-[#0B4B50] text-xs px-2 py-1 rounded-full font-bold hover:brightness-95 active:scale-90 transition-transform"
+                    >
+                      –
+                    </button>
+                    <span className="font-bold text-sm min-w-[20px] text-center">
+                      {item.qty}
+                    </span>
+                    <button
+                      onClick={() =>
+                        addItem({
+                          id: item.id,
+                          name: item.name,
+                          price: item.price,
+                          qty: 1,
+                        })
+                      }
+                      className="bg-[#0FA3A8] text-white text-xs px-2 py-1 rounded-full font-bold hover:bg-[#0DC1C7] active:scale-90 transition-transform"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 text-sm text-center">Keranjang masih kosong</p>
+              <p className="text-gray-500 text-sm text-center">
+                Keranjang masih kosong
+              </p>
             )}
           </div>
 
-          {/* Total */}
+          {/* ✅ Total */}
           <div className="text-right text-[#0B4B50] mb-4 font-semibold">
             Total: Rp{Number(totalPrice).toLocaleString("id-ID")}
           </div>
 
-          {/* Form */}
+          {/* ✅ Form */}
           <div className="space-y-3 mb-5">
             <input
               type="text"
@@ -123,6 +152,7 @@ export default function CartPopup() {
             />
           </div>
 
+          {/* ✅ Checkout */}
           <button
             onClick={handleCheckout}
             className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold hover:bg-[#0DC1C7] transition-all"
