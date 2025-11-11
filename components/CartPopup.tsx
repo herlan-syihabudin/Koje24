@@ -1,67 +1,55 @@
 "use client"
-import { useState, useEffect } from "react"
-import PackagePopup from "@/components/PackagePopup"
+import React, { useEffect, useMemo, useState } from "react"
+import { useCart } from "@/components/CartContext"
 
-type PackageData = {
-  name: string
-  price: string
-}
+type FormState = { nama: string; alamat: string; catatan: string }
+type ChangeEvt = React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 
-type Form = {
-  nama: string
-  alamat: string
-  catatan: string
-}
-
-export default function PackagePopup() {
+export default function CartPopup() {
+  const { cart, addItem, removeItem, clearCart } = useCart()
+  const totalPrice = useMemo(() => cart.reduce((sum, it) => sum + it.price * it.qty, 0), [cart])
+  const [form, setForm] = useState<FormState>({ nama: "", alamat: "", catatan: "" })
   const [open, setOpen] = useState(false)
-  const [pkg, setPkg] = useState<PackageData | null>(null)
-  const [form, setForm] = useState<Form>({ nama: "", alamat: "", catatan: "" })
 
-  // 🧠 Dengarkan event global
   useEffect(() => {
-    const handler = (e: CustomEvent<PackageData>) => {
-      setPkg(e.detail)
-      setOpen(true)
-    }
-    window.addEventListener("open-package", handler as EventListener)
-    return () => window.removeEventListener("open-package", handler as EventListener)
+    const handler = () => setOpen(true)
+    window.addEventListener("open-cart", handler as EventListener)
+    return () => window.removeEventListener("open-cart", handler as EventListener)
   }, [])
 
-  const close = () => setOpen(false)
   const onChange =
-    (key: keyof Form) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setForm((f) => ({ ...f, [key]: e.target.value }))
+    (key: keyof FormState) =>
+    (e: ChangeEvt) =>
+      setForm((prev) => ({ ...prev, [key]: e.target.value }))
+
+  const close = () => setOpen(false)
 
   const handleCheckout = () => {
-    if (!pkg) return
     const pesan = encodeURIComponent(
-      `🍹 *Ambil Paket KOJE24*\n\n📦 *${pkg.name}*\n💰 Harga: ${pkg.price}\n\n👤 *Nama:* ${form.nama}\n🏡 *Alamat:* ${form.alamat}\n📝 *Catatan:* ${form.catatan}\n\nSilakan konfirmasi pesanan ini.`
+      `🍹 *Pesanan KOJE24*\n\n${cart
+        .map((i) => `• ${i.name} × ${i.qty}`)
+        .join("\n")}\n\n💰 *Total:* Rp${Number(totalPrice).toLocaleString("id-ID")}\n\n👤 *Nama:* ${form.nama}\n🏡 *Alamat:* ${form.alamat}\n📝 *Catatan:* ${form.catatan}`
     )
     window.open(`https://wa.me/6282213139580?text=${pesan}`, "_blank")
-    setOpen(false)
   }
 
   return (
     <>
-      {/* Overlay */}
       <div
-        onClick={close}
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[80] transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity duration-200 ${
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
+        onClick={close}
       />
-
-      {/* Popup */}
       <div
-        className={`fixed inset-0 z-[81] flex items-center justify-center transition-all duration-300 ${
+        className={`fixed inset-0 z-[61] grid place-items-center px-4 transition-all duration-200 ${
           open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
         }`}
+        onClick={close}
       >
         <div
+          className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 relative"
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-md bg-gradient-to-br from-[#fffaf3] to-[#fff] border border-[#E8C46B]/40 shadow-xl rounded-3xl p-6 relative"
         >
           <button
             onClick={close}
@@ -70,47 +58,55 @@ export default function PackagePopup() {
             ✕
           </button>
 
-          <h3 className="font-playfair text-2xl text-[#0B4B50] mb-1 font-semibold">
-            Ambil Paket
+          <h3 className="text-xl font-playfair font-semibold text-[#0B4B50] mb-4">
+            Keranjang Kamu
           </h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Isi data pengiriman sebelum checkout via WhatsApp
-          </p>
 
-          {pkg && (
-            <div className="bg-[#FFF8E5] border border-[#E8C46B]/50 rounded-xl p-3 mb-5">
-              <div className="font-semibold text-[#0B4B50] text-lg">{pkg.name}</div>
-              <div className="text-[#E8C46B] font-bold">{pkg.price}</div>
-            </div>
-          )}
+          <div className="space-y-2 max-h-64 overflow-y-auto border-y py-2 mb-4">
+            {cart.length ? (
+              cart.map((item) => (
+                <div key={item.id} className="flex justify-between text-sm font-inter text-[#0B4B50]">
+                  <span>
+                    {item.name} <b>× {item.qty}</b>
+                  </span>
+                  <span>Rp{(item.price * item.qty).toLocaleString("id-ID")}</span>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 text-sm text-center">Keranjang masih kosong</p>
+            )}
+          </div>
 
-          {/* Form */}
-          <div className="space-y-3">
+          <div className="text-right text-[#0B4B50] mb-4 font-semibold">
+            Total: Rp{Number(totalPrice).toLocaleString("id-ID")}
+          </div>
+
+          <div className="space-y-3 mb-5">
             <input
               type="text"
               placeholder="Nama lengkap"
               value={form.nama}
               onChange={onChange("nama")}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-[#0FA3A8] outline-none"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-[#0FA3A8]"
             />
             <input
               type="text"
               placeholder="Alamat pengiriman"
               value={form.alamat}
               onChange={onChange("alamat")}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-[#0FA3A8] outline-none"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-[#0FA3A8]"
             />
             <textarea
               placeholder="Catatan (opsional)"
               value={form.catatan}
               onChange={onChange("catatan")}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm h-16 resize-none focus:border-[#0FA3A8] outline-none"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm h-16 resize-none focus:border-[#0FA3A8]"
             />
           </div>
 
           <button
             onClick={handleCheckout}
-            className="w-full mt-5 bg-[#E8C46B] text-[#0B4B50] py-3 rounded-full font-semibold hover:brightness-110 transition-all"
+            className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold hover:bg-[#0DC1C7] transition-all"
           >
             Checkout via WhatsApp
           </button>
