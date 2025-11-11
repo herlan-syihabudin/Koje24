@@ -6,6 +6,7 @@ type CartContextType = {
   cart: Record<number, CartItem>
   addItem: (item: CartItem) => void
   removeItem: (id: number) => void
+  totalPrice: number
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -25,7 +26,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     })
   }
 
-  const value = useMemo(() => ({ cart, addItem, removeItem }), [cart])
+  const totalPrice = useMemo(() => {
+    return Object.values(cart).reduce((acc, item) => acc + item.price * item.qty, 0)
+  }, [cart])
+
+  const value = useMemo(() => ({ cart, addItem, removeItem, totalPrice }), [cart, totalPrice])
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }
