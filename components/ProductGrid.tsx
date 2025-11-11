@@ -21,7 +21,6 @@ const products: Product[] = [
   { id: 6, name: "Beetroot Power", desc: "Bit • Apel • Lemon — bantu sirkulasi darah & imun tubuh.", price: "Rp18.000", img: "/image/juice-beetroot.jpg" },
 ]
 
-// Helper
 const toNumber = (p: number | string): number =>
   typeof p === "number" ? p : Number(p.replace(/[^0-9]/g, "")) || 0
 
@@ -38,7 +37,6 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
     addItem(p.id, p.name, toNumber(p.price))
     setAdded(p.id)
 
-    // 🔹 animasi gambar terbang ke cart
     const img = document.querySelector(`img[alt="${p.name}"]`) as HTMLElement
     const cartIcon = document.querySelector(".fixed.bottom-5.right-5 button") as HTMLElement
 
