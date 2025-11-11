@@ -48,9 +48,15 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
       const rectCart = cartIcon.getBoundingClientRect()
 
       Object.assign(clone.style, {
-        position: "fixed",
-        top: rectImg.top + "px",
-        left: rectImg.left + "px",
-        width: rectImg.width + "px",
-        height: rectImg.height + "px",
-        borderRadius
+  position: "fixed",
+  top: rectImg.top + "px",
+  left: rectImg.left + "px",
+  width: rectImg.width + "px",
+  height: rectImg.height + "px",
+  borderRadius: "10px", // ✅ tambahkan titik dua dan nilai
+  zIndex: "9999",
+  opacity: "1",
+  transform: "scale(1)",
+  transition: "all 0.8s cubic-bezier(0.45, 0, 0.55, 1)",
+})
+
