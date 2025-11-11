@@ -10,7 +10,7 @@ type Product = {
   price: number | string
   img: string
   tag?: string
-  isPackage?: boolean // ✅ tambah properti ini
+  isPackage?: boolean // ✅ tambahan properti opsional
 }
 
 const products: Product[] = [
@@ -21,15 +21,15 @@ const products: Product[] = [
   { id: 5, name: "Sunrise+", desc: "Wortel • Jeruk • Serai — rasa lebih bold.", price: "Rp18.000", img: "/image/juice-sunrise.jpg" },
   { id: 6, name: "Beetroot Power", desc: "Bit • Apel • Lemon — bantu sirkulasi darah & imun tubuh.", price: "Rp18.000", img: "/image/juice-beetroot.jpg" },
 
-  // ✅ Tambahkan contoh produk paket
+  // ✅ contoh paket (langsung checkout WA)
   {
     id: 7,
     name: "Paket Detox 3 Hari",
     desc: "6 botol/hari kombinasi varian sehat untuk detoks tubuh total.",
     price: "Rp320.000",
     img: "/image/paket-detox.jpg",
-    isPackage: true,
     tag: "Paket Spesial",
+    isPackage: true,
   },
 ]
 
@@ -45,9 +45,8 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
 
   const qtyOf = (id: number) => cart.find((c) => c.id === id)?.qty || 0
 
-  // ✅ versi stabil + efek glow hijau
   const handleAdd = (p: Product) => {
-    // kalau paket → langsung buka popup, bukan keranjang
+    // 🧩 kalau paket → buka popup langsung
     if (p.isPackage) {
       window.dispatchEvent(
         new CustomEvent("open-package", {
@@ -57,7 +56,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
       return
     }
 
-    // produk biasa
+    // 🧃 produk biasa → masuk keranjang
     addItem({ id: p.id, name: p.name, price: toNumber(p.price), qty: 1 })
     setAdded(p.id)
 
