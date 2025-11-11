@@ -26,21 +26,23 @@ export default function AboutSection() {
           </h2>
 
           <p className="font-inter text-gray-700 leading-relaxed text-base md:text-lg mb-5">
-            <b>Cold-pressed fresh</b> — tanpa gula tambahan dan tanpa pengawet.
-            Kami percaya bahwa rasa alami adalah kunci keseimbangan hidup.
+            <b>Cold-pressed fresh</b> — tanpa gula tambahan, tanpa pengawet, dan tanpa bahan kimia buatan.
+            Setiap tetes KOJE24 lahir dari <b>komitmen kami terhadap kemurnian alam</b>, 
+            menghadirkan kesegaran sejati yang menjaga keseimbangan tubuh dan pikiran.
           </p>
 
           <p className="font-inter text-gray-600 leading-relaxed text-base md:text-lg mb-8">
-            Fokus kami adalah pada <b>manfaat nyata harian</b>: meningkatkan imun,
-            memperbaiki pencernaan, menjaga metabolisme, dan membuat kulit lebih glowing.
-            <br />Minum KOJE24, rasakan energi alami dari bumi Indonesia 🍃
+            Kami fokus pada <b>manfaat nyata harian</b>: meningkatkan imun, memperbaiki pencernaan, 
+            menstabilkan metabolisme, dan membantu menutrisi kulit dari dalam.  
+            <br />Dengan KOJE24, Anda tidak hanya minum jus — Anda menikmati <b>ritual sehat alami</b> 
+            yang menjadi bagian dari gaya hidup modern yang peduli kesehatan 🍃
           </p>
 
           {/* 🔹 Tombol Aksi */}
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
             <Link
               href="/manfaat"
-              className="bg-[#0FA3A8] text-white font-semibold px-10 py-3 rounded-full hover:bg-[#0DC1C7] transition-all duration-300 shadow-[0_4px_15px_rgba(15,163,168,0.4)] hover:shadow-[0_6px_25px_rgba(15,163,168,0.5)] active:scale-[0.98]"
+              className="bg-[#0FA3A8] text-white font-semibold px-10 py-3 rounded-full hover:bg-[#0DC1C7] transition-all duration-300 shadow-[0_4px_15px_rgba(15,163,168,0.4)] hover:shadow-[0_6px_25px_rgba(15,163,168,0.5)] active:scale-[0.98] focus:ring-2 focus:ring-[#0FA3A8]/50"
             >
               Lihat Manfaatnya
             </Link>
@@ -62,6 +64,7 @@ export default function AboutSection() {
             className="object-cover scale-[1.05] hover:scale-[1.08] transition-transform duration-[1500ms] ease-out"
             priority
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
         </motion.div>
       </div>
     </section>
