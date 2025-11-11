@@ -57,7 +57,7 @@ export default function PaketPopup({ planId, onClose }: { planId: string; onClos
   const handleConfirm = () => {
     Object.entries(selected).forEach(([id, qty]) => {
       const prod = products.find((p) => p.id === Number(id))
-      if (prod) addItem(prod.id, prod.name, prod.price)
+      if (prod) addItem({ id: prod.id, name: prod.name, price: prod.price, qty })
     })
     setShow(false)
     setTimeout(() => onClose(), 300)
