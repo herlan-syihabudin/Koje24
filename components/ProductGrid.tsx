@@ -31,20 +31,19 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
   const [imgReady, setImgReady] = useState<Record<number, boolean>>({})
   const [added, setAdded] = useState<number | null>(null)
 
-  // ✅ Ganti: cari qty berdasarkan productId dari array cart
-  const qtyOf = (id: number) => {
-    const found = cart.find((p) => p.id === id)
-    return found ? found.qty : 0
-  }
+  const qtyOf = (id: number) => cart.find((c) => c.id === id)?.qty || 0
 
+  // ✅ versi stabil + efek glow hijau
   const handleAdd = (p: Product) => {
     addItem({ id: p.id, name: p.name, price: toNumber(p.price), qty: 1 })
     setAdded(p.id)
 
-    const img = document.querySelector(`img[alt="${p.name}"]`) as HTMLElement
-    const cartIcon = document.querySelector(".fixed.bottom-5.right-5 button") as HTMLElement
+    setTimeout(() => {
+      const img = document.querySelector(`[data-id="product-${p.id}"]`) as HTMLElement
+      const cartIcon = document.querySelector(".fixed.bottom-5.right-5 button") as HTMLElement
 
-    if (img && cartIcon) {
+      if (!img || !cartIcon || !imgReady[p.id]) return
+
       const clone = img.cloneNode(true) as HTMLElement
       const rectImg = img.getBoundingClientRect()
       const rectCart = cartIcon.getBoundingClientRect()
@@ -55,11 +54,12 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
         left: rectImg.left + "px",
         width: rectImg.width + "px",
         height: rectImg.height + "px",
-        borderRadius: "10px",
+        borderRadius: "12px",
         zIndex: "9999",
         opacity: "1",
         transform: "scale(1)",
-        transition: "all 0.8s cubic-bezier(0.45, 0, 0.55, 1)",
+        transition: "all 0.9s cubic-bezier(0.45, 0, 0.55, 1)",
+        boxShadow: "0 0 30px 10px rgba(15,163,168,0.4)", // ✨ efek glow hijau
       })
 
       document.body.appendChild(clone)
@@ -71,10 +71,11 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
         clone.style.height = "0px"
         clone.style.opacity = "0"
         clone.style.transform = "scale(0.2)"
+        clone.style.boxShadow = "0 0 10px 2px rgba(15,163,168,0.1)"
       })
 
-      setTimeout(() => clone.remove(), 800)
-    }
+      setTimeout(() => clone.remove(), 900)
+    }, 50)
 
     setTimeout(() => setAdded(null), 1000)
   }
@@ -111,6 +112,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                   <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#e3f4f4] via-[#f0fafa] to-[#d7f0f0]" />
                 )}
                 <Image
+                  data-id={`product-${p.id}`} // ✅ id unik buat animasi
                   src={p.img}
                   alt={p.name}
                   fill
