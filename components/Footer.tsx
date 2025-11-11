@@ -1,52 +1,60 @@
 "use client"
 import Image from "next/image"
-import Link from "next/link"
 import { FaInstagram, FaWhatsapp, FaTiktok } from "react-icons/fa"
 
 export default function Footer() {
   return (
-    <footer className="bg-[#0B4B50] text-white pt-14 pb-6 px-6 md:px-14 lg:px-24 relative overflow-hidden">
-      {/* Wave background (optional aesthetic) */}
+    <footer className="relative bg-[#0B4B50] text-white pt-16 pb-8 px-6 md:px-14 lg:px-24 overflow-hidden">
+      {/* 🌊 Aksen Wave Line */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#0FA3A8] via-[#E8C46B] to-[#0FA3A8]" />
 
-      {/* Top CTA */}
-      <div className="text-center mb-10">
-        <h3 className="font-playfair text-2xl md:text-3xl font-semibold mb-2">
+      {/* 💎 Background Accent */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.05),transparent_70%)] pointer-events-none" />
+
+      {/* 🟢 Top CTA */}
+      <div className="text-center mb-12 relative z-10">
+        <h3 className="font-playfair text-3xl md:text-4xl font-semibold mb-3 tracking-tight">
           Stay Healthy With <span className="text-[#E8C46B]">KOJE24</span>
         </h3>
-        <p className="text-gray-300 text-sm md:text-base">
-          Minuman alami setiap hari untuk energi dan keseimbangan hidup.
+        <p className="text-gray-300 text-sm md:text-base max-w-xl mx-auto leading-relaxed">
+          Minuman cold-pressed alami setiap hari untuk energi, imunitas, dan keseimbangan hidup 🌿
         </p>
       </div>
 
-      {/* Main grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 md:gap-6 mb-10 text-gray-300">
-        {/* Brand */}
+      {/* 🧩 Main Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 md:gap-8 mb-12 text-gray-300 relative z-10">
+        {/* 🔹 Brand */}
         <div>
-          <div className="flex items-center gap-3 mb-3">
-            <Image src="/favicon.ico" alt="KOJE24" width={40} height={40} className="rounded-full" />
-            <h4 className="font-playfair text-lg font-bold text-white">KOJE24</h4>
+          <div className="flex items-center gap-3 mb-4">
+            <Image
+              src="/favicon.ico"
+              alt="KOJE24"
+              width={44}
+              height={44}
+              className="rounded-full ring-2 ring-[#E8C46B]/40"
+            />
+            <h4 className="font-playfair text-xl font-bold text-white tracking-wide">KOJE24</h4>
           </div>
-          <p className="text-sm leading-relaxed mb-2">
-            Jus cold-pressed alami tanpa gula dan pengawet.  
-            Didesain untuk kamu yang ingin hidup lebih sehat setiap hari.
+          <p className="text-sm leading-relaxed mb-3">
+            Jus cold-pressed alami tanpa gula tambahan dan tanpa pengawet.
+            Didesain untuk kamu yang ingin hidup sehat, aktif, dan seimbang setiap hari.
           </p>
           <p className="text-sm italic text-[#E8C46B]">“Explore the Taste, Explore the World.”</p>
         </div>
 
-        {/* Quick Links */}
+        {/* 🔹 Quick Links */}
         <div>
           <h5 className="font-semibold text-white mb-3">Menu</h5>
           <ul className="space-y-2 text-sm">
-            <li><a href="#produk" className="hover:text-[#E8C46B] transition">Produk</a></li>
-            <li><a href="#tentang" className="hover:text-[#E8C46B] transition">Tentang KOJE24</a></li>
-            <li><a href="#langganan" className="hover:text-[#E8C46B] transition">Langganan Paket</a></li>
-            <li><a href="#testimoni" className="hover:text-[#E8C46B] transition">Testimoni</a></li>
-            <li><a href="#faq" className="hover:text-[#E8C46B] transition">FAQ</a></li>
+            <li><a href="#produk" className="hover:text-[#E8C46B] transition-colors duration-300">Produk</a></li>
+            <li><a href="#about" className="hover:text-[#E8C46B] transition-colors duration-300">Tentang KOJE24</a></li>
+            <li><a href="#langganan" className="hover:text-[#E8C46B] transition-colors duration-300">Langganan Paket</a></li>
+            <li><a href="#testimoni" className="hover:text-[#E8C46B] transition-colors duration-300">Testimoni</a></li>
+            <li><a href="#faq" className="hover:text-[#E8C46B] transition-colors duration-300">FAQ</a></li>
           </ul>
         </div>
 
-        {/* Contact & Social */}
+        {/* 🔹 Contact & Social */}
         <div>
           <h5 className="font-semibold text-white mb-3">Hubungi Kami</h5>
           <ul className="text-sm space-y-2">
@@ -54,38 +62,53 @@ export default function Footer() {
               <a
                 href="https://wa.me/6281234567890"
                 target="_blank"
-                className="flex items-center gap-2 hover:text-[#E8C46B] transition"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:text-[#E8C46B] transition-all duration-300"
               >
-                <FaWhatsapp /> WhatsApp Order
+                <FaWhatsapp className="text-lg" /> WhatsApp Order
               </a>
             </li>
             <li>
               <a
                 href="https://instagram.com/koje24"
                 target="_blank"
-                className="flex items-center gap-2 hover:text-[#E8C46B] transition"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:text-[#E8C46B] transition-all duration-300"
               >
-                <FaInstagram /> Instagram
+                <FaInstagram className="text-lg" /> Instagram
               </a>
             </li>
             <li>
               <a
                 href="https://tiktok.com/@koje24"
                 target="_blank"
-                className="flex items-center gap-2 hover:text-[#E8C46B] transition"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:text-[#E8C46B] transition-all duration-300"
               >
-                <FaTiktok /> TikTok
+                <FaTiktok className="text-lg" /> TikTok
               </a>
             </li>
-            <li>Email: <a href="mailto:info@koje24.id" className="hover:text-[#E8C46B]">info@koje24.id</a></li>
+            <li>
+              <span>Email:</span>{" "}
+              <a
+                href="mailto:info@koje24.id"
+                className="hover:text-[#E8C46B] transition-colors duration-300"
+              >
+                info@koje24.id
+              </a>
+            </li>
           </ul>
         </div>
       </div>
 
-      {/* Bottom */}
-      <div className="border-t border-white/10 pt-4 text-center text-gray-400 text-sm">
-        © 2025 <span className="text-[#E8C46B] font-semibold">KOJE24</span>. All rights reserved.
+      {/* 🔸 Divider Line */}
+      <div className="border-t border-white/10 pt-5 text-center text-gray-400 text-xs md:text-sm tracking-wide relative z-10">
+        © 2025 <span className="text-[#E8C46B] font-semibold">KOJE24</span> • All Rights Reserved  
+        <br className="md:hidden" /> — <span className="text-[#0FA3A8]">Natural Cold-Pressed Juice Indonesia</span>
       </div>
+
+      {/* 🌿 Floating accent blur */}
+      <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-[#0FA3A8]/10 blur-[100px] rounded-full" />
     </footer>
   )
 }
