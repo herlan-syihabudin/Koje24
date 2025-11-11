@@ -1,20 +1,25 @@
 "use client"
-import { useCart } from "@/components/CartContext"
 import React, { useEffect, useMemo, useState } from "react"
+import { useCart } from "@/components/CartContext"
 
 type FormState = { nama: string; alamat: string; catatan: string }
 type ChangeEvt = React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 
 export default function CartPopup() {
-  // ✅ aman walau context sempat undefined di render awal
-  const { cart = [], addItem, removeItem, clearCart } = useCart()
-const totalPrice = cart.reduce((sum, item) => sum + item.price * item.qty, 0)
+  // Ambil data dari context (array of items)
+  const { cart, addItem, removeItem, clearCart } = useCart()
+
+  // Hitung total secara lokal agar tidak tergantung properti tambahan di context
+  const totalPrice = useMemo(
+    () => cart.reduce((sum, it) => sum + it.price * it.qty, 0),
+    [cart]
+  )
 
   const [form, setForm] = useState<FormState>({ nama: "", alamat: "", catatan: "" })
   const [open, setOpen] = useState(false)
-  const items = useMemo(() => Object.values(cart), [cart])
+  const items = useMemo(() => cart, [cart])
 
-  // ✅ buka popup saat tombol keranjang diklik (dari StickyCartBar)
+  // Buka popup saat event custom "open-cart" dipublish dari StickyCartBar
   useEffect(() => {
     const handler = () => setOpen(true)
     window.addEventListener("open-cart", handler as EventListener)
@@ -36,7 +41,6 @@ const totalPrice = cart.reduce((sum, item) => sum + item.price * item.qty, 0)
         "id-ID"
       )}\n\n👤 *Nama:* ${form.nama}\n🏡 *Alamat:* ${form.alamat}\n📝 *Catatan:* ${form.catatan}`
     )
-    // ganti ke nomor WA kamu
     window.open(`https://wa.me/6282213139580?text=${pesan}`, "_blank")
   }
 
@@ -44,7 +48,6 @@ const totalPrice = cart.reduce((sum, item) => sum + item.price * item.qty, 0)
     <>
       {/* Overlay */}
       <div
-        // ❗️pakai invisible + pointer-events-none untuk transisi halus
         className={`fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity duration-200
           ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
         onClick={close}
