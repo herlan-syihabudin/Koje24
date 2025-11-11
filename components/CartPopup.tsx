@@ -7,12 +7,8 @@ type ChangeEvt = React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 
 export default function CartPopup() {
   // ✅ aman walau context sempat undefined di render awal
-  const cartCtx = useCart?.()
-  const cart = (cartCtx?.cart ?? {}) as Record<
-    number,
-    { id: number; name: string; price: number; qty: number }
-  >
-  const totalPrice = cartCtx?.totalPrice ?? 0
+  const { cart = [], addItem, removeItem, clearCart } = useCart()
+const totalPrice = cart.reduce((sum, item) => sum + item.price * item.qty, 0)
 
   const [form, setForm] = useState<FormState>({ nama: "", alamat: "", catatan: "" })
   const [open, setOpen] = useState(false)
