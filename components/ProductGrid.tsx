@@ -31,7 +31,11 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
   const [imgReady, setImgReady] = useState<Record<number, boolean>>({})
   const [added, setAdded] = useState<number | null>(null)
 
-  const qtyOf = (id: number) => cart[id]?.qty || 0
+  // ✅ Ganti: cari qty berdasarkan productId dari array cart
+  const qtyOf = (id: number) => {
+    const found = cart.find((p) => p.id === id)
+    return found ? found.qty : 0
+  }
 
   const handleAdd = (p: Product) => {
     addItem({ id: p.id, name: p.name, price: toNumber(p.price), qty: 1 })
