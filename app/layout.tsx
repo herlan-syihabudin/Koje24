@@ -1,5 +1,6 @@
 import "./globals.css"
 import { Inter, Playfair_Display } from "next/font/google"
+import type { ReactNode } from "react"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" })
@@ -38,10 +39,12 @@ export const metadata = {
   },
 }
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="id" className={`${inter.variable} ${playfair.variable}`}>
-      <body className="bg-white text-[#0B4B50]">{children}</body>
+      <body className="bg-white text-[#0B4B50] antialiased selection:bg-[#0FA3A8]/20 selection:text-[#0B4B50]">
+        {children}
+      </body>
     </html>
   )
 }
