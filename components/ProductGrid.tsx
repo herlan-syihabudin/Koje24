@@ -34,7 +34,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
   const qtyOf = (id: number) => cart[id]?.qty || 0
 
   const handleAdd = (p: Product) => {
-    addItem(p.id, p.name, toNumber(p.price))
+    addItem({ id: p.id, name: p.name, price: toNumber(p.price), qty: 1 })
     setAdded(p.id)
 
     const img = document.querySelector(`img[alt="${p.name}"]`) as HTMLElement
