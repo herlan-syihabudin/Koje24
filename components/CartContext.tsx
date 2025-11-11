@@ -20,21 +20,28 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([])
 
+  // ✅ Add item ke keranjang
   const addItem = (item: CartItem) => {
     setCart((prev) => {
       const existing = prev.find((p) => p.id === item.id)
       if (existing) {
+        // kalau produk udah ada, tambahkan qty-nya
         return prev.map((p) =>
           p.id === item.id ? { ...p, qty: p.qty + item.qty } : p
         )
+      } else {
+        // kalau belum ada, tambahkan baru
+        return [...prev, item]
       }
-      return [...prev, item]
     })
   }
 
-  const removeItem = (id: number) =>
+  // ✅ Hapus 1 item berdasarkan ID
+  const removeItem = (id: number) => {
     setCart((prev) => prev.filter((p) => p.id !== id))
+  }
 
+  // ✅ Kosongkan seluruh keranjang
   const clearCart = () => setCart([])
 
   return (
