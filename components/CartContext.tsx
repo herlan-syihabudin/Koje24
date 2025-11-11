@@ -36,11 +36,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     })
   }
+  
+  // ✅ Kurangi qty satu per satu, hapus hanya kalau qty sudah 1
+const removeItem = (id: number) => {
+  setCart((prev) => {
+    const existing = prev.find((p) => p.id === id)
+    if (!existing) return prev
 
-  // ✅ Hapus item
-  const removeItem = (id: number) => {
-    setCart(prev => prev.filter(p => p.id !== id))
-  }
+    if (existing.qty > 1) {
+      return prev.map((p) =>
+        p.id === id ? { ...p, qty: p.qty - 1 } : p
+      )
+    } else {
+      return prev.filter((p) => p.id !== id)
+    }
+  })
+}
 
   // ✅ Update qty manual (misal dari 8 ke 5)
   const updateItemQty = (id: number, qty: number) => {
