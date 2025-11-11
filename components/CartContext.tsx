@@ -1,6 +1,11 @@
 import { createContext, useContext, useMemo, useState, ReactNode } from "react"
 
-type CartItem = { id: number; name: string; price: number; qty: number }
+type CartItem = {
+  id: number
+  name: string
+  price: number
+  qty: number
+}
 
 type CartContextType = {
   cart: Record<number, CartItem>
@@ -26,11 +31,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     })
   }
 
+  // ✅ Total harga otomatis dijumlahkan dari semua item di cart
   const totalPrice = useMemo(() => {
     return Object.values(cart).reduce((acc, item) => acc + item.price * item.qty, 0)
   }, [cart])
 
-  const value = useMemo(() => ({ cart, addItem, removeItem, totalPrice }), [cart, totalPrice])
+  // ✅ Value context lengkap dengan totalPrice
+  const value = useMemo(
+    () => ({ cart, addItem, removeItem, totalPrice }),
+    [cart, totalPrice]
+  )
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }
