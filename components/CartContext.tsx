@@ -14,6 +14,7 @@ type CartContextType = {
   removeItem: (id: number) => void
   clearCart: () => void
   totalPrice: number
+  totalQty: number // ✅ ditambahkan biar StickyCartBar bisa baca
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -43,12 +44,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // ✅ Kosongkan cart
   const clearCart = () => setCart([])
 
-  // ✅ Hitung total harga otomatis
+  // ✅ Hitung total harga & total qty otomatis
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.qty, 0)
+  const totalQty = cart.reduce((sum, item) => sum + item.qty, 0) // ✅ baru ditambah
 
   return (
     <CartContext.Provider
-      value={{ cart, addItem, removeItem, clearCart, totalPrice }}
+      value={{ cart, addItem, removeItem, clearCart, totalPrice, totalQty }} // ✅ pastikan totalQty ikut di sini
     >
       {children}
     </CartContext.Provider>
