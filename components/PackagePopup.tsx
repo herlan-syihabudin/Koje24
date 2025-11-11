@@ -10,8 +10,9 @@ export default function PackagePopup() {
   const [form, setForm] = useState<Form>({ nama: "", alamat: "", catatan: "" })
 
   useEffect(() => {
-    const onOpen = (e: any) => {
-      setPkg(e.detail)
+    const onOpen = (e: Event) => {
+      const detail = (e as CustomEvent).detail as PackageData
+      setPkg(detail)
       setOpen(true)
     }
     window.addEventListener("open-package", onOpen as EventListener)
@@ -21,7 +22,7 @@ export default function PackagePopup() {
   const handleCheckout = () => {
     if (!pkg) return
     const pesan = encodeURIComponent(
-      `🧃 *Paket KOJE24*\n\n📦 ${pkg.name}\n💰 Rp${pkg.price.toLocaleString("id-ID")}\n\n👤 *Nama:* ${form.nama}\n🏡 *Alamat:* ${form.alamat}\n📝 *Catatan:* ${form.catatan}`
+      `🧃 *Paket KOJE24*\n\n📦 ${pkg.name}\n💰 *Total:* Rp${pkg.price.toLocaleString("id-ID")}\n\n👤 *Nama:* ${form.nama}\n🏡 *Alamat:* ${form.alamat}\n📝 *Catatan:* ${form.catatan}`
     )
     window.open(`https://wa.me/6282213139580?text=${pesan}`, "_blank")
   }
@@ -57,13 +58,16 @@ export default function PackagePopup() {
             ✕
           </button>
 
-          <h3 className="text-xl font-playfair font-semibold text-[#0B4B50] mb-4">
+          <h3 className="text-xl font-playfair font-semibold text-[#0B4B50] mb-2">
             Checkout Paket
           </h3>
-          {pkg && (
+
+          {pkg ? (
             <p className="mb-4 text-[#0B4B50]">
               {pkg.name} — <b>Rp{pkg.price.toLocaleString("id-ID")}</b>
             </p>
+          ) : (
+            <p className="mb-4 text-gray-500">Pilih paket untuk melanjutkan.</p>
           )}
 
           <input
@@ -89,7 +93,8 @@ export default function PackagePopup() {
 
           <button
             onClick={handleCheckout}
-            className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold hover:bg-[#0DC1C7] transition-all mt-4"
+            disabled={!pkg}
+            className="w-full disabled:opacity-50 disabled:cursor-not-allowed bg-[#0FA3A8] text-white py-3 rounded-full font-semibold hover:bg-[#0DC1C7] transition-all mt-4"
           >
             Checkout via WhatsApp
           </button>
@@ -98,4 +103,3 @@ export default function PackagePopup() {
     </>
   )
 }
-
