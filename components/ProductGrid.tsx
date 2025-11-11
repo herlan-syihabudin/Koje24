@@ -10,6 +10,7 @@ type Product = {
   price: number | string
   img: string
   tag?: string
+  isPackage?: boolean // ✅ tambah properti ini
 }
 
 const products: Product[] = [
@@ -19,6 +20,17 @@ const products: Product[] = [
   { id: 4, name: "Sunrise", desc: "Wortel • Jeruk • Serai — bantu menjaga stamina tubuh.", price: "Rp18.000", img: "/image/juice-orange.jpg" },
   { id: 5, name: "Sunrise+", desc: "Wortel • Jeruk • Serai — rasa lebih bold.", price: "Rp18.000", img: "/image/juice-sunrise.jpg" },
   { id: 6, name: "Beetroot Power", desc: "Bit • Apel • Lemon — bantu sirkulasi darah & imun tubuh.", price: "Rp18.000", img: "/image/juice-beetroot.jpg" },
+
+  // ✅ Tambahkan contoh produk paket
+  {
+    id: 7,
+    name: "Paket Detox 3 Hari",
+    desc: "6 botol/hari kombinasi varian sehat untuk detoks tubuh total.",
+    price: "Rp320.000",
+    img: "/image/paket-detox.jpg",
+    isPackage: true,
+    tag: "Paket Spesial",
+  },
 ]
 
 const toNumber = (p: number | string): number =>
@@ -35,6 +47,17 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
 
   // ✅ versi stabil + efek glow hijau
   const handleAdd = (p: Product) => {
+    // kalau paket → langsung buka popup, bukan keranjang
+    if (p.isPackage) {
+      window.dispatchEvent(
+        new CustomEvent("open-package", {
+          detail: { name: p.name, price: p.price },
+        })
+      )
+      return
+    }
+
+    // produk biasa
     addItem({ id: p.id, name: p.name, price: toNumber(p.price), qty: 1 })
     setAdded(p.id)
 
@@ -59,7 +82,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
         opacity: "1",
         transform: "scale(1)",
         transition: "all 0.9s cubic-bezier(0.45, 0, 0.55, 1)",
-        boxShadow: "0 0 30px 10px rgba(15,163,168,0.4)", // ✨ efek glow hijau
+        boxShadow: "0 0 30px 10px rgba(15,163,168,0.4)",
       })
 
       document.body.appendChild(clone)
@@ -112,7 +135,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                   <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#e3f4f4] via-[#f0fafa] to-[#d7f0f0]" />
                 )}
                 <Image
-                  data-id={`product-${p.id}`} // ✅ id unik buat animasi
+                  data-id={`product-${p.id}`}
                   src={p.img}
                   alt={p.name}
                   fill
@@ -136,7 +159,14 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                 <div className="flex items-center justify-between mt-auto pt-2 border-t border-[#e6eeee]/60">
                   <span className="font-bold text-[#0B4B50] text-lg">{formatIDR(priceNum)}</span>
 
-                  {qty > 0 ? (
+                  {p.isPackage ? (
+                    <button
+                      onClick={() => handleAdd(p)}
+                      className="ml-auto bg-[#E8C46B] text-[#0B4B50] text-sm px-6 py-2 rounded-full font-semibold hover:brightness-110 active:scale-95 transition-transform"
+                    >
+                      Ambil Paket
+                    </button>
+                  ) : qty > 0 ? (
                     <div className="flex items-center gap-2 ml-auto">
                       <button
                         onClick={() => removeItem(p.id)}
