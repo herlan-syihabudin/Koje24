@@ -59,5 +59,5 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
   transform: "scale(1)",
   transition: "all 0.8s cubic-bezier(0.45, 0, 0.55, 1)",
 })
-      }
+}
 
