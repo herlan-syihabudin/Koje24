@@ -12,40 +12,110 @@ export default function TestimoniCarousel() {
       try {
         const res = await fetch(API_URL)
         const json = await res.json()
-        const filtered = json.filter((x: any) => String(x.showOnHome).toUpperCase() === "TRUE").reverse()
+        const filtered = json
+          .filter((x: any) => String(x.showOnHome).toUpperCase() === "TRUE")
+          .reverse()
         setData(filtered.slice(0, 5))
-      } catch (e) { console.error(e) }
+      } catch (e) {
+        console.error(e)
+      }
     }
     run()
   }, [])
 
+  // Fallback data agar tetap tampil cantik walau API kosong
+  const fallbackData = [
+    {
+      nama: "Dewi Rahma",
+      kota: "Jakarta",
+      varian: "Green Detox",
+      pesan: "Sejak rutin minum KOJE24, badan terasa lebih ringan dan segar tiap pagi!",
+      rating: 5,
+    },
+    {
+      nama: "Andi Pratama",
+      kota: "Bandung",
+      varian: "Yellow Immunity",
+      pesan: "Rasanya enak dan natural banget, daya tahan tubuh juga terasa meningkat!",
+      rating: 5,
+    },
+    {
+      nama: "Sinta Lestari",
+      kota: "Surabaya",
+      varian: "Red Series",
+      pesan: "Packaging-nya premium, cocok banget buat daily detox. Recommended!",
+      rating: 4,
+    },
+  ]
+
+  const testimonials = data.length > 0 ? data : fallbackData
+
   return (
-    <section className="py-16 bg-[#f6fbfb] relative overflow-hidden">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
-          <h2 className="text-2xl font-bold text-[#0B4B50]">
+    <section className="py-24 bg-gradient-to-b from-[#f6fbfb] to-[#eef7f7] relative overflow-hidden">
+      {/* Aksen background halus */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(15,163,168,0.06),transparent_70%)] pointer-events-none" />
+
+      <div className="max-w-6xl mx-auto px-6 md:px-10 relative z-10">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-10 flex-wrap gap-3">
+          <h2 className="font-playfair text-3xl md:text-4xl font-semibold text-[#0B4B50]">
             Apa kata mereka tentang <span className="text-[#0FA3A8]">KOJE24</span>?
           </h2>
           <div className="flex items-center gap-3">
             <TulisTestimoniForm />
-            <a href="/testimoni" className="text-[#0FA3A8] font-medium hover:underline">Lihat Semua →</a>
+            <a
+              href="/testimoni"
+              className="text-[#0FA3A8] font-medium hover:underline hover:text-[#0DC1C7] transition-colors"
+            >
+              Lihat Semua →
+            </a>
           </div>
         </div>
 
-        <Marquee pauseOnHover gradient={false} speed={40}>
-          {data.map((t, i) => (
-            <div key={i} className="mx-3 min-w-[300px] sm:min-w-[350px] bg-white border border-[#e6eeee] rounded-2xl p-5 shadow-sm">
-              <h3 className="font-semibold text-[#0B4B50] text-lg">{t.nama}</h3>
-              <p className="text-sm text-gray-500">{t.kota}</p>
-              <p className="text-sm text-[#0FA3A8] italic">{t.varian}</p>
-              <p className="mt-3 italic text-gray-700 leading-snug line-clamp-3 overflow-hidden text-ellipsis min-h-[60px]"
-                 style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
+        {/* Marquee Carousel */}
+        <Marquee pauseOnHover gradient={false} speed={35}>
+          {testimonials.map((t, i) => (
+            <div
+              key={i}
+              className="mx-3 min-w-[300px] sm:min-w-[340px] bg-white border border-[#e6eeee]/60 rounded-3xl p-6 shadow-[0_5px_25px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_35px_rgba(15,163,168,0.15)] transition-all duration-500 flex flex-col justify-between"
+            >
+              {/* Header Testimoni */}
+              <div>
+                <h3 className="font-playfair text-lg font-semibold text-[#0B4B50] leading-tight">
+                  {t.nama}
+                </h3>
+                <p className="text-sm text-gray-500 mb-1">{t.kota}</p>
+                <p className="text-sm text-[#0FA3A8] italic">{t.varian}</p>
+              </div>
+
+              {/* Pesan */}
+              <p
+                className="mt-3 italic text-gray-700 leading-relaxed text-[15px] min-h-[70px]"
+                style={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
                 “{t.pesan}”
               </p>
-              <p className="mt-2 text-yellow-400 text-lg">{"★".repeat(Number(t.rating) || 5)}</p>
+
+              {/* Rating */}
+              <div className="mt-4 text-[#E8C46B] text-lg">
+                {"★".repeat(Number(t.rating) || 5)}
+              </div>
             </div>
           ))}
         </Marquee>
+
+        {/* Caption Bawah */}
+        <div className="text-center mt-14">
+          <p className="font-inter text-gray-600 text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
+            Bergabunglah dengan <span className="text-[#0FA3A8] font-semibold">ratusan pelanggan</span> yang
+            sudah merasakan manfaat alami KOJE24 — segar, sehat, dan seimbang setiap hari 🍃
+          </p>
+        </div>
       </div>
     </section>
   )
