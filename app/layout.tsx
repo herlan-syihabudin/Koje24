@@ -1,4 +1,3 @@
-"use client"
 
 import "./globals.css"
 import { Inter, Playfair_Display } from "next/font/google"
