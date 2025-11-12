@@ -300,3 +300,12 @@ section {
 .animate-fadeIn {
   animation: fadeIn 0.6s ease-out forwards;
 }
+/* 🔧 Fix posisi centering saat overlay transisi */
+@media (max-width: 768px) {
+  .menu-transition-fix {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
