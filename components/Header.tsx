@@ -6,7 +6,7 @@ import Link from "next/link"
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [animating, setAnimating] = useState(false)
+  const [canClick, setCanClick] = useState(true)
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 60)
@@ -26,37 +26,26 @@ export default function Header() {
     { label: "FAQ", href: "#faq" },
   ]
 
+  const safeAction = (callback: () => void) => {
+    if (!canClick) return
+    setCanClick(false)
+    callback()
+    setTimeout(() => setCanClick(true), 400) // gak ngunci lama
+  }
+
   const handleNavClick = (e: React.MouseEvent, href: string) => {
     e.preventDefault()
-    if (animating) return
-
-    setAnimating(true)
-    setMenuOpen(false)
-    document.body.style.overflow = "auto"
-
-    setTimeout(() => {
-      const target = document.querySelector(href)
-      if (target) {
-        const offset = 80
-        const y = target.getBoundingClientRect().top + window.scrollY - offset
-        window.scrollTo({ top: y, behavior: "smooth" })
-      }
-      setAnimating(false)
-    }, 600)
-  }
-
-  const openMenu = () => {
-    if (animating || menuOpen) return
-    setAnimating(true)
-    setMenuOpen(true)
-    setTimeout(() => setAnimating(false), 600)
-  }
-
-  const closeMenu = () => {
-    if (animating || !menuOpen) return
-    setAnimating(true)
-    setMenuOpen(false)
-    setTimeout(() => setAnimating(false), 600)
+    safeAction(() => {
+      setMenuOpen(false)
+      setTimeout(() => {
+        const target = document.querySelector(href)
+        if (target) {
+          const offset = 80
+          const y = target.getBoundingClientRect().top + window.scrollY - offset
+          window.scrollTo({ top: y, behavior: "smooth" })
+        }
+      }, 350)
+    })
   }
 
   return (
@@ -74,9 +63,10 @@ export default function Header() {
           href="/"
           onClick={(e) => {
             e.preventDefault()
-            if (animating) return
-            setMenuOpen(false)
-            window.scrollTo({ top: 0, behavior: "smooth" })
+            safeAction(() => {
+              setMenuOpen(false)
+              window.scrollTo({ top: 0, behavior: "smooth" })
+            })
           }}
           className={`text-2xl font-playfair font-bold transition-colors duration-500 ${
             isScrolled ? "text-[#0B4B50]" : "text-white"
@@ -85,7 +75,7 @@ export default function Header() {
           KOJE<span className={`${isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}`}>24</span>
         </Link>
 
-        {/* DESKTOP NAV */}
+        {/* DESKTOP */}
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <a
@@ -116,16 +106,17 @@ export default function Header() {
 
         {/* MOBILE BUTTON */}
         <button
+          disabled={!canClick}
           className={`md:hidden text-2xl transition-colors ${
             isScrolled ? "text-[#0B4B50]" : "text-white"
-          } ${animating ? "opacity-60 pointer-events-none" : ""}`}
-          onClick={openMenu}
+          } ${!canClick ? "opacity-60" : ""}`}
+          onClick={() => safeAction(() => setMenuOpen(true))}
         >
           <FaBars />
         </button>
       </div>
 
-      {/* OVERLAY MENU */}
+      {/* OVERLAY */}
       <div
         className={`fixed inset-0 z-[999] flex flex-col items-center justify-center text-center bg-white/90 backdrop-blur-2xl transition-all duration-500 ${
           menuOpen
@@ -133,9 +124,8 @@ export default function Header() {
             : "opacity-0 scale-95 pointer-events-none"
         }`}
       >
-        {/* Close Button */}
         <button
-          onClick={closeMenu}
+          onClick={() => safeAction(() => setMenuOpen(false))}
           className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
         >
           <FaTimes />
@@ -151,10 +141,11 @@ export default function Header() {
               {item.label}
             </button>
           ))}
+
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
-            onClick={closeMenu}
+            onClick={() => setMenuOpen(false)}
             className="mt-10 flex items-center justify-center gap-2 bg-[#0FA3A8] text-white px-8 py-3 rounded-full shadow-lg hover:bg-[#0B4B50] transition-all"
           >
             <FaWhatsapp /> Chat Sekarang
