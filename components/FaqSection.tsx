@@ -29,11 +29,11 @@ export default function FaqSection() {
       id="faq"
       className="relative bg-gradient-to-b from-[#f8fcfc] to-[#eef7f7] py-24 overflow-hidden"
     >
-      {/* Aksen latar lembut */}
+      {/* 🔹 Aksen latar */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(15,163,168,0.07),transparent_70%)] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto px-6 md:px-10 relative z-10">
-        {/* Judul */}
+        {/* 🔹 Judul */}
         <div className="text-center mb-12">
           <h2 className="font-playfair text-3xl md:text-4xl font-semibold text-[#0B4B50] mb-4">
             Pertanyaan yang Sering Diajukan
@@ -43,7 +43,7 @@ export default function FaqSection() {
           </p>
         </div>
 
-        {/* Daftar FAQ */}
+        {/* 🔹 Daftar FAQ */}
         <div className="space-y-4 max-w-3xl mx-auto">
           {faqs.map((f, i) => (
             <details
@@ -63,17 +63,17 @@ export default function FaqSection() {
           ))}
         </div>
 
-        {/* Ajakan tambahan */}
+        {/* 🔹 Ajakan tambahan */}
         <div className="text-center mt-16">
           <p className="font-inter text-gray-600 text-base md:text-lg leading-relaxed">
-            Masih ada pertanyaan lain?  
+            Masih ada pertanyaan lain?{" "}
             <a
-              href="https://wa.me/6281234567890"
+              href="https://wa.me/6282213139580"
               className="text-[#0FA3A8] font-semibold hover:text-[#0DC1C7] transition-colors"
               target="_blank"
               rel="noopener noreferrer"
             >
-              {" "}Hubungi tim KOJE24 →
+              Hubungi tim KOJE24 →
             </a>
           </p>
         </div>
