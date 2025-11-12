@@ -1,12 +1,13 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { FaBars, FaTimes, FaWhatsapp } from "react-icons/fa"
 import Link from "next/link"
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [canClick, setCanClick] = useState(true)
+  const [animating, setAnimating] = useState(false)
+  const closeTimer = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 60)
@@ -16,7 +17,25 @@ export default function Header() {
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "auto"
+    return () => {
+      document.body.style.overflow = "auto"
+    }
   }, [menuOpen])
+
+  const openMenu = () => {
+    if (menuOpen || animating) return
+    setAnimating(true)
+    setMenuOpen(true)
+    setTimeout(() => setAnimating(false), 520)
+  }
+
+  const closeMenu = () => {
+    if (!menuOpen || animating) return
+    setAnimating(true)
+    setMenuOpen(false)
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    closeTimer.current = setTimeout(() => setAnimating(false), 520)
+  }
 
   const navItems = [
     { label: "Produk", href: "#produk" },
@@ -26,26 +45,19 @@ export default function Header() {
     { label: "FAQ", href: "#faq" },
   ]
 
-  const safeAction = (callback: () => void) => {
-    if (!canClick) return
-    setCanClick(false)
-    callback()
-    setTimeout(() => setCanClick(true), 400) // gak ngunci lama
+  const smoothScrollTo = (href: string) => {
+    const target = document.querySelector(href)
+    if (!target) return
+    const offset = 80
+    const y = target.getBoundingClientRect().top + window.scrollY - offset
+    setTimeout(() => {
+      window.scrollTo({ top: y, behavior: "smooth" })
+    }, 360)
   }
 
-  const handleNavClick = (e: React.MouseEvent, href: string) => {
-    e.preventDefault()
-    safeAction(() => {
-      setMenuOpen(false)
-      setTimeout(() => {
-        const target = document.querySelector(href)
-        if (target) {
-          const offset = 80
-          const y = target.getBoundingClientRect().top + window.scrollY - offset
-          window.scrollTo({ top: y, behavior: "smooth" })
-        }
-      }, 350)
-    })
+  const handleNavClick = (href: string) => {
+    closeMenu()
+    smoothScrollTo(href)
   }
 
   return (
@@ -63,25 +75,25 @@ export default function Header() {
           href="/"
           onClick={(e) => {
             e.preventDefault()
-            safeAction(() => {
-              setMenuOpen(false)
-              window.scrollTo({ top: 0, behavior: "smooth" })
-            })
+            closeMenu()
+            window.scrollTo({ top: 0, behavior: "smooth" })
           }}
           className={`text-2xl font-playfair font-bold transition-colors duration-500 ${
             isScrolled ? "text-[#0B4B50]" : "text-white"
           }`}
         >
-          KOJE<span className={`${isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}`}>24</span>
+          KOJE<span className={isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}>24</span>
         </Link>
 
-        {/* DESKTOP */}
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              onClick={(e) => handleNavClick(e, item.href)}
+              onClick={(e) => {
+                e.preventDefault()
+                handleNavClick(item.href)
+              }}
               className={`font-medium transition-all duration-300 ${
                 isScrolled
                   ? "text-[#0B4B50] hover:text-[#0FA3A8]"
@@ -104,28 +116,27 @@ export default function Header() {
           </a>
         </nav>
 
-        {/* MOBILE BUTTON */}
         <button
-          disabled={!canClick}
+          onClick={openMenu}
           className={`md:hidden text-2xl transition-colors ${
             isScrolled ? "text-[#0B4B50]" : "text-white"
-          } ${!canClick ? "opacity-60" : ""}`}
-          onClick={() => safeAction(() => setMenuOpen(true))}
+          } ${animating ? "opacity-60 pointer-events-none" : ""}`}
+          aria-label="Buka menu"
+          aria-expanded={menuOpen}
         >
           <FaBars />
         </button>
       </div>
 
-      {/* OVERLAY */}
       <div
-        className={`fixed inset-0 z-[999] flex flex-col items-center justify-center text-center bg-white/90 backdrop-blur-2xl transition-all duration-500 ${
+        className={`fixed inset-0 z-[999] flex flex-col items-center justify-center text-center transition-all duration-500 ${
           menuOpen
-            ? "opacity-100 scale-100 pointer-events-auto"
-            : "opacity-0 scale-95 pointer-events-none"
-        }`}
+            ? "opacity-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 -translate-y-10 pointer-events-none"
+        } bg-white/85 backdrop-blur-2xl`}
       >
         <button
-          onClick={() => safeAction(() => setMenuOpen(false))}
+          onClick={closeMenu}
           className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
         >
           <FaTimes />
@@ -135,7 +146,7 @@ export default function Header() {
           {navItems.map((item) => (
             <button
               key={item.href}
-              onClick={(e) => handleNavClick(e, item.href)}
+              onClick={() => handleNavClick(item.href)}
               className="text-2xl font-semibold hover:text-[#0FA3A8] transition-all"
             >
               {item.label}
@@ -145,7 +156,7 @@ export default function Header() {
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
-            onClick={() => setMenuOpen(false)}
+            onClick={closeMenu}
             className="mt-10 flex items-center justify-center gap-2 bg-[#0FA3A8] text-white px-8 py-3 rounded-full shadow-lg hover:bg-[#0B4B50] transition-all"
           >
             <FaWhatsapp /> Chat Sekarang
