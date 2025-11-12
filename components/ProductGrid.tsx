@@ -1,4 +1,5 @@
 "use client"
+
 import Image from "next/image"
 import { useState } from "react"
 import { useCart } from "@/components/CartContext"
@@ -10,8 +11,14 @@ type Product = {
   price: number | string
   img: string
   tag?: string
-  isPackage?: boolean // ✅ tambahan properti opsional
+  isPackage?: boolean
 }
+
+// 👇 helper aman untuk convert "Rp18.000" → 18000
+const toNumber = (p: number | string): number =>
+  typeof p === "number" ? p : Number(String(p).replace(/[^0-9]/g, "")) || 0
+
+const formatIDR = (n: number) => `Rp${n.toLocaleString("id-ID")}`
 
 const products: Product[] = [
   { id: 1, name: "Green Detox", desc: "Bayam • Apel • Lemon • Jahe — segar, rendah kalori.", price: "Rp18.000", img: "/image/juice-green.jpg", tag: "Best Seller" },
@@ -20,8 +27,6 @@ const products: Product[] = [
   { id: 4, name: "Sunrise", desc: "Wortel • Jeruk • Serai — bantu menjaga stamina tubuh.", price: "Rp18.000", img: "/image/juice-orange.jpg" },
   { id: 5, name: "Sunrise+", desc: "Wortel • Jeruk • Serai — rasa lebih bold.", price: "Rp18.000", img: "/image/juice-sunrise.jpg" },
   { id: 6, name: "Beetroot Power", desc: "Bit • Apel • Lemon — bantu sirkulasi darah & imun tubuh.", price: "Rp18.000", img: "/image/juice-beetroot.jpg" },
-
-  // ✅ contoh paket (langsung checkout WA)
   {
     id: 7,
     name: "Paket Detox 3 Hari",
@@ -33,11 +38,6 @@ const products: Product[] = [
   },
 ]
 
-const toNumber = (p: number | string): number =>
-  typeof p === "number" ? p : Number(p.replace(/[^0-9]/g, "")) || 0
-
-const formatIDR = (n: number) => `Rp${n.toLocaleString("id-ID")}`
-
 export default function ProductGrid({ showHeading = true }: { showHeading?: boolean }) {
   const { cart, addItem, removeItem } = useCart()
   const [imgReady, setImgReady] = useState<Record<number, boolean>>({})
@@ -45,50 +45,52 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
 
   const qtyOf = (id: number) => cart.find((c) => c.id === id)?.qty || 0
 
-  const handleAdd = (p: Product) => {
-    // 🧩 kalau paket → buka popup langsung
-    if (p.isPackage) {
-      window.dispatchEvent(
-        new CustomEvent("open-package", {
-          detail: { name: p.name, price: p.price },
-        })
-      )
-      return
-    }
+  // 👉 buka popup paket — dipisah biar gak double-trigger
+  const openPackage = (name: string, price: number | string) => {
+    // pakai CustomEvent bertipe any untuk hindari TS merah di window.dispatchEvent
+    // (browser runtime aman)
+    window.dispatchEvent(
+      new CustomEvent("open-package" as any, {
+        detail: { name, price: toNumber(price) },
+      } as any)
+    )
+  }
 
-    // 🧃 produk biasa → masuk keranjang
-    addItem({ id: p.id, name: p.name, price: toNumber(p.price), qty: 1 })
+  const handleAddProduct = (p: Product) => {
+    // produk biasa → masuk keranjang
+    const priceNum = toNumber(p.price)
+    addItem({ id: p.id, name: p.name, price: priceNum, qty: 1 })
     setAdded(p.id)
 
+    // animasi “terbang ke cart”
     setTimeout(() => {
-      const img = document.querySelector(`[data-id="product-${p.id}"]`) as HTMLElement
-      const cartIcon = document.querySelector(".fixed.bottom-5.right-5 button") as HTMLElement
-
-      if (!img || !cartIcon || !imgReady[p.id]) return
+      const img = document.querySelector(`[data-id="product-${p.id}"]`) as HTMLElement | null
+      const cartBtn = document.querySelector(".fixed.bottom-5.right-5 button") as HTMLElement | null
+      if (!img || !cartBtn || !imgReady[p.id]) return
 
       const clone = img.cloneNode(true) as HTMLElement
       const rectImg = img.getBoundingClientRect()
-      const rectCart = cartIcon.getBoundingClientRect()
+      const rectCart = cartBtn.getBoundingClientRect()
 
       Object.assign(clone.style, {
         position: "fixed",
-        top: rectImg.top + "px",
-        left: rectImg.left + "px",
-        width: rectImg.width + "px",
-        height: rectImg.height + "px",
+        top: `${rectImg.top}px`,
+        left: `${rectImg.left}px`,
+        width: `${rectImg.width}px`,
+        height: `${rectImg.height}px`,
         borderRadius: "12px",
         zIndex: "9999",
         opacity: "1",
         transform: "scale(1)",
         transition: "all 0.9s cubic-bezier(0.45, 0, 0.55, 1)",
         boxShadow: "0 0 30px 10px rgba(15,163,168,0.4)",
-      })
+      } as CSSStyleDeclaration)
 
       document.body.appendChild(clone)
 
       requestAnimationFrame(() => {
-        clone.style.top = rectCart.top + "px"
-        clone.style.left = rectCart.left + "px"
+        clone.style.top = `${rectCart.top}px`
+        clone.style.left = `${rectCart.left}px`
         clone.style.width = "0px"
         clone.style.height = "0px"
         clone.style.opacity = "0"
@@ -133,19 +135,21 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                 {!imgReady[p.id] && (
                   <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#e3f4f4] via-[#f0fafa] to-[#d7f0f0]" />
                 )}
+
                 <Image
                   data-id={`product-${p.id}`}
                   src={p.img}
                   alt={p.name}
                   fill
                   priority
-                  className={`object-cover transition-transform duration-[800ms] ease-out group-hover:scale-105 ${
+                  className={`object-cover object-center transition-transform duration-[800ms] ease-out group-hover:scale-105 ${
                     imgReady[p.id] ? "opacity-100" : "opacity-0"
                   }`}
                   onLoadingComplete={() => setImgReady((m) => ({ ...m, [p.id]: true }))}
                 />
+
                 {p.tag && (
-                  <span className="absolute top-4 left-4 bg-[#E8C46B] text-[#0B4B50] text-[11px] font-semibold px-3 py-1 rounded-full shadow-sm">
+                  <span className="absolute top-4 left-4 bg-[#E8C46B] text-[#0B4B50] text-[11px] font-semibold px-3 py-1 rounded-full shadow-sm z-10">
                     {p.tag}
                   </span>
                 )}
@@ -159,8 +163,9 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                   <span className="font-bold text-[#0B4B50] text-lg">{formatIDR(priceNum)}</span>
 
                   {p.isPackage ? (
+                    // 👉 paket: langsung buka popup, tidak masuk keranjang
                     <button
-                      onClick={() => handleAdd(p)}
+                      onClick={() => openPackage(p.name, p.price)}
                       className="ml-auto bg-[#E8C46B] text-[#0B4B50] text-sm px-6 py-2 rounded-full font-semibold hover:brightness-110 active:scale-95 transition-transform"
                     >
                       Ambil Paket
@@ -175,7 +180,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                       </button>
                       <span className="font-bold w-6 text-center">{qty}</span>
                       <button
-                        onClick={() => handleAdd(p)}
+                        onClick={() => handleAddProduct(p)}
                         className="bg-[#0FA3A8] text-white text-sm px-3 py-2 rounded-full font-semibold hover:bg-[#0DC1C7] active:scale-90 transition-all duration-300"
                       >
                         +
@@ -183,8 +188,8 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                     </div>
                   ) : (
                     <button
-                      onClick={() => handleAdd(p)}
-                      className={`ml-auto text-white text-sm px-6 py-2 rounded-full font-semibold transition-all duration-300 shadow-sm ${
+                      onClick={() => handleAddProduct(p)}
+                      className={`ml-auto text-white text-sm px-6 py-2 rounded-full font-semibold transition-all duration-300 shadow-sm min-w-[120px] text-center ${
                         isAdded
                           ? "bg-emerald-500 scale-105"
                           : "bg-[#0FA3A8] hover:bg-[#0DC1C7] hover:scale-[1.03]"
