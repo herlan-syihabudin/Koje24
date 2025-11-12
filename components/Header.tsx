@@ -118,12 +118,14 @@ export default function Header() {
 
       {/* OVERLAY */}
       <div
-        className={`fixed inset-0 z-[999] flex flex-col items-center justify-center text-center bg-white/90 backdrop-blur-2xl transition-all duration-500 ${
-          menuOpen
-            ? "opacity-100 scale-100 pointer-events-auto"
-            : "opacity-0 scale-95 pointer-events-none"
-        }`}
-      >
+  className={`menu-transition-fix fixed inset-0 z-[999]
+  bg-white/90 backdrop-blur-2xl
+  transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]
+  flex flex-col items-center justify-center text-center
+  transform ${menuOpen ? "opacity-100 scale-100" : "opacity-0 scale-95"}
+  ${menuOpen ? "pointer-events-auto" : "pointer-events-none"}
+  will-change-[opacity,transform]`}
+>
         <button
           onClick={() => safeAction(() => setMenuOpen(false))}
           className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
