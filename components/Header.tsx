@@ -1,11 +1,13 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { FaBars, FaTimes, FaWhatsapp } from "react-icons/fa"
 import Link from "next/link"
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [animating, setAnimating] = useState(false) // guard anti “setengah terbuka”
+  const closeTimer = useRef<number | null>(null)
 
   // efek scroll
   useEffect(() => {
@@ -14,10 +16,29 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // disable scroll saat menu terbuka
+  // lock scroll body saat menu terbuka
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "auto"
+    return () => {
+      document.body.style.overflow = "auto"
+    }
   }, [menuOpen])
+
+  // helper open/close dengan guard animasi (durasi harus match class transition 500ms)
+  const openMenu = () => {
+    if (animating || menuOpen) return
+    setAnimating(true)
+    setMenuOpen(true)
+    window.setTimeout(() => setAnimating(false), 520)
+  }
+  const closeMenu = () => {
+    if (animating || !menuOpen) return
+    setAnimating(true)
+    setMenuOpen(false)
+    // bersihkan timer sebelumnya
+    if (closeTimer.current) window.clearTimeout(closeTimer.current)
+    closeTimer.current = window.setTimeout(() => setAnimating(false), 520)
+  }
 
   const navItems = [
     { label: "Produk", href: "#produk" },
@@ -27,33 +48,23 @@ export default function Header() {
     { label: "FAQ", href: "#faq" },
   ]
 
-  const handleNavClick = (href: string) => {
-  // tutup menu langsung
-  setMenuOpen(false)
-  document.body.style.overflow = "auto"
-
-  // kasih jeda cukup (250ms) supaya animasi close kelar total
-  setTimeout(() => {
+  const smoothScrollTo = (href: string) => {
     const target = document.querySelector(href)
-    if (target) {
-      target.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
+    if (!target) return
+    const offset = 80 // tinggi header
+    const topPos = target.getBoundingClientRect().top + window.scrollY - offset
+    // pastikan jalan setelah overlay benar2 hilang
+    window.setTimeout(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: topPos, behavior: "smooth" })
       })
-    } else {
-      // kalau target belum ada, ulangi sekali setelah 200ms
-      setTimeout(() => {
-        const retry = document.querySelector(href)
-        if (retry) {
-          retry.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          })
-        }
-      }, 200)
-    }
-  }, 250)
-}
+    }, 360) // sedikit < 520ms agar mulai tepat setelah fade
+  }
+
+  const handleNavClick = (href: string) => {
+    closeMenu()               // tutup overlay dulu
+    smoothScrollTo(href)      // baru scroll ke target
+  }
 
   return (
     <header
@@ -69,17 +80,16 @@ export default function Header() {
         {/* LOGO */}
         <Link
           href="/"
-          onClick={() => {
-            setMenuOpen(false)
-            document.body.style.overflow = "auto"
+          onClick={(e) => {
+            e.preventDefault()
+            closeMenu()
             window.scrollTo({ top: 0, behavior: "smooth" })
           }}
           className={`text-2xl font-playfair font-bold transition-colors duration-500 ${
             isScrolled ? "text-[#0B4B50]" : "text-white"
           }`}
         >
-          KOJE
-          <span className={`${isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}`}>24</span>
+          KOJE<span className={`${isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}`}>24</span>
         </Link>
 
         {/* DESKTOP NAV */}
@@ -88,7 +98,10 @@ export default function Header() {
             <a
               key={item.href}
               href={item.href}
-              onClick={() => handleNavClick(item.href)}
+              onClick={(e) => {
+                e.preventDefault()          // ⛔️ hentikan scroll default anchor
+                handleNavClick(item.href)   // ✅ pakai scroll manual + offset
+              }}
               className={`font-medium transition-all duration-300 ${
                 isScrolled
                   ? "text-[#0B4B50] hover:text-[#0FA3A8]"
@@ -98,7 +111,6 @@ export default function Header() {
               {item.label}
             </a>
           ))}
-
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
@@ -116,8 +128,11 @@ export default function Header() {
         <button
           className={`md:hidden text-2xl transition-colors ${
             isScrolled ? "text-[#0B4B50]" : "text-white"
-          }`}
-          onClick={() => setMenuOpen(true)}
+          } ${animating ? "pointer-events-none opacity-80" : ""}`}
+          onClick={openMenu}
+          aria-label="Buka menu"
+          aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
         >
           <FaBars />
         </button>
@@ -125,20 +140,19 @@ export default function Header() {
 
       {/* MOBILE FULLSCREEN MENU */}
       <div
+        id="mobile-menu"
+        aria-hidden={!menuOpen}
         className={`fixed inset-0 z-[999] bg-white/80 backdrop-blur-2xl flex flex-col items-center justify-center text-center transition-all duration-500 ${
           menuOpen
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 -translate-y-10 pointer-events-none"
+            ? "opacity-100 translate-y-0 pointer-events-auto visible"
+            : "opacity-0 -translate-y-10 pointer-events-none invisible"
         }`}
       >
         {/* Tombol Close */}
         <button
-          onClick={() => {
-            setMenuOpen(false)
-            document.body.style.overflow = "auto"
-            window.scrollTo({ top: 0, behavior: "smooth" })
-          }}
+          onClick={closeMenu}
           className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
+          aria-label="Tutup menu"
         >
           <FaTimes />
         </button>
@@ -157,14 +171,13 @@ export default function Header() {
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
-            onClick={() => setMenuOpen(false)}
+            onClick={closeMenu}
             className="mt-10 flex items-center justify-center gap-2 bg-[#0FA3A8] text-white px-8 py-3 rounded-full shadow-lg hover:bg-[#0B4B50] transition-all"
           >
             <FaWhatsapp /> Chat Sekarang
           </a>
         </div>
 
-        {/* Branding di bawah */}
         <div className="absolute bottom-6 text-sm text-gray-500">
           © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span> • Explore the Taste, Explore the World
         </div>
