@@ -26,7 +26,7 @@ export default function Header() {
 
     // helper open/close dengan guard animasi (durasi harus match class transition 500ms)
     const openMenu = () => {
-        // === PERBAIKAN BUG DI SINI: HANYA CEK menuOpen ===
+        // PERBAIKAN: Hanya cek menuOpen, agar tombol tidak diblokir saat animasi penutup
         if (menuOpen) return 
         
         setAnimating(true)
@@ -35,13 +35,12 @@ export default function Header() {
     }
     
     const closeMenu = () => {
-        if (!menuOpen) return // Cukup cek apakah sudah tertutup
+        if (!menuOpen) return 
         
         setAnimating(true)
         setMenuOpen(false)
-        // bersihkan timer sebelumnya
         if (closeTimer.current) window.clearTimeout(closeTimer.current)
-        closeTimer.current = window.setTimeout(() => setAnimating(false), 520)
+        closeTimer.current = window.setTimeout(() => setAnimating(false), 520) 
     }
 
     const navItems = [
@@ -55,9 +54,8 @@ export default function Header() {
     const smoothScrollTo = (href: string) => {
         const target = document.querySelector(href)
         if (!target) return
-        const offset = 80 // tinggi header
+        const offset = 80 
         const topPos = target.getBoundingClientRect().top + window.scrollY - offset
-        // Mulai scroll setelah fade out (360ms sedikit lebih cepat dari transisi 500ms)
         window.setTimeout(() => {
             requestAnimationFrame(() => {
                 window.scrollTo({ top: topPos, behavior: "smooth" })
@@ -65,11 +63,16 @@ export default function Header() {
         }, 360) 
     }
 
+    // FUNGSI UTAMA PERBAIKAN BUG MOBILE MENU
     const handleNavClick = (href: string) => {
-        // ✅ Tutup overlay (setMenuOpen=false) - Ini penting untuk fix bug
-        closeMenu() 
+        // 1. Tutup menu
+        setMenuOpen(false) 
         
-        // Baru scroll ke target
+        // 2. Hapus state animating segera (KUNCI FIX BUG!)
+        setAnimating(false) 
+        if (closeTimer.current) window.clearTimeout(closeTimer.current)
+
+        // 3. Scroll ke target
         smoothScrollTo(href) 
     }
 
@@ -89,7 +92,9 @@ export default function Header() {
                     href="/"
                     onClick={(e) => {
                         e.preventDefault()
-                        closeMenu()
+                        // FIX ANIMATING untuk tombol logo saat menu terbuka
+                        setMenuOpen(false) 
+                        setAnimating(false) 
                         window.scrollTo({ top: 0, behavior: "smooth" })
                     }}
                     className={`text-2xl font-playfair font-bold transition-colors duration-500 ${
@@ -166,7 +171,6 @@ export default function Header() {
 
                 <div className="flex flex-col gap-6 text-[#0B4B50]">
                     {navItems.map((item) => (
-                        // Menggunakan Button agar pasti memanggil handleNavClick
                         <button
                             key={item.href}
                             onClick={() => handleNavClick(item.href)}
@@ -179,7 +183,8 @@ export default function Header() {
                     <a
                         href="https://wa.me/6282213139580"
                         target="_blank"
-                        onClick={closeMenu} // Memastikan menu tertutup saat klik WA
+                        // Memastikan menu tertutup dan stateAnimating di-reset saat klik WA
+                        onClick={() => handleNavClick("https://wa.me/6282213139580")} 
                         className="mt-10 flex items-center justify-center gap-2 bg-[#0FA3A8] text-white px-8 py-3 rounded-full shadow-lg hover:bg-[#0B4B50] transition-all"
                     >
                         <FaWhatsapp /> Chat Sekarang
@@ -192,4 +197,4 @@ export default function Header() {
             </div>
         </header>
     )
-}
+} // <--- PASTIKAN KURUNG KURAWAL PENUTUP INI ADA!
