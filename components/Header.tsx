@@ -27,15 +27,21 @@ export default function Header() {
     { label: "FAQ", href: "#faq" },
   ]
 
+  // ✅ versi fix untuk mencegah bug "menu setengah kebuka"
   const handleNavClick = (href: string) => {
-    const target = document.querySelector(href)
-    if (target) {
-      window.scrollTo({
-        top: target.getBoundingClientRect().top + window.scrollY - 80,
-        behavior: "smooth",
-      })
-    }
     setMenuOpen(false)
+    document.body.style.overflow = "auto"
+
+    // kasih delay biar animasi close selesai dulu
+    setTimeout(() => {
+      const target = document.querySelector(href)
+      if (target) {
+        window.scrollTo({
+          top: target.getBoundingClientRect().top + window.scrollY - 80,
+          behavior: "smooth",
+        })
+      }
+    }, 180) // delay optimal 150–180ms
   }
 
   return (
@@ -54,13 +60,15 @@ export default function Header() {
           href="/"
           onClick={() => {
             setMenuOpen(false)
+            document.body.style.overflow = "auto"
             window.scrollTo({ top: 0, behavior: "smooth" })
           }}
           className={`text-2xl font-playfair font-bold transition-colors duration-500 ${
             isScrolled ? "text-[#0B4B50]" : "text-white"
           }`}
         >
-          KOJE<span className={`${isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}`}>24</span>
+          KOJE
+          <span className={`${isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}`}>24</span>
         </Link>
 
         {/* DESKTOP NAV */}
@@ -116,6 +124,7 @@ export default function Header() {
         <button
           onClick={() => {
             setMenuOpen(false)
+            document.body.style.overflow = "auto"
             window.scrollTo({ top: 0, behavior: "smooth" })
           }}
           className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
