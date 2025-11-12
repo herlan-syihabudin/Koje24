@@ -1,36 +1,20 @@
 "use client"
-import { useState } from "react"
-import PackagePopup from "./PackagePopup"
+
+type Plan = { id: string; title: string; desc: string; price: number }
+
+const plans: Plan[] = [
+  { id: "7hari",  title: "7 Hari Detox Plan",    desc: "Paket pemula untuk detoks ringan — segar dan ringan setiap hari.", price: 120000 },
+  { id: "14hari", title: "14 Hari Vitality Plan", desc: "Cocok untuk menjaga energi & metabolisme tetap seimbang sepanjang minggu.", price: 230000 },
+  { id: "30hari", title: "30 Hari Premium Plan",  desc: "Program detoks maksimal selama satu bulan penuh untuk hasil optimal dan berkelanjutan.", price: 450000 },
+  { id: "reguler", title: "Reguler Plan", desc: "Pilih varian favoritmu — fleksibel, praktis, dan tetap sehat setiap hari.", price: 18000 },
+]
 
 export default function SubscriptionSection() {
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
-
-  const plans = [
-    {
-      id: "7hari",
-      title: "7 Hari Detox Plan",
-      desc: "Paket pemula untuk detoks ringan — segar dan ringan setiap hari.",
-      price: "Rp120.000",
-    },
-    {
-      id: "14hari",
-      title: "14 Hari Vitality Plan",
-      desc: "Cocok untuk menjaga energi & metabolisme tetap seimbang sepanjang minggu.",
-      price: "Rp230.000",
-    },
-    {
-      id: "30hari",
-      title: "30 Hari Premium Plan",
-      desc: "Program detoks maksimal selama satu bulan penuh untuk hasil optimal dan berkelanjutan.",
-      price: "Rp450.000",
-    },
-    {
-      id: "reguler",
-      title: "Reguler Plan",
-      desc: "Pilih varian favoritmu — fleksibel, praktis, dan tetap sehat setiap hari.",
-      price: "Harga per botol Rp18.000",
-    },
-  ]
+  const openPackage = (name: string, price: number) => {
+    window.dispatchEvent(
+      new CustomEvent("open-package" as any, { detail: { name, price } } as any)
+    )
+  }
 
   return (
     <section
@@ -58,7 +42,6 @@ export default function SubscriptionSection() {
             key={p.id}
             className="group bg-white rounded-3xl border border-[#e6eeee]/60 shadow-[0_5px_25px_rgba(0,0,0,0.05)] hover:-translate-y-3 hover:shadow-[0_10px_35px_rgba(15,163,168,0.25)] transition-all duration-500 flex flex-col p-6 text-center relative overflow-hidden"
           >
-            {/* Accent dekorasi lembut */}
             <div className="absolute inset-x-0 top-0 h-[5px] bg-gradient-to-r from-[#0FA3A8] to-[#E8C46B] opacity-70 group-hover:opacity-100 transition-opacity duration-500" />
 
             <h3 className="font-playfair text-xl font-semibold mb-3 text-[#0B4B50]">
@@ -69,11 +52,11 @@ export default function SubscriptionSection() {
             </p>
 
             <div className="text-lg font-bold text-[#0FA3A8] mb-6 tracking-tight">
-              {p.price}
+              {p.id === "reguler" ? "Harga per botol Rp18.000" : `Rp${p.price.toLocaleString("id-ID")}`}
             </div>
 
             <button
-              onClick={() => setSelectedPlan(p.id)}
+              onClick={() => openPackage(p.title, p.price)}
               className="bg-[#0FA3A8] hover:bg-[#0DC1C7] text-white font-semibold rounded-full py-2.5 px-7 shadow-[0_4px_15px_rgba(15,163,168,0.3)] hover:shadow-[0_6px_25px_rgba(15,163,168,0.4)] transition-all duration-300 active:scale-95"
             >
               Ambil Paket
@@ -81,11 +64,6 @@ export default function SubscriptionSection() {
           </div>
         ))}
       </div>
-
-      {/* Popup Pilihan Produk */}
-      {selectedPlan && (
-  <PackagePopup planId={selectedPlan} onClose={() => setSelectedPlan(null)} />
-)}
     </section>
   )
 }
