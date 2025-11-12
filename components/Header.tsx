@@ -8,7 +8,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [canClick, setCanClick] = useState(true)
 
-  // Scroll effect (ubah warna header saat di-scroll)
+  // Efek scroll untuk ubah warna header
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 60)
     window.addEventListener("scroll", handleScroll)
@@ -32,11 +32,13 @@ export default function Header() {
     { label: "FAQ", href: "#faq" },
   ]
 
-  // kecilkan peluang double trigger
+  // Hindari double click
   const safeAction = (fn: () => void) => {
     if (!canClick) return
     setCanClick(false)
-    try { fn() } finally {
+    try {
+      fn()
+    } finally {
       setTimeout(() => setCanClick(true), 350)
     }
   }
@@ -45,7 +47,6 @@ export default function Header() {
     e.preventDefault()
     safeAction(() => {
       setMenuOpen(false)
-      // beri waktu animasi close selesai sebelum scroll
       setTimeout(() => {
         const target = document.querySelector(href)
         if (target) {
@@ -93,13 +94,14 @@ export default function Header() {
               href={item.href}
               onClick={(e) => handleNavClick(e, item.href)}
               className={`font-medium transition-all duration-300 ${
-                isScrolled ? "text-[#0B4B50] hover:text-[#0FA3A8]" : "text-white hover:text-[#E8C46B]"
+                isScrolled
+                  ? "text-[#0B4B50] hover:text-[#0FA3A8]"
+                  : "text-white hover:text-[#E8C46B]"
               }`}
             >
               {item.label}
             </a>
           ))}
-
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
@@ -141,12 +143,14 @@ export default function Header() {
           WebkitBackdropFilter: "blur(18px)",
         }}
       >
-        {/* CLOSE */}
+        {/* Tombol Close */}
         <button
-          onClick={() => safeAction(() => {
-            setMenuOpen(false)
-            window.scrollTo({ top: 0, behavior: "smooth" })
-          })}
+          onClick={() =>
+            safeAction(() => {
+              setMenuOpen(false)
+              window.scrollTo({ top: 0, behavior: "smooth" })
+            })
+          }
           className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
           aria-label="Tutup menu"
         >
@@ -177,7 +181,8 @@ export default function Header() {
 
         {/* BRANDING */}
         <div className="absolute bottom-6 text-sm text-gray-500">
-          © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span> • Explore the Taste, Explore the World
+          © 2025{" "}
+          <span className="text-[#0FA3A8] font-semibold">KOJE24</span> • Explore the Taste, Explore the World
         </div>
       </div>
     </header>
