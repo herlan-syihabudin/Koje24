@@ -84,8 +84,8 @@ export default function SubscriptionSection() {
 
       {/* Popup Pilihan Produk */}
       {selectedPlan && (
-        <PaketPopup planId={selectedPlan} onClose={() => setSelectedPlan(null)} />
-      )}
+  <PackagePopup planId={selectedPlan} onClose={() => setSelectedPlan(null)} />
+)}
     </section>
   )
 }
