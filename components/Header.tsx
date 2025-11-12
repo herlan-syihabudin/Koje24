@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useEffect } from "react"
 import { FaBars, FaTimes, FaWhatsapp } from "react-icons/fa"
 import Link from "next/link"
@@ -7,15 +6,14 @@ import Link from "next/link"
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [canClick, setCanClick] = useState(true)
 
-  // efek scroll
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 60)
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // disable scroll saat menu terbuka
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "auto"
   }, [menuOpen])
@@ -28,15 +26,26 @@ export default function Header() {
     { label: "FAQ", href: "#faq" },
   ]
 
-  const handleNavClick = (href: string) => {
-    const target = document.querySelector(href)
-    if (target) {
-      window.scrollTo({
-        top: target.getBoundingClientRect().top + window.scrollY - 80,
-        behavior: "smooth",
-      })
-    }
-    setMenuOpen(false)
+  const safeAction = (callback: () => void) => {
+    if (!canClick) return
+    setCanClick(false)
+    callback()
+    setTimeout(() => setCanClick(true), 400) // gak ngunci lama
+  }
+
+  const handleNavClick = (e: React.MouseEvent, href: string) => {
+    e.preventDefault()
+    safeAction(() => {
+      setMenuOpen(false)
+      setTimeout(() => {
+        const target = document.querySelector(href)
+        if (target) {
+          const offset = 80
+          const y = target.getBoundingClientRect().top + window.scrollY - offset
+          window.scrollTo({ top: y, behavior: "smooth" })
+        }
+      }, 350)
+    })
   }
 
   return (
@@ -50,32 +59,29 @@ export default function Header() {
       )}
 
       <div className="max-w-7xl mx-auto flex justify-between items-center py-4 px-5 md:px-10">
-        {/* LOGO */}
         <Link
           href="/"
-          onClick={() => {
-            setMenuOpen(false)
-            window.scrollTo({ top: 0, behavior: "smooth" })
+          onClick={(e) => {
+            e.preventDefault()
+            safeAction(() => {
+              setMenuOpen(false)
+              window.scrollTo({ top: 0, behavior: "smooth" })
+            })
           }}
           className={`text-2xl font-playfair font-bold transition-colors duration-500 ${
             isScrolled ? "text-[#0B4B50]" : "text-white"
           }`}
         >
-          KOJE
-          <span
-            className={isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}
-          >
-            24
-          </span>
+          KOJE<span className={`${isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}`}>24</span>
         </Link>
 
-        {/* DESKTOP NAV */}
+        {/* DESKTOP */}
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              onClick={() => handleNavClick(item.href)}
+              onClick={(e) => handleNavClick(e, item.href)}
               className={`font-medium transition-all duration-300 ${
                 isScrolled
                   ? "text-[#0B4B50] hover:text-[#0FA3A8]"
@@ -85,7 +91,6 @@ export default function Header() {
               {item.label}
             </a>
           ))}
-
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
@@ -99,28 +104,28 @@ export default function Header() {
           </a>
         </nav>
 
-        {/* MOBILE MENU BUTTON */}
+        {/* MOBILE BUTTON */}
         <button
+          disabled={!canClick}
           className={`md:hidden text-2xl transition-colors ${
             isScrolled ? "text-[#0B4B50]" : "text-white"
-          }`}
-          onClick={() => setMenuOpen(true)}
+          } ${!canClick ? "opacity-60" : ""}`}
+          onClick={() => safeAction(() => setMenuOpen(true))}
         >
           <FaBars />
         </button>
       </div>
 
-      {/* MOBILE FULLSCREEN MENU */}
+      {/* OVERLAY */}
       <div
-        className={`fixed inset-0 z-[999] bg-white/80 backdrop-blur-2xl flex flex-col items-center justify-center text-center transition-all duration-500 ${
+        className={`fixed inset-0 z-[999] flex flex-col items-center justify-center text-center bg-white/90 backdrop-blur-2xl transition-all duration-500 ${
           menuOpen
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 -translate-y-10 pointer-events-none"
+            ? "opacity-100 scale-100 pointer-events-auto"
+            : "opacity-0 scale-95 pointer-events-none"
         }`}
       >
-        {/* Tombol Close */}
         <button
-          onClick={() => setMenuOpen(false)}
+          onClick={() => safeAction(() => setMenuOpen(false))}
           className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
         >
           <FaTimes />
@@ -130,7 +135,7 @@ export default function Header() {
           {navItems.map((item) => (
             <button
               key={item.href}
-              onClick={() => handleNavClick(item.href)}
+              onClick={(e) => handleNavClick(e, item.href)}
               className="text-2xl font-semibold hover:text-[#0FA3A8] transition-all"
             >
               {item.label}
@@ -147,11 +152,8 @@ export default function Header() {
           </a>
         </div>
 
-        {/* Branding di bawah */}
         <div className="absolute bottom-6 text-sm text-gray-500">
-          © 2025{" "}
-          <span className="text-[#0FA3A8] font-semibold">KOJE24</span> • Explore
-          the Taste, Explore the World
+          © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span> • Explore the Taste, Explore the World
         </div>
       </div>
     </header>
