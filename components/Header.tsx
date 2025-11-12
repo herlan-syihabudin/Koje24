@@ -1,4 +1,5 @@
 "use client"
+
 import { useState, useEffect } from "react"
 import { FaBars, FaTimes, FaWhatsapp } from "react-icons/fa"
 import Link from "next/link"
@@ -60,7 +61,12 @@ export default function Header() {
             isScrolled ? "text-[#0B4B50]" : "text-white"
           }`}
         >
-          KOJE<span className={`${isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}`}>24</span>
+          KOJE
+          <span
+            className={isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}
+          >
+            24
+          </span>
         </Link>
 
         {/* DESKTOP NAV */}
@@ -114,10 +120,7 @@ export default function Header() {
       >
         {/* Tombol Close */}
         <button
-          onClick={() => {
-            setMenuOpen(false)
-            window.scrollTo({ top: 0, behavior: "smooth" })
-          }}
+          onClick={() => setMenuOpen(false)}
           className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
         >
           <FaTimes />
@@ -146,7 +149,9 @@ export default function Header() {
 
         {/* Branding di bawah */}
         <div className="absolute bottom-6 text-sm text-gray-500">
-          © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span> • Explore the Taste, Explore the World
+          © 2025{" "}
+          <span className="text-[#0FA3A8] font-semibold">KOJE24</span> • Explore
+          the Taste, Explore the World
         </div>
       </div>
     </header>
