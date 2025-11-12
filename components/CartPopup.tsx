@@ -6,7 +6,6 @@ type FormState = { nama: string; alamat: string; catatan: string }
 type ChangeEvt = React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 
 export default function CartPopup() {
-  // buang clearCart kalau tidak dipakai (hindari 'no-unused-vars')
   const { cart, addItem, removeItem } = useCart()
 
   const totalPrice = useMemo(
@@ -17,7 +16,6 @@ export default function CartPopup() {
   const [form, setForm] = useState<FormState>({ nama: "", alamat: "", catatan: "" })
   const [open, setOpen] = useState(false)
 
-  // buka popup saat StickyCartBar mem-publish event "open-cart"
   useEffect(() => {
     const handler = () => setOpen(true)
     window.addEventListener("open-cart", handler as EventListener)
@@ -44,25 +42,27 @@ export default function CartPopup() {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* 🔹 Backdrop */}
       <div
         aria-hidden="true"
         role="presentation"
-        className={`fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity duration-200
-          ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity duration-200 ${
+          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
         onClick={close}
       />
 
-      {/* Container grid untuk centering */}
+      {/* 🔹 Container popup */}
       <div
         role="presentation"
-        className={`fixed inset-0 z-[61] grid place-items-center px-4 transition-all duration-200
-          ${open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
+        className={`fixed inset-0 z-[61] grid place-items-center px-4 transition-all duration-200 ${
+          open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
+        }`}
         onClick={close}
         onKeyDown={(e) => e.key === "Escape" && close()}
         tabIndex={-1}
       >
-        {/* Dialog */}
+        {/* 🔹 Konten dialog */}
         <div
           role="dialog"
           aria-modal="true"
@@ -70,11 +70,12 @@ export default function CartPopup() {
           className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 relative"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Tombol Tutup */}
           <button
+            type="button"
             onClick={close}
             className="absolute top-3 right-4 text-gray-500 hover:text-[#0FA3A8] font-bold text-lg"
             aria-label="Tutup"
-            type="button"
           >
             ✕
           </button>
@@ -83,6 +84,7 @@ export default function CartPopup() {
             Keranjang Kamu
           </h3>
 
+          {/* 🔹 Daftar item */}
           <div className="space-y-2 max-h-64 overflow-y-auto border-y py-2 mb-4">
             {cart.length ? (
               cart.map((item: any) => (
@@ -97,8 +99,6 @@ export default function CartPopup() {
                       type="button"
                       onClick={() => {
                         if (item.qty > 1) {
-                          // decrement 1 (mengandalkan logic merge di addItem)
-                          // @ts-expect-error: addItem menerima delta qty pada implementasi kita
                           addItem({ ...item, qty: -1 })
                         } else {
                           removeItem(item.id)
@@ -116,7 +116,6 @@ export default function CartPopup() {
 
                     <button
                       type="button"
-                      // @ts-expect-error: addItem menerima delta qty pada implementasi kita
                       onClick={() => addItem({ ...item, qty: 1 })}
                       className="bg-[#0FA3A8] text-white px-3 py-1.5 rounded-full font-semibold hover:bg-[#0DC1C7] active:scale-95"
                       aria-label={`Tambah ${item.name}`}
@@ -144,10 +143,12 @@ export default function CartPopup() {
             )}
           </div>
 
+          {/* 🔹 Total harga */}
           <div className="text-right text-[#0B4B50] mb-4 font-semibold">
             Total: Rp{Number(totalPrice).toLocaleString("id-ID")}
           </div>
 
+          {/* 🔹 Form info pengiriman */}
           <div className="space-y-3 mb-5">
             <input
               type="text"
@@ -171,6 +172,7 @@ export default function CartPopup() {
             />
           </div>
 
+          {/* 🔹 Tombol Checkout */}
           <button
             type="button"
             onClick={handleCheckout}
