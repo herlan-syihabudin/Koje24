@@ -6,7 +6,7 @@ import Link from "next/link"
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [isAnimating, setIsAnimating] = useState(false)
+  const [animating, setAnimating] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 60)
@@ -28,21 +28,35 @@ export default function Header() {
 
   const handleNavClick = (e: React.MouseEvent, href: string) => {
     e.preventDefault()
-    if (isAnimating) return // mencegah double click saat animasi
+    if (animating) return
 
-    setIsAnimating(true)
+    setAnimating(true)
     setMenuOpen(false)
     document.body.style.overflow = "auto"
 
-    // scroll setelah animasi tutup selesai
     setTimeout(() => {
       const target = document.querySelector(href)
       if (target) {
-        const y = target.getBoundingClientRect().top + window.scrollY - 80
+        const offset = 80
+        const y = target.getBoundingClientRect().top + window.scrollY - offset
         window.scrollTo({ top: y, behavior: "smooth" })
       }
-      setIsAnimating(false)
-    }, 550) // sesuai durasi transition
+      setAnimating(false)
+    }, 600)
+  }
+
+  const openMenu = () => {
+    if (animating || menuOpen) return
+    setAnimating(true)
+    setMenuOpen(true)
+    setTimeout(() => setAnimating(false), 600)
+  }
+
+  const closeMenu = () => {
+    if (animating || !menuOpen) return
+    setAnimating(true)
+    setMenuOpen(false)
+    setTimeout(() => setAnimating(false), 600)
   }
 
   return (
@@ -60,7 +74,7 @@ export default function Header() {
           href="/"
           onClick={(e) => {
             e.preventDefault()
-            if (isAnimating) return
+            if (animating) return
             setMenuOpen(false)
             window.scrollTo({ top: 0, behavior: "smooth" })
           }}
@@ -87,7 +101,6 @@ export default function Header() {
               {item.label}
             </a>
           ))}
-
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
@@ -101,37 +114,28 @@ export default function Header() {
           </a>
         </nav>
 
-        {/* MOBILE MENU ICON */}
+        {/* MOBILE BUTTON */}
         <button
           className={`md:hidden text-2xl transition-colors ${
             isScrolled ? "text-[#0B4B50]" : "text-white"
-          } ${isAnimating ? "opacity-60 pointer-events-none" : ""}`}
-          onClick={() => {
-            if (isAnimating) return
-            setIsAnimating(true)
-            setMenuOpen(true)
-            setTimeout(() => setIsAnimating(false), 550)
-          }}
+          } ${animating ? "opacity-60 pointer-events-none" : ""}`}
+          onClick={openMenu}
         >
           <FaBars />
         </button>
       </div>
 
-      {/* MOBILE OVERLAY */}
+      {/* OVERLAY MENU */}
       <div
-        className={`fixed inset-0 z-[999] bg-white/80 backdrop-blur-2xl flex flex-col items-center justify-center text-center transition-all duration-500 ${
+        className={`fixed inset-0 z-[999] flex flex-col items-center justify-center text-center bg-white/90 backdrop-blur-2xl transition-all duration-500 ${
           menuOpen
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 -translate-y-10 pointer-events-none"
+            ? "opacity-100 scale-100 pointer-events-auto"
+            : "opacity-0 scale-95 pointer-events-none"
         }`}
       >
+        {/* Close Button */}
         <button
-          onClick={() => {
-            if (isAnimating) return
-            setIsAnimating(true)
-            setMenuOpen(false)
-            setTimeout(() => setIsAnimating(false), 550)
-          }}
+          onClick={closeMenu}
           className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
         >
           <FaTimes />
@@ -147,11 +151,10 @@ export default function Header() {
               {item.label}
             </button>
           ))}
-
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
-            onClick={() => setMenuOpen(false)}
+            onClick={closeMenu}
             className="mt-10 flex items-center justify-center gap-2 bg-[#0FA3A8] text-white px-8 py-3 rounded-full shadow-lg hover:bg-[#0B4B50] transition-all"
           >
             <FaWhatsapp /> Chat Sekarang
