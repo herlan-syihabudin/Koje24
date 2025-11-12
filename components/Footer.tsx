@@ -1,17 +1,18 @@
 "use client"
+
 import Image from "next/image"
 import { FaInstagram, FaWhatsapp, FaTiktok } from "react-icons/fa"
 
 export default function Footer() {
   return (
     <footer className="relative bg-[#0B4B50] text-white pt-16 pb-8 px-6 md:px-14 lg:px-24 overflow-hidden">
-      {/* 🌊 Aksen Wave Line */}
+      {/* 🌊 Wave Accent Line */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#0FA3A8] via-[#E8C46B] to-[#0FA3A8]" />
 
       {/* 💎 Background Accent */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.05),transparent_70%)] pointer-events-none" />
 
-      {/* 🟢 Top CTA */}
+      {/* 🟢 CTA Header */}
       <div className="text-center mb-12 relative z-10">
         <h3 className="font-playfair text-3xl md:text-4xl font-semibold mb-3 tracking-tight">
           Stay Healthy With <span className="text-[#E8C46B]">KOJE24</span>
@@ -23,7 +24,7 @@ export default function Footer() {
 
       {/* 🧩 Main Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 md:gap-8 mb-12 text-gray-300 relative z-10">
-        {/* 🔹 Brand */}
+        {/* 🔹 Brand Info */}
         <div>
           <div className="flex items-center gap-3 mb-4">
             <Image
@@ -33,34 +34,58 @@ export default function Footer() {
               height={44}
               className="rounded-full ring-2 ring-[#E8C46B]/40"
             />
-            <h4 className="font-playfair text-xl font-bold text-white tracking-wide">KOJE24</h4>
+            <h4 className="font-playfair text-xl font-bold text-white tracking-wide">
+              KOJE24
+            </h4>
           </div>
           <p className="text-sm leading-relaxed mb-3">
             Jus cold-pressed alami tanpa gula tambahan dan tanpa pengawet.
             Didesain untuk kamu yang ingin hidup sehat, aktif, dan seimbang setiap hari.
           </p>
-          <p className="text-sm italic text-[#E8C46B]">“Explore the Taste, Explore the World.”</p>
+          <p className="text-sm italic text-[#E8C46B]">
+            “Explore the Taste, Explore the World.”
+          </p>
         </div>
 
         {/* 🔹 Quick Links */}
         <div>
           <h5 className="font-semibold text-white mb-3">Menu</h5>
           <ul className="space-y-2 text-sm">
-            <li><a href="#produk" className="hover:text-[#E8C46B] transition-colors duration-300">Produk</a></li>
-            <li><a href="#about" className="hover:text-[#E8C46B] transition-colors duration-300">Tentang KOJE24</a></li>
-            <li><a href="#langganan" className="hover:text-[#E8C46B] transition-colors duration-300">Langganan Paket</a></li>
-            <li><a href="#testimoni" className="hover:text-[#E8C46B] transition-colors duration-300">Testimoni</a></li>
-            <li><a href="#faq" className="hover:text-[#E8C46B] transition-colors duration-300">FAQ</a></li>
+            <li>
+              <a href="#produk" className="hover:text-[#E8C46B] transition-colors duration-300">
+                Produk
+              </a>
+            </li>
+            <li>
+              <a href="#about" className="hover:text-[#E8C46B] transition-colors duration-300">
+                Tentang KOJE24
+              </a>
+            </li>
+            <li>
+              <a href="#langganan" className="hover:text-[#E8C46B] transition-colors duration-300">
+                Langganan Paket
+              </a>
+            </li>
+            <li>
+              <a href="#testimoni" className="hover:text-[#E8C46B] transition-colors duration-300">
+                Testimoni
+              </a>
+            </li>
+            <li>
+              <a href="#faq" className="hover:text-[#E8C46B] transition-colors duration-300">
+                FAQ
+              </a>
+            </li>
           </ul>
         </div>
 
-        {/* 🔹 Contact & Social */}
+        {/* 🔹 Contact & Socials */}
         <div>
           <h5 className="font-semibold text-white mb-3">Hubungi Kami</h5>
           <ul className="text-sm space-y-2">
             <li>
               <a
-                href="https://wa.me/6281234567890"
+                href="https://wa.me/6282213139580"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 hover:text-[#E8C46B] transition-all duration-300"
@@ -89,7 +114,7 @@ export default function Footer() {
               </a>
             </li>
             <li>
-              <span>Email:</span>{" "}
+              <span className="block">Email:</span>
               <a
                 href="mailto:info@koje24.id"
                 className="hover:text-[#E8C46B] transition-colors duration-300"
@@ -101,13 +126,17 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* 🔸 Divider Line */}
+      {/* 🔸 Divider */}
       <div className="border-t border-white/10 pt-5 text-center text-gray-400 text-xs md:text-sm tracking-wide relative z-10">
-        © 2025 <span className="text-[#E8C46B] font-semibold">KOJE24</span> • All Rights Reserved  
-        <br className="md:hidden" /> — <span className="text-[#0FA3A8]">Natural Cold-Pressed Juice Indonesia</span>
+        © 2025{" "}
+        <span className="text-[#E8C46B] font-semibold">KOJE24</span> • All Rights Reserved{" "}
+        <br className="md:hidden" /> —{" "}
+        <span className="text-[#0FA3A8]">
+          Natural Cold-Pressed Juice Indonesia
+        </span>
       </div>
 
-      {/* 🌿 Floating accent blur */}
+      {/* 🌿 Blur Accent */}
       <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-[#0FA3A8]/10 blur-[100px] rounded-full" />
     </footer>
   )
