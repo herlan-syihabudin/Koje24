@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import PaketPopup from "./PaketPopup"
+import PackagePopup from "./PackagePopup"
 
 export default function SubscriptionSection() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
