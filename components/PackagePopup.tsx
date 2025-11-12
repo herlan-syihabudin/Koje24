@@ -10,10 +10,15 @@ const VARIANTS = [
   "Carrot Boost",
   "Red Series",
   "Sunrise",
-  "Beetroot"
+  "Beetroot",
 ]
 
-export default function PackagePopup() {
+interface PackagePopupProps {
+  planId?: string
+  onClose?: () => void
+}
+
+export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
   const [open, setOpen] = useState(false)
   const [pkg, setPkg] = useState<PackageData | null>(null)
   const [form, setForm] = useState<Form>({
@@ -31,22 +36,30 @@ export default function PackagePopup() {
       setOpen(true)
     }
     window.addEventListener("open-package", onOpen as EventListener)
-    return () => window.removeEventListener("open-package", onOpen as EventListener)
+    return () =>
+      window.removeEventListener("open-package", onOpen as EventListener)
   }, [])
 
-  const close = () => setOpen(false)
+  const close = () => {
+    setOpen(false)
+    if (onClose) onClose()
+  }
+
   const onChange =
     (key: keyof Form) =>
     (e: any) =>
       setForm((f) => ({ ...f, [key]: e.target.value }))
 
   const handleCheckout = () => {
-    if (!pkg || !form.varian) return alert("Pilih varian dulu, bro!")
+    if (!pkg || !form.varian)
+      return alert("Pilih varian dulu, bro!")
+
     const pesan = encodeURIComponent(
       `🧃 *Paket KOJE24*\n\n📦 ${pkg.name}\n💰 *Total:* Rp${pkg.price.toLocaleString(
         "id-ID"
       )}\n\n🥤 *Varian:* ${form.varian}\n👤 *Nama:* ${form.nama}\n🏡 *Alamat:* ${form.alamat}\n📝 *Catatan:* ${form.catatan}`
     )
+
     window.open(`https://wa.me/6282213139580?text=${pesan}`, "_blank")
   }
 
@@ -55,7 +68,9 @@ export default function PackagePopup() {
       {/* overlay */}
       <div
         className={`fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm transition-opacity duration-200 ${
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          open
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
         }`}
         onClick={close}
       />
@@ -63,7 +78,9 @@ export default function PackagePopup() {
       {/* popup */}
       <div
         className={`fixed inset-0 z-[71] grid place-items-center px-4 transition-all duration-200 ${
-          open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
+          open
+            ? "opacity-100 scale-100"
+            : "opacity-0 scale-95 pointer-events-none"
         }`}
         onClick={close}
       >
@@ -95,7 +112,9 @@ export default function PackagePopup() {
             {VARIANTS.map((v) => (
               <button
                 key={v}
-                onClick={() => setForm((f) => ({ ...f, varian: v }))}
+                onClick={() =>
+                  setForm((f) => ({ ...f, varian: v }))
+                }
                 className={`border rounded-lg px-3 py-2 text-sm ${
                   form.varian === v
                     ? "bg-[#0FA3A8] text-white border-[#0FA3A8]"
