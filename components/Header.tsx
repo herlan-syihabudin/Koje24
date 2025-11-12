@@ -116,48 +116,61 @@ export default function Header() {
         </button>
       </div>
 
-      {/* OVERLAY */}
-      <div
-  className={`menu-transition-fix fixed inset-0 z-[999]
-  bg-white/90 backdrop-blur-2xl
-  transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]
-  flex flex-col items-center justify-center text-center
-  transform ${menuOpen ? "opacity-100 scale-100" : "opacity-0 scale-95"}
-  ${menuOpen ? "pointer-events-auto" : "pointer-events-none"}
-  will-change-[opacity,transform]`}
+      {/* MOBILE FULLSCREEN MENU */}
+<div
+  className={`fixed inset-0 z-[999] flex flex-col justify-center items-center text-center transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+    menuOpen
+      ? "opacity-100 translate-y-0 pointer-events-auto"
+      : "opacity-0 translate-y-5 pointer-events-none"
+  }`}
+  style={{
+    background:
+      "linear-gradient(to bottom, rgba(255,255,255,0.95) 20%, rgba(255,255,255,0.9) 100%)",
+    backdropFilter: "blur(18px)",
+    WebkitBackdropFilter: "blur(18px)",
+    top: 0,
+    left: 0,
+    height: "100vh",
+    width: "100vw",
+  }}
 >
-        <button
-          onClick={() => safeAction(() => setMenuOpen(false))}
-          className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
-        >
-          <FaTimes />
-        </button>
+  {/* Tombol Close */}
+  <button
+    onClick={() => {
+      setMenuOpen(false)
+      document.body.style.overflow = "auto"
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    }}
+    className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
+  >
+    <FaTimes />
+  </button>
 
-        <div className="flex flex-col gap-6 text-[#0B4B50]">
-          {navItems.map((item) => (
-            <button
-              key={item.href}
-              onClick={(e) => handleNavClick(e, item.href)}
-              className="text-2xl font-semibold hover:text-[#0FA3A8] transition-all"
-            >
-              {item.label}
-            </button>
-          ))}
+  {/* Isi Navigasi */}
+  <div className="flex flex-col gap-6">
+    {navItems.map((item) => (
+      <button
+        key={item.href}
+        onClick={() => handleNavClick(item.href)}
+        className="text-2xl font-semibold text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
+      >
+        {item.label}
+      </button>
+    ))}
 
-          <a
-            href="https://wa.me/6282213139580"
-            target="_blank"
-            onClick={() => setMenuOpen(false)}
-            className="mt-10 flex items-center justify-center gap-2 bg-[#0FA3A8] text-white px-8 py-3 rounded-full shadow-lg hover:bg-[#0B4B50] transition-all"
-          >
-            <FaWhatsapp /> Chat Sekarang
-          </a>
-        </div>
+    <a
+      href="https://wa.me/6282213139580"
+      target="_blank"
+      onClick={() => setMenuOpen(false)}
+      className="mt-10 flex items-center justify-center gap-2 bg-[#0FA3A8] text-white px-8 py-3 rounded-full shadow-lg hover:bg-[#0B4B50] transition-all"
+    >
+      <FaWhatsapp /> Chat Sekarang
+    </a>
+  </div>
 
-        <div className="absolute bottom-6 text-sm text-gray-500">
-          © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span> • Explore the Taste, Explore the World
-        </div>
-      </div>
-    </header>
-  )
-}
+  {/* Footer Branding */}
+  <div className="absolute bottom-6 text-sm text-gray-500">
+    © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span> • Explore the Taste, Explore the World
+  </div>
+</div>
+
