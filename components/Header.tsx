@@ -27,22 +27,33 @@ export default function Header() {
     { label: "FAQ", href: "#faq" },
   ]
 
-  // ✅ versi fix untuk mencegah bug "menu setengah kebuka"
   const handleNavClick = (href: string) => {
-    setMenuOpen(false)
-    document.body.style.overflow = "auto"
+  // tutup menu langsung
+  setMenuOpen(false)
+  document.body.style.overflow = "auto"
 
-    // kasih delay biar animasi close selesai dulu
-    setTimeout(() => {
-      const target = document.querySelector(href)
-      if (target) {
-        window.scrollTo({
-          top: target.getBoundingClientRect().top + window.scrollY - 80,
-          behavior: "smooth",
-        })
-      }
-    }, 180) // delay optimal 150–180ms
-  }
+  // kasih jeda cukup (250ms) supaya animasi close kelar total
+  setTimeout(() => {
+    const target = document.querySelector(href)
+    if (target) {
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      })
+    } else {
+      // kalau target belum ada, ulangi sekali setelah 200ms
+      setTimeout(() => {
+        const retry = document.querySelector(href)
+        if (retry) {
+          retry.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          })
+        }
+      }, 200)
+    }
+  }, 250)
+}
 
   return (
     <header
