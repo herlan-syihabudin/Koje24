@@ -150,12 +150,12 @@ export default function Header() {
   <div className="flex flex-col gap-6">
     {navItems.map((item) => (
       <button
-        key={item.href}
-        onClick={() => handleNavClick(item.href)}
-        className="text-2xl font-semibold text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
-      >
-        {item.label}
-      </button>
+  key={item.href}
+  onClick={(e) => handleNavClick(e, item.href)}
+  className="text-2xl font-semibold text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
+>
+  {item.label}
+</button>
     ))}
 
     <a
