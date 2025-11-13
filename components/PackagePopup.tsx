@@ -22,8 +22,6 @@ export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
   const [open, setOpen] = useState(false)
   const [pkg, setPkg] = useState<PackageData | null>(null)
   const [form, setForm] = useState<Form>({ nama: "", alamat: "", catatan: "" })
-
-  // 🔹 Simpan qty tiap varian
   const [qty, setQty] = useState<Record<string, number>>({})
 
   // buka popup ketika ada event open-package
@@ -32,7 +30,7 @@ export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
       const detail = (e as CustomEvent).detail as PackageData
       setPkg(detail)
       setOpen(true)
-      setQty({}) // reset pilihan varian setiap buka popup
+      setQty({})
     }
     window.addEventListener("open-package", onOpen as EventListener)
     return () => window.removeEventListener("open-package", onOpen as EventListener)
@@ -48,7 +46,6 @@ export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
     (e: any) =>
       setForm((f) => ({ ...f, [key]: e.target.value }))
 
-  // Hitung jumlah maksimum botol berdasarkan nama paket
   const getMaxQty = () => {
     if (!pkg) return 6
     const match = pkg.name.match(/\d+/)
@@ -59,18 +56,26 @@ export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
   const maxQty = getMaxQty()
 
   const increase = (v: string) => {
-    if (totalQty >= maxQty) return // stop kalau sudah full paket
+    if (totalQty >= maxQty) return
     setQty((prev) => ({ ...prev, [v]: (prev[v] || 0) + 1 }))
   }
 
   const decrease = (v: string) => {
     setQty((prev) => {
       const current = prev[v] || 0
-      if (current <= 0) return prev
-      const newQty = { ...prev, [v]: current - 1 }
-      if (newQty[v] === 0) delete newQty[v]
-      return newQty
+      if (current <= 1) {
+        const copy = { ...prev }
+        delete copy[v]
+        return copy
+      }
+      return { ...prev, [v]: current - 1 }
     })
+  }
+
+  const handleVariantClick = (v: string) => {
+    if (qty[v]) return
+    if (totalQty >= maxQty) return
+    setQty((prev) => ({ ...prev, [v]: 1 }))
   }
 
   const handleCheckout = () => {
@@ -140,35 +145,46 @@ export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
             {VARIANTS.map((v) => (
               <div
                 key={v}
-                className={`flex items-center justify-between border rounded-lg px-3 py-2 text-sm ${
+                onClick={() => handleVariantClick(v)}
+                className={`flex items-center justify-between border rounded-lg px-3 py-2 text-sm cursor-pointer ${
                   qty[v]
                     ? "bg-[#0FA3A8]/10 border-[#0FA3A8]"
                     : "border-gray-300 hover:bg-gray-100"
                 }`}
               >
-                <span className="truncate">{v}</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => decrease(v)}
-                    className="bg-[#E8C46B] text-[#0B4B50] w-6 h-6 rounded-full flex items-center justify-center font-bold hover:brightness-95"
-                  >
-                    –
-                  </button>
-                  <span className="w-5 text-center font-semibold">
-                    {qty[v] || 0}
-                  </span>
-                  <button
-                    onClick={() => increase(v)}
-                    disabled={totalQty >= maxQty}
-                    className={`${
-                      totalQty >= maxQty
-                        ? "bg-gray-300 text-white cursor-not-allowed"
-                        : "bg-[#0FA3A8] text-white hover:bg-[#0DC1C7]"
-                    } w-6 h-6 rounded-full flex items-center justify-center font-bold`}
-                  >
-                    +
-                  </button>
-                </div>
+                <span className="truncate text-[13px]">{v}</span>
+
+                {/* tombol qty hanya muncul setelah diklik */}
+                {qty[v] && (
+                  <div className="flex items-center gap-[6px]">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        decrease(v)
+                      }}
+                      className="bg-[#E8C46B] text-[#0B4B50] w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold hover:brightness-95"
+                    >
+                      –
+                    </button>
+                    <span className="w-4 text-center text-[13px] font-semibold">
+                      {qty[v]}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        increase(v)
+                      }}
+                      disabled={totalQty >= maxQty}
+                      className={`${
+                        totalQty >= maxQty
+                          ? "bg-gray-300 text-white cursor-not-allowed"
+                          : "bg-[#0FA3A8] text-white hover:bg-[#0DC1C7]"
+                      } w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold`}
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
