@@ -42,7 +42,7 @@ export default function Header() {
       document.documentElement.style.overflow = "auto"
       document.body.scrollTop = 0
       document.documentElement.scrollTop = 0
-    }, 550)
+    }, 520)
   }
 
   const navItems = [
