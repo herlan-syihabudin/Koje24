@@ -23,7 +23,7 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
       </button>
       {show && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 relative shadow-lg">
+          <div className="bg-white rounded-3xl w-[90%] max-w-md p-6 relative shadow-xl mx-auto">
             <button onClick={() => setShow(false)} className="absolute right-4 top-3 text-gray-400 hover:text-gray-600 text-xl">✕</button>
             <h3 className="text-xl font-semibold mb-4 text-[#0B4B50]">Tulis Testimoni Kamu 💬</h3>
             <form onSubmit={handleSubmit} className="space-y-3">
