@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "postbuild": "next-sitemap"
+    "build": "next build",
+    "postbuild": "next-sitemap",
     "start": "next start",
     "lint": "eslint"
   },
