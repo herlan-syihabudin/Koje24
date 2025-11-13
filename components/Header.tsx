@@ -15,26 +15,26 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  // ✅ Fix delay bug: hilangkan blok animating/menuOpen
   const openMenu = () => {
-    if (menuOpen) return               // ⬅️ tidak lagi blok oleh `animating`
-    // jika masih ada timer close yg belum kelar, hentikan biar gak nyisa
+    // kalau masih ada proses close sebelumnya, hentikan
     if (closeTimer.current) {
       clearTimeout(closeTimer.current)
       closeTimer.current = null
     }
-    setAnimating(true)
 
-    // reset posisi & kunci scroll
+    // langsung paksa buka tanpa nunggu state reset
+    setAnimating(false)
+    setMenuOpen(true)
+
+    // reset posisi dan kunci scroll
     window.scrollTo({ top: 0 })
     document.body.style.overflow = "hidden"
     document.documentElement.style.overflow = "hidden"
-
-    setMenuOpen(true)
-    setTimeout(() => setAnimating(false), 600)
   }
 
   const closeMenu = () => {
-    if (!menuOpen || animating) return
+    if (!menuOpen) return
     setAnimating(true)
 
     if (closeTimer.current) clearTimeout(closeTimer.current)
@@ -68,7 +68,6 @@ export default function Header() {
 
   const handleNavClick = (href: string) => {
     closeMenu()
-    // tunda sampai animasi close selesai biar gak bentrok
     setTimeout(() => {
       smoothScrollTo(href)
     }, 600)
@@ -142,7 +141,7 @@ export default function Header() {
         </button>
       </div>
 
-      {/* Overlay menu mobile */}
+      {/* 🔹 Overlay menu mobile */}
       <div
         className={`fixed inset-0 z-[999] flex flex-col items-center justify-center text-center transition-all duration-500 menu-fix ${
           menuOpen
@@ -168,14 +167,14 @@ export default function Header() {
             </button>
           ))}
 
-        <a
-          href="https://wa.me/6282213139580"
-          target="_blank"
-          onClick={closeMenu}
-          className="mt-10 flex items-center justify-center gap-2 bg-[#0FA3A8] text-white px-8 py-3 rounded-full shadow-lg hover:bg-[#0B4B50] transition-all"
-        >
-          <FaWhatsapp /> Chat Sekarang
-        </a>
+          <a
+            href="https://wa.me/6282213139580"
+            target="_blank"
+            onClick={closeMenu}
+            className="mt-10 flex items-center justify-center gap-2 bg-[#0FA3A8] text-white px-8 py-3 rounded-full shadow-lg hover:bg-[#0B4B50] transition-all"
+          >
+            <FaWhatsapp /> Chat Sekarang
+          </a>
         </div>
 
         <div className="absolute bottom-6 text-sm text-gray-500">
