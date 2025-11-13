@@ -67,7 +67,7 @@ export default function CartPopup() {
           role="dialog"
           aria-modal="true"
           aria-label="Keranjang KOJE24"
-          className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 relative"
+          className="w-full max-w-sm sm:max-w-md md:max-w-lg bg-white rounded-3xl shadow-2xl p-6 relative"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Tombol Tutup */}
@@ -85,16 +85,18 @@ export default function CartPopup() {
           </h3>
 
           {/* 🔹 Daftar item */}
-          <div className="space-y-2 max-h-64 overflow-y-auto border-y py-2 mb-4">
+          <div className="space-y-3 max-h-64 overflow-y-auto border-y py-2 mb-4">
             {cart.length ? (
               cart.map((item: any) => (
                 <div
                   key={item.id}
                   className="flex items-center justify-between text-sm font-inter text-[#0B4B50]"
                 >
-                  <span className="mr-3 truncate">{item.name}</span>
+                  {/* Nama produk */}
+                  <span className="flex-1 truncate">{item.name}</span>
 
-                  <div className="flex items-center gap-2">
+                  {/* Tombol qty */}
+                  <div className="flex items-center gap-2 mx-2 shrink-0">
                     <button
                       type="button"
                       onClick={() => {
@@ -122,18 +124,10 @@ export default function CartPopup() {
                     >
                       +
                     </button>
-
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item.id)}
-                      className="ml-2 text-xs text-red-500 underline"
-                      aria-label={`Hapus ${item.name}`}
-                    >
-                      Hapus
-                    </button>
                   </div>
 
-                  <span className="w-24 text-right">
+                  {/* Harga */}
+                  <span className="w-20 text-right shrink-0">
                     Rp{(item.price * item.qty).toLocaleString("id-ID")}
                   </span>
                 </div>
