@@ -25,7 +25,7 @@ export default function Header() {
     document.documentElement.style.overflow = "hidden"
 
     setMenuOpen(true)
-    setTimeout(() => setAnimating(false), 600)
+    setTimeout(() => setAnimating(false), 520)
   }
 
   const closeMenu = () => {
@@ -68,7 +68,7 @@ export default function Header() {
     closeMenu()
     setTimeout(() => {
       smoothScrollTo(href)
-    }, 520)
+    }, 600)
   }
 
   return (
