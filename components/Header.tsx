@@ -25,7 +25,7 @@ export default function Header() {
     document.documentElement.style.overflow = "hidden"
 
     setMenuOpen(true)
-    setTimeout(() => setAnimating(false), 520)
+    setTimeout(() => setAnimating(false), 500)
   }
 
   const closeMenu = () => {
