@@ -40,6 +40,8 @@ export default function Header() {
       setMenuOpen(false)
       setAnimating(false)
       document.body.style.overflow = "auto" // ⬅️ reset scroll di akhir animasi
+      document.documentElement.style.overflow = "auto" // ⬅️ tambahkan ini
+      document.body.scrollTop = 0 // ⬅️ tambahan safety agar scroll posisi normal
     }, 550)
   }
 
