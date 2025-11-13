@@ -27,8 +27,8 @@ export default function TestimoniCarousel() {
 
         // ✅ Gunakan properti "ShowOnHome" dari Google Sheet
         const filtered = (json as Testimoni[])
-          .filter((x) => String(x.ShowOnHome || "").toUpperCase() === "TRUE")
-          .reverse()
+  .filter((x) => x.showOnHome === true || String(x.ShowOnHome || "").toUpperCase() === "TRUE")
+  .reverse()
 
         setData(filtered.slice(0, 5))
       } catch (e) {
