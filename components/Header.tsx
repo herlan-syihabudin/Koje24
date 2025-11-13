@@ -15,33 +15,33 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // 🔧 Hapus useEffect overflow body (diganti manual di closeMenu / openMenu)
-  // karena trigger ganda saat animasi menyebabkan bug tampilan di mobile
-
   const openMenu = () => {
     if (menuOpen || animating) return
     setAnimating(true)
-    setMenuOpen(true)
-    document.body.style.overflow = "hidden" // ⬅️ langsung lock scroll saat menu dibuka
 
-    // biarkan animasi jalan penuh sebelum unlock lagi
-    setTimeout(() => {
-      setAnimating(false)
-    }, 600)
+    // 🔹 Reset posisi overlay & cegah offset
+    window.scrollTo({ top: 0 })
+    document.body.style.overflow = "hidden"
+    document.documentElement.style.overflow = "hidden"
+
+    setMenuOpen(true)
+    setTimeout(() => setAnimating(false), 600)
   }
 
   const closeMenu = () => {
     if (!menuOpen || animating) return
     setAnimating(true)
 
-    // tunggu animasi tutup selesai dulu baru reset state & unlock body scroll
     if (closeTimer.current) clearTimeout(closeTimer.current)
     closeTimer.current = setTimeout(() => {
       setMenuOpen(false)
       setAnimating(false)
-      document.body.style.overflow = "auto" // ⬅️ reset scroll di akhir animasi
-      document.documentElement.style.overflow = "auto" // ⬅️ tambahkan ini
-      document.body.scrollTop = 0 // ⬅️ tambahan safety agar scroll posisi normal
+
+      // 🔹 Pastikan scroll & overflow balik normal
+      document.body.style.overflow = "auto"
+      document.documentElement.style.overflow = "auto"
+      document.body.scrollTop = 0
+      document.documentElement.scrollTop = 0
     }, 550)
   }
 
@@ -63,9 +63,12 @@ export default function Header() {
     }, 360)
   }
 
+  // 🔧 Scroll ditunda setelah animasi tutup selesai
   const handleNavClick = (href: string) => {
     closeMenu()
-    smoothScrollTo(href)
+    setTimeout(() => {
+      smoothScrollTo(href)
+    }, 600)
   }
 
   return (
