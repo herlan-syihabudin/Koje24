@@ -14,4 +14,14 @@ const nextConfig: NextConfig = {
   },
 }
 
+const nextConfig = {
+  experimental: {
+    optimizeCss: true,
+  },
+  images: {
+    domains: ["images.unsplash.com", "webkoje-cacs.vercel.app"],
+  },
+}
+
 export default nextConfig
+
