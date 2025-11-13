@@ -28,9 +28,24 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
             <h3 className="text-xl font-semibold mb-4 text-[#0B4B50]">Tulis Testimoni Kamu 💬</h3>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="flex gap-3">
-                <input name="nama" value={form.nama} onChange={handleChange} required placeholder="Nama" className="flex-1 border border-[#e6eeee] rounded-lg p-2" />
-                <input name="kota" value={form.kota} onChange={handleChange} required placeholder="Kota" className="flex-1 border border-[#e6eeee] rounded-lg p-2" />
-              </div>
+                <div className="flex gap-2">
+  <input
+    name="nama"
+    value={form.nama}
+    onChange={handleChange}
+    required
+    placeholder="Nama"
+    className="flex-1 border border-[#e6eeee] rounded-lg p-2 min-w-0"
+  />
+  <input
+    name="kota"
+    value={form.kota}
+    onChange={handleChange}
+    required
+    placeholder="Kota"
+    className="flex-1 border border-[#e6eeee] rounded-lg p-2 min-w-0"
+  />
+</div>
               <textarea name="pesan" value={form.pesan} onChange={handleChange} required placeholder="Bagikan pengalamanmu…" className="w-full border border-[#e6eeee] rounded-lg p-2" />
               <div className="flex gap-3">
                 <select name="varian" value={form.varian} onChange={handleChange} required className="flex-1 border border-[#e6eeee] rounded-lg p-2">
