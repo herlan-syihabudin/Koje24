@@ -6,14 +6,13 @@ import TulisTestimoniForm from "./TulisTestimoniForm"
 // 🔹 Import react-fast-marquee dinamis biar gak error SSR
 const Marquee = dynamic(() => import("react-fast-marquee"), { ssr: false })
 
-// 🔹 Tipe data testimoni biar aman
 type Testimoni = {
   nama: string
   kota: string
   varian: string
   pesan: string
   rating: number
-  showOnHome?: string
+  ShowOnHome?: string
 }
 
 export default function TestimoniCarousel() {
@@ -23,11 +22,14 @@ export default function TestimoniCarousel() {
   useEffect(() => {
     const run = async () => {
       try {
-        const res = await fetch(API_URL)
+        const res = await fetch(API_URL, { cache: "no-store" })
         const json = await res.json()
+
+        // ✅ Gunakan properti "ShowOnHome" dari Google Sheet
         const filtered = (json as Testimoni[])
-          .filter((x) => String(x.showOnHome || "").toUpperCase() === "TRUE")
+          .filter((x) => String(x.ShowOnHome || "").toUpperCase() === "TRUE")
           .reverse()
+
         setData(filtered.slice(0, 5))
       } catch (e) {
         console.error("Gagal ambil testimoni:", e)
@@ -100,9 +102,7 @@ export default function TestimoniCarousel() {
                 <p className="text-sm text-[#0FA3A8] italic">{t.varian}</p>
               </div>
 
-              <p
-                className="mt-3 italic text-gray-700 leading-relaxed text-[15px] min-h-[70px] line-clamp-3"
-              >
+              <p className="mt-3 italic text-gray-700 leading-relaxed text-[15px] min-h-[70px] line-clamp-3">
                 “{t.pesan}”
               </p>
 
@@ -116,7 +116,8 @@ export default function TestimoniCarousel() {
         {/* Footer caption */}
         <div className="text-center mt-14">
           <p className="font-inter text-gray-600 text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
-            Bergabunglah dengan <span className="text-[#0FA3A8] font-semibold">ratusan pelanggan</span> yang
+            Bergabunglah dengan{" "}
+            <span className="text-[#0FA3A8] font-semibold">ratusan pelanggan</span> yang
             sudah merasakan manfaat alami KOJE24 — segar, sehat, dan seimbang setiap hari 🍃
           </p>
         </div>
