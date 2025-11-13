@@ -82,6 +82,18 @@ const manfaatList = [
 export default function ManfaatPage() {
   const [selected, setSelected] = useState<any>(null)
 
+  // ✅ Lock scroll body saat popup aktif
+  useEffect(() => {
+    if (selected) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [selected])
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-white via-[#f6fbfb] to-[#eaf7f7] text-[#0B4B50] relative">
       <section className="max-w-6xl mx-auto px-6 py-20">
@@ -130,7 +142,7 @@ export default function ManfaatPage() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white rounded-3xl max-w-lg w-full mx-6 shadow-2xl relative p-8"
+              className="bg-white rounded-3xl max-w-lg w-full mx-6 shadow-2xl relative p-8 overflow-y-auto max-h-[90vh]"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
@@ -170,3 +182,4 @@ export default function ManfaatPage() {
     </main>
   )
 }
+
