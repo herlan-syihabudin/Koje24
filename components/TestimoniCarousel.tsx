@@ -104,12 +104,12 @@ export default function TestimoniCarousel() {
     <p className="text-sm text-gray-500 mb-1">{t.kota || "-"}</p>
 
     {/* Varian & Rating sejajar */}
-    <div className="flex items-center justify-between text-sm mb-3">
-      <p className="italic text-[#0FA3A8]">{t.varian || "-"}</p>
-      <span className="text-[#E8C46B] text-base">
-        {"★".repeat(Math.max(1, Math.min(5, Number(t.rating) || 5)))}
-      </span>
-    </div>
+    <div className="flex items-center justify-between mb-2">
+  <p className="text-sm italic text-[#0FA3A8] truncate">{t.varian || "-"}</p>
+  <div className="flex items-center text-[#E8C46B] text-base leading-none ml-2">
+    {"★".repeat(Math.max(1, Math.min(5, Number(t.rating) || 5)))}
+  </div>
+</div>
 
     {/* Pesan */}
     <p className="italic text-gray-700 leading-relaxed text-[15px] line-clamp-3">
