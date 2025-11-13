@@ -27,7 +27,6 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
             <button onClick={() => setShow(false)} className="absolute right-4 top-3 text-gray-400 hover:text-gray-600 text-xl">✕</button>
             <h3 className="text-xl font-semibold mb-4 text-[#0B4B50]">Tulis Testimoni Kamu 💬</h3>
             <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="flex gap-3">
                 <div className="flex gap-2">
   <input
     name="nama"
