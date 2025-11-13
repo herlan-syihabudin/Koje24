@@ -12,7 +12,8 @@ type Testimoni = {
   varian: string
   pesan: string
   rating: number
-  ShowOnHome?: string
+  ShowOnHome?: string | boolean
+  showOnHome?: boolean
 }
 
 export default function TestimoniCarousel() {
@@ -63,7 +64,7 @@ export default function TestimoniCarousel() {
     },
   ]
 
-  const testimonials = data.length > 0 ? data : fallbackData
+  const testimonials = data
 
   return (
     <section className="py-24 bg-gradient-to-b from-[#f6fbfb] to-[#eef7f7] relative overflow-hidden">
