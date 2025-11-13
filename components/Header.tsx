@@ -15,26 +15,32 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "auto"
-    return () => {
-      document.body.style.overflow = "auto"
-    }
-  }, [menuOpen])
+  // 🔧 Hapus useEffect overflow body (diganti manual di closeMenu / openMenu)
+  // karena trigger ganda saat animasi menyebabkan bug tampilan di mobile
 
   const openMenu = () => {
     if (menuOpen || animating) return
     setAnimating(true)
     setMenuOpen(true)
-    setTimeout(() => setAnimating(false), 520)
+    document.body.style.overflow = "hidden" // ⬅️ langsung lock scroll saat menu dibuka
+
+    // biarkan animasi jalan penuh sebelum unlock lagi
+    setTimeout(() => {
+      setAnimating(false)
+    }, 600)
   }
 
   const closeMenu = () => {
     if (!menuOpen || animating) return
     setAnimating(true)
-    setMenuOpen(false)
+
+    // tunggu animasi tutup selesai dulu baru reset state & unlock body scroll
     if (closeTimer.current) clearTimeout(closeTimer.current)
-    closeTimer.current = setTimeout(() => setAnimating(false), 520)
+    closeTimer.current = setTimeout(() => {
+      setMenuOpen(false)
+      setAnimating(false)
+      document.body.style.overflow = "auto" // ⬅️ reset scroll di akhir animasi
+    }, 550)
   }
 
   const navItems = [
@@ -128,8 +134,9 @@ export default function Header() {
         </button>
       </div>
 
+      {/* 🔹 Overlay menu mobile */}
       <div
-        className={`fixed inset-0 z-[999] flex flex-col items-center justify-center text-center transition-all duration-500 ${
+        className={`fixed inset-0 z-[999] flex flex-col items-center justify-center text-center transition-all duration-500 menu-fix ${
           menuOpen
             ? "opacity-100 translate-y-0 pointer-events-auto"
             : "opacity-0 -translate-y-10 pointer-events-none"
