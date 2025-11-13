@@ -68,7 +68,7 @@ export default function Header() {
     closeMenu()
     setTimeout(() => {
       smoothScrollTo(href)
-    }, 600)
+    }, 520)
   }
 
   return (
