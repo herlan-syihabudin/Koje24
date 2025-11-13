@@ -91,27 +91,32 @@ export default function TestimoniCarousel() {
         {/* 🔹 Marquee Carousel */}
         <Marquee pauseOnHover gradient={false} speed={35}>
           {testimonials.map((t, i) => (
-            <div
-              key={i}
-              className="mx-3 min-w-[300px] sm:min-w-[340px] bg-white border border-[#e6eeee]/60 rounded-3xl p-6 shadow-[0_5px_25px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_35px_rgba(15,163,168,0.15)] transition-all duration-500 flex flex-col justify-between"
-            >
-              <div>
-                <h3 className="font-playfair text-lg font-semibold text-[#0B4B50] leading-tight">
-                  {t.nama}
-                </h3>
-                <p className="text-sm text-gray-500 mb-1">{t.kota}</p>
-                <p className="text-sm text-[#0FA3A8] italic">{t.varian}</p>
-              </div>
+  <div
+    key={i}
+    className="mx-3 min-w-[300px] sm:min-w-[340px] bg-white border border-[#e6eeee]/70 rounded-3xl p-6 shadow-[0_3px_15px_rgba(0,0,0,0.05)] hover:shadow-[0_6px_25px_rgba(15,163,168,0.1)] transition-all duration-300"
+  >
+    {/* Nama */}
+    <h3 className="font-playfair text-lg font-semibold text-[#0B4B50]">
+      {t.nama || "-"}
+    </h3>
 
-              <p className="mt-3 italic text-gray-700 leading-relaxed text-[15px] min-h-[70px] line-clamp-3">
-                “{t.pesan}”
-              </p>
+    {/* Kota */}
+    <p className="text-sm text-gray-500 mb-1">{t.kota || "-"}</p>
 
-              <div className="mt-4 text-[#E8C46B] text-lg">
-                {"★".repeat(Math.max(1, Math.min(5, Number(t.rating) || 5)))}
-              </div>
-            </div>
-          ))}
+    {/* Varian & Rating sejajar */}
+    <div className="flex items-center justify-between text-sm mb-3">
+      <p className="italic text-[#0FA3A8]">{t.varian || "-"}</p>
+      <span className="text-[#E8C46B] text-base">
+        {"★".repeat(Math.max(1, Math.min(5, Number(t.rating) || 5)))}
+      </span>
+    </div>
+
+    {/* Pesan */}
+    <p className="italic text-gray-700 leading-relaxed text-[15px] line-clamp-3">
+      “{t.pesan || ""}”
+    </p>
+  </div>
+))}
         </Marquee>
 
         {/* Footer caption */}
