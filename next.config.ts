@@ -3,25 +3,14 @@ import type { NextConfig } from "next"
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
-    // Domain gambar yang diizinkan (bisa tambahin kalau ada CDN lain)
+    // Domain gambar yang diizinkan (bisa ditambah jika perlu)
     domains: ["images.unsplash.com", "webkoje-cacs.vercel.app"],
     formats: ["image/avif", "image/webp"],
   },
-  // 🔹 Nonaktifkan cache build untuk API data real-time (opsional)
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
   },
 }
 
-const nextConfig = {
-  experimental: {
-    optimizeCss: true,
-  },
-  images: {
-    domains: ["images.unsplash.com", "webkoje-cacs.vercel.app"],
-  },
-}
-
 export default nextConfig
-
