@@ -156,7 +156,7 @@ export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
 
                 {/* tombol qty hanya muncul setelah diklik */}
                 {qty[v] && (
-                  <div className="flex items-center gap-[6px]">
+                  <div className="flex items-center gap-[3px] -mr-1">
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
