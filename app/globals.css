@@ -95,7 +95,6 @@
 
 /* === UTILITIES === */
 @layer utilities {
-  /* Hover zoom halus */
   .img-zoom {
     transition: transform 0.5s ease, filter 0.3s ease;
   }
@@ -104,7 +103,6 @@
     filter: brightness(1.05);
   }
 
-  /* Scroll reveal */
   .animate-on-scroll {
     opacity: 0;
     transform: translateY(25px);
@@ -115,7 +113,6 @@
     transform: translateY(0);
   }
 
-  /* Product hover */
   .product-card {
     position: relative;
     transition: all 0.35s ease;
@@ -148,7 +145,6 @@
     opacity: 1;
   }
 
-  /* Card float */
   .card-float {
     opacity: 0;
     transform: translateY(25px) scale(0.985);
@@ -182,30 +178,20 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* === SECTION SPACING OPTIMIZED === */
+/* === SECTION SPACING === */
 section {
   padding-top: 1rem;
   padding-bottom: 2rem;
 }
 @media (min-width: 1024px) {
-  section {
-    padding-top: 3rem;
-    padding-bottom: 3rem;
-  }
+  section { padding: 3rem 0; }
 }
 @media (max-width: 768px) {
-  section {
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-  }
+  section { padding: 2rem 0; }
 }
+section + section { margin-top: -0.8rem; }
 
-/* Compact antar section */
-section + section {
-  margin-top: -0.8rem;
-}
-
-/* === GRADIENT FLOW & PARALLAX === */
+/* === GRADIENT === */
 section:nth-child(even) {
   background: linear-gradient(to bottom, #f9fdfd, #f6fbfb);
 }
@@ -213,7 +199,7 @@ section:nth-child(odd) {
   background: linear-gradient(to bottom, #ffffff, #f9fafa);
 }
 
-/* Soft parallax movement (Apple style) */
+/* Soft parallax */
 .parallax-soft {
   transform: translateY(0);
   transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
@@ -223,20 +209,19 @@ section:nth-child(odd) {
   transform: translateY(-10px);
 }
 
-/* === TEXT GLOW === */
+/* Glow */
 .text-glow {
   background: linear-gradient(90deg, #0B4B50 0%, #0FA3A8 50%, #0B4B50 100%);
-  background-clip: text;               /* ✅ tambahkan baris ini */
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-size: 200% auto;
   animation: glowShift 5s ease-in-out infinite;
 }
-
 @keyframes glowShift {
-  0% { background-position: 0% center; }
-  50% { background-position: 100% center; }
-  100% { background-position: 0% center; }
+  0% { background-position: 0%; }
+  50% { background-position: 100%; }
+  100% { background-position: 0%; }
 }
 
 /* === FOOTER GLOW === */
@@ -253,59 +238,95 @@ footer::before {
   opacity: 0.6;
   z-index: 0;
 }
-footer > * {
-  position: relative;
-  z-index: 1;
-}
-/* === NORMALIZE SAFARI SPACING & FONT RENDERING === */
+footer > * { position: relative; z-index: 1; }
+
+/* Safari Normalize */
 * {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
-
 html, body {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  margin: 0; padding: 0; box-sizing: border-box;
 }
-
 img, video {
   max-width: 100%;
   height: auto;
   display: block;
 }
-
-section {
-  line-height: 1.6;
-  -webkit-text-size-adjust: 100%; /* 🧩 hindari zoom otomatis Safari */
-}
 @supports(padding: max(0px)) {
-  body {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
+  body { padding-bottom: env(safe-area-inset-bottom); }
 }
-@media (max-width: 640px) {
-  h1, h2 {
-    font-weight: 600;
-  }
-  p {
-    font-size: 0.95rem;
-  }
+
+/* === POPUP ENGINE ADD-ON === */
+/* ==================================== */
+/* ⭐ BODY LOCK (anti scroll belakang) */
+.body-lock {
+  overflow: hidden;
+  height: 100vh;
+  touch-action: none;
 }
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+
+/* ⭐ Overlay */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  z-index: 99;
+  animation: fadeInOverlay 0.25s ease;
 }
-.animate-fadeIn {
-  animation: fadeIn 0.6s ease-out forwards;
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-/* 🔧 Fix posisi centering saat overlay transisi */
+
+/* ⭐ Popup container smooth */
+.popup-content {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 92%;
+  max-width: 420px;
+  height: 100%;
+  background: #ffffff;
+  overflow-y: auto;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: -8px 0 24px rgba(0,0,0,0.12);
+  z-index: 100;
+  animation: popupSlide 0.33s cubic-bezier(0.25, 1, 0.5, 1);
+}
+@keyframes popupSlide {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* ⭐ Close button fix all device */
+.popup-close-btn {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  right: 16px;
+  z-index: 150;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(10px);
+  padding: 6px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  transition: all 0.25s;
+}
+.popup-close-btn:hover {
+  transform: scale(1.07);
+  background: rgba(255,255,255,0.95);
+}
+
+/* ⭐ Prevent header overlap */
 @media (max-width: 768px) {
-  .menu-transition-fix {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .popup-content {
+    padding-top: calc(60px + env(safe-area-inset-top));
   }
 }
 
+/* ⭐ Scroll momentum iPhone */
+.popup-content {
+  -webkit-overflow-scrolling: touch;
+}
