@@ -14,56 +14,50 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  /* =============================
-     BODY LOCK HANDLER
-  ============================== */
+  /* =====================================
+     BODY LOCK — UNIVERSAL FIX
+  ====================================== */
   const lockBody = () => {
+    document.body.style.position = "fixed"
+    document.body.style.inset = "0"
     document.body.style.overflow = "hidden"
-    document.documentElement.style.overflow = "hidden"
+    document.body.style.height = "100dvh"
+    document.body.style.width = "100%"
   }
 
   const unlockBody = () => {
-    document.body.style.overflow = "auto"
-    document.documentElement.style.overflow = "auto"
+    document.body.style.position = ""
+    document.body.style.inset = ""
+    document.body.style.overflow = ""
+    document.body.style.height = ""
+    document.body.style.width = ""
   }
 
-  /* =============================
-     MENU — OPEN / CLOSE
-  ============================== */
   const openMenu = () => {
     setMenuOpen(true)
+    window.scrollTo({ top: 0 })
     lockBody()
   }
 
-  const closeMenu = (instant = false) => {
-    if (instant) {
-      setMenuOpen(false)
-      unlockBody()
-      return
-    }
-
+  const closeMenu = () => {
     setMenuOpen(false)
-    setTimeout(unlockBody, 300) // aman buat animation
+    setTimeout(unlockBody, 150)
   }
 
-  /* =============================
-     SMOOTH SCROLL WITHOUT DELAY STACKING
-  ============================== */
+  /* =====================================
+     SCROLL TO SECTION
+  ====================================== */
   const scrollToSection = (href: string) => {
     const target = document.querySelector(href)
     if (!target) return
-
     const offset = 80
     const y = target.getBoundingClientRect().top + window.scrollY - offset
-
     window.scrollTo({ top: y, behavior: "smooth" })
   }
 
   const navClick = (href: string) => {
-    closeMenu(true)            // langsung tutup, tanpa delay
-    setTimeout(() => {
-      scrollToSection(href)    // baru scroll setelah menu hilang
-    }, 50)
+    closeMenu()
+    setTimeout(() => scrollToSection(href), 180)
   }
 
   const navItems = [
@@ -77,7 +71,8 @@ export default function Header() {
   return (
     <header
       className={`fixed top-0 w-full z-[100] transition-all duration-700
-      ${isScrolled ? "bg-white/90 backdrop-blur-xl shadow-md" : "bg-transparent"}`}
+        ${isScrolled ? "bg-white/90 backdrop-blur-xl shadow-md" : "bg-transparent"}
+      `}
     >
       {isScrolled && (
         <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-[#0FA3A8]/20 to-[#0B4B50]/20" />
@@ -90,11 +85,12 @@ export default function Header() {
           href="/"
           onClick={(e) => {
             e.preventDefault()
-            closeMenu(true)
+            closeMenu()
             window.scrollTo({ top: 0, behavior: "smooth" })
           }}
-          className={`text-2xl font-playfair font-bold transition-colors duration-500 
-          ${isScrolled ? "text-[#0B4B50]" : "text-white"}`}
+          className={`text-2xl font-playfair font-bold transition-colors duration-500
+            ${isScrolled ? "text-[#0B4B50]" : "text-white"}
+          `}
         >
           KOJE
           <span className={isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}>24</span>
@@ -119,44 +115,50 @@ export default function Header() {
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
-            className={`ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm 
-            transition-all shadow-md
-            ${isScrolled
-              ? "bg-[#0FA3A8] text-white hover:bg-[#0B4B50]"
-              : "bg-white/15 text-white hover:bg-white/25 backdrop-blur-sm"}`}
+            className={`ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm shadow-md transition-all
+              ${isScrolled
+                ? "bg-[#0FA3A8] text-white hover:bg-[#0B4B50]"
+                : "bg-white/15 text-white hover:bg-white/25 backdrop-blur-sm"
+              }
+            `}
           >
             <FaWhatsapp /> Chat Sekarang
           </a>
         </nav>
 
-        {/* MOBILE HAMBURGER */}
+        {/* MOBILE BURGER */}
         <button
           onClick={openMenu}
-          className={`md:hidden text-2xl transition-colors ${
-            isScrolled ? "text-[#0B4B50]" : "text-white"
-          }`}
+          className={`md:hidden text-2xl transition-colors 
+            ${isScrolled ? "text-[#0B4B50]" : "text-white"}
+          `}
         >
           <FaBars />
         </button>
       </div>
 
-      {/* ================================
-           MOBILE MENU OVERLAY
-      ================================= */}
+      {/* ========================
+          MOBILE OVERLAY
+      ========================= */}
       {menuOpen && (
         <div
-          className="fixed inset-0 z-[200] flex flex-col items-center justify-center 
-          bg-white/90 backdrop-blur-2xl transition-opacity duration-300"
+          className="
+            fixed left-0 top-0 
+            w-screen 
+            h-[100dvh]         /* SOLUSI UTAMA */
+            z-[200]
+            flex flex-col items-center justify-center
+            bg-white/90 backdrop-blur-2xl
+            transition-all duration-300
+          "
         >
-          {/* CLOSE BUTTON */}
           <button
-            onClick={() => closeMenu()}
+            onClick={closeMenu}
             className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8]"
           >
             <FaTimes />
           </button>
 
-          {/* NAV ITEMS */}
           <div className="flex flex-col gap-6 text-[#0B4B50]">
             {navItems.map((item) => (
               <button
@@ -172,7 +174,7 @@ export default function Header() {
               href="https://wa.me/6282213139580"
               target="_blank"
               className="mt-10 flex items-center justify-center gap-2 px-8 py-3 rounded-full
-              bg-[#0FA3A8] text-white hover:bg-[#0B4B50] transition-all shadow-lg"
+                bg-[#0FA3A8] text-white hover:bg-[#0B4B50] transition-all shadow-lg"
             >
               <FaWhatsapp /> Chat Sekarang
             </a>
