@@ -49,14 +49,23 @@ export const metadata = {
     description:
       "Minuman sehat cold-pressed alami tanpa pengawet & gula tambahan.",
     images: ["/image/hero2.png"],
-    creator: "@koje24", // (optional) kalau nanti mau buat akun X/Twitter resmi
+    creator: "@koje24",
   },
+
+  // Favicon & PWA manifest
   icons: {
     icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    apple: [
+      "/icon/apple-icon-120.png",
+      "/icon/apple-icon-152.png",
+      "/icon/apple-icon-167.png",
+      "/icon/apple-icon-180.png",
+    ],
   },
+
   manifest: "/manifest.json",
   themeColor: "#0FA3A8",
+
   alternates: {
     canonical: "https://webkoje-cacs.vercel.app",
   },
