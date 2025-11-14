@@ -5,7 +5,7 @@ const pwa = withPWA({
   dest: "public",
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === "development"  // Supaya PWA hanya aktif di production
+  disable: process.env.NODE_ENV === "development"
 });
 
 const nextConfig: NextConfig = {
@@ -13,12 +13,12 @@ const nextConfig: NextConfig = {
 
   images: {
     domains: ["images.unsplash.com", "webkoje-cacs.vercel.app"],
-    formats: ["image/avif", "image/webp"],
+    formats: ["image/avif", "image/webp"]
   },
 
   experimental: {
     optimizeCss: true,
-    scrollRestoration: true,
+    scrollRestoration: true
   },
 };
 
