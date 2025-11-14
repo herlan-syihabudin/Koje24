@@ -1,16 +1,25 @@
-import type { NextConfig } from "next"
+import type { NextConfig } from "next";
+import withPWA from "next-pwa";
+
+const pwa = withPWA({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === "development"  // Supaya PWA hanya aktif di production
+});
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+
   images: {
-    // Domain gambar yang diizinkan (bisa ditambah jika perlu)
     domains: ["images.unsplash.com", "webkoje-cacs.vercel.app"],
     formats: ["image/avif", "image/webp"],
   },
+
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
   },
-}
+};
 
-export default nextConfig
+export default pwa(nextConfig);
