@@ -24,23 +24,46 @@ export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
   const [form, setForm] = useState<Form>({ nama: "", alamat: "", catatan: "" })
   const [qty, setQty] = useState<Record<string, number>>({})
 
-  // buka popup ketika ada event open-package
+  /* ============================================================
+     LOCK / UNLOCK BODY
+  ============================================================ */
+  const lockBody = () => {
+    document.body.style.overflow = "hidden"
+    document.documentElement.style.overflow = "hidden"
+  }
+
+  const unlockBody = () => {
+    document.body.style.overflow = "auto"
+    document.documentElement.style.overflow = "auto"
+  }
+
+  /* ============================================================
+     OPEN PACKAGE EVENT
+  ============================================================ */
   useEffect(() => {
     const onOpen = (e: Event) => {
       const detail = (e as CustomEvent).detail as PackageData
       setPkg(detail)
-      setOpen(true)
       setQty({})
+      setOpen(true)
+      lockBody()     // 🔥 body scroll langsung dikunci
     }
     window.addEventListener("open-package", onOpen as EventListener)
     return () => window.removeEventListener("open-package", onOpen as EventListener)
   }, [])
 
+  /* ============================================================
+     CLOSE POPUP
+  ============================================================ */
   const close = () => {
     setOpen(false)
+    unlockBody()
     if (onClose) onClose()
   }
 
+  /* ============================================================
+     Form Handler
+  ============================================================ */
   const onChange =
     (key: keyof Form) =>
     (e: any) =>
@@ -97,38 +120,47 @@ export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
     window.open(`https://wa.me/6282213139580?text=${pesan}`, "_blank")
   }
 
+  /* ============================================================
+     RESPONSIVE POPUP CONTENT (scrollable container fix)
+  ============================================================ */
+
   return (
     <>
       {/* overlay */}
       <div
-        className={`fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm transition-opacity duration-200 ${
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
+        className={`fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm transition-opacity duration-200 
+        ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
         onClick={close}
       />
 
-      {/* popup */}
+      {/* popup container */}
       <div
-        className={`fixed inset-0 z-[71] grid place-items-center px-4 transition-all duration-200 ${
-          open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
-        }`}
+        className={`fixed inset-0 z-[71] flex items-center justify-center px-4 transition-all duration-200 
+        ${open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
         onClick={close}
       >
+        {/* SCROLLABLE BOX */}
         <div
-          className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 relative"
+          className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 relative 
+          max-h-[90vh] overflow-y-auto overscroll-contain 
+          scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* CLOSE BUTTON */}
           <button
             onClick={close}
-            className="absolute top-3 right-4 text-gray-500 hover:text-[#0FA3A8] font-bold text-lg"
+            className="sticky top-0 right-0 ml-auto block text-gray-500 hover:text-[#0FA3A8] 
+            font-bold text-lg bg-white rounded-full p-1 z-20"
           >
             ✕
           </button>
 
-          <h3 className="text-xl font-playfair font-semibold text-[#0B4B50] mb-3">
+          {/* TITLE */}
+          <h3 className="text-xl font-playfair font-semibold text-[#0B4B50] mt-2 mb-3">
             Pilih Varian untuk Paket
           </h3>
 
+          {/* PACKAGE INFO */}
           {pkg ? (
             <p className="mb-4 text-[#0B4B50]">
               {pkg.name} — <b>Rp{pkg.price.toLocaleString("id-ID")}</b> <br />
@@ -140,13 +172,14 @@ export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
             <p className="mb-4 text-gray-500">Pilih paket terlebih dahulu.</p>
           )}
 
-          {/* daftar varian */}
+          {/* VARIANTS */}
           <div className="grid grid-cols-2 gap-2 mb-4">
             {VARIANTS.map((v) => (
               <div
                 key={v}
                 onClick={() => handleVariantClick(v)}
-                className={`flex items-center justify-between border rounded-lg px-3 py-2 text-sm cursor-pointer ${
+                className={`flex items-center justify-between border rounded-lg px-3 py-2 text-sm cursor-pointer
+                ${
                   qty[v]
                     ? "bg-[#0FA3A8]/10 border-[#0FA3A8]"
                     : "border-gray-300 hover:bg-gray-100"
@@ -154,7 +187,6 @@ export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
               >
                 <span className="truncate text-[13px]">{v}</span>
 
-                {/* tombol qty hanya muncul setelah diklik */}
                 {qty[v] && (
                   <div className="flex items-center gap-[3px] -mr-1">
                     <button
@@ -162,24 +194,28 @@ export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
                         e.stopPropagation()
                         decrease(v)
                       }}
-                      className="bg-[#E8C46B] text-[#0B4B50] w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold hover:brightness-95"
+                      className="bg-[#E8C46B] text-[#0B4B50] w-5 h-5 rounded-full flex items-center justify-center 
+                      text-[11px] font-bold hover:brightness-95"
                     >
                       –
                     </button>
+
                     <span className="w-4 text-center text-[13px] font-semibold">
                       {qty[v]}
                     </span>
+
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         increase(v)
                       }}
                       disabled={totalQty >= maxQty}
-                      className={`${
+                      className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold
+                      ${
                         totalQty >= maxQty
                           ? "bg-gray-300 text-white cursor-not-allowed"
                           : "bg-[#0FA3A8] text-white hover:bg-[#0DC1C7]"
-                      } w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold`}
+                      }`}
                     >
                       +
                     </button>
@@ -189,7 +225,7 @@ export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
             ))}
           </div>
 
-          {/* form user */}
+          {/* FORM */}
           <input
             type="text"
             placeholder="Nama lengkap"
@@ -214,7 +250,8 @@ export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
           <button
             onClick={handleCheckout}
             disabled={!pkg}
-            className="w-full disabled:opacity-50 disabled:cursor-not-allowed bg-[#0FA3A8] text-white py-3 rounded-full font-semibold hover:bg-[#0DC1C7] transition-all mt-4"
+            className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold hover:bg-[#0DC1C7] 
+            transition-all mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Checkout via WhatsApp
           </button>
