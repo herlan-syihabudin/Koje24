@@ -21,8 +21,8 @@ const toNumber = (p: number | string): number =>
 const formatIDR = (n: number) => `Rp${n.toLocaleString("id-ID")}`
 
 const products: Product[] = [
-  { id: 1, name: "Green Detox", desc: "Bayam • Apel • Lemon • Jahe — segar, rendah kalori.", price: "Rp18.000", img: "/image/juice-green.jpg", tag: "Best Seller" },
-  { id: 2, name: "Yellow Immunity", desc: "Jeruk • Nanas • Kunyit • Madu — bantu daya tahan tubuh.", price: "Rp18.000", img: "/image/juice-yellow.jpg", tag: "Best Seller" },
+  { id: 1, name: "Detox", desc: "Bayam • Apel • Lemon • Jahe — segar, rendah kalori.", price: "Rp18.000", img: "/image/detox.JPG", tag: "Best Seller" },
+  { id: 2, name: "Yellow Immunity", desc: "Jeruk • Nanas • Kunyit • Madu — bantu daya tahan tubuh.", price: "Rp18.000", img: "/image/yellowseries.JPG", tag: "Best Seller" },
   { id: 3, name: "Red Series", desc: "Semangka • Jeruk • Serai — jaga stamina & energi harian.", price: "Rp18.000", img: "/image/juice-redseries.jpg" },
   { id: 4, name: "Sunrise", desc: "Wortel • Jeruk • Serai — bantu menjaga stamina tubuh.", price: "Rp18.000", img: "/image/juice-orange.jpg" },
   { id: 5, name: "Sunrise+", desc: "Wortel • Jeruk • Serai — rasa lebih bold.", price: "Rp18.000", img: "/image/juice-sunrise.jpg" },
