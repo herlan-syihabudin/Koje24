@@ -91,7 +91,7 @@ export default function Hero() {
 
           {/* BOTTLE IMAGE */}
           <Image
-            src="/koje24-bottle.png" // ganti ke foto botol kamu
+            src="/koje.png" // ganti ke foto botol kamu
             alt="KOJE24 Bottle"
             width={420}
             height={420}
