@@ -1,68 +1,50 @@
-import { google } from "googleapis"
+// app/api/order/route.ts
 import { NextResponse } from "next/server"
+import { google } from "googleapis"
 
-const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID
-const SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
-const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n")
+const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+const SHEET_ID = process.env.SHEET_ID
+
+const auth = new google.auth.GoogleAuth({
+  credentials: JSON.parse(process.env.GOOGLE_SERVICE_KEY || "{}"),
+  scopes: SCOPES,
+})
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
+    const { nama, hp, alamat, produk, total } = body
 
-    const {
-      nama,
-      hp,
-      alamat,
-      items,
-      total
-    } = body
+    const now = new Date()
+    const timestamp = now.toLocaleString("id-ID")
 
-    if (!items?.length) {
-      return NextResponse.json({ error: "Cart kosong" }, { status: 400 })
-    }
-
-    const auth = new google.auth.JWT(
-      SERVICE_ACCOUNT_EMAIL,
-      undefined,
-      PRIVATE_KEY,
-      ["https://www.googleapis.com/auth/spreadsheets"]
-    )
-
-    const sheets = google.sheets({ version: "v4", auth })
-
-    const invoiceID = "INV-" + Date.now() // ID unik
-
-    const rows = items.map((item: any) => [
-      new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" }),
-      invoiceID,
-      nama,
-      hp,
-      alamat,
-      item.name,
-      item.qty,
-      item.qty * item.price,
-      "Pending",
-      "Transfer Bank",
-      "-",
-      "-",
-    ])
+    const sheets = google.sheets({ version: "v4", auth: await auth.getClient() })
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SPREADSHEET_ID,
-      range: "Sheet1!A:L",
+      spreadsheetId: SHEET_ID,
+      range: "Sheet1!A1",
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: rows },
+      requestBody: {
+        values: [
+          [
+            timestamp, // Timestamp
+            `INV-${Date.now()}`, // InvoiceID unik
+            nama,
+            hp,
+            alamat,
+            produk,
+            total,
+            "Pending",
+            "Manual",
+            "",
+            "", // LinkInvoice (step berikutnya)
+          ],
+        ],
+      },
     })
 
-    return NextResponse.json({
-      success: true,
-      invoiceID,
-    })
+    return NextResponse.json({ success: true })
   } catch (err: any) {
-    console.error("Order API ERROR:", err)
-    return NextResponse.json(
-      { error: "Order gagal dibuat", detail: err.message },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
