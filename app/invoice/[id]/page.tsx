@@ -7,21 +7,29 @@ const SHEET_ID = process.env.SHEET_ID
 const SERVICE_KEY = process.env.GOOGLE_SERVICE_KEY
 
 async function getOrderData(invoiceId: string): Promise<SheetsOrder | null> {
-  console.log("🔍 SHEET_ID tersedia?", !!SHEET_ID)
-  console.log("🔍 GOOGLE_SERVICE_KEY tersedia?", !!SERVICE_KEY)
-
   if (!SHEET_ID || !SERVICE_KEY) {
-    console.error("❌ Missing SHEET_ID or GOOGLE_SERVICE_KEY")
+    console.error("❌ Missing SHEET_ID or GOOGLE_SERVICE_KEY in env")
+    return null
+  }
+
+  let credentials
+  try {
+    credentials = JSON.parse(SERVICE_KEY.replace(/\\n/g, "\n"))
+  } catch (err) {
+    console.error("❌ Failed to parse GOOGLE_SERVICE_KEY:", err)
     return null
   }
 
   const auth = new google.auth.GoogleAuth({
-    credentials: JSON.parse(SERVICE_KEY),
+    credentials,
     scopes: SCOPES,
   })
 
-  const client = await auth.getClient()
-  const sheets = google.sheets({ version: "v4", auth: client })
+  // FIX: pakai auth langsung, bukan getClient()
+  const sheets = google.sheets({
+    version: "v4",
+    auth,
+  })
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
@@ -37,21 +45,19 @@ async function getOrderData(invoiceId: string): Promise<SheetsOrder | null> {
     return null
   }
 
-  console.log("🎯 Data Invoice ditemukan:", row)
-
   return {
-    timestamp: row[0] || "",
-    invoiceId: row[1] || "",
-    nama: row[2] || "",
-    hp: row[3] || "",
-    alamat: row[4] || "",
-    produk: row[5] || "",
-    qty: row[6] || "1",
-    total: Number(row[7] || 0),
-    status: row[8] || "Pending",
-    paymentMethod: row[9] || "Manual",
-    bankInfo: row[10] || "-",
-    linkInvoice: row[11] || "",
+    timestamp: row[0] ?? "",
+    invoiceId: row[1] ?? "",
+    nama: row[2] ?? "",
+    hp: row[3] ?? "",
+    alamat: row[4] ?? "",
+    produk: row[5] ?? "",
+    qty: row[6] ?? "1",
+    total: Number(row[7] ?? 0),
+    status: row[8] ?? "Pending",
+    paymentMethod: row[9] ?? "Manual",
+    bankInfo: row[10] ?? "-",
+    linkInvoice: row[11] ?? "",
   }
 }
 
@@ -62,11 +68,9 @@ export default async function InvoicePage({ params }: { params: { id: string } }
     return (
       <main className="min-h-screen bg-[#f5f7f7] px-6 py-16 flex justify-center">
         <div className="max-w-lg w-full border rounded-2xl shadow-md p-8 bg-white">
-          <h1 className="text-2xl font-bold text-[#0B4B50] mb-4">
-            Invoice tidak ditemukan
-          </h1>
+          <h1 className="text-2xl font-bold text-[#0B4B50] mb-4">Invoice tidak ditemukan</h1>
           <p className="text-sm text-gray-600">
-            Pastikan link invoice benar atau hubungi admin KOJE24.
+            Pastikan link invoice valid atau hubungi admin KOJE24.
           </p>
         </div>
       </main>
@@ -76,12 +80,8 @@ export default async function InvoicePage({ params }: { params: { id: string } }
   return (
     <main className="min-h-screen bg-[#f5f7f7] px-6 py-16 flex justify-center">
       <div className="max-w-lg w-full border rounded-2xl shadow-md p-8 bg-white">
-        <h1 className="text-2xl font-bold text-[#0B4B50] mb-2">
-          Invoice #{data.invoiceId}
-        </h1>
-        <p className="text-xs text-gray-500 mb-6">
-          Dibuat: {data.timestamp}
-        </p>
+        <h1 className="text-2xl font-bold text-[#0B4B50] mb-2">Invoice #{data.invoiceId}</h1>
+        <p className="text-xs text-gray-500 mb-6">Dibuat: {data.timestamp}</p>
 
         <div className="space-y-1 text-sm text-[#0B4B50] mb-6">
           <p><span className="font-semibold">Nama:</span> {data.nama}</p>
@@ -92,12 +92,8 @@ export default async function InvoicePage({ params }: { params: { id: string } }
         </div>
 
         <div className="border-t pt-4 mb-4">
-          <h2 className="font-semibold text-[#0B4B50] mb-2 text-sm">
-            Rincian Pesanan
-          </h2>
-          <p className="text-sm text-gray-700 whitespace-pre-line">
-            {data.produk}
-          </p>
+          <h2 className="font-semibold text-[#0B4B50] mb-2 text-sm">Rincian Pesanan</h2>
+          <p className="text-sm text-gray-700 whitespace-pre-line">{data.produk}</p>
         </div>
 
         <div className="flex items-center justify-between border-t pt-4">
@@ -109,10 +105,12 @@ export default async function InvoicePage({ params }: { params: { id: string } }
 
         <div className="mt-6 border-t pt-4 text-sm">
           <p className="text-gray-500">
-            Status pembayaran:{" "}
-            <span className="font-semibold text-[#E8A200]">
-              {data.status}
-            </span>
+            Status:{" "}
+            <span className="font-semibold text-[#E8A200]">{data.status}</span>
+          </p>
+          <p className="text-gray-500">
+            Metode pembayaran:{" "}
+            <span className="font-semibold">{data.paymentMethod}</span>
           </p>
         </div>
       </div>
