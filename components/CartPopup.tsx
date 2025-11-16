@@ -40,19 +40,38 @@ export default function CartPopup() {
     (e: ChangeEvt) =>
       setForm((prev) => ({ ...prev, [key]: e.target.value }))
 
-  const handleCheckout = () => {
+  // ⭐ NEW — Checkout → WA → Google Sheet
+  const handleCheckout = async () => {
+    const produkText = items.map((i) => `${i.name}×${i.qty}`).join(", ")
+    const total = Number(totalPrice)
+
+    // 1️⃣ Save to Google Sheet
+    await fetch("/api/order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nama: form.nama,
+        hp: "-", // belum ada field input HP—upgrade nanti
+        alamat: form.alamat,
+        produk: produkText,
+        total,
+      }),
+    })
+
+    // 2️⃣ Open WhatsApp
     const text = `🍹 *Pesanan KOJE24*\n\n${items
       .map((i) => `• ${i.name} × ${i.qty}`)
-      .join("\n")}\n\n💰 *Total:* Rp${Number(totalPrice).toLocaleString(
-      "id-ID"
-    )}\n\n👤 *Nama:* ${form.nama}\n🏡 *Alamat:* ${
-      form.alamat
-    }\n📝 *Catatan:* ${form.catatan || "-"}`
+      .join("\n")}\n\n💰 *Total:* Rp${total.toLocaleString("id-ID")}\n\n👤 *Nama:* ${
+      form.nama
+    }\n🏡 *Alamat:* ${form.alamat}\n📝 *Catatan:* ${form.catatan || "-"}`
 
     window.open(
       `https://wa.me/6282213139580?text=${encodeURIComponent(text)}`,
       "_blank"
     )
+
+    clearCart()
+    close()
   }
 
   if (!open) return null
@@ -88,6 +107,7 @@ export default function CartPopup() {
             Keranjang Kamu
           </h3>
 
+          {/* ITEMS */}
           <div className="space-y-3 max-h-64 overflow-y-auto border-y py-2 mb-4">
             {items.length ? (
               items.map((item) => (
@@ -132,10 +152,12 @@ export default function CartPopup() {
             )}
           </div>
 
+          {/* TOTAL */}
           <div className="text-right text-[#0B4B50] mb-4 font-semibold">
             Total: Rp{Number(totalPrice).toLocaleString("id-ID")}
           </div>
 
+          {/* FORM */}
           <div className="space-y-3 mb-5">
             <input
               type="text"
@@ -167,21 +189,6 @@ export default function CartPopup() {
           >
             Checkout via WhatsApp
           </button>
-
-          {/* ⭐ NEW — Open Rating Popup */}
-          {items.length > 0 && (
-            <button
-              type="button"
-              onClick={() =>
-                window.dispatchEvent(
-                  new CustomEvent("open-rating", { detail: { items } })
-                )
-              }
-              className="w-full mt-3 text-sm text-[#0FA3A8] underline hover:text-[#0B4B50]"
-            >
-              ⭐ Beri Rating Produk
-            </button>
-          )}
         </div>
       </div>
     </>
