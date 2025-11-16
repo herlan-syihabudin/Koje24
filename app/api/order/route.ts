@@ -18,7 +18,8 @@ export async function POST(req: Request) {
     const now = new Date()
     const timestamp = now.toLocaleString("id-ID")
 
-    const sheets = google.sheets({ version: "v4", auth: await auth.getClient() })
+    const client = await auth.getClient()
+    const sheets = google.sheets({ version: "v4", auth: client as any })
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
             "Pending",
             "Manual",
             "",
-            "", // LinkInvoice (step berikutnya)
+            "", // LinkInvoice
           ],
         ],
       },
