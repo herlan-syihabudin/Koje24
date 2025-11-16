@@ -1,72 +1,90 @@
 "use client"
 import { useEffect, useMemo, useState } from "react"
-import { useCart } from "@/components/CartContext"
+import { useCartStore } from "@/stores/cartStore"
 
 type FormState = { nama: string; alamat: string; catatan: string }
 type ChangeEvt = React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 
 export default function CartPopup() {
-  const { cart, addItem, removeItem } = useCart()
+  const { items, addItem, removeItem, clearCart, totalQty, totalPrice } =
+    useCartStore((state) => ({
+      items: state.items,
+      addItem: state.addItem,
+      removeItem: state.removeItem,
+      clearCart: state.clearCart,
+      totalQty: state.totalQty,
+      totalPrice: state.totalPrice,
+    }))
 
-  const totalPrice = useMemo(
-    () => cart.reduce((sum: number, it: any) => sum + it.price * it.qty, 0),
-    [cart]
-  )
-
-  const [form, setForm] = useState<FormState>({ nama: "", alamat: "", catatan: "" })
+  const [form, setForm] = useState<FormState>({
+    nama: "",
+    alamat: "",
+    catatan: "",
+  })
   const [open, setOpen] = useState(false)
 
+  // Listener open-cart
   useEffect(() => {
     const handler = () => setOpen(true)
-    window.addEventListener("open-cart", handler as EventListener)
-    return () => window.removeEventListener("open-cart", handler as EventListener)
+    window.addEventListener("open-cart", handler)
+    return () => window.removeEventListener("open-cart", handler)
   }, [])
+
+  const close = () => setOpen(false)
+
+  // Disable scroll saat popup terbuka
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+  }, [open])
 
   const onChange =
     (key: keyof FormState) =>
     (e: ChangeEvt) =>
       setForm((prev) => ({ ...prev, [key]: e.target.value }))
 
-  const close = () => setOpen(false)
-
   const handleCheckout = () => {
     const pesan = encodeURIComponent(
-      `🍹 *Pesanan KOJE24*\n\n${cart
-        .map((i: any) => `• ${i.name} × ${i.qty}`)
+      `🍹 *Pesanan KOJE24*\n\n${items
+        .map((i) => `• ${i.name} × ${i.qty}`)
         .join("\n")}\n\n💰 *Total:* Rp${Number(totalPrice).toLocaleString(
         "id-ID"
-      )}\n\n👤 *Nama:* ${form.nama}\n🏡 *Alamat:* ${form.alamat}\n📝 *Catatan:* ${form.catatan}`
+      )}\n\n👤 *Nama:* ${form.nama}\n🏡 *Alamat:* ${form.alamat}\n📝 *Catatan:* ${
+        form.catatan || "-"
+      }`
     )
     window.open(`https://wa.me/6282213139580?text=${pesan}`, "_blank")
   }
 
+  if (!open) return null
+
   return (
     <>
-      {/* 🔹 Backdrop */}
+      {/* Backdrop */}
       <div
         aria-hidden="true"
-        role="presentation"
         className={`fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity duration-200 ${
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          open ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         onClick={close}
       />
 
-      {/* 🔹 Container popup */}
+      {/* Popup */}
       <div
-        role="presentation"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Keranjang KOJE24"
+        tabIndex={-1}
+        onKeyDown={(e) => e.key === "Escape" && close()}
         className={`fixed inset-0 z-[61] grid place-items-center px-4 transition-all duration-200 ${
           open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
         }`}
         onClick={close}
-        onKeyDown={(e) => e.key === "Escape" && close()}
-        tabIndex={-1}
       >
-        {/* 🔹 Konten dialog */}
         <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Keranjang KOJE24"
           className="w-full max-w-sm sm:max-w-md md:max-w-lg bg-white rounded-3xl shadow-2xl p-6 relative"
           onClick={(e) => e.stopPropagation()}
         >
@@ -75,7 +93,6 @@ export default function CartPopup() {
             type="button"
             onClick={close}
             className="absolute top-3 right-4 text-gray-500 hover:text-[#0FA3A8] font-bold text-lg"
-            aria-label="Tutup"
           >
             ✕
           </button>
@@ -84,51 +101,45 @@ export default function CartPopup() {
             Keranjang Kamu
           </h3>
 
-          {/* 🔹 Daftar item */}
+          {/* ITEM CART */}
           <div className="space-y-3 max-h-64 overflow-y-auto border-y py-2 mb-4">
-            {cart.length ? (
-              cart.map((item: any) => (
+            {items.length ? (
+              items.map((item) => (
                 <div
                   key={item.id}
                   className="flex items-center justify-between text-sm font-inter text-[#0B4B50]"
                 >
-                  {/* Nama produk */}
                   <span className="flex-1 truncate">{item.name}</span>
 
-                  {/* Tombol qty */}
                   <div className="flex items-center gap-2 mx-2 shrink-0">
                     <button
                       type="button"
-                      onClick={() => {
-                        if (item.qty > 1) {
-                          addItem({ ...item, qty: -1 })
-                        } else {
-                          removeItem(item.id)
-                        }
-                      }}
+                      onClick={() => removeItem(item.id)}
                       className="bg-[#E8C46B] text-[#0B4B50] px-3 py-1.5 rounded-full font-semibold hover:brightness-95 active:scale-95"
-                      aria-label={`Kurangi ${item.name}`}
                     >
                       –
                     </button>
 
-                    <span className="w-6 text-center font-bold" aria-live="polite">
-                      {item.qty}
-                    </span>
+                    <span className="w-6 text-center font-bold">{item.qty}</span>
 
                     <button
                       type="button"
-                      onClick={() => addItem({ ...item, qty: 1 })}
+                      onClick={() =>
+                        addItem({
+                          id: item.id,
+                          name: item.name,
+                          price: item.price,
+                          img: item.img,
+                        })
+                      }
                       className="bg-[#0FA3A8] text-white px-3 py-1.5 rounded-full font-semibold hover:bg-[#0DC1C7] active:scale-95"
-                      aria-label={`Tambah ${item.name}`}
                     >
                       +
                     </button>
                   </div>
 
-                  {/* Harga */}
                   <span className="w-20 text-right shrink-0">
-                    Rp{(item.price * item.qty).toLocaleString("id-ID")}
+                    Rp{(item.qty * item.price).toLocaleString("id-ID")}
                   </span>
                 </div>
               ))
@@ -137,12 +148,12 @@ export default function CartPopup() {
             )}
           </div>
 
-          {/* 🔹 Total harga */}
+          {/* TOTAL */}
           <div className="text-right text-[#0B4B50] mb-4 font-semibold">
             Total: Rp{Number(totalPrice).toLocaleString("id-ID")}
           </div>
 
-          {/* 🔹 Form info pengiriman */}
+          {/* FORM */}
           <div className="space-y-3 mb-5">
             <input
               type="text"
@@ -166,11 +177,11 @@ export default function CartPopup() {
             />
           </div>
 
-          {/* 🔹 Tombol Checkout */}
+          {/* CHECKOUT */}
           <button
             type="button"
             onClick={handleCheckout}
-            disabled={!cart.length}
+            disabled={items.length === 0}
             className="w-full disabled:opacity-50 disabled:cursor-not-allowed bg-[#0FA3A8] text-white py-3 rounded-full font-semibold hover:bg-[#0DC1C7] transition-all"
           >
             Checkout via WhatsApp
