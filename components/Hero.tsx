@@ -33,6 +33,17 @@ export default function Hero() {
       {/* Premium Gradient / Vignette */}
       <div className="absolute inset-0 bg-gradient-to-br from-black/90 via-black/60 to-black/20 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent pointer-events-none" />
+            {/* Mobile & Tablet Product Highlight */}
+      <div className="absolute inset-0 md:hidden bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none" />
+
+      {/* Soft Glow bawah botol (mobile-first) */}
+      <div className="absolute bottom-[18%] right-[28%] md:hidden w-60 h-60 bg-teal-200/25 blur-[110px] rounded-full pointer-events-none" />
+
+      {/* Highlight label agar terbaca (mobile + small desktop) */}
+      <div className="absolute top-[35%] right-0 w-1/2 h-1/3 
+        bg-gradient-to-l from-black/30 via-transparent to-transparent 
+        md:bg-gradient-to-l md:from-black/40 md:via-transparent md:to-transparent
+        pointer-events-none" />
 
       {/* Premium Glow */}
       <div className="absolute top-1/4 right-10 w-60 h-60 bg-teal-300/20 blur-[120px] rounded-full" />
