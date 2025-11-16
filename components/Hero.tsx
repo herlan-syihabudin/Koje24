@@ -1,82 +1,76 @@
 "use client"
-
-import { useEffect, useState } from "react"
 import Image from "next/image"
-import { motion } from "framer-motion"
+import { motion, useScroll, useTransform } from "framer-motion"
+import { useState } from "react"
 
-export default function HeroLuxury() {
-  const [showCTA, setShowCTA] = useState(false)
+export default function Hero() {
+  const { scrollY } = useScroll()
 
-  useEffect(() => {
-    const handler = () => {
-      if (window.scrollY > 80) setShowCTA(true)
-      else setShowCTA(false)
-    }
-    window.addEventListener("scroll", handler)
-    return () => window.removeEventListener("scroll", handler)
-  }, [])
+  const y = useTransform(scrollY, [0, 400], [0, 120])
+  const opacity = useTransform(scrollY, [0, 250], [1, 0.85])
+  const ctaOpacity = useTransform(scrollY, [0, 150, 300], [0, 1, 0])
+  const ctaY = useTransform(scrollY, [0, 150], [30, 0])
+
+  const [loaded, setLoaded] = useState(false)
 
   return (
-    <header className="relative w-full h-screen min-h-[100vh] overflow-hidden">
-      {/* FULLSCREEN IMAGE */}
-      <Image
-        src="/image/hero-botol.jpg"
-        alt="KOJE24 Hero"
-        fill
-        priority
-        className="object-cover object-center"
-      />
+    <section className="relative h-[90vh] md:h-[100vh] w-full overflow-hidden flex items-center justify-start bg-black">
+      {/* Background Parallax */}
+      <motion.div
+        style={{ y, opacity }}
+        className="absolute inset-0 w-full h-full"
+      >
+        <Image
+          src="/image/hero2.png"
+          alt="KOJE24 Natural Cold-Pressed Juice"
+          fill
+          priority
+          quality={95}
+          className={`object-cover object-center transition-all duration-[1800ms] ease-[cubic-bezier(0.45,0,0.55,1)] ${
+            loaded ? "scale-100 opacity-100" : "scale-110 opacity-0"
+          }`}
+          onLoadingComplete={() => setLoaded(true)}
+        />
+      </motion.div>
 
-      {/* PREMIUM GRADIENT OVERLAY */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/30 to-black/80" />
+      {/* Overlay Gradient — lebih halus, biar teks makin kontras tapi tetap natural */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-transparent md:from-black/80 md:via-black/50 pointer-events-none" />
 
-      {/* CENTER CONTENT */}
-      <div className="relative z-20 h-full flex flex-col justify-center items-center text-center px-8">
-        <motion.h1
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.1 }}
-          className="font-playfair text-white font-bold text-[2.3rem] sm:text-[3rem] md:text-[4rem] leading-tight"
-        >
-          Wellness, Elevated.
-        </motion.h1>
+      {/* Konten Hero */}
+      <div className="relative z-10 flex flex-col justify-center text-left w-full px-8 md:px-20 lg:px-32">
+        <div className="max-w-[46rem] translate-y-[6vh] md:translate-y-[4vh] lg:translate-y-[2vh] translate-x-[4vw] md:translate-x-[10vw]">
+          <motion.h1
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+            className="font-playfair text-[2.6rem] sm:text-[3rem] md:text-[4.6rem] text-white font-semibold leading-[1.05] mb-6 drop-shadow-[0_4px_15px_rgba(0,0,0,0.55)] tracking-tight"
+          >
+            <span className="block">Explore the Taste,</span>
+            <span className="block text-[#e9fdfd]">Explore the World</span>
+          </motion.h1>
 
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.3 }}
-          className="text-gray-300 mt-4 text-base sm:text-lg max-w-md"
-        >
-          Cold–Pressed Luxury • Crafted Daily
-        </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 1 }}
+            className="font-inter text-white/85 text-base sm:text-lg md:text-[1.1rem] leading-relaxed mb-10 max-w-[36rem]"
+          >
+            Minuman sehat alami tanpa pengawet — dibuat dari bahan segar untuk keseimbangan tubuh dan energi harian.
+          </motion.p>
+
+          <motion.div style={{ opacity: ctaOpacity, y: ctaY }}>
+            <a
+              href="#produk"
+              className="inline-block bg-[#0FA3A8] hover:bg-[#0B4B50] text-white font-semibold px-8 py-3 rounded-full shadow-lg shadow-[#0FA3A8]/40 backdrop-blur-sm transition-all duration-500 hover:scale-105 active:scale-95 focus:ring-2 focus:ring-[#0FA3A8]/60"
+            >
+              Lihat Produk
+            </a>
+          </motion.div>
+        </div>
       </div>
 
-      {/* CTA muncul saat scrol */}
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={showCTA ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-        transition={{ duration: 0.7 }}
-        className="fixed bottom-10 left-1/2 -translate-x-1/2 z-30"
-      >
-        <a
-          href="#produk"
-          className="px-7 py-3 rounded-full bg-white text-black font-semibold text-sm sm:text-base
-          shadow-[0_10px_35px_rgba(255,255,255,0.25)]
-          hover:bg-[#E5FFF8] transition-all duration-300"
-        >
-          Discover Products →
-        </a>
-      </motion.div>
-
-      {/* Scroll indicator */}
-      <motion.div
-        animate={{ y: [0, 8, 0], opacity: [0.4, 1, 0.4] }}
-        transition={{ duration: 1.8, repeat: Infinity }}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 text-gray-300 text-xs"
-      >
-        Scroll
-      </motion.div>
-
-    </header>
+      {/* Fade bawah */}
+      <div className="absolute bottom-0 left-0 w-full h-28 bg-gradient-to-t from-[#f8fcfc] via-[#f8fcfc]/70 to-transparent pointer-events-none" />
+    </section>
   )
 }
