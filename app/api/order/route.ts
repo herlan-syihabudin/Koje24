@@ -4,7 +4,6 @@ import { google } from "googleapis"
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 const SHEET_ID = process.env.SHEET_ID
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://webkoje-cacs.vercel.app"
 
 const auth = new google.auth.GoogleAuth({
   credentials: JSON.parse(process.env.GOOGLE_SERVICE_KEY || "{}"),
@@ -19,15 +18,16 @@ export async function POST(req: Request) {
     const now = new Date()
     const timestamp = now.toLocaleString("id-ID")
 
-    // 🔹 Generate Invoice ID & Link
+    // 🔹 Generate InvoiceID & URL
     const invoiceId = `INV-${Date.now()}`
-    const invoiceLink = `${BASE_URL}/invoice/${invoiceId}`
+    const origin = new URL(req.url).origin
+    const invoiceUrl = `${origin}/invoice/${invoiceId}`
 
     const client = await auth.getClient()
     const sheets = google.sheets({ version: "v4", auth: client as any })
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID || "",
+      spreadsheetId: SHEET_ID,
       range: "Sheet1!A1",
       valueInputOption: "USER_ENTERED",
       requestBody: {
@@ -39,23 +39,25 @@ export async function POST(req: Request) {
             hp || "-",        // D: Hp
             alamat,           // E: Alamat
             produk,           // F: Produk
-            total,            // G: Total
-            "Pending",        // H: Status
-            "Manual",         // I: PaymentMethod
-            "",               // J: BankInfo
-            invoiceLink,      // K: LinkInvoice
+            "",               // G: Qty (bisa diisi next upgrade)
+            total,            // H: Total
+            "Pending",        // I: Status
+            "Manual",         // J: PaymentMethod
+            "",               // K: BankInfo
+            invoiceUrl,       // L: LinkInvoice
           ],
         ],
       },
     })
 
+    // 🔙 Balikin ke frontend
     return NextResponse.json({
       success: true,
       invoiceId,
-      invoiceLink,
+      invoiceUrl,
     })
   } catch (err: any) {
-    console.error("API /api/order error:", err)
+    console.error("API /order ERROR:", err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
