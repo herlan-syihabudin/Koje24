@@ -1,50 +1,11 @@
-import { NextRequest, NextResponse } from "next/server"
 import { google } from "googleapis"
+import { NextResponse } from "next/server"
 
-const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID
+const SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
+const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n")
 
-/**
- * Helper: bikin client Google Sheets
- */
-async function getSheetsClient() {
-  const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL
-  const privateKey = process.env.GOOGLE_SHEETS_PRIVATE_KEY
-  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
-
-  if (!clientEmail || !privateKey || !spreadsheetId) {
-    throw new Error("Google Sheets env belum lengkap")
-  }
-
-  const auth = new google.auth.JWT(
-    clientEmail,
-    undefined,
-    // penting: ganti \n jadi newline bener
-    privateKey.replace(/\\n/g, "\n"),
-    SCOPES
-  )
-
-  const sheets = google.sheets({ version: "v4", auth })
-
-  return { sheets, spreadsheetId }
-}
-
-/**
- * Helper: bikin InvoiceID simple
- * Contoh: KOJE-20251116-1234
- */
-function generateInvoiceId() {
-  const d = new Date()
-  const pad = (n: number) => n.toString().padStart(2, "0")
-  const datePart = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`
-  const rand = Math.floor(Math.random() * 9000) + 1000
-  return `KOJE-${datePart}-${rand}`
-}
-
-/**
- * POST /api/order
- * Body: { nama, hp?, alamat, catatan?, items, total }
- */
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const body = await req.json()
 
@@ -52,82 +13,55 @@ export async function POST(req: NextRequest) {
       nama,
       hp,
       alamat,
-      catatan,
       items,
-      total,
-    }: {
-      nama: string
-      hp?: string
-      alamat: string
-      catatan?: string
-      items: { id: string; name: string; price: number; qty: number }[]
-      total: number
+      total
     } = body
 
-    if (!nama || !alamat || !items || !items.length) {
-      return NextResponse.json(
-        { ok: false, message: "Data order tidak lengkap" },
-        { status: 400 }
-      )
+    if (!items?.length) {
+      return NextResponse.json({ error: "Cart kosong" }, { status: 400 })
     }
 
-    const { sheets, spreadsheetId } = await getSheetsClient()
+    const auth = new google.auth.JWT(
+      SERVICE_ACCOUNT_EMAIL,
+      undefined,
+      PRIVATE_KEY,
+      ["https://www.googleapis.com/auth/spreadsheets"]
+    )
 
-    const now = new Date()
-    const timestamp = now.toLocaleString("id-ID", {
-      timeZone: "Asia/Jakarta",
-    })
+    const sheets = google.sheets({ version: "v4", auth })
 
-    const invoiceId = generateInvoiceId()
+    const invoiceID = "INV-" + Date.now() // ID unik
 
-    // Produk & Qty
-    const produkText = items
-      .map((i) => `${i.name} × ${i.qty}`)
-      .join(", ")
-
-    const totalQty = items.reduce((sum, i) => sum + i.qty, 0)
-
-    // Default untuk kolom yang belum kita gunakan penuh
-    const status = "Pending"
-    const paymentMethod = "Transfer Bank"
-    const bankInfo = "" // nanti kita isi misal: BCA 1234 a.n KOJE24
-    const linkInvoice = "" // nanti kalau sudah punya PDF / link invoice
-
-    // Urutan kolom:
-    // Timestamp | InvoiceID | Nama | Hp | Alamat | Produk | Qty | Total | Status | PaymentMethod | BankInfo | LinkInvoice
-    const row = [
-      timestamp,
-      invoiceId,
+    const rows = items.map((item: any) => [
+      new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" }),
+      invoiceID,
       nama,
-      hp || "",
+      hp,
       alamat,
-      produkText,
-      totalQty,
-      Number(total) || 0,
-      status,
-      paymentMethod,
-      bankInfo,
-      linkInvoice,
-    ]
+      item.name,
+      item.qty,
+      item.qty * item.price,
+      "Pending",
+      "Transfer Bank",
+      "-",
+      "-",
+    ])
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: "A:Z", // pakai sheet pertama; kalau mau spesifik: 'Invoice!A:Z'
+      spreadsheetId: SPREADSHEET_ID,
+      range: "Sheet1!A:L",
       valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [row],
-      },
+      requestBody: { values: rows },
     })
 
-    return NextResponse.json({ ok: true, invoiceId })
+    return NextResponse.json({
+      success: true,
+      invoiceID,
+    })
   } catch (err: any) {
-    console.error("Error /api/order:", err)
+    console.error("Order API ERROR:", err)
     return NextResponse.json(
-      {
-        ok: false,
-        message: "Gagal menyimpan order ke Google Sheet",
-        error: err?.message || String(err),
-      },
+      { error: "Order gagal dibuat", detail: err.message },
       { status: 500 }
     )
   }
