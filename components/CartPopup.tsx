@@ -18,6 +18,7 @@ export default function CartPopup() {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  // 🟢 Tampilkan popup saat event open-cart dipanggil
   useEffect(() => {
     const handler = () => setOpen(true)
     window.addEventListener("open-cart", handler)
@@ -26,6 +27,7 @@ export default function CartPopup() {
 
   const close = () => setOpen(false)
 
+  // 🔒 Lock scroll saat popup terbuka
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : ""
   }, [open])
@@ -35,9 +37,10 @@ export default function CartPopup() {
     (e: ChangeEvt) =>
       setForm((prev) => ({ ...prev, [key]: e.target.value }))
 
+  // 🚀 Checkout → Google Sheet + WhatsApp + Invoice Page
   const handleCheckout = async () => {
     if (!form.nama || !form.hp || !form.alamat) {
-      alert("Isi Nama, HP, dan Alamat dulu ya 🙏")
+      alert("Isi Nama, HP, dan Alamat ya 🙏")
       return
     }
 
@@ -47,7 +50,8 @@ export default function CartPopup() {
     const total = Number(totalPrice)
 
     try {
-      await fetch("/api/order", {
+      // 1️⃣ Simpan order ke Google Sheet
+      const res = await fetch("/api/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -59,26 +63,37 @@ export default function CartPopup() {
         }),
       })
 
+      let invoiceUrl: string | null = null
+      if (res.ok) {
+        const json = await res.json()
+        invoiceUrl = json.invoiceUrl || null
+      }
+
+      // 2️⃣ Format pesan untuk WhatsApp
       const text = `🍹 *Pesanan KOJE24*\n\n${items
         .map((i) => `• ${i.name} × ${i.qty}`)
-        .join("\n")}\n\n💰 *Total:* Rp${total.toLocaleString(
-        "id-ID"
-      )}\n\n📞 *HP:* ${form.hp}\n👤 *Nama:* ${
+        .join("\n")}\n\n📞 *HP:* ${form.hp}\n👤 *Nama:* ${
         form.nama
       }\n🏡 *Alamat:* ${form.alamat}\n📝 *Catatan:* ${
         form.catatan || "-"
-      }`
+      }\n\n💰 *Total:* Rp${total.toLocaleString("id-ID")}`
 
+      // 3️⃣ Buka WhatsApp
       window.open(
         `https://wa.me/6282213139580?text=${encodeURIComponent(text)}`,
         "_blank"
       )
 
+      // 4️⃣ Jika invoiceUrl tersedia → buka halaman invoice
+      if (invoiceUrl) {
+        window.open(invoiceUrl, "_blank")
+      }
+
       clearCart()
       close()
     } catch (err) {
       console.error("Checkout Error:", err)
-      alert("Gagal kirim order ke server. Coba lagi ya 🙏")
+      alert("Order gagal terkirim. Coba lagi ya 🙏")
     }
 
     setLoading(false)
@@ -88,10 +103,13 @@ export default function CartPopup() {
 
   return (
     <>
-      {/* OVERLAY */}
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]" onClick={close} />
+      {/* Overlay Background */}
+      <div
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
+        onClick={close}
+      />
 
-      {/* POPUP */}
+      {/* Popup Card */}
       <div className="fixed inset-0 grid place-items-center z-[61] p-4">
         <div
           className="bg-white w-full max-w-md rounded-3xl p-6 relative shadow-2xl"
@@ -108,7 +126,7 @@ export default function CartPopup() {
             Keranjang Kamu
           </h3>
 
-          {/* LIST PRODUK */}
+          {/* Produk List */}
           <div className="max-h-64 overflow-y-auto border-y py-3 mb-4 space-y-3">
             {items.length ? (
               items.map((item) => (
@@ -147,23 +165,25 @@ export default function CartPopup() {
                 </div>
               ))
             ) : (
-              <p className="text-center text-gray-400">Keranjang masih kosong</p>
+              <p className="text-center text-gray-400">
+                Keranjang masih kosong
+              </p>
             )}
           </div>
 
-          {/* TOTAL */}
+          {/* Total */}
           <div className="text-right font-semibold text-[#0B4B50] mb-4">
             Total: Rp{totalPrice.toLocaleString("id-ID")}
           </div>
 
-          {/* FORM */}
+          {/* Form Order */}
           <div className="space-y-3 mb-5">
             <input
               type="text"
               placeholder="Nomor HP (WA)"
               value={form.hp}
               onChange={onChange("hp")}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-[#0FA3A8]"
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:border-[#0FA3A8]"
             />
             <input
               type="text"
@@ -187,7 +207,7 @@ export default function CartPopup() {
             />
           </div>
 
-          {/* CTA */}
+          {/* Checkout Button */}
           <button
             disabled={loading || items.length === 0}
             onClick={handleCheckout}
