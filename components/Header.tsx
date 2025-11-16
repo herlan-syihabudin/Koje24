@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from "react"
 import { FaBars, FaTimes, FaWhatsapp } from "react-icons/fa"
+import { ShoppingCart } from "lucide-react"
 import Link from "next/link"
+import { useCartStore } from "@/stores/cartStore"
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+
+  const totalQty = useCartStore((state) => state.totalQty)
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 60)
@@ -14,9 +18,6 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  /* =====================================
-     BODY LOCK — UNIVERSAL FIX
-  ====================================== */
   const lockBody = () => {
     document.body.style.position = "fixed"
     document.body.style.inset = "0"
@@ -44,9 +45,6 @@ export default function Header() {
     setTimeout(unlockBody, 150)
   }
 
-  /* =====================================
-     SCROLL TO SECTION
-  ====================================== */
   const scrollToSection = (href: string) => {
     const target = document.querySelector(href)
     if (!target) return
@@ -79,7 +77,6 @@ export default function Header() {
       )}
 
       <div className="max-w-7xl mx-auto flex items-center justify-between py-4 px-5 md:px-10">
-
         {/* LOGO */}
         <Link
           href="/"
@@ -112,6 +109,20 @@ export default function Header() {
             </button>
           ))}
 
+          {/* CART ICON */}
+          <button
+            aria-label="Buka keranjang"
+            className="relative"
+            onClick={() => window.dispatchEvent(new CustomEvent("open-cart"))}
+          >
+            <ShoppingCart size={24} className={isScrolled ? "text-[#0B4B50]" : "text-white"} />
+            {totalQty > 0 && (
+              <span className="absolute -top-2 -right-2 bg-[#E8C46B] text-[#0B4B50] text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
+                {totalQty}
+              </span>
+            )}
+          </button>
+
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
@@ -137,15 +148,13 @@ export default function Header() {
         </button>
       </div>
 
-      {/* ========================
-          MOBILE OVERLAY
-      ========================= */}
+      {/* MOBILE OVERLAY */}
       {menuOpen && (
         <div
           className="
             fixed left-0 top-0 
             w-screen 
-            h-[100dvh]         /* SOLUSI UTAMA */
+            h-[100dvh]
             z-[200]
             flex flex-col items-center justify-center
             bg-white/90 backdrop-blur-2xl
