@@ -12,6 +12,7 @@ import StickyCartBar from "@/components/StickyCartBar"
 import CartPopup from "@/components/CartPopup"
 import PackagePopup from "@/components/PackagePopup"
 import PackagesSection from "@/components/PackagesSection"
+import RatingPopup from "@/components/RatingPopup" // ⭐ NEW
 
 export default function HomePage() {
   return (
@@ -30,7 +31,7 @@ export default function HomePage() {
         <AboutSection />
       </section>
 
-      {/* ========= PAKET (NO NAV HEADER) ========= */}
+      {/* ========= PAKET ========= */}
       <PackagesSection />
 
       {/* ========= LANGGANAN ========= */}
@@ -39,7 +40,7 @@ export default function HomePage() {
       </section>
 
       {/* ========= TESTIMONI ========= */}
-      <TestimoniCarousel />  {/* sudah ada id="testimoni" di dalamnya */}
+      <TestimoniCarousel />
 
       {/* ========= FAQ ========= */}
       <section id="faq" className="scroll-mt-24">
@@ -51,6 +52,7 @@ export default function HomePage() {
       {/* ========== POPUPS ========== */}
       <CartPopup />
       <PackagePopup />
+      <RatingPopup /> {/* ⭐ AUTO-BEST SELLER LOGIC */}
 
       <StickyCartBar />
 
