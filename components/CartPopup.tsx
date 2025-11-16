@@ -23,7 +23,6 @@ export default function CartPopup() {
   })
   const [open, setOpen] = useState(false)
 
-  // Listener open-cart
   useEffect(() => {
     const handler = () => setOpen(true)
     window.addEventListener("open-cart", handler)
@@ -32,13 +31,8 @@ export default function CartPopup() {
 
   const close = () => setOpen(false)
 
-  // Disable scroll saat popup terbuka
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = ""
-    }
+    document.body.style.overflow = open ? "hidden" : ""
   }, [open])
 
   const onChange =
@@ -47,38 +41,32 @@ export default function CartPopup() {
       setForm((prev) => ({ ...prev, [key]: e.target.value }))
 
   const handleCheckout = () => {
-    const pesan = encodeURIComponent(
-      `🍹 *Pesanan KOJE24*\n\n${items
-        .map((i) => `• ${i.name} × ${i.qty}`)
-        .join("\n")}\n\n💰 *Total:* Rp${Number(totalPrice).toLocaleString(
-        "id-ID"
-      )}\n\n👤 *Nama:* ${form.nama}\n🏡 *Alamat:* ${form.alamat}\n📝 *Catatan:* ${
-        form.catatan || "-"
-      }`
+    const text = `🍹 *Pesanan KOJE24*\n\n${items
+      .map((i) => `• ${i.name} × ${i.qty}`)
+      .join("\n")}\n\n💰 *Total:* Rp${Number(totalPrice).toLocaleString(
+      "id-ID"
+    )}\n\n👤 *Nama:* ${form.nama}\n🏡 *Alamat:* ${
+      form.alamat
+    }\n📝 *Catatan:* ${form.catatan || "-"}`
+
+    window.open(
+      `https://wa.me/6282213139580?text=${encodeURIComponent(text)}`,
+      "_blank"
     )
-    window.open(`https://wa.me/6282213139580?text=${pesan}`, "_blank")
   }
 
   if (!open) return null
 
   return (
     <>
-      {/* Backdrop */}
       <div
-        aria-hidden="true"
         className={`fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity duration-200 ${
           open ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         onClick={close}
       />
 
-      {/* Popup */}
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Keranjang KOJE24"
-        tabIndex={-1}
-        onKeyDown={(e) => e.key === "Escape" && close()}
         className={`fixed inset-0 z-[61] grid place-items-center px-4 transition-all duration-200 ${
           open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
         }`}
@@ -88,7 +76,6 @@ export default function CartPopup() {
           className="w-full max-w-sm sm:max-w-md md:max-w-lg bg-white rounded-3xl shadow-2xl p-6 relative"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Tombol Tutup */}
           <button
             type="button"
             onClick={close}
@@ -101,7 +88,6 @@ export default function CartPopup() {
             Keranjang Kamu
           </h3>
 
-          {/* ITEM CART */}
           <div className="space-y-3 max-h-64 overflow-y-auto border-y py-2 mb-4">
             {items.length ? (
               items.map((item) => (
@@ -113,7 +99,6 @@ export default function CartPopup() {
 
                   <div className="flex items-center gap-2 mx-2 shrink-0">
                     <button
-                      type="button"
                       onClick={() => removeItem(item.id)}
                       className="bg-[#E8C46B] text-[#0B4B50] px-3 py-1.5 rounded-full font-semibold hover:brightness-95 active:scale-95"
                     >
@@ -123,7 +108,6 @@ export default function CartPopup() {
                     <span className="w-6 text-center font-bold">{item.qty}</span>
 
                     <button
-                      type="button"
                       onClick={() =>
                         addItem({
                           id: item.id,
@@ -138,7 +122,7 @@ export default function CartPopup() {
                     </button>
                   </div>
 
-                  <span className="w-20 text-right shrink-0">
+                  <span className="w-20 text-right">
                     Rp{(item.qty * item.price).toLocaleString("id-ID")}
                   </span>
                 </div>
@@ -148,12 +132,10 @@ export default function CartPopup() {
             )}
           </div>
 
-          {/* TOTAL */}
           <div className="text-right text-[#0B4B50] mb-4 font-semibold">
             Total: Rp{Number(totalPrice).toLocaleString("id-ID")}
           </div>
 
-          {/* FORM */}
           <div className="space-y-3 mb-5">
             <input
               type="text"
@@ -177,7 +159,6 @@ export default function CartPopup() {
             />
           </div>
 
-          {/* CHECKOUT */}
           <button
             type="button"
             onClick={handleCheckout}
@@ -186,6 +167,21 @@ export default function CartPopup() {
           >
             Checkout via WhatsApp
           </button>
+
+          {/* ⭐ NEW — Open Rating Popup */}
+          {items.length > 0 && (
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("open-rating", { detail: { items } })
+                )
+              }
+              className="w-full mt-3 text-sm text-[#0FA3A8] underline hover:text-[#0B4B50]"
+            >
+              ⭐ Beri Rating Produk
+            </button>
+          )}
         </div>
       </div>
     </>
