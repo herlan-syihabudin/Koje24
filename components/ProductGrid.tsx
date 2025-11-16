@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { useState } from "react"
-import { useCart } from "@/components/CartContext"
+import { useCartStore } from "@/stores/cartStore"
 
 type Product = {
   id: number
@@ -14,7 +14,6 @@ type Product = {
   isPackage?: boolean
 }
 
-// 👇 helper aman untuk convert "Rp18.000" → 18000
 const toNumber = (p: number | string): number =>
   typeof p === "number" ? p : Number(String(p).replace(/[^0-9]/g, "")) || 0
 
@@ -39,16 +38,16 @@ const products: Product[] = [
 ]
 
 export default function ProductGrid({ showHeading = true }: { showHeading?: boolean }) {
-  const { cart, addItem, removeItem } = useCart()
+  const items = useCartStore((state) => state.items)
+  const addToCart = useCartStore((state) => state.addItem)
+  const removeFromCart = useCartStore((state) => state.removeItem)
+
   const [imgReady, setImgReady] = useState<Record<number, boolean>>({})
   const [added, setAdded] = useState<number | null>(null)
 
-  const qtyOf = (id: number) => cart.find((c) => c.id === id)?.qty || 0
+  const qtyOf = (id: number) => items.find((c) => c.id === id.toString())?.qty || 0
 
-  // 👉 buka popup paket — dipisah biar gak double-trigger
   const openPackage = (name: string, price: number | string) => {
-    // pakai CustomEvent bertipe any untuk hindari TS merah di window.dispatchEvent
-    // (browser runtime aman)
     window.dispatchEvent(
       new CustomEvent("open-package" as any, {
         detail: { name, price: toNumber(price) },
@@ -57,12 +56,17 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
   }
 
   const handleAddProduct = (p: Product) => {
-    // produk biasa → masuk keranjang
     const priceNum = toNumber(p.price)
-    addItem({ id: p.id, name: p.name, price: priceNum, qty: 1 })
+
+    addToCart({
+      id: p.id.toString(),
+      name: p.name,
+      price: priceNum,
+      img: p.img,
+    })
+
     setAdded(p.id)
 
-    // animasi “terbang ke cart”
     setTimeout(() => {
       const img = document.querySelector(`[data-id="product-${p.id}"]`) as HTMLElement | null
       const cartBtn = document.querySelector(".fixed.bottom-5.right-5 button") as HTMLElement | null
@@ -84,7 +88,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
         transform: "scale(1)",
         transition: "all 0.9s cubic-bezier(0.45, 0, 0.55, 1)",
         boxShadow: "0 0 30px 10px rgba(15,163,168,0.4)",
-      } as CSSStyleDeclaration)
+      })
 
       document.body.appendChild(clone)
 
@@ -105,10 +109,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
   }
 
   return (
-    <section
-      id="produk"
-      className="bg-gradient-to-b from-[#f8fcfc] to-[#f3fafa] text-[#0B4B50] py-20 md:py-28 px-6 md:px-14 lg:px-24"
-    >
+    <section id="produk" className="bg-gradient-to-b from-[#f8fcfc] to-[#f3fafa] text-[#0B4B50] py-20 md:py-28 px-6 md:px-14 lg:px-24">
       {showHeading && (
         <div className="text-center mb-16">
           <h2 className="font-playfair text-3xl md:text-4xl font-semibold mb-3 text-[#0B4B50] tracking-tight">
@@ -163,7 +164,6 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                   <span className="font-bold text-[#0B4B50] text-lg">{formatIDR(priceNum)}</span>
 
                   {p.isPackage ? (
-                    // 👉 paket: langsung buka popup, tidak masuk keranjang
                     <button
                       onClick={() => openPackage(p.name, p.price)}
                       className="ml-auto bg-[#E8C46B] text-[#0B4B50] text-sm px-6 py-2 rounded-full font-semibold hover:brightness-110 active:scale-95 transition-transform"
@@ -173,7 +173,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                   ) : qty > 0 ? (
                     <div className="flex items-center gap-2 ml-auto">
                       <button
-                        onClick={() => removeItem(p.id)}
+                        onClick={() => removeFromCart(p.id.toString())}
                         className="bg-[#E8C46B] text-[#0B4B50] text-sm px-3 py-2 rounded-full font-semibold hover:brightness-95 active:scale-90 transition-transform"
                       >
                         –
@@ -190,9 +190,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                     <button
                       onClick={() => handleAddProduct(p)}
                       className={`ml-auto text-white text-sm px-6 py-2 rounded-full font-semibold transition-all duration-300 shadow-sm min-w-[120px] text-center ${
-                        isAdded
-                          ? "bg-emerald-500 scale-105"
-                          : "bg-[#0FA3A8] hover:bg-[#0DC1C7] hover:scale-[1.03]"
+                        isAdded ? "bg-emerald-500 scale-105" : "bg-[#0FA3A8] hover:bg-[#0DC1C7] hover:scale-[1.03]"
                       }`}
                     >
                       {isAdded ? "✔ Ditambahkan" : "Tambah"}
