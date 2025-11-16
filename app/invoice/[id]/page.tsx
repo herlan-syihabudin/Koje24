@@ -4,19 +4,23 @@ import { SheetsOrder } from "@/types/order"
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 const SHEET_ID = process.env.SHEET_ID
+const SERVICE_KEY = process.env.GOOGLE_SERVICE_KEY
 
 async function getOrderData(invoiceId: string): Promise<SheetsOrder | null> {
-  if (!SHEET_ID) return null
+  if (!SHEET_ID || !SERVICE_KEY) {
+    console.error("❌ Missing environment variables SHEET_ID or GOOGLE_SERVICE_KEY")
+    return null
+  }
 
   const auth = new google.auth.GoogleAuth({
-    credentials: JSON.parse(process.env.GOOGLE_SERVICE_KEY || "{}"),
+    credentials: JSON.parse(SERVICE_KEY),
     scopes: SCOPES,
   })
 
   const client = await auth.getClient()
   const sheets = google.sheets({ version: "v4", auth: client as any })
 
-  // 🔍 Ambil data dari Sheet1 (skip baris header)
+  // Ambil semua entry tanpa header
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: "Sheet1!A2:L999",
@@ -24,8 +28,19 @@ async function getOrderData(invoiceId: string): Promise<SheetsOrder | null> {
 
   const rows = res.data.values || []
 
-  const row = rows.find((r) => r[1] === invoiceId) // kolom B = InvoiceID
-  if (!row) return null
+  // Cari berdasarkan kolom B (InvoiceID)
+  const row = rows.find((r) => {
+    const match = r[1] === invoiceId
+    if (match) {
+      console.log("🎯 Invoice ditemukan:", r)
+    }
+    return match
+  })
+
+  if (!row) {
+    console.warn("⚠ Invoice tidak ditemukan di Sheet untuk:", invoiceId)
+    return null
+  }
 
   return {
     timestamp: row[0] || "",
@@ -34,20 +49,16 @@ async function getOrderData(invoiceId: string): Promise<SheetsOrder | null> {
     hp: row[3] || "",
     alamat: row[4] || "",
     produk: row[5] || "",
-    qty: row[6] || "",
+    qty: row[6] || "1",
     total: Number(row[7] || 0),
-    status: row[8] || "",
-    paymentMethod: row[9] || "",
-    bankInfo: row[10] || "",
+    status: row[8] || "Pending",
+    paymentMethod: row[9] || "Manual",
+    bankInfo: row[10] || "-",
     linkInvoice: row[11] || "",
   }
 }
 
-export default async function InvoicePage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default async function InvoicePage({ params }: { params: { id: string } }) {
   const data = await getOrderData(params.id)
 
   if (!data) {
@@ -103,12 +114,13 @@ export default async function InvoicePage({
           <p className="text-gray-500">
             Status pembayaran:{" "}
             <span className="font-semibold text-[#E8A200]">
-              {data.status || "Pending"}
+              {data.status}
             </span>
           </p>
           {data.paymentMethod && (
             <p className="text-gray-500">
-              Metode pembayaran: <span className="font-semibold">{data.paymentMethod}</span>
+              Metode pembayaran:{" "}
+              <span className="font-semibold">{data.paymentMethod}</span>
             </p>
           )}
         </div>
