@@ -3,8 +3,8 @@ import { google } from "googleapis"
 import { SheetsOrder } from "@/types/order"
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-const SHEET_ID = process.env.SHEET_ID
-const SERVICE_KEY = process.env.GOOGLE_SERVICE_KEY
+const SHEET_ID = process.env.GOOGLE_SHEET_ID
+const SERVICE_KEY = process.env.GOOGLE_PRIVATE_KEY
 
 async function getOrderData(invoiceId: string): Promise<SheetsOrder | null> {
   if (!SHEET_ID || !SERVICE_KEY) {
