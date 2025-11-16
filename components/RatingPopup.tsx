@@ -1,11 +1,11 @@
 "use client"
 import { useEffect, useState } from "react"
-import { updateProductRating } from "@/lib/bestSeller" // fungsi scoring
+import { updateProductRating } from "@/lib/bestSeller"
 
 export default function RatingPopup() {
   const [open, setOpen] = useState(false)
   const [products, setProducts] = useState<any[]>([])
-  const [ratings, setRatings] = useState<{ [key: string]: number }>({})
+  const [ratings, setRatings] = useState<{ [id: string]: number }>({})
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -17,10 +17,10 @@ export default function RatingPopup() {
   }, [])
 
   const submitRating = () => {
-    Object.entries(ratings).forEach(([id, rating]) => {
-      updateProductRating(Number(id), rating)
-    })
-    alert("Terima kasih! Rating kamu disimpan ⭐")
+    Object.entries(ratings).forEach(([id, star]) =>
+      updateProductRating(Number(id), star)
+    )
+    alert("Terima kasih! ⭐ Rating tersimpan.")
     setOpen(false)
   }
 
@@ -56,9 +56,9 @@ export default function RatingPopup() {
 
         <button
           onClick={submitRating}
-          className="w-full bg-[#0FA3A8] text-white py-2 rounded-full mt-3"
+          className="w-full bg-[#0FA3A8] text-white py-2 rounded-full mt-3 font-semibold"
         >
-          Kirim Rating
+          Kirim Rating ⭐
         </button>
 
         <button
