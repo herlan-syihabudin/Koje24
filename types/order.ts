@@ -5,7 +5,7 @@ export interface SheetsOrder {
   hp: string
   alamat: string
   produk: string
-  qty: number // ← TAMBAHKAN BARIS INI
+  qty: number | string // ← DITAMBAHKAN INI
   total: number
   status: string
   paymentMethod: string
