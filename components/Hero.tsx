@@ -13,7 +13,7 @@ export default function Hero() {
   const [loaded, setLoaded] = useState(false)
 
   return (
-    <section className="relative h-[92vh] md:h-[100vh] w-full overflow-hidden flex items-center justify-start bg-black">
+    <section className="relative min-h-screen w-full overflow-hidden flex items-center justify-start bg-black">
 
       {/* Background Image Parallax */}
       <motion.div style={{ y, opacity }} className="absolute inset-0 w-full h-full">
@@ -37,6 +37,8 @@ export default function Hero() {
       {/* Premium Glow */}
       <div className="absolute top-1/4 right-10 w-60 h-60 bg-teal-300/20 blur-[120px] rounded-full" />
       <div className="absolute bottom-20 left-0 w-48 h-48 bg-emerald-400/10 blur-[100px] rounded-full" />
+      {/* Vignette Right Extra Depth */}
+<div className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-black/60 to-transparent pointer-events-none" />
 
       {/* Content */}
       <div className="relative z-10 w-full px-6 md:px-20 lg:px-32 pt-24 md:pt-0">
@@ -89,7 +91,7 @@ export default function Hero() {
       </div>
 
       {/* Soft bottom fade */}
-      <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-[#f8fcfc] via-[#f8fcfc]/60 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-[#f8fcfc]/95 via-[#f8fcfc]/50 to-transparent pointer-events-none" />
     </section>
   )
 }
