@@ -3,12 +3,15 @@ import { google } from "googleapis"
 import { SheetsOrder } from "@/types/order"
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-const SHEET_ID = process.env.GOOGLE_SHEET_ID
-const SERVICE_KEY = process.env.GOOGLE_PRIVATE_KEY
+const SHEET_ID = process.env.SHEET_ID
+const SERVICE_KEY = process.env.GOOGLE_SERVICE_KEY
 
 async function getOrderData(invoiceId: string): Promise<SheetsOrder | null> {
+  console.log("🔍 SHEET_ID tersedia?", !!SHEET_ID)
+  console.log("🔍 GOOGLE_SERVICE_KEY tersedia?", !!SERVICE_KEY)
+
   if (!SHEET_ID || !SERVICE_KEY) {
-    console.error("❌ Missing environment variables SHEET_ID or GOOGLE_SERVICE_KEY")
+    console.error("❌ Missing SHEET_ID or GOOGLE_SERVICE_KEY")
     return null
   }
 
@@ -18,9 +21,8 @@ async function getOrderData(invoiceId: string): Promise<SheetsOrder | null> {
   })
 
   const client = await auth.getClient()
-  const sheets = google.sheets({ version: "v4", auth: client as any })
+  const sheets = google.sheets({ version: "v4", auth: client })
 
-  // Ambil semua entry tanpa header
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: "Sheet1!A2:L999",
@@ -28,19 +30,14 @@ async function getOrderData(invoiceId: string): Promise<SheetsOrder | null> {
 
   const rows = res.data.values || []
 
-  // Cari berdasarkan kolom B (InvoiceID)
-  const row = rows.find((r) => {
-    const match = r[1] === invoiceId
-    if (match) {
-      console.log("🎯 Invoice ditemukan:", r)
-    }
-    return match
-  })
+  const row = rows.find((r) => r[1] === invoiceId)
 
   if (!row) {
-    console.warn("⚠ Invoice tidak ditemukan di Sheet untuk:", invoiceId)
+    console.warn("⚠ Invoice tidak ditemukan:", invoiceId)
     return null
   }
+
+  console.log("🎯 Data Invoice ditemukan:", row)
 
   return {
     timestamp: row[0] || "",
@@ -88,7 +85,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
 
         <div className="space-y-1 text-sm text-[#0B4B50] mb-6">
           <p><span className="font-semibold">Nama:</span> {data.nama}</p>
-          {data.hp && data.hp !== "-" && (
+          {data.hp !== "-" && (
             <p><span className="font-semibold">HP:</span> {data.hp}</p>
           )}
           <p><span className="font-semibold">Alamat:</span> {data.alamat}</p>
@@ -117,12 +114,6 @@ export default async function InvoicePage({ params }: { params: { id: string } }
               {data.status}
             </span>
           </p>
-          {data.paymentMethod && (
-            <p className="text-gray-500">
-              Metode pembayaran:{" "}
-              <span className="font-semibold">{data.paymentMethod}</span>
-            </p>
-          )}
         </div>
       </div>
     </main>
