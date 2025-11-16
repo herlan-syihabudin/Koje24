@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { useState } from "react"
 import { useCartStore } from "@/stores/cartStore"
-import { useBestSellerRanking } from "@/lib/bestSeller"
+import { useBestSellerRanking } from "@/lib/bestSeller" // ⭐ NEW
 
 type Product = {
   id: number
@@ -21,8 +21,8 @@ const toNumber = (p: number | string): number =>
 const formatIDR = (n: number) => `Rp${n.toLocaleString("id-ID")}`
 
 const products: Product[] = [
-  { id: 1, name: "Detox", desc: "Bayam • Apel • Lemon • Jahe — segar, rendah kalori.", price: "Rp18.000", img: "/image/detox.JPG", tag: "Best Seller" },
-  { id: 2, name: "Yellow Immunity", desc: "Jeruk • Nanas • Kunyit • Madu — bantu daya tahan tubuh.", price: "Rp18.000", img: "/image/yellowseries.JPG", tag: "Best Seller" },
+  { id: 1, name: "Detox", desc: "Bayam • Apel • Lemon • Jahe — segar, rendah kalori.", price: "Rp18.000", img: "/image/detox.JPG" },
+  { id: 2, name: "Yellow Immunity", desc: "Jeruk • Nanas • Kunyit • Madu — bantu daya tahan tubuh.", price: "Rp18.000", img: "/image/yellowseries.JPG" },
   { id: 3, name: "Red Series", desc: "Semangka • Jeruk • Serai — jaga stamina & energi harian.", price: "Rp18.000", img: "/image/juice-redseries.jpg" },
   { id: 4, name: "Sunrise", desc: "Wortel • Jeruk • Serai — bantu menjaga stamina tubuh.", price: "Rp18.000", img: "/image/juice-orange.jpg" },
   { id: 5, name: "Sunrise+", desc: "Wortel • Jeruk • Serai — rasa lebih bold.", price: "Rp18.000", img: "/image/juice-sunrise.jpg" },
@@ -33,7 +33,6 @@ const products: Product[] = [
     desc: "6 botol/hari kombinasi varian sehat untuk detoks tubuh total.",
     price: "Rp320.000",
     img: "/image/paket-detox.jpg",
-    tag: "Paket Spesial",
     isPackage: true,
   },
 ]
@@ -42,6 +41,8 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
   const items = useCartStore((state) => state.items)
   const addToCart = useCartStore((state) => state.addItem)
   const removeFromCart = useCartStore((state) => state.removeItem)
+
+  const rankStats = useBestSellerRanking() // ⭐ BEST SELLER SYSTEM
 
   const [imgReady, setImgReady] = useState<Record<number, boolean>>({})
   const [added, setAdded] = useState<number | null>(null)
@@ -113,7 +114,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
     <section id="produk" className="bg-gradient-to-b from-[#f8fcfc] to-[#f3fafa] text-[#0B4B50] py-20 md:py-28 px-6 md:px-14 lg:px-24">
       {showHeading && (
         <div className="text-center mb-16">
-          <h2 className="font-playfair text-3xl md:text-4xl font-semibold mb-3 text-[#0B4B50] tracking-tight">
+          <h2 className="font-playfair text-3xl md:text-4xl font-semibold mb-3">
             Pilihan Produk KOJE24
           </h2>
           <p className="font-inter text-gray-600 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
@@ -128,12 +129,17 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
           const qty = qtyOf(p.id)
           const isAdded = added === p.id
 
+          const isBest =
+            rankStats[p.id]?.isBestSeller ||
+            false // true kalau produk termasuk top score
+
           return (
             <div
               key={p.id}
               className="group relative bg-white rounded-3xl overflow-hidden border border-[#e6eeee]/60 shadow-[0_5px_25px_rgba(0,0,0,0.05)] hover:-translate-y-2 hover:shadow-[0_10px_35px_rgba(15,163,168,0.25)] hover:border-[#0FA3A8]/40 transition-all duration-500 flex flex-col h-[440px] md:h-[480px]"
             >
               <div className="relative w-full h-[220px] md:h-[260px] bg-[#f3f9f9] overflow-hidden rounded-t-3xl flex items-center justify-center">
+                
                 {!imgReady[p.id] && (
                   <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#e3f4f4] via-[#f0fafa] to-[#d7f0f0]" />
                 )}
@@ -150,9 +156,10 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                   onLoadingComplete={() => setImgReady((m) => ({ ...m, [p.id]: true }))}
                 />
 
-                {p.tag && (
-                  <span className="absolute top-4 left-4 bg-[#E8C46B] text-[#0B4B50] text-[11px] font-semibold px-3 py-1 rounded-full shadow-sm z-10">
-                    {p.tag}
+                {/* ⭐ BEST SELLER AUTO BADGE */}
+                {isBest && (
+                  <span className="absolute top-4 left-4 bg-[#E8C46B] text-[#0B4B50] text-[11px] font-semibold px-3 py-1 rounded-full shadow-md animate-pulse">
+                    ⭐ Best Seller
                   </span>
                 )}
               </div>
