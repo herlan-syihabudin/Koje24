@@ -3,6 +3,7 @@
 import Image from "next/image"
 import { useState } from "react"
 import { useCartStore } from "@/stores/cartStore"
+import { useBestSellerRanking } from "@/lib/bestSeller"
 
 type Product = {
   id: number
