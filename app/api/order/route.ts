@@ -1,68 +1,48 @@
-// app/api/order/route.ts
-import { google } from "googleapis"
-import { NextResponse } from "next/server"
+import { NextResponse } from "next/server";
+import { google } from "googleapis";
 
-const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-const SHEET_ID = process.env.GOOGLE_SHEET_ID
-const SERVICE_KEY = process.env.GOOGLE_PRIVATE_KEY
+const SERVICE_KEY = process.env.GOOGLE_SERVICE_KEY!;
+const SHEET_ID = process.env.SHEET_ID!;
 
-if (!SHEET_ID || !SERVICE_KEY) {
-  console.error("❌ SHEET_ID atau GOOGLE_PRIVATE_KEY tidak ada di environment!")
+if (!SERVICE_KEY || !SHEET_ID) {
+  console.error("❌ SHEET_ID atau GOOGLE_SERVICE_KEY tidak ada di environment!");
 }
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
+    const body = await req.json();
+    
+    const credentials = JSON.parse(SERVICE_KEY);
 
     const auth = new google.auth.GoogleAuth({
-      credentials: JSON.parse(SERVICE_KEY!),
-      scopes: SCOPES,
-    })
+      credentials,
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"]
+    });
 
-    const client = await auth.getClient()
-    // 🔥 FIX TypeScript typing error
-    const sheets = google.sheets({ version: "v4", auth: auth as any })
+    const sheets = google.sheets({ version: "v4", auth });
 
-    const timestamp = new Date().toLocaleString("id-ID")
-    const invoiceId = `INV-${Date.now()}`
-
-    const values = [
-      [
-        timestamp,
-        invoiceId,
-        body.nama,
-        body.hp,
-        body.alamat,
-        body.produkText,
-        body.totalQty.toString(),
-        body.totalPrice.toString(),
-        "Pending",
-        "Manual Transfer",
-        "-",
-        `https://webkoje-cacs.vercel.app/invoice/${invoiceId}`,
-      ],
-    ]
-
-    // Simpan ke Sheets
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: "Sheet1!A2",
+      range: "Sheet1!A1",
       valueInputOption: "USER_ENTERED",
-      insertDataOption: "INSERT_ROWS",
       requestBody: {
-        values,
-      },
-    })
+        values: [
+          [
+            new Date().toLocaleString("id-ID"),
+            body.name,
+            body.phone,
+            body.address,
+            JSON.stringify(body.items),
+            body.total
+          ]
+        ]
+      }
+    });
 
-    return NextResponse.json({
-      success: true,
-      invoiceId,
-    })
+    return NextResponse.json({ success: true });
+
   } catch (err) {
-    console.error("❌ ERROR ORDER:", err)
-    return NextResponse.json(
-      { success: false, message: "Gagal mengirim order" },
-      { status: 500 }
-    )
+    console.error("❌ ERROR ORDER:", err);
+    return NextResponse.json({ success: false }, { status: 500 });
   }
 }
