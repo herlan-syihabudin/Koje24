@@ -80,9 +80,14 @@ export default function Hero() {
         </motion.div>
       </div>
 
-      {/* SOFT FADE BAWAH */}
-      <div className="absolute bottom-0 left-0 w-full h-28
-      bg-gradient-to-t from-[#f8fcfc] via-transparent to-transparent pointer-events-none" />
+      {/* ULTRA SOFT PREMIUM BOTTOM FADE */}
+<div className="
+  absolute bottom-0 left-0 w-full h-32
+  bg-gradient-to-t
+  from-[#f8fcfc]/80 via-transparent to-transparent
+  opacity-90
+  pointer-events-none
+" />
     </section>
   )
 }
