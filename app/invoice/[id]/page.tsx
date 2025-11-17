@@ -1,11 +1,20 @@
 import { google } from "googleapis"
-import Image from "next/image"
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID!
 const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
 
 async function getOrder(invoiceId: string) {
+  console.log("🔍 Invoice ID dari URL (RAW):", invoiceId)
+
+  const idClean = invoiceId?.trim?.() ?? ""
+  console.log("✨ Invoice ID clean:", idClean)
+
+  if (!idClean) {
+    console.log("❌ Invoice ID kosong!")
+    return null
+  }
+
   const auth = new google.auth.JWT({
     email: CLIENT_EMAIL,
     key: PRIVATE_KEY,
@@ -13,95 +22,95 @@ async function getOrder(invoiceId: string) {
   })
 
   const sheets = google.sheets({ version: "v4", auth })
+
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: "Sheet1!A2:L999",
   })
 
   const rows = res.data.values || []
-  const row = rows.find((r) => String(r?.[1] || "").trim() === invoiceId.trim())
+  console.log("📑 Jumlah Data:", rows.length)
 
-  if (!row) return null
+  const row =
+    rows.find((r) => String(r?.[1] || "").trim() === idClean) ||
+    rows.find((r) => String(r?.[11] || "").trim().includes(idClean))
+
+  if (!row) {
+    console.log("❌ Invoice", idClean, "tidak ditemukan di Sheet!")
+    return null
+  }
 
   return {
-    date: row[0],
-    invoiceId: row[1],
-    nama: row[2],
-    hp: row[3],
-    alamat: row[4],
-    produk: row[5],
-    qty: Number(row[6]),
-    total: Number(row[7]),
-    status: row[8],
+    timestamp: row[0] ?? "",
+    invoiceId: row[1] ?? "",
+    nama: row[2] ?? "",
+    hp: row[3] ?? "",
+    alamat: row[4] ?? "",
+    produk: row[5] ?? "",
+    qty: Number(row[6] ?? 0),
+    total: Number(row[7] ?? 0),
+    status: row[8] ?? "Unknown",
+    paymentMethod: row[9] ?? "",
+    bankInfo: row[10] ?? "",
+    linkInvoice: row[11] ?? "",
   }
 }
 
-export default async function InvoicePage({
-  params,
-}: {
-  params: { id: string }
-}) {
-  const data = await getOrder(params.id)
+export default async function InvoicePage(props: any) {
+  const { id } = await props.params
+  console.log("🚀 PARAMS FIXED:", id)
+
+  const idClean = id?.trim?.() ?? ""
+
+  if (!idClean) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <h2 className="text-xl text-red-600 font-semibold">
+          Invoice ID tidak valid 🚫
+        </h2>
+      </main>
+    )
+  }
+
+  const data = await getOrder(idClean)
 
   if (!data) {
     return (
       <main className="min-h-screen flex items-center justify-center">
         <h2 className="text-xl text-red-600 font-semibold">
-          Invoice tidak ditemukan 🚫
+          Invoice tidak ditemukan di database 🚫
         </h2>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-[#F7F9FA] flex justify-center p-4 md:p-10">
-      <div className="bg-white shadow-2xl rounded-2xl p-8 border border-gray-100 w-full max-w-2xl">
+    <main className="min-h-screen bg-gray-100 p-6 flex justify-center">
+      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full">
+        <h1 className="text-xl font-bold text-[#0B4B50] mb-1">
+          Invoice #{data.invoiceId}
+        </h1>
+        <p className="text-sm text-gray-500 mb-4">{data.timestamp}</p>
 
-        {/* BRANDING */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-[#0B4B50]">KOJE<span className="text-[#FBBF24]">24</span></h1>
-          <p className="text-gray-400 text-sm">Natural Cold-Pressed Juice</p>
+        <p className="font-semibold">{data.nama}</p>
+        <p className="text-gray-600">{data.hp}</p>
+        <p className="text-gray-600 mb-4">{data.alamat}</p>
+
+        <div className="border-t pt-3 mt-3">
+          <p className="font-semibold">Pesanan:</p>
+          <p className="text-sm">{data.produk}</p>
         </div>
 
-        <div className="border-b pb-4 mb-4">
-          <h2 className="text-lg font-bold text-gray-800">
-            Invoice #{data.invoiceId}
-          </h2>
-          <p className="text-sm text-gray-500">Tanggal: {data.date}</p>
-        </div>
-
-        {/* CUSTOMER INFO */}
-        <div className="mb-6 space-y-1">
-          <p className="font-semibold text-gray-700">Penerima:</p>
-          <p className="text-gray-800">{data.nama}</p>
-          <p className="text-gray-500">{data.hp}</p>
-          <p className="text-gray-500">{data.alamat}</p>
-        </div>
-
-        {/* PRODUCT */}
-        <div className="border-t border-b py-4 my-6">
-          <div className="flex justify-between text-gray-700 mb-1">
-            <span className="font-semibold">{data.produk}</span>
-            <span>x{data.qty}</span>
-          </div>
-          <div className="flex justify-between text-lg font-bold text-[#0B4B50]">
-            <span>Total</span>
-            <span>Rp{data.total.toLocaleString("id-ID")}</span>
-          </div>
-        </div>
-
-        {/* STATUS */}
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600">Status Pembayaran:</span>
-          <span
-            className={`font-bold px-3 py-1 rounded-lg ${
-              data.status === "Pending"
-                ? "bg-yellow-100 text-yellow-700"
-                : "bg-green-100 text-green-700"
-            }`}
-          >
-            {data.status}
+        <div className="flex justify-between border-t pt-4 mt-4 text-lg">
+          <span className="text-gray-500">Total</span>
+          <span className="font-bold text-[#0B4B50]">
+            Rp{data.total.toLocaleString("id-ID")}
           </span>
+        </div>
+
+        <div className="mt-4 text-sm">
+          Status:{" "}
+          <span className="font-bold text-yellow-600">{data.status}</span>
         </div>
       </div>
     </main>
