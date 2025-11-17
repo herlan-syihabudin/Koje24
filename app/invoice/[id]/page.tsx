@@ -5,10 +5,13 @@ const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
 
 async function getOrder(invoiceId: string) {
-  console.log("🔍 Invoice ID dari URL:", invoiceId)
+  console.log("🔍 Invoice ID dari URL (RAW):", invoiceId)
 
-  if (!invoiceId) {
-    console.log("❌ Invoice ID tidak ada di URL!")
+  const idClean = invoiceId?.trim?.() ?? ""
+  console.log("✨ Invoice ID clean:", idClean)
+
+  if (!idClean) {
+    console.log("❌ Invoice ID kosong!")
     return null
   }
 
@@ -28,33 +31,50 @@ async function getOrder(invoiceId: string) {
   const rows = res.data.values || []
   console.log("📑 Jumlah Data:", rows.length)
 
-  const row = rows.find(r => r[1] && r[1] === invoiceId)
+  const row = rows.find((r) => {
+    const rowId = String(r?.[1] || "").trim()
+    return rowId === idClean
+  })
 
   if (!row) {
-    console.log("❌ Tidak ketemu di Sheet")
+    console.log("❌ Invoice", idClean, "tidak ditemukan di Sheet!")
     return null
   }
 
   return {
-    timestamp: row[0],
-    invoiceId: row[1],
-    nama: row[2],
-    hp: row[3],
-    alamat: row[4],
-    produk: row[5],
-    qty: Number(row[6]),
-    total: Number(row[7]),
-    status: row[8],
-    paymentMethod: row[9],
-    bankInfo: row[10],
-    linkInvoice: row[11],
+    timestamp: row[0] ?? "",
+    invoiceId: row[1] ?? "",
+    nama: row[2] ?? "",
+    hp: row[3] ?? "",
+    alamat: row[4] ?? "",
+    produk: row[5] ?? "",
+    qty: Number(row[6] ?? 0),
+    total: Number(row[7] ?? 0),
+    status: row[8] ?? "Unknown",
+    paymentMethod: row[9] ?? "",
+    bankInfo: row[10] ?? "",
+    linkInvoice: row[11] ?? "",
   }
 }
 
-export default async function InvoicePage({ params }: { params: { id: string } }) {
-  const { id } = params
+export default async function InvoicePage({
+  params,
+}: {
+  params: { id: string }
+}) {
+  console.log("🚀 PARAMS:", params)
 
-  console.log("🚀 PARAMS.ID:", id)
+  const id = params?.id?.trim?.() ?? ""
+
+  if (!id) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <h2 className="text-xl text-red-600 font-semibold">
+          Invoice ID tidak valid 🚫
+        </h2>
+      </main>
+    )
+  }
 
   const data = await getOrder(id)
 
@@ -62,7 +82,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
     return (
       <main className="min-h-screen flex items-center justify-center">
         <h2 className="text-xl text-red-600 font-semibold">
-          Invoice tidak ditemukan 🚫
+          Invoice tidak ditemukan di database 🚫
         </h2>
       </main>
     )
