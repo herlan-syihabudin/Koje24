@@ -31,10 +31,9 @@ async function getOrder(invoiceId: string) {
   const rows = res.data.values || []
   console.log("📑 Jumlah Data:", rows.length)
 
-  const row = rows.find((r) => {
-    const rowId = String(r?.[1] || "").trim()
-    return rowId === idClean
-  })
+  const row =
+    rows.find((r) => String(r?.[1] || "").trim() === idClean) ||
+    rows.find((r) => String(r?.[11] || "").trim().includes(idClean))
 
   if (!row) {
     console.log("❌ Invoice", idClean, "tidak ditemukan di Sheet!")
@@ -57,16 +56,13 @@ async function getOrder(invoiceId: string) {
   }
 }
 
-export default async function InvoicePage({
-  params,
-}: {
-  params: { id: string }
-}) {
-  console.log("🚀 PARAMS:", params)
+export default async function InvoicePage(props: any) {
+  const { id } = await props.params
+  console.log("🚀 PARAMS FIXED:", id)
 
-  const id = params?.id?.trim?.() ?? ""
+  const idClean = id?.trim?.() ?? ""
 
-  if (!id) {
+  if (!idClean) {
     return (
       <main className="min-h-screen flex items-center justify-center">
         <h2 className="text-xl text-red-600 font-semibold">
@@ -76,7 +72,7 @@ export default async function InvoicePage({
     )
   }
 
-  const data = await getOrder(id)
+  const data = await getOrder(idClean)
 
   if (!data) {
     return (
