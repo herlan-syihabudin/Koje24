@@ -9,7 +9,25 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
 
-    // Base URL untuk invoice
+    const cart = body.cart || []
+    if (!cart.length) {
+      throw new Error("Cart kosong!")
+    }
+
+    const produkList = cart
+      .map((x: any) => `${x.name} (${x.qty}x)`)
+      .join(", ")
+
+    const totalQty = cart.reduce(
+      (acc: number, x: any) => acc + (x.qty || 0),
+      0
+    )
+
+    const subtotal = cart.reduce(
+      (acc: number, x: any) => acc + (x.qty * x.price || 0),
+      0
+    )
+
     const baseUrl =
       req.headers.get("origin") || "https://webkoje-cacs.vercel.app"
 
@@ -21,7 +39,6 @@ export async function POST(req: Request) {
       key: PRIVATE_KEY,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     })
-
     const sheets = google.sheets({ version: "v4", auth })
 
     await sheets.spreadsheets.values.append({
@@ -36,9 +53,9 @@ export async function POST(req: Request) {
             body.nama,
             body.hp,
             body.alamat,
-            body.produk,
-            body.qty,
-            body.total,
+            produkList,
+            totalQty,
+            subtotal,
             "Pending",
             "Transfer",
             "-",
@@ -54,6 +71,9 @@ export async function POST(req: Request) {
     })
   } catch (err) {
     console.error("❌ ERROR ORDER:", err)
-    return NextResponse.json({ success: false }, { status: 500 })
+    return NextResponse.json(
+      { success: false, message: String(err) },
+      { status: 500 }
+    )
   }
 }
