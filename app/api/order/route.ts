@@ -1,13 +1,28 @@
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
 
-const SHEET_ID = process.env.GOOGLE_SHEET_ID!
-const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
-const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
+const SHEET_ID = process.env.GOOGLE_SHEET_ID
+const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL
+const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n")
+
+console.log("🧪 ENV CHECK:", {
+  SHEET_ID,
+  CLIENT_EMAIL,
+  PRIVATE_KEY_EXISTS: !!PRIVATE_KEY
+})
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
+    console.log("📦 Incoming Order Body:", body)
+
+    if (!SHEET_ID || !CLIENT_EMAIL || !PRIVATE_KEY) {
+      console.error("❌ ENV variable missing!")
+      return NextResponse.json(
+        { success: false, message: "Server config error: Missing env" },
+        { status: 500 }
+      )
+    }
 
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
@@ -18,7 +33,10 @@ export async function POST(req: Request) {
     const sheets = google.sheets({ version: "v4", auth })
 
     const invoiceId = "INV-" + Date.now()
-    const invoiceUrl = `${req.headers.get("origin")}/invoice/${invoiceId}`
+    const origin = req.headers.get("origin") || "https://webkoje-cacs.vercel.app"
+    const invoiceUrl = `${origin}/invoice/${invoiceId}`
+
+    console.log("🧾 Creating Invoice:", invoiceUrl)
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
@@ -27,7 +45,7 @@ export async function POST(req: Request) {
       requestBody: {
         values: [
           [
-            new Date().toLocaleString("id-ID"), // Timestamp
+            new Date().toLocaleString("id-ID"),
             invoiceId,
             body.nama,
             body.hp,
@@ -35,21 +53,26 @@ export async function POST(req: Request) {
             body.produk,
             body.qty,
             body.total,
-            "Pending",  // Status
-            "Transfer", // Payment Method
-            "-",        // Bank Info
-            invoiceUrl  // 🔥 Link Invoice Tersimpan
+            "Pending",
+            "Transfer",
+            "-",
+            invoiceUrl,
           ],
         ],
       },
     })
 
+    console.log("✅ APPEND SUCCESS!")
+
     return NextResponse.json({
       success: true,
       invoiceUrl,
     })
-  } catch (err) {
-    console.error("❌ ERROR ORDER:", err)
-    return NextResponse.json({ success: false }, { status: 500 })
+  } catch (err: any) {
+    console.error("❌ ERROR ORDER:", err.message)
+    return NextResponse.json(
+      { success: false, message: err.message },
+      { status: 500 }
+    )
   }
 }
