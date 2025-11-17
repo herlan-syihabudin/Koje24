@@ -103,167 +103,164 @@ export default async function InvoicePage(props: any) {
   const grandTotal = data.subtotal + HARGA_ONGKIR
   const statusClasses = getStatusColor(data.status);
 
+return (
+  <main className="min-h-screen bg-[#F4FAFA] py-12 px-4 flex justify-center print:p-0">
+    <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl 
+                    border border-slate-200 overflow-hidden
+                    print:rounded-none print:shadow-none print:border-none">
 
-  return (
-    <main className="min-h-screen bg-slate-100 py-12 px-4 flex justify-center print:py-0">
-      <div className="w-full max-w-3xl bg-white rounded-xl shadow-2xl border-t-8 border-[#0B4B50] px-10 py-10 print:shadow-none print:border-t-4 print:rounded-none">
-        
-        {/* === 1. HEADER PERUSAHAAN (PREMIUM LOOK) === */}
-        <div className="flex items-start justify-between border-b border-slate-200 pb-6 mb-8">
-          <div>
-            <p className="text-4xl font-extrabold tracking-widest text-slate-900">
-              INVOICE
-            </p>
-            <div className="text-xs text-slate-500 mt-2 space-y-0.5">
-                <p className="font-bold text-slate-700">KOJE24 Official</p>
-                <p>Jl. Jenderal Sudirman No. 24, Jakarta Selatan</p>
-                <p>Tel: {KONTAK_CS} | Email: order@koje24.com</p>
-            </div>
-          </div>
+      {/* HEADER */}
+      <div className="flex justify-between items-start border-b border-slate-200 px-10 py-8">
+        <div>
+          <h1 className="text-4xl font-bold tracking-[0.20em] text-slate-900">
+            INVOICE
+          </h1>
+          <div className="mt-3 text-xs text-slate-500 leading-tight">
+            <p className="font-semibold text-slate-700">KOJE24 Official</p>
+            <p>Jl. Jenderal Sudirman No. 24, Jakarta Selatan</p>
+            <p>Tel: {KONTAK_CS} | Email: order@koje24.com</p>
+          </div>
+        </div>
 
-          {/* Ganti Teks Logo dengan Image */}
-          <div className="text-right">
-                <img 
-                    src="/logo-koje24.png" 
-                    alt="Koje24 Company Logo" 
-                    className="w-28 h-auto" 
-                /> 
-            <p className="text-xs text-slate-500 mt-1">
-              Natural Cold-Pressed Juice
-            </p>
-          </div>
-        </div>
+        <div className="text-right">
+          <img 
+            src="/logo-koje24.png"
+            alt="KOJE24"
+            className="h-16 w-auto mx-auto"
+          />
+          <p className="text-[11px] text-slate-500 mt-2">
+            Natural Cold-Pressed Juice
+          </p>
+        </div>
+      </div>
+
+      {/* INFO PELANGGAN */}
+      <div className="px-10 py-8 grid grid-cols-2 gap-6">
         
-        {/* === 2. INFORMASI KLIEN & INVOICE DETAIL === */}
-        <div className="grid grid-cols-3 gap-4 text-xs md:text-sm mb-8">
-            {/* KEPADA */}
-          <div>
-            <p className="font-bold text-slate-700 uppercase mb-1">Dikirim Kepada:</p>
-            <p className="font-semibold text-slate-900">{data.nama}</p>
-            <p className="text-slate-600">{data.hp}</p>
-            <p className="text-slate-600 leading-snug">{data.alamat}</p>
-          </div>
-            
-            {/* TANGGAL */}
-            <div className="col-span-1">
-                <p className="font-bold text-slate-700 uppercase mb-1">Tanggal Pesanan:</p>
-                <p className="text-slate-700">{data.timestamp}</p>
-            </div>
+        <div>
+          <p className="text-[11px] font-bold uppercase text-slate-700 mb-1">
+            Dikirim Kepada:
+          </p>
+          <p className="font-bold text-slate-900">{data.nama}</p>
+          <p className="text-slate-600 text-sm">{data.hp}</p>
+          <p className="text-slate-600 text-sm max-w-[95%]">{data.alamat}</p>
+        </div>
 
-            {/* NO INVOICE & STATUS */}
-          <div className="text-right">
-            <p className="font-bold text-slate-700 uppercase mb-1">No. Invoice:</p>
-            <p className="text-xl font-extrabold text-[#0B4B50]">{data.invoiceId}</p>
-                <div className="mt-2">
-                    <p className={`inline-flex px-3 py-1 rounded-full text-xs font-extrabold ${statusClasses}`}>
-                        STATUS: {(data.status || "").toUpperCase()}
-                    </p>
-                </div>
-          </div>
-        </div>
+        <div className="text-right">
+          <p className="text-[11px] font-bold uppercase text-slate-700 mb-1">
+            Tanggal Pesanan:
+          </p>
+          <p className="text-sm text-slate-800">{data.timestamp}</p>
 
-        {/* === 3. TABEL ITEM === */}
-<div className="mt-6 border border-slate-200 rounded-xl overflow-hidden">
-  <table className="w-full text-xs md:text-sm">
-    <thead className="bg-slate-100 text-slate-600 uppercase font-bold">
-      <tr>
-        <th className="py-3 px-3 text-left">Deskripsi Produk</th>
-        <th className="py-3 px-3 text-right">Harga Satuan</th>
-        <th className="py-3 px-3 text-right">QTY</th>
-        <th className="py-3 px-3 text-right">Subtotal</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr className="border-t">
-        <td className="py-3 px-3 font-semibold text-slate-800">
-          {data.produk}
-        </td>
-        <td className="py-3 px-3 text-right">
-          Rp{pricePerItem.toLocaleString("id-ID")}
-        </td>
-        <td className="py-3 px-3 text-right">
-          {data.qty}x
-        </td>
-        <td className="py-3 px-3 text-right font-extrabold text-[#0B4B50]">
-          Rp{data.subtotal.toLocaleString("id-ID")}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+          <p className="text-[11px] font-bold uppercase text-slate-700 mt-4">
+            No. Invoice:
+          </p>
+          <p className="text-xl font-extrabold tracking-wide text-[#0B4B50]">
+            {data.invoiceId}
+          </p>
 
-        {/* === 4. RINGKASAN & TOTAL AKHIR === */}
-        <div className="mt-8 flex flex-col items-end text-sm w-full">
-            {/* Subtotal */}
-            <div className="flex justify-between w-full max-w-xs mb-1">
-            <span className="text-slate-600 font-medium">Subtotal</span>
-            <span className="font-semibold">
-              Rp{data.subtotal.toLocaleString("id-ID")}
-            </span>
-          </div>
+          <p className={`inline-flex mt-2 px-3 py-1 rounded-full 
+                         text-[10px] font-bold tracking-wide ${statusClasses}`}>
+            {(data.status || "").toUpperCase()}
+          </p>
+        </div>
+      </div>
 
-            {/* Ongkir */}
-            <div className="flex justify-between w-full max-w-xs mb-1">
-            <span className="text-slate-600 font-medium">Ongkos Kirim (Flat)</span>
-            <span className="font-semibold">
-              Rp{HARGA_ONGKIR.toLocaleString("id-ID")}
-            </span>
-          </div>
+      {/* TABEL PRODUK */}
+      <div className="px-10">
+        <table className="w-full text-xs md:text-sm border border-slate-300 rounded-lg overflow-hidden">
+          <thead className="bg-slate-100 text-slate-600 uppercase font-bold">
+            <tr>
+              <th className="py-3 px-3 text-left">Produk</th>
+              <th className="py-3 px-3 text-right whitespace-nowrap">Harga</th>
+              <th className="py-3 px-3 text-right">Qty</th>
+              <th className="py-3 px-3 text-right">Subtotal</th>
+            </tr>
+          </thead>
 
-            {/* GRAND TOTAL */}
-          <div className="flex justify-between w-full max-w-xs text-xl font-extrabold border-t-2 border-b-2 border-slate-300 py-3 mt-2">
-            <span className="text-slate-900">GRAND TOTAL</span>
-            <span className="text-[#0B4B50]">
-              Rp{grandTotal.toLocaleString("id-ID")}
-            </span>
-          </div>
-        </div>
+          <tbody className="bg-white divide-y divide-slate-200">
+            <tr>
+              <td className="py-3 px-3 font-semibold text-slate-900">
+                {data.produk}
+              </td>
+              <td className="py-3 px-3 text-right text-slate-700">
+                Rp{pricePerItem.toLocaleString("id-ID")}
+              </td>
+              <td className="py-3 px-3 text-right text-slate-700">
+                {data.qty}x
+              </td>
+              <td className="py-3 px-3 text-right font-bold text-[#0B4B50]">
+                Rp{data.subtotal.toLocaleString("id-ID")}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-        {/* === 5. Rincian Pembayaran & Kontak CS === */}
-        <div className="mt-10 grid grid-cols-2 gap-4 text-sm border-t border-slate-200 pt-6">
-          <div>
-            <p className="font-bold text-slate-700 uppercase tracking-wide mb-2">
-              Rincian Pembayaran
-            </p>
-            <p className="font-semibold text-slate-900">{data.paymentMethod}</p>
-            <p className="text-slate-700 mt-1">
-              No. Rekening: <strong className="text-lg text-red-600">{data.bankAccount}</strong>
-            </p>
-            <p className="text-slate-700">
-              Atas Nama: <strong>{data.accountName}</strong>
-            </p>
-                <a 
-                    href={`https://wa.me/${KONTAK_CS}?text=Saya%20sudah%20bayar%20invoice%20%23${data.invoiceId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 inline-flex items-center px-4 py-2 bg-green-500 text-white text-xs font-bold rounded hover:bg-green-600 transition shadow-md"
-                >
-                    ✅ Konfirmasi Pembayaran
-                </a>
-          </div>
+      {/* RINGKASAN TOTAL */}
+      <div className="px-10 mt-8 flex justify-end">
+        <div className="w-full max-w-xs space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-slate-600">Subtotal</span>
+            <span className="font-semibold">
+              Rp{data.subtotal.toLocaleString("id-ID")}
+            </span>
+          </div>
+          
+          <div className="flex justify-between">
+            <span className="text-slate-600">Ongkos Kirim</span>
+            <span className="font-semibold">
+              Rp{HARGA_ONGKIR.toLocaleString("id-ID")}
+            </span>
+          </div>
 
-            {/* Area Tanda Tangan/Catatan */}
-            <div className="text-right">
-                <p className="font-bold text-slate-700 uppercase tracking-wide mb-2">
-                    Catatan:
-            </p>
-                <p className="text-slate-600 italic">Harap lakukan pembayaran maksimal 1x24 jam.</p>
-                
-                <p className="font-semibold text-slate-800 mt-8">Hormat Kami,</p>
-                <p className="font-bold text-[#0B4B50]">Admin KOJE24</p>
-            </div>
-        </div>
+          <div className="border-t border-slate-300 pt-3 flex justify-between text-lg font-extrabold">
+            <span className="text-slate-900">GRAND TOTAL</span>
+            <span className="text-[#0B4B50]">
+              Rp{grandTotal.toLocaleString("id-ID")}
+            </span>
+          </div>
+        </div>
+      </div>
 
-        {/* FOOTER */}
-        <div className="mt-12 text-center border-t border-slate-200 pt-4">
-          <p className="text-sm font-extrabold text-slate-700">
-            TERIMA KASIH ATAS KEPERCAYAAN ANDA 🙏
-          </p>
-          <p className="text-[11px] text-slate-400 mt-1">
-            Invoice ini adalah bukti pembelian yang sah.
-          </p>
-        </div>
-      </div>
-    </main>
-  )
-}
+      {/* PEMBAYARAN */}
+      <div className="px-10 py-10 mt-6 bg-slate-50 border-t border-slate-200 grid grid-cols-2 gap-6">
+        <div>
+          <p className="text-[11px] font-bold uppercase text-slate-700 mb-2">
+            Pembayaran:
+          </p>
+          <p className="font-bold">{data.paymentMethod}</p>
+          <p className="text-slate-700">No. Rek: <span className="text-red-600 font-bold">{data.bankAccount}</span></p>
+          <p className="text-slate-700">a.n {data.accountName}</p>
+
+          <a href={`https://wa.me/${KONTAK_CS}?text=Saya%20sudah%20bayar%20Invoice%20${data.invoiceId}`}
+             target="_blank"
+             className="mt-3 inline-block bg-green-600 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition">
+            Konfirmasi Pembayaran
+          </a>
+        </div>
+
+        <div className="text-right">
+          <p className="text-[11px] font-bold uppercase text-slate-700 mb-1">
+            Catatan
+          </p>
+          <p className="italic text-slate-600">Harap bayar dalam 1x24 jam</p>
+
+          <p className="mt-10 font-semibold text-slate-900">
+            Hormat kami,
+          </p>
+          <p className="font-bold text-[#0B4B50]">
+            Admin KOJE24
+          </p>
+        </div>
+      </div>
+
+      {/* FOOTER */}
+      <div className="py-6 text-center text-[11px] text-slate-500 border-t border-slate-200">
+        Terima kasih telah mempercayai KOJE24 🙏
+      </div>
+
+    </div>
+  </main>
+)
+
