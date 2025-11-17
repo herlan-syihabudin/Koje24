@@ -1,7 +1,6 @@
 import { google } from "googleapis"
 
 // --- KONFIGURASI ENV ---
-// Pastikan 3 variabel ini sudah diset di Vercel
 const SHEET_ID = process.env.GOOGLE_SHEET_ID!
 const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
@@ -13,7 +12,6 @@ const KONTAK_CS = "6281234567890" // Ganti dengan nomor WA CS kamu (tanpa +)
 // --- FUNGSI GET DATA DARI GOOGLE SHEETS ---
 async function getOrder(invoiceId: string) {
   const idClean = invoiceId?.trim?.() ?? ""
-  
   if (!idClean) return null
 
   const auth = new google.auth.JWT({
@@ -21,23 +19,17 @@ async function getOrder(invoiceId: string) {
     key: PRIVATE_KEY,
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   })
-
   const sheets = google.sheets({ version: "v4", auth })
-
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: "Sheet1!A2:L999", // GANTI NAMA SHEET JIKA BUKAN 'Sheet1'!
   })
-
   const rows = res.data.values || []
-
   const row =
     rows.find((r) => String(r?.[1] || "").trim() === idClean) ||
     rows.find((r) => String(r?.[11] || "").trim().includes(idClean))
-
   if (!row) return null
   
-  // FIX: Konversi data numerik dengan aman
   const qty = Number(row[6]) || 0
   const total = Number(row[7]) || 0
 
@@ -49,12 +41,11 @@ async function getOrder(invoiceId: string) {
     alamat: row[4] ?? "",
     produk: row[5] ?? "",
     qty: qty, 
-    subtotal: total, // Menggunakan 'total' dari sheet sebagai 'subtotal'
+    subtotal: total, 
     status: row[8] ?? "Pending",
-    // Data Pembayaran Hardcode (GANTI DENGAN ASLI)
-    paymentMethod: "Transfer Bank Mandiri",
-    bankAccount: "9918282983939",
-    accountName: "KOJE24",
+    paymentMethod: "Transfer Bank Mandiri", // GANTI DATA ASLI
+    bankAccount: "9918282983939", // GANTI DATA ASLI
+    accountName: "KOJE24", // GANTI DATA ASLI
   }
 }
 
@@ -62,12 +53,12 @@ async function getOrder(invoiceId: string) {
 const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
         case 'pending':
-            return 'bg-amber-50 text-amber-700 border border-amber-300 print:border-none print:text-amber-800';
+            return 'bg-amber-50 text-amber-700 border border-amber-300 print:bg-white print:text-amber-800 print:border print:border-amber-500';
         case 'paid':
         case 'lunas':
-            return 'bg-emerald-50 text-emerald-700 border border-emerald-300 print:border-none print:text-emerald-800';
+            return 'bg-emerald-50 text-emerald-700 border border-emerald-300 print:bg-white print:text-emerald-800 print:border print:border-emerald-500';
         default:
-            return 'bg-gray-50 text-gray-700 border border-gray-300 print:border-none print:text-gray-800';
+            return 'bg-gray-50 text-gray-700 border border-gray-300 print:bg-white print:text-gray-800 print:border print:border-gray-500';
     }
 }
 
@@ -99,9 +90,10 @@ export default async function InvoicePage(props: any) {
 
 
   return (
-    <main className="min-h-screen bg-slate-100 py-12 px-4 flex justify-center print:bg-white print:p-0 print:m-0">
+    {/* Hapus min-h-screen saat print agar konten tidak terpotong, ganti dengan auto */}
+    <main className="min-h-screen bg-slate-100 py-12 px-4 flex justify-center print:bg-white print:p-0 print:m-0 print:h-auto print:min-h-0">
       <div className="w-full max-w-3xl bg-white rounded-xl shadow-2xl border-t-8 border-[#0B4B50] px-10 py-10 
-        print:shadow-none print:border-t-4 print:rounded-none print:w-full print:px-5 print:py-5">
+        print:shadow-none print:border-t-4 print:rounded-none print:w-full print:px-5 print:py-5 print:max-w-full">
         
         {/* === 1. HEADER PERUSAHAAN === */}
         <div className="flex items-start justify-between border-b border-slate-200 pb-6 mb-8 print:mb-4 print:pb-3">
@@ -157,9 +149,9 @@ export default async function InvoicePage(props: any) {
           </div>
         </div>
 
-        {/* === 3. TABEL ITEM (DIUBAH KE ELEMEN TABLE STABIL) === */}
-        <div className="mt-6 border border-slate-200 rounded-xl overflow-hidden print:border-t print:rounded-none">
-            <table className="w-full text-xs md:text-sm print:text-[11px] table-auto">
+        {/* === 3. TABEL ITEM (FINAL, MENGGUNAKAN ELEMEN TABLE STABIL) === */}
+        <div className="mt-6 border border-slate-200 rounded-xl overflow-hidden print:border print:rounded-none">
+            <table className="w-full text-xs md:text-sm print:text-[11px] table-fixed">
                 <thead className="bg-slate-100 text-slate-600 uppercase font-bold print:bg-gray-100">
                     <tr>
                         <th className="py-2 px-3 text-left w-2/5">Deskripsi Produk</th>
