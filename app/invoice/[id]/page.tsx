@@ -17,13 +17,12 @@ async function getOrder(invoiceId: string) {
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: "Sheet1!A2:L999", // Pastikan hanya data baru
+    range: "Sheet1!A2:L999",
   })
 
   const rows = res.data.values || []
   console.log("📑 Jumlah Data:", rows.length)
 
-  // 🔥 FIX: Cari invoiceId secara aman (trim)
   const row = rows.find(r => r[1]?.trim() === invoiceId.trim())
 
   if (!row) {
@@ -64,6 +63,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
         <h1 className="text-xl font-bold text-[#0B4B50] mb-1">
           Invoice #{data.invoiceId}
         </h1>
+
         <p className="text-sm text-gray-500 mb-4">{data.timestamp}</p>
 
         <p className="font-semibold">{data.nama}</p>
