@@ -330,3 +330,49 @@ img, video {
 .popup-content {
   -webkit-overflow-scrolling: touch;
 }
+/* === GLOBAL RESET UNTUK INVOICE & TABLE === */
+table {
+  border-collapse: collapse !important;
+  width: 100%;
+}
+
+th, td {
+  padding: 8px 10px;
+  vertical-align: middle;
+}
+
+th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+td {
+  font-size: 13px;
+  color: #222;
+  word-break: break-word;
+}
+
+/* Print Mode Optimization */
+@media print {
+  body {
+    background: #fff !important;
+  }
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  img {
+    max-height: 80px !important;
+  }
+  a {
+    display: none !important;
+  }
+}
+
+/* Responsive Fix: Pastikan Grid Tidak Pecah */
+.grid {
+  min-width: 0;
+}
