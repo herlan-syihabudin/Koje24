@@ -163,29 +163,34 @@ export default async function InvoicePage(props: any) {
         </div>
 
         {/* === 3. TABEL ITEM === */}
-        <div className="mt-4 rounded-lg overflow-hidden border border-slate-300">
-          <div className="grid grid-cols-4 text-xs font-bold uppercase bg-slate-200 text-slate-700 py-2 px-4 border-b border-slate-300">
-            <span className="col-span-2">Deskripsi Produk</span>
-            <span className="text-right">Harga Satuan</span>
-            <span className="text-right">Qty / Subtotal</span>
-          </div>
-
-          {/* BARIS ITEM */}
-          <div className="grid grid-cols-4 text-sm items-center py-4 px-4 bg-white hover:bg-slate-50 transition">
-            <div className="col-span-2">
-              <p className="font-medium text-slate-800">{data.produk}</p>
-            </div>
-            <div className="text-right text-slate-700">
-              Rp{pricePerItem.toLocaleString("id-ID")}
-            </div>
-            <div className="text-right text-slate-700 font-semibold">
-              x{data.qty} ={" "}
-              <span className="font-extrabold text-[#0B4B50]">
-                Rp{data.subtotal.toLocaleString("id-ID")}
-              </span>
-            </div>
-          </div>
-        </div>
+<div className="mt-6 border border-slate-200 rounded-xl overflow-hidden">
+  <table className="w-full text-xs md:text-sm">
+    <thead className="bg-slate-100 text-slate-600 uppercase font-bold">
+      <tr>
+        <th className="py-3 px-3 text-left">Deskripsi Produk</th>
+        <th className="py-3 px-3 text-right">Harga Satuan</th>
+        <th className="py-3 px-3 text-right">QTY</th>
+        <th className="py-3 px-3 text-right">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr className="border-t">
+        <td className="py-3 px-3 font-semibold text-slate-800">
+          {data.produk}
+        </td>
+        <td className="py-3 px-3 text-right">
+          Rp{pricePerItem.toLocaleString("id-ID")}
+        </td>
+        <td className="py-3 px-3 text-right">
+          {data.qty}x
+        </td>
+        <td className="py-3 px-3 text-right font-extrabold text-[#0B4B50]">
+          Rp{data.subtotal.toLocaleString("id-ID")}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
         {/* === 4. RINGKASAN & TOTAL AKHIR === */}
         <div className="mt-8 flex flex-col items-end text-sm w-full">
