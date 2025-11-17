@@ -49,124 +49,88 @@ async function getOrder(invoiceId: string) {
     produk: row[5] ?? "",
     qty: Number(row[6] ?? 0),
     total: Number(row[7] ?? 0),
-    status: row[8] ?? "Unknown",
-    paymentMethod: row[9] ?? "",
-    bankInfo: row[10] ?? "",
-    linkInvoice: row[11] ?? "",
+    status: row[8] ?? "Pending",
   }
 }
 
 export default async function InvoicePage(props: any) {
   const { id } = await props.params
-  console.log("🚀 PARAMS FIXED:", id)
-
   const idClean = id?.trim?.() ?? ""
 
-  if (!idClean) {
+  if (!idClean)
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <h2 className="text-xl text-red-600 font-semibold">
+        <p className="text-xl text-red-600 font-semibold">
           Invoice ID tidak valid 🚫
-        </h2>
+        </p>
       </main>
     )
-  }
 
   const data = await getOrder(idClean)
 
-  if (!data) {
+  if (!data)
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <h2 className="text-xl text-red-600 font-semibold">
-          Invoice tidak ditemukan di database 🚫
-        </h2>
+        <p className="text-xl text-red-600 font-semibold">
+          Invoice tidak ditemukan 🚫
+        </p>
       </main>
     )
-  }
 
   return (
-  <main className="min-h-screen bg-gray-100 py-10 px-4">
-    <div className="max-w-xl mx-auto bg-white shadow-2xl rounded-xl border border-gray-200 p-8">
-      
-      {/* HEADER */}
-      <div className="border-b pb-5 mb-5 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-[#0B4B50] tracking-wide">
-            INVOICE
+    <main className="min-h-screen bg-gray-100 p-6 flex justify-center">
+      <div className="bg-white p-8 rounded-2xl shadow-lg max-w-lg w-full border border-gray-200">
+
+        {/* HEADER */}
+        <div className="border-b pb-4 mb-4">
+          <h1 className="text-2xl font-bold text-[#0B4B50] tracking-wide">
+            KOJE24 • INVOICE
           </h1>
-          <p className="text-xs text-gray-500 mt-1">#{data.invoiceId}</p>
+          <p className="text-sm text-gray-500 mt-1">{data.timestamp}</p>
         </div>
 
-        {/* Logo KOJE24 */}
-        <img
-          src="/koje24-logo.png" // Ganti sesuai lokasi logo kamu
-          alt="KOJE24"
-          className="h-12 object-contain"
-        />
-      </div>
-
-      {/* CUSTOMER INFO */}
-      <div className="mb-6 text-sm">
-        <p className="text-gray-700 font-semibold">{data.nama}</p>
-        <p className="text-gray-600">{data.hp}</p>
-        <p className="text-gray-600">{data.alamat}</p>
-        <p className="text-gray-400 mt-2">
-          {data.timestamp}
-        </p>
-      </div>
-
-      {/* ORDER DETAIL */}
-      <div className="bg-gray-50 p-4 rounded-lg border">
-        <p className="font-bold text-gray-700 mb-2">Detail Pesanan:</p>
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-gray-700">{data.produk}</span>
-          <span className="font-semibold">x{data.qty}</span>
+        {/* CUSTOMER INFO */}
+        <div className="mb-4">
+          <p className="font-semibold text-lg">{data.nama}</p>
+          <p className="text-gray-600 text-sm">{data.hp}</p>
+          <p className="text-gray-600 text-sm">{data.alamat}</p>
         </div>
 
-        <div className="flex justify-between border-t pt-3 mt-3">
-          <span className="text-gray-500 text-sm">Total</span>
-          <span className="font-bold text-lg text-[#0B4B50]">
-            Rp{data.total.toLocaleString("id-ID")}
+        {/* ORDER */}
+        <div className="bg-gray-50 p-4 rounded-lg border mb-4">
+          <p className="font-semibold text-gray-700 mb-2">Detail Pesanan</p>
+
+          <div className="flex justify-between text-gray-700">
+            <span className="text-sm">{data.produk}</span>
+            <span className="text-sm">x{data.qty}</span>
+          </div>
+
+          <div className="flex justify-between mt-3 text-lg font-bold text-[#0B4B50]">
+            <span>Total</span>
+            <span>Rp{data.total.toLocaleString("id-ID")}</span>
+          </div>
+        </div>
+
+        {/* STATUS */}
+        <div className="flex justify-between items-center mt-4">
+          <p className="font-semibold text-sm text-gray-600">Status Pembayaran</p>
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-bold 
+          ${
+            data.status === "Pending"
+              ? "bg-yellow-100 text-yellow-700"
+              : "bg-green-100 text-green-700"
+          }`}
+          >
+            {data.status}
           </span>
         </div>
+
+        {/* FOOTER */}
+        <p className="text-center text-xs text-gray-400 mt-6">
+          Terima kasih telah order di KOJE24 🍃✨
+        </p>
       </div>
-
-      {/* PAYMENT STATUS */}
-      <div className="mt-6 py-3 px-4 rounded-lg border text-sm">
-        <span className="text-gray-500">Status Pembayaran:</span>
-        <span
-          className={`ml-2 font-bold ${
-            data.status === "Pending"
-              ? "text-yellow-600"
-              : "text-green-600"
-          }`}
-        >
-          {data.status}
-        </span>
-      </div>
-
-      {/* ACTIONS */}
-      <div className="mt-8 flex gap-3">
-        <a
-          href="https://wa.me/628xxxxxxxxx?text=Halo%20KOJE24,%20saya%20sudah%20order!" // ganti no WA kamu
-          className="flex-1 bg-[#0B4B50] text-white py-3 rounded-lg font-semibold text-center hover:bg-[#09393C] transition"
-        >
-          Konfirmasi via WhatsApp
-        </a>
-
-        <button
-          onClick={() => window.print()}
-          className="px-4 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300 font-medium"
-        >
-          Cetak
-        </button>
-      </div>
-
-      {/* FOOTER NOTE */}
-      <p className="text-[11px] text-center text-gray-400 mt-6">
-        Terima kasih telah order KOJE24! 🍃✨
-      </p>
-    </div>
-  </main>
-)
-
+    </main>
+  )
+}
