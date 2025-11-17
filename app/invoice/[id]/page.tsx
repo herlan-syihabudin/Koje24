@@ -1,6 +1,7 @@
 import { google } from "googleapis"
 
 // --- KONFIGURASI ENV ---
+// Pastikan 3 variabel ini sudah diset di Vercel
 const SHEET_ID = process.env.GOOGLE_SHEET_ID!
 const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
@@ -36,6 +37,7 @@ async function getOrder(invoiceId: string) {
 
   if (!row) return null
   
+  // FIX: Konversi data numerik dengan aman
   const qty = Number(row[6]) || 0
   const total = Number(row[7]) || 0
 
@@ -47,7 +49,7 @@ async function getOrder(invoiceId: string) {
     alamat: row[4] ?? "",
     produk: row[5] ?? "",
     qty: qty, 
-    subtotal: total, 
+    subtotal: total, // Menggunakan 'total' dari sheet sebagai 'subtotal'
     status: row[8] ?? "Pending",
     // Data Pembayaran Hardcode (GANTI DENGAN ASLI)
     paymentMethod: "Transfer Bank Mandiri",
@@ -97,7 +99,6 @@ export default async function InvoicePage(props: any) {
 
 
   return (
-    {/* Setting main untuk print: hapus background, padding, dan max-width di mode print */}
     <main className="min-h-screen bg-slate-100 py-12 px-4 flex justify-center print:bg-white print:p-0 print:m-0">
       <div className="w-full max-w-3xl bg-white rounded-xl shadow-2xl border-t-8 border-[#0B4B50] px-10 py-10 
         print:shadow-none print:border-t-4 print:rounded-none print:w-full print:px-5 print:py-5">
@@ -149,7 +150,6 @@ export default async function InvoicePage(props: any) {
             <p className="font-bold text-slate-700 uppercase mb-1">No. Invoice:</p>
             <p className="text-xl font-extrabold text-[#0B4B50] print:text-lg">{data.invoiceId}</p>
                 <div className="mt-2">
-                    {/* Print: hide border/bg, show text in dark color */}
                     <p className={`inline-flex px-3 py-1 rounded-full text-xs font-extrabold ${statusClasses}`}>
                         STATUS: {(data.status || "").toUpperCase()}
                     </p>
