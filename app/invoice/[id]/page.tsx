@@ -5,6 +5,8 @@ const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
 
 async function getOrder(invoiceId: string) {
+  console.log("🔍 Mencari Invoice:", invoiceId)
+
   const auth = new google.auth.JWT({
     email: CLIENT_EMAIL,
     key: PRIVATE_KEY,
@@ -15,23 +17,33 @@ async function getOrder(invoiceId: string) {
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: "Sheet1!A2:L999",
+    range: "Sheet1!A2:L999", // Pastikan hanya data baru
   })
 
   const rows = res.data.values || []
-  const row = rows.find(r => r[1] === invoiceId)
-  if (!row) return null
+  console.log("📑 Jumlah Data:", rows.length)
+
+  // 🔥 FIX: Cari invoiceId secara aman (trim)
+  const row = rows.find(r => r[1]?.trim() === invoiceId.trim())
+
+  if (!row) {
+    console.log("❌ Invoice tidak ditemukan di Sheet")
+    return null
+  }
 
   return {
-    timestamp: row[0],
-    invoiceId: row[1],
-    nama: row[2],
-    hp: row[3],
-    alamat: row[4],
-    produk: row[5],
-    qty: row[6],
-    total: Number(row[7]),
-    status: row[8],
+    timestamp: row[0] ?? "",
+    invoiceId: row[1] ?? "",
+    nama: row[2] ?? "",
+    hp: row[3] ?? "",
+    alamat: row[4] ?? "",
+    produk: row[5] ?? "",
+    qty: Number(row[6] ?? 0),
+    total: Number(row[7] ?? 0),
+    status: row[8] ?? "Pending",
+    paymentMethod: row[9] ?? "",
+    bankInfo: row[10] ?? "",
+    linkInvoice: row[11] ?? "",
   }
 }
 
@@ -39,13 +51,19 @@ export default async function InvoicePage({ params }: { params: { id: string } }
   const data = await getOrder(params.id)
 
   if (!data) {
-    return <p className="text-center mt-32 text-xl">Invoice tidak ditemukan</p>
+    return (
+      <p className="text-center mt-32 text-xl text-red-600">
+        Invoice tidak ditemukan 👀
+      </p>
+    )
   }
 
   return (
     <main className="min-h-screen bg-gray-100 p-6 flex justify-center">
       <div className="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full">
-        <h1 className="text-xl font-bold text-[#0B4B50]">Invoice #{data.invoiceId}</h1>
+        <h1 className="text-xl font-bold text-[#0B4B50] mb-1">
+          Invoice #{data.invoiceId}
+        </h1>
         <p className="text-sm text-gray-500 mb-4">{data.timestamp}</p>
 
         <p className="font-semibold">{data.nama}</p>
@@ -54,12 +72,12 @@ export default async function InvoicePage({ params }: { params: { id: string } }
 
         <div className="border-t pt-3 mt-3">
           <p className="font-semibold">Pesanan:</p>
-          <p>{data.produk}</p>
+          <p className="text-sm">{data.produk}</p>
         </div>
 
-        <div className="flex justify-between border-t pt-4 mt-4">
+        <div className="flex justify-between border-t pt-4 mt-4 text-lg">
           <span className="text-gray-500">Total</span>
-          <span className="font-bold text-lg text-[#0B4B50]">
+          <span className="font-bold text-[#0B4B50]">
             Rp{data.total.toLocaleString("id-ID")}
           </span>
         </div>
