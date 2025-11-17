@@ -1,5 +1,3 @@
-kode yg lu kirim brusan malah eror lagi...hrusnya lu upgrade nya
-
 import { google } from "googleapis"
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID!
