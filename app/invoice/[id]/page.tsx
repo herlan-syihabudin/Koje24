@@ -90,7 +90,6 @@ export default async function InvoicePage(props: any) {
 
 
   return (
-    {/* Hapus min-h-screen saat print agar konten tidak terpotong, ganti dengan auto */}
     <main className="min-h-screen bg-slate-100 py-12 px-4 flex justify-center print:bg-white print:p-0 print:m-0 print:h-auto print:min-h-0">
       <div className="w-full max-w-3xl bg-white rounded-xl shadow-2xl border-t-8 border-[#0B4B50] px-10 py-10 
         print:shadow-none print:border-t-4 print:rounded-none print:w-full print:px-5 print:py-5 print:max-w-full">
