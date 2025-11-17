@@ -1,22 +1,25 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
 
-const SHEET_ID = process.env.SHEET_ID!;
-const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!;
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!;
+const auth = new google.auth.GoogleAuth({
+  credentials: {
+    client_email: process.env.GOOGLE_CLIENT_EMAIL,
+    private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  },
+  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+});
 
-const auth = new google.auth.JWT(
-  GOOGLE_CLIENT_EMAIL,
-  undefined,
-  GOOGLE_PRIVATE_KEY,
-  ["https://www.googleapis.com/auth/spreadsheets"]
-);
+const SHEET_ID = process.env.SHEET_ID;
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    if (!SHEET_ID) {
+      throw new Error("Missing SHEET_ID");
+    }
 
-    const sheets = google.sheets({ version: "v4", auth });
+    const body = await req.json();
+    const client = await auth.getClient();
+    const sheets = google.sheets({ version: "v4", auth: client });
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
@@ -30,7 +33,7 @@ export async function POST(req: Request) {
             body.phone,
             body.address,
             JSON.stringify(body.items),
-            body.total
+            body.total,
           ]
         ],
       },
@@ -38,8 +41,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
 
-  } catch (error) {
-    console.error("❌ ERROR ORDER:", error);
-    return NextResponse.json({ error: true, message: String(error) }, { status: 500 });
+  } catch (err: any) {
+    console.error("❌ ERROR ORDER:", err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
