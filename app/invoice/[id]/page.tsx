@@ -19,7 +19,7 @@ async function getOrder(invoiceId: string) {
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: "Sheet1!A2:L999",
+    range: "'INVOICE KOJE24'!A2:L999",
   })
 
   const rows = res.data.values || []
