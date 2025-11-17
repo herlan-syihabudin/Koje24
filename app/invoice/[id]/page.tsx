@@ -5,8 +5,10 @@ const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
 
 async function getOrder(invoiceId: string) {
+  console.log("🔍 Invoice ID dari URL:", invoiceId)
+
   if (!invoiceId) {
-    console.log("❌ invoiceId kosong / undefined")
+    console.log("❌ Invoice ID tidak ada di URL!")
     return null
   }
 
@@ -24,39 +26,44 @@ async function getOrder(invoiceId: string) {
   })
 
   const rows = res.data.values || []
+  console.log("📑 Jumlah Data:", rows.length)
 
-  const row = rows.find(r => {
-    const sheetId = (r[1] || "").trim()
-    return sheetId === invoiceId.trim()
-  })
+  const row = rows.find(r => r[1] && r[1] === invoiceId)
 
-  if (!row) return null
+  if (!row) {
+    console.log("❌ Tidak ketemu di Sheet")
+    return null
+  }
 
   return {
-    timestamp: row[0] ?? "",
-    invoiceId: row[1] ?? "",
-    nama: row[2] ?? "",
-    hp: row[3] ?? "",
-    alamat: row[4] ?? "",
-    produk: row[5] ?? "",
-    qty: Number(row[6] ?? 0),
-    total: Number(row[7] ?? 0),
-    status: row[8] ?? "Pending",
-    paymentMethod: row[9] ?? "",
-    bankInfo: row[10] ?? "",
-    linkInvoice: row[11] ?? "",
+    timestamp: row[0],
+    invoiceId: row[1],
+    nama: row[2],
+    hp: row[3],
+    alamat: row[4],
+    produk: row[5],
+    qty: Number(row[6]),
+    total: Number(row[7]),
+    status: row[8],
+    paymentMethod: row[9],
+    bankInfo: row[10],
+    linkInvoice: row[11],
   }
 }
 
 export default async function InvoicePage({ params }: { params: { id: string } }) {
-  const data = await getOrder(params.id)
+  const { id } = params
+
+  console.log("🚀 PARAMS.ID:", id)
+
+  const data = await getOrder(id)
 
   if (!data) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <p className="text-center text-xl text-red-600 font-semibold">
-          Invoice tidak ditemukan 👀
-        </p>
+        <h2 className="text-xl text-red-600 font-semibold">
+          Invoice tidak ditemukan 🚫
+        </h2>
       </main>
     )
   }
