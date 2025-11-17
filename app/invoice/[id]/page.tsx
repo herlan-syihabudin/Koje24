@@ -5,7 +5,10 @@ const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
 
 async function getOrder(invoiceId: string) {
-  console.log("🔍 Mencari Invoice:", invoiceId)
+  if (!invoiceId) {
+    console.log("❌ invoiceId kosong / undefined")
+    return null
+  }
 
   const auth = new google.auth.JWT({
     email: CLIENT_EMAIL,
@@ -21,14 +24,13 @@ async function getOrder(invoiceId: string) {
   })
 
   const rows = res.data.values || []
-  console.log("📑 Jumlah Data:", rows.length)
 
-  const row = rows.find(r => r[1]?.trim() === invoiceId.trim())
+  const row = rows.find(r => {
+    const sheetId = (r[1] || "").trim()
+    return sheetId === invoiceId.trim()
+  })
 
-  if (!row) {
-    console.log("❌ Invoice tidak ditemukan di Sheet")
-    return null
-  }
+  if (!row) return null
 
   return {
     timestamp: row[0] ?? "",
@@ -51,9 +53,11 @@ export default async function InvoicePage({ params }: { params: { id: string } }
 
   if (!data) {
     return (
-      <p className="text-center mt-32 text-xl text-red-600">
-        Invoice tidak ditemukan 👀
-      </p>
+      <main className="min-h-screen flex items-center justify-center">
+        <p className="text-center text-xl text-red-600 font-semibold">
+          Invoice tidak ditemukan 👀
+        </p>
+      </main>
     )
   }
 
@@ -63,7 +67,6 @@ export default async function InvoicePage({ params }: { params: { id: string } }
         <h1 className="text-xl font-bold text-[#0B4B50] mb-1">
           Invoice #{data.invoiceId}
         </h1>
-
         <p className="text-sm text-gray-500 mb-4">{data.timestamp}</p>
 
         <p className="font-semibold">{data.nama}</p>
