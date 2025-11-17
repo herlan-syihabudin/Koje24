@@ -1,3 +1,5 @@
+kode yg lu kirim brusan malah eror lagi...hrusnya lu upgrade nya
+
 import { google } from "googleapis"
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID!
@@ -56,18 +58,15 @@ async function getOrder(invoiceId: string) {
   }
 }
 
-export default async function InvoicePage({
-  params,
-}: {
-  params: { id: string }
-}) {
-  console.log("🚀 PARAMS:", params)
+export default async function InvoicePage(props: any) {
+  const { id } = await props.params
+  console.log("🚀 PARAMS FIXED:", id)
 
-  const id = params?.id?.trim?.() ?? ""
+  const idClean = id?.trim?.() ?? ""
 
-  if (!id) {
+  if (!idClean) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-50">
+      <main className="min-h-screen flex items-center justify-center">
         <h2 className="text-xl text-red-600 font-semibold">
           Invoice ID tidak valid 🚫
         </h2>
@@ -75,11 +74,11 @@ export default async function InvoicePage({
     )
   }
 
-  const data = await getOrder(id)
+  const data = await getOrder(idClean)
 
   if (!data) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-50">
+      <main className="min-h-screen flex items-center justify-center">
         <h2 className="text-xl text-red-600 font-semibold">
           Invoice tidak ditemukan di database 🚫
         </h2>
@@ -88,95 +87,32 @@ export default async function InvoicePage({
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 py-8 px-4 md:px-6 flex justify-center">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-        {/* HEADER BRAND + NOMOR INVOICE */}
-        <div className="px-6 md:px-8 pt-6 pb-4 border-b border-slate-100 flex items-start justify-between gap-4">
-          <div>
-            <div className="text-2xl font-extrabold tracking-tight text-[#0B4B50]">
-              KOJE<span className="text-amber-400">24</span>
-            </div>
-            <p className="text-xs md:text-sm text-slate-500">
-              Natural Cold-Pressed Juice • No Sugar • No Preservatives
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
-              Invoice
-            </p>
-            <p className="text-sm md:text-base font-semibold text-[#0B4B50]">
-              #{data.invoiceId}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">{data.timestamp}</p>
-          </div>
+    <main className="min-h-screen bg-gray-100 p-6 flex justify-center">
+      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full">
+        <h1 className="text-xl font-bold text-[#0B4B50] mb-1">
+          Invoice #{data.invoiceId}
+        </h1>
+        <p className="text-sm text-gray-500 mb-4">{data.timestamp}</p>
+
+        <p className="font-semibold">{data.nama}</p>
+        <p className="text-gray-600">{data.hp}</p>
+        <p className="text-gray-600 mb-4">{data.alamat}</p>
+
+        <div className="border-t pt-3 mt-3">
+          <p className="font-semibold">Pesanan:</p>
+          <p className="text-sm">{data.produk}</p>
         </div>
 
-        {/* BODY */}
-        <div className="px-6 md:px-8 py-6 space-y-6">
-          {/* DATA CUSTOMER */}
-          <section className="space-y-1">
-            <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-              Data Pemesan
-            </h3>
-            <div className="mt-1 text-sm space-y-0.5">
-              <p className="font-semibold text-slate-800">{data.nama}</p>
-              <p className="text-slate-600">{data.hp}</p>
-              <p className="text-slate-600 leading-snug">{data.alamat}</p>
-            </div>
-          </section>
+        <div className="flex justify-between border-t pt-4 mt-4 text-lg">
+          <span className="text-gray-500">Total</span>
+          <span className="font-bold text-[#0B4B50]">
+            Rp{data.total.toLocaleString("id-ID")}
+          </span>
+        </div>
 
-          {/* RINCIAN PESANAN */}
-          <section className="pt-4 border-t border-slate-100">
-            <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase mb-3">
-              Rincian Pesanan
-            </h3>
-
-            <div className="w-full rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm">
-              <div className="flex justify-between mb-1">
-                <span className="font-semibold text-slate-800">
-                  {data.produk}
-                </span>
-                <span className="text-slate-600">x{data.qty}</span>
-              </div>
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>Subtotal</span>
-                <span>Rp{data.total.toLocaleString("id-ID")}</span>
-              </div>
-            </div>
-
-            {/* TOTAL */}
-            <div className="flex justify-between items-center mt-4">
-              <span className="text-sm font-medium text-slate-600">Total</span>
-              <span className="text-lg md:text-xl font-extrabold text-[#0B4B50]">
-                Rp{data.total.toLocaleString("id-ID")}
-              </span>
-            </div>
-          </section>
-
-          {/* STATUS PEMBAYARAN */}
-          <section className="pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs md:text-sm text-slate-600">
-              Status Pembayaran
-            </span>
-            <span
-              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                (data.status || "").toLowerCase() === "pending"
-                  ? "bg-amber-50 text-amber-700 border border-amber-100"
-                  : "bg-emerald-50 text-emerald-700 border border-emerald-100"
-              }`}
-            >
-              {(data.status || "").toUpperCase()}
-            </span>
-          </section>
-
-          {/* CATATAN SINGKAT */}
-          <section className="pt-1">
-            <p className="text-[11px] leading-relaxed text-slate-400">
-              Silakan selesaikan pembayaran sesuai instruksi yang dikirim oleh
-              admin KOJE24. Simpan atau screenshot halaman ini sebagai bukti
-              pemesanan Anda.
-            </p>
-          </section>
+        <div className="mt-4 text-sm">
+          Status:{" "}
+          <span className="font-bold text-yellow-600">{data.status}</span>
         </div>
       </div>
     </main>
