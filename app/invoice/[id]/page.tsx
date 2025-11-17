@@ -55,81 +55,154 @@ async function getOrder(invoiceId: string) {
 
 export default async function InvoicePage(props: any) {
   const { id } = await props.params
+  console.log("🚀 PARAMS FIXED:", id)
+
   const idClean = id?.trim?.() ?? ""
 
-  if (!idClean)
+  if (!idClean) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        <p className="text-xl text-red-600 font-semibold">
+      <main className="min-h-screen flex items-center justify-center bg-slate-50">
+        <h2 className="text-xl text-red-600 font-semibold">
           Invoice ID tidak valid 🚫
-        </p>
+        </h2>
       </main>
     )
+  }
 
   const data = await getOrder(idClean)
 
-  if (!data)
+  if (!data) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        <p className="text-xl text-red-600 font-semibold">
-          Invoice tidak ditemukan 🚫
-        </p>
+      <main className="min-h-screen flex items-center justify-center bg-slate-50">
+        <h2 className="text-xl text-red-600 font-semibold">
+          Invoice tidak ditemukan di database 🚫
+        </h2>
       </main>
     )
+  }
+
+  // HARGA PER ITEM (sementara dari total / qty, nanti bisa diganti dari data asli)
+  const pricePerItem =
+    data.qty && data.qty > 0 ? Math.round(data.total / data.qty) : data.total
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6 flex justify-center">
-      <div className="bg-white p-8 rounded-2xl shadow-lg max-w-lg w-full border border-gray-200">
-
-        {/* HEADER */}
-        <div className="border-b pb-4 mb-4">
-          <h1 className="text-2xl font-bold text-[#0B4B50] tracking-wide">
-            KOJE24 • INVOICE
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">{data.timestamp}</p>
-        </div>
-
-        {/* CUSTOMER INFO */}
-        <div className="mb-4">
-          <p className="font-semibold text-lg">{data.nama}</p>
-          <p className="text-gray-600 text-sm">{data.hp}</p>
-          <p className="text-gray-600 text-sm">{data.alamat}</p>
-        </div>
-
-        {/* ORDER */}
-        <div className="bg-gray-50 p-4 rounded-lg border mb-4">
-          <p className="font-semibold text-gray-700 mb-2">Detail Pesanan</p>
-
-          <div className="flex justify-between text-gray-700">
-            <span className="text-sm">{data.produk}</span>
-            <span className="text-sm">x{data.qty}</span>
+    <main className="min-h-screen bg-slate-100 py-10 px-4 flex justify-center">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-slate-200 px-8 py-8">
+        {/* HEADER ATAS */}
+        <div className="flex items-start justify-between border-b border-slate-200 pb-5 mb-6">
+          <div>
+            <p className="text-3xl font-extrabold tracking-[0.18em] text-slate-900">
+              INVOICE
+            </p>
           </div>
-
-          <div className="flex justify-between mt-3 text-lg font-bold text-[#0B4B50]">
-            <span>Total</span>
-            <span>Rp{data.total.toLocaleString("id-ID")}</span>
+          <div className="text-right">
+            <p className="text-lg font-bold text-[#0B4B50] tracking-wide">
+              KOJE<span className="text-amber-400">24</span>
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              Natural Cold-Pressed Juice
+            </p>
           </div>
         </div>
 
-        {/* STATUS */}
-        <div className="flex justify-between items-center mt-4">
-          <p className="font-semibold text-sm text-gray-600">Status Pembayaran</p>
-          <span
-            className={`px-3 py-1 rounded-full text-sm font-bold 
-          ${
-            data.status === "Pending"
-              ? "bg-yellow-100 text-yellow-700"
-              : "bg-green-100 text-green-700"
-          }`}
-          >
-            {data.status}
-          </span>
+        {/* KEPADA / TANGGAL / NO INVOICE */}
+        <div className="grid grid-cols-2 gap-4 text-xs md:text-sm mb-6">
+          <div className="space-y-1">
+            <p className="font-semibold text-slate-700 uppercase tracking-wide">
+              Kepada:
+            </p>
+            <p className="font-semibold text-slate-900">{data.nama}</p>
+            <p className="text-slate-600">{data.hp}</p>
+            <p className="text-slate-600 leading-snug">{data.alamat}</p>
+          </div>
+          <div className="space-y-1 text-right">
+            <p className="font-semibold text-slate-700 uppercase tracking-wide">
+              Tanggal:
+            </p>
+            <p className="text-slate-700">{data.timestamp}</p>
+            <p className="font-semibold text-slate-700 uppercase tracking-wide mt-3">
+              No. Invoice:
+            </p>
+            <p className="text-slate-800">{data.invoiceId}</p>
+          </div>
         </div>
 
-        {/* FOOTER */}
-        <p className="text-center text-xs text-gray-400 mt-6">
-          Terima kasih telah order di KOJE24 🍃✨
-        </p>
+        {/* TABEL ITEM */}
+        <div className="mt-4">
+          <div className="grid grid-cols-4 text-[11px] md:text-xs font-semibold tracking-wide text-slate-600 uppercase border-y border-slate-300 py-2">
+            <span className="col-span-2 pl-2">Keterangan</span>
+            <span className="text-right">Harga</span>
+            <span className="text-right pr-2">Jml / Total</span>
+          </div>
+
+          {/* BARIS ITEM (sementara 1 produk dari data sekarang) */}
+          <div className="grid grid-cols-4 text-sm items-center border-b border-slate-200 py-3 bg-slate-50/70">
+            <div className="col-span-2 pl-2">
+              <p className="font-medium text-slate-800">{data.produk}</p>
+            </div>
+            <div className="text-right text-slate-700">
+              Rp{pricePerItem.toLocaleString("id-ID")}
+            </div>
+            <div className="text-right pr-2 text-slate-700">
+              x{data.qty} ={" "}
+              <span className="font-semibold">
+                Rp{data.total.toLocaleString("id-ID")}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* RINGKASAN TOTAL */}
+        <div className="mt-6 flex flex-col items-end gap-1 text-sm">
+          {/* kalau nanti mau ada subtotal/pajak tinggal tambahin di sini */}
+          <div className="flex justify-between w-full max-w-xs">
+            <span className="text-slate-600 font-semibold">TOTAL</span>
+            <span className="font-extrabold text-slate-900">
+              Rp{data.total.toLocaleString("id-ID")}
+            </span>
+          </div>
+        </div>
+
+        {/* PEMBAYARAN */}
+        <div className="mt-8 grid grid-cols-2 gap-4 text-xs md:text-sm">
+          <div className="space-y-1">
+            <p className="font-semibold text-slate-700 uppercase tracking-wide">
+              Pembayaran:
+            </p>
+            <p className="text-slate-700">Transfer Bank Mandiri</p>
+            <p className="text-slate-700">
+              No. Rek: <span className="font-semibold">9918282983939</span>
+            </p>
+            <p className="text-slate-700">
+              A/N: <span className="font-semibold">KOJE24</span>
+            </p>
+          </div>
+          <div className="text-right space-y-1">
+            <p className="font-semibold text-slate-700 uppercase tracking-wide">
+              Status:
+            </p>
+            <p
+              className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold 
+              ${
+                (data.status || "").toLowerCase() === "pending"
+                  ? "bg-amber-50 text-amber-700 border border-amber-100"
+                  : "bg-emerald-50 text-emerald-700 border border-emerald-100"
+              }`}
+            >
+              {(data.status || "").toUpperCase()}
+            </p>
+          </div>
+        </div>
+
+        {/* FOOTER TERIMA KASIH */}
+        <div className="mt-10 border-t border-slate-200 pt-4 text-center">
+          <p className="text-xs md:text-sm font-semibold text-slate-700 tracking-wide">
+            TERIMAKASIH ATAS PEMBELIAN ANDA
+          </p>
+          <p className="text-[11px] text-slate-400 mt-1">
+            KOJE24 • Natural Cold-Pressed Juice • No Sugar • No Preservatives
+          </p>
+        </div>
       </div>
     </main>
   )
