@@ -1,29 +1,21 @@
-import { NextResponse } from "next/server";
-import { google } from "googleapis";
+import { NextResponse } from "next/server"
+import { google } from "googleapis"
 
-const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!;
-const PROJECT_ID = process.env.GOOGLE_PROJECT_ID!;
-const SHEET_ID = process.env.SHEET_ID!;
-
-if (!PRIVATE_KEY || !CLIENT_EMAIL || !PROJECT_ID || !SHEET_ID) {
-  console.error("❌ ENV belum lengkap!");
-}
+const SHEET_ID = process.env.SHEET_ID!
+const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
+const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = await req.json()
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        private_key: PRIVATE_KEY,
-        client_email: CLIENT_EMAIL,
-        project_id: PROJECT_ID,
-      },
+    const auth = new google.auth.JWT({
+      email: CLIENT_EMAIL,
+      key: PRIVATE_KEY.replace(/\\n/g, "\n"),
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    });
+    })
 
-    const sheets = google.sheets({ version: "v4", auth });
+    const sheets = google.sheets({ version: "v4", auth })
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
@@ -41,11 +33,11 @@ export async function POST(req: Request) {
           ],
         ],
       },
-    });
+    })
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true })
   } catch (err) {
-    console.error("❌ ERROR ORDER:", err);
-    return NextResponse.json({ success: false }, { status: 500 });
+    console.error("❌ ERROR ORDER:", err)
+    return NextResponse.json({ success: false }, { status: 500 })
   }
 }
