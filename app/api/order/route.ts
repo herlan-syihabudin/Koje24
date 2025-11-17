@@ -1,25 +1,29 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
 
-const auth = new google.auth.GoogleAuth({
-  credentials: {
-    client_email: process.env.GOOGLE_CLIENT_EMAIL,
-    private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  },
-  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-});
+const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!;
+const PROJECT_ID = process.env.GOOGLE_PROJECT_ID!;
+const SHEET_ID = process.env.SHEET_ID!;
 
-const SHEET_ID = process.env.SHEET_ID;
+if (!PRIVATE_KEY || !CLIENT_EMAIL || !PROJECT_ID || !SHEET_ID) {
+  console.error("❌ ENV belum lengkap!");
+}
 
 export async function POST(req: Request) {
   try {
-    if (!SHEET_ID) {
-      throw new Error("Missing SHEET_ID");
-    }
-
     const body = await req.json();
-    const client = await auth.getClient();
-    const sheets = google.sheets({ version: "v4", auth: client });
+
+    const auth = new google.auth.GoogleAuth({
+      credentials: {
+        private_key: PRIVATE_KEY,
+        client_email: CLIENT_EMAIL,
+        project_id: PROJECT_ID,
+      },
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+
+    const sheets = google.sheets({ version: "v4", auth });
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
@@ -34,15 +38,14 @@ export async function POST(req: Request) {
             body.address,
             JSON.stringify(body.items),
             body.total,
-          ]
+          ],
         ],
       },
     });
 
     return NextResponse.json({ success: true });
-
-  } catch (err: any) {
+  } catch (err) {
     console.error("❌ ERROR ORDER:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return NextResponse.json({ success: false }, { status: 500 });
   }
 }
