@@ -2,26 +2,19 @@ import { NextResponse } from "next/server";
 import { google } from "googleapis";
 
 const SHEET_ID = process.env.SHEET_ID!;
-const SERVICE_KEY = process.env.GOOGLE_SERVICE_KEY!;
-const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!;
+const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!;
+const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!;
 
-if (!SHEET_ID || !SERVICE_KEY || !PRIVATE_KEY) {
-  console.error("❌ SHEET_ID / GOOGLE_SERVICE_KEY / GOOGLE_PRIVATE_KEY missing!");
-}
+const auth = new google.auth.JWT(
+  GOOGLE_CLIENT_EMAIL,
+  undefined,
+  GOOGLE_PRIVATE_KEY,
+  ["https://www.googleapis.com/auth/spreadsheets"]
+);
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
-    const credentials = {
-      ...JSON.parse(SERVICE_KEY),
-      private_key: PRIVATE_KEY,
-    };
-
-    const auth = new google.auth.GoogleAuth({
-      credentials,
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    });
 
     const sheets = google.sheets({ version: "v4", auth });
 
@@ -33,24 +26,20 @@ export async function POST(req: Request) {
         values: [
           [
             new Date().toLocaleString("id-ID"),
-            body.invoiceId,
             body.name,
             body.phone,
             body.address,
             JSON.stringify(body.items),
-            body.total,
-            "PENDING",
-            "BANK",
-            "",
-            body.invoiceUrl,
-          ],
+            body.total
+          ]
         ],
       },
     });
 
     return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("❌ ERROR ORDER:", err);
-    return NextResponse.json({ success: false }, { status: 500 });
+
+  } catch (error) {
+    console.error("❌ ERROR ORDER:", error);
+    return NextResponse.json({ error: true, message: String(error) }, { status: 500 });
   }
 }
