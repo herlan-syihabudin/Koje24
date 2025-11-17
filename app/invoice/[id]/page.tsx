@@ -1,25 +1,17 @@
-// app/invoice/[id]/page.tsx
 import { google } from "googleapis"
-import { SheetsOrder } from "@/types/order"
 
-const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-const SHEET_ID = process.env.GOOGLE_SHEET_ID
-const SERVICE_KEY = process.env.GOOGLE_PRIVATE_KEY
+const SHEET_ID = process.env.GOOGLE_SHEET_ID!
+const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
+const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
 
-async function getOrderData(invoiceId: string): Promise<SheetsOrder | null> {
-  if (!SHEET_ID || !SERVICE_KEY) {
-    console.error("❌ SHEET_ID atau GOOGLE_PRIVATE_KEY tidak ditemukan!")
-    return null
-  }
-
-  const auth = new google.auth.GoogleAuth({
-    credentials: JSON.parse(SERVICE_KEY),
-    scopes: SCOPES,
+async function getOrder(invoiceId: string) {
+  const auth = new google.auth.JWT({
+    email: CLIENT_EMAIL,
+    key: PRIVATE_KEY,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   })
 
-  const client = await auth.getClient()
-  // 🔥 FIX yang sama untuk typing
-  const sheets = google.sheets({ version: "v4", auth: auth as any })
+  const sheets = google.sheets({ version: "v4", auth })
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
@@ -28,7 +20,6 @@ async function getOrderData(invoiceId: string): Promise<SheetsOrder | null> {
 
   const rows = res.data.values || []
   const row = rows.find(r => r[1] === invoiceId)
-
   if (!row) return null
 
   return {
@@ -41,38 +32,29 @@ async function getOrderData(invoiceId: string): Promise<SheetsOrder | null> {
     qty: row[6],
     total: Number(row[7]),
     status: row[8],
-    paymentMethod: row[9],
-    bankInfo: row[10],
-    linkInvoice: row[11],
   }
 }
 
 export default async function InvoicePage({ params }: { params: { id: string } }) {
-  const data = await getOrderData(params.id)
+  const data = await getOrder(params.id)
 
   if (!data) {
-    return (
-      <main className="min-h-screen bg-[#f5f7f7] px-6 py-16 flex justify-center">
-        <div className="max-w-lg w-full border rounded-xl shadow-md p-8 bg-white">
-          <h1 className="text-xl font-bold text-red-500">Invoice tidak ditemukan</h1>
-        </div>
-      </main>
-    )
+    return <p className="text-center mt-32 text-xl">Invoice tidak ditemukan</p>
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f7f7] px-6 py-16 flex justify-center">
-      <div className="max-w-lg w-full border rounded-2xl shadow-md p-8 bg-white">
-        <h1 className="text-2xl font-bold text-[#0B4B50] mb-2">Invoice #{data.invoiceId}</h1>
-        <p className="text-xs text-gray-500 mb-4">Dibuat: {data.timestamp}</p>
+    <main className="min-h-screen bg-gray-100 p-6 flex justify-center">
+      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full">
+        <h1 className="text-xl font-bold text-[#0B4B50]">Invoice #{data.invoiceId}</h1>
+        <p className="text-sm text-gray-500 mb-4">{data.timestamp}</p>
 
-        <p className="text-sm font-semibold">{data.nama}</p>
-        <p className="text-sm text-gray-600">{data.hp}</p>
-        <p className="text-sm text-gray-600 mb-4">{data.alamat}</p>
+        <p className="font-semibold">{data.nama}</p>
+        <p className="text-gray-600">{data.hp}</p>
+        <p className="text-gray-600 mb-4">{data.alamat}</p>
 
         <div className="border-t pt-3 mt-3">
           <p className="font-semibold">Pesanan:</p>
-          <p className="text-sm">{data.produk}</p>
+          <p>{data.produk}</p>
         </div>
 
         <div className="flex justify-between border-t pt-4 mt-4">
@@ -82,8 +64,9 @@ export default async function InvoicePage({ params }: { params: { id: string } }
           </span>
         </div>
 
-        <div className="mt-4 text-sm text-gray-600">
-          Status: <span className="font-bold text-yellow-600">{data.status}</span>
+        <div className="mt-4 text-sm">
+          Status:{" "}
+          <span className="font-bold text-yellow-600">{data.status}</span>
         </div>
       </div>
     </main>
