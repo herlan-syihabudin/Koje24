@@ -5,7 +5,7 @@ const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
 
 const HARGA_ONGKIR = 15000
-const KONTAK_CS = "6281234567890"
+const KONTAK_CS = "6282213139580"
 
 async function getOrder(invoiceId: string) {
   const idClean = invoiceId?.trim?.() ?? ""
