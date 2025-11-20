@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
 
-const SHEET_ID = process.env.GOOGLE_SHEET_ID!
-const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
-const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
+// ---- SAFE ENV HANDLING FOR CLOUDFLARE ---- //
+const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? ""
+const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? ""
+const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
+
+// PRIVATE KEY aman (hindari undefined.replace)
+const PRIVATE_KEY = PRIVATE_KEY_RAW
+  ? PRIVATE_KEY_RAW.replace(/\\n/g, "\n")
+  : ""
 
 export async function POST(req: Request) {
   try {
+    if (!SHEET_ID || !CLIENT_EMAIL || !PRIVATE_KEY) {
+      throw new Error("Environment variable Google Sheet belum lengkap")
+    }
+
     const body = await req.json()
 
     const cart = body.cart || []
@@ -39,6 +49,7 @@ export async function POST(req: Request) {
       key: PRIVATE_KEY,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     })
+
     const sheets = google.sheets({ version: "v4", auth })
 
     await sheets.spreadsheets.values.append({
