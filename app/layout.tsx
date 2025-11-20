@@ -1,11 +1,6 @@
 import "./globals.css"
-import { Inter, Playfair_Display } from "next/font/google"
 import type { ReactNode } from "react"
 import { CartProvider } from "@/components/CartContext"
-
-// 🧩 Font
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" })
 
 // 🌍 SEO & META Lengkap
 export const metadata = {
@@ -52,7 +47,6 @@ export const metadata = {
     creator: "@koje24",
   },
 
-  // Favicon & PWA manifest
   icons: {
     icon: "/favicon.ico",
     apple: [
@@ -65,21 +59,23 @@ export const metadata = {
 
   manifest: "/manifest.json",
   themeColor: "#0FA3A8",
-
   alternates: {
     canonical: "https://webkoje-cacs.vercel.app",
   },
 }
 
-// 🧱 Layout
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html
-      lang="id"
-      className={`${inter.variable} ${playfair.variable}`}
-      suppressHydrationWarning
-    >
-      <body className="bg-white text-[#0B4B50] antialiased selection:bg-[#0FA3A8]/20 selection:text-[#0B4B50]">
+    <html lang="id" suppressHydrationWarning>
+      <head>
+        {/* GOOGLE FONTS – playlist Display & Inter */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+
+      <body className="bg-white text-[#0B4B50] antialiased selection:bg-[#0FA3A8]/20 selection:text-[#0B4B50] font-inter">
         <CartProvider>{children}</CartProvider>
       </body>
     </html>
