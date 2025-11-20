@@ -50,14 +50,11 @@ async function getOrder(invoiceId: string) {
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case "pending":
-      // Menambahkan print styling
       return "bg-amber-50 text-amber-700 border border-amber-300 print:bg-white print:border-amber-500 print:text-amber-800"
     case "paid":
     case "lunas":
-      // Menambahkan print styling
       return "bg-emerald-50 text-emerald-700 border border-emerald-300 print:bg-white print:border-emerald-500 print:text-emerald-800"
     default:
-      // Menambahkan print styling
       return "bg-gray-50 text-gray-700 border border-gray-300 print:bg-white print:border-gray-500 print:text-gray-800"
   }
 }
