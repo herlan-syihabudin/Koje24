@@ -12,50 +12,50 @@ import StickyCartBar from "@/components/StickyCartBar"
 import CartPopup from "@/components/CartPopup"
 import PackagePopup from "@/components/PackagePopup"
 import PackagesSection from "@/components/PackagesSection"
-import RatingPopup from "@/components/RatingPopup" // ⭐ NEW
+import RatingPopup from "@/components/RatingPopup"
 
 export default function HomePage() {
-  return (
-    <main>
+  return (
+    <main>
 
-      <Header />
-      <Hero />
+      <Header />
+      <Hero />
 
-      {/* ========= PRODUK ========= */}
-      <section id="produk" className="scroll-mt-24">
-        <ProductGrid />
-      </section>
+      {/* ========= PRODUK ========= */}
+      <section id="produk" className="scroll-mt-24">
+        <ProductGrid />
+      </section>
 
-      {/* ========= TENTANG ========= */}
-      <section id="about" className="scroll-mt-24">
-        <AboutSection />
-      </section>
+      {/* ========= TENTANG ========= */}
+      <section id="about" className="scroll-mt-24">
+        <AboutSection />
+      </section>
 
-      {/* ========= PAKET ========= */}
-      <PackagesSection />
+      {/* ========= PAKET ========= */}
+      <PackagesSection />
 
-      {/* ========= LANGGANAN ========= */}
-      <section id="langganan" className="scroll-mt-24">
-        <SubscriptionSection />
-      </section>
+      {/* ========= LANGGANAN ========= */}
+      <section id="langganan" className="scroll-mt-24">
+        <SubscriptionSection />
+      </section>
 
-      {/* ========= TESTIMONI ========= */}
-      <TestimoniCarousel />
+      {/* ========= TESTIMONI ========= */}
+      <TestimoniCarousel />
 
-      {/* ========= FAQ ========= */}
-      <section id="faq" className="scroll-mt-24">
-        <FaqSection />
-      </section>
+      {/* ========= FAQ ========= */}
+      <section id="faq" className="scroll-mt-24">
+        <FaqSection />
+      </section>
 
-      <Footer />
+      <Footer />
 
-      {/* ========== POPUPS ========== */}
-      <CartPopup />
-      <PackagePopup />
-      <RatingPopup /> {/* ⭐ AUTO-BEST SELLER LOGIC */}
+      {/* ========== POPUPS ========== */}
+      <CartPopup />
+      <PackagePopup />
+      <RatingPopup />
 
-      <StickyCartBar />
+      <StickyCartBar />
 
-    </main>
-  )
+    </main>
+  )
 }
