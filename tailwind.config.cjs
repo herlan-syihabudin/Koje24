@@ -1,9 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./app/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}",
-    "./pages/**/*.{js,ts,jsx,tsx}",
+    "./app/**/*.{js,jsx,ts,tsx}",
+    "./components/**/*.{js,jsx,ts,tsx}",
+    "./pages/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
     screens: {
@@ -30,16 +30,12 @@ module.exports = {
       },
       keyframes: {
         fadeInUp: {
-          "0%": { opacity: 0, transform: "translateY(10px)" },
-          "100%": { opacity: 1, transform: "translateY(0)" },
-        },
-        "ping-slow": {
-          "75%, 100%": { transform: "scale(1.5)", opacity: "0" },
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
         },
       },
       animation: {
         fadeInUp: "fadeInUp 0.5s ease-out forwards",
-        "ping-slow": "ping-slow 2s cubic-bezier(0,0,0.2,1) infinite",
       },
     },
   },
