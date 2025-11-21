@@ -2,19 +2,18 @@ import "./globals.css"
 import type { ReactNode } from "react"
 import { CartProvider } from "@/components/CartContext"
 import { Inter, Playfair_Display } from "next/font/google"
-import { useEffect } from "react"
 
 // FONTS
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-  display: "swap"
+  display: "swap",
 })
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
-  display: "swap"
+  display: "swap",
 })
 
 export const metadata = {
@@ -36,27 +35,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       className={`${inter.variable} ${playfair.variable}`}
       suppressHydrationWarning
     >
+      {/* ❗ BODY Background controlled by Tailwind */}
       <body className="bg-[#020507] text-white antialiased font-inter">
-        <ScrollListener />
         <CartProvider>{children}</CartProvider>
       </body>
     </html>
   )
-}
-
-/* === LISTENER UNTUK HEADER TRANSPARENT === */
-function ScrollListener() {
-  useEffect(() => {
-    const handler = () => {
-      if (window.scrollY > 60) {
-        document.documentElement.classList.add("scrolled")
-      } else {
-        document.documentElement.classList.remove("scrolled")
-      }
-    }
-    window.addEventListener("scroll", handler)
-    return () => window.removeEventListener("scroll", handler)
-  }, [])
-
-  return null
 }
