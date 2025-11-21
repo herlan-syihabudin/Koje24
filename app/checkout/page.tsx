@@ -19,7 +19,8 @@ export default function CheckoutPage() {
   const [errorMsg, setErrorMsg] = useState("")
 
   const subtotal = items.reduce(
-  (acc: number, item) => acc + item.price * item.qty,
+  (acc: number, item: { price: number; qty: number }) =>
+    acc + item.price * item.qty,
   0
 )
   const ongkir = 15000
