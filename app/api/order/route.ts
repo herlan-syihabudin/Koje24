@@ -22,18 +22,24 @@ export async function POST(req: Request) {
       throw new Error("Body JSON tidak valid")
     }
 
-    const { nama, hp, alamat, produk, qty, total } = body
+    const { nama, hp, alamat, cart } = body
 
     if (!nama || !hp || !alamat) {
       throw new Error("Data customer belum lengkap")
     }
 
-    // === FIX UTAMA — CartPopup tidak kirim cart, tapi kirim produk+qty+total
-    if (!produk || !qty || qty === 0) {
+    // === FIX UTAMA — menerima cart array ===
+    if (!Array.isArray(cart) || cart.length === 0) {
       throw new Error("Cart kosong!")
     }
 
-    // Generate invoice
+    const produkList = cart
+      .map((x) => `${x.name} (${x.qty}x)`)
+      .join(", ")
+
+    const qtyTotal = cart.reduce((acc, x) => acc + x.qty, 0)
+    const subtotal = cart.reduce((acc, x) => acc + (x.price * x.qty), 0)
+
     const invoiceId =
       "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase()
 
@@ -42,7 +48,7 @@ export async function POST(req: Request) {
 
     const invoiceUrl = `${baseUrl}/invoice/${invoiceId}`
 
-    // === AUTH GOOGLE SHEET ===
+    // === GOOGLE SHEET ===
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
@@ -51,7 +57,6 @@ export async function POST(req: Request) {
 
     const sheets = google.sheets({ version: "v4", auth })
 
-    // === APPEND ORDER ===
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: "Sheet1!A:L",
@@ -64,9 +69,9 @@ export async function POST(req: Request) {
             nama,
             hp,
             alamat,
-            produk,
-            qty,
-            total,
+            produkList,
+            qtyTotal,
+            subtotal,
             "Pending",
             "Transfer",
             "-",
