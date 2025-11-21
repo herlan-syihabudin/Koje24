@@ -7,15 +7,15 @@ import Link from "next/link"
 export default function AboutSection() {
   return (
     <section className="relative bg-gradient-to-b from-[#f8fcfc] to-[#eef7f7] py-24 md:py-32 overflow-hidden">
-      
-      {/* 🔹 Background efek aura */}
+
+      {/* Background Aura */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(15,163,168,0.08),transparent_60%)] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-14 items-center px-6 md:px-14 lg:px-24 relative z-10">
 
-        {/* =======================================
-            🟩 Kolom Teks
-        ======================================== */}
+        {/* ===========================
+            🟩 KOLUM TEKS
+        ============================= */}
         <motion.div
           initial={{ opacity: 0, x: -40 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -28,26 +28,24 @@ export default function AboutSection() {
           </h2>
 
           <p className="font-inter text-gray-700 leading-relaxed text-base md:text-lg mb-5">
-            KOJE24 adalah <b>premium cold-pressed juice</b> yang diciptakan untuk mereka 
-            yang ingin menjaga tubuh tetap fit, segar, dan seimbang — tanpa ribet.
-            Setiap botol dibuat dari buah & sayuran segar pilihan menggunakan teknologi 
-            cold-pressed agar nutrisi tetap utuh dan maksimal terserap tubuh.
+            KOJE24 adalah <b>premium cold-pressed juice</b> untuk mereka yang ingin
+            menjaga tubuh tetap fit, segar, dan seimbang — tanpa ribet.
+            Dibuat dari buah & sayuran segar pilihan dengan teknologi cold-pressed
+            agar nutrisi tetap utuh dan maksimal terserap tubuh.
           </p>
 
           <p className="font-inter text-gray-600 leading-relaxed text-base md:text-lg mb-8">
-            Kami menggabungkan <b>rasa yang enak</b> dan <b>manfaat nyata</b>: mendukung imun, 
-            metabolisme, dan detoks harian — membuat tubuh terasa lebih ringan, segar, 
-            dan bertenaga.  
+            Kami menggabungkan <b>rasa enak</b> dan <b>manfaat nyata</b> seperti imun lebih kuat,
+            metabolisme lebih stabil, pencernaan lebih nyaman, dan tubuh terasa lebih ringan.
             <br />
-            Ini bukan sekadar jus — ini adalah <b>pengalaman hidup sehat premium</b> 🍃 yang 
-            bisa kamu nikmati setiap hari.
+            Ini bukan sekadar jus — ini adalah <b>pengalaman hidup sehat premium</b> 🍃.
           </p>
 
-          {/* =======================================
-              🔘 Tombol 1 — Baca Selengkapnya
-          ======================================== */}
+          {/* ===========================
+              🔘 Tombol Baca Selengkapnya
+          ============================= */}
           <motion.div
-            className="mt-5"
+            className="mt-3 mb-5"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.96 }}
           >
@@ -61,11 +59,10 @@ export default function AboutSection() {
               <span className="text-xl">→</span>
             </Link>
           </motion.div>
-        </motion.div>
 
-          {/* =======================================
-              🔘 Tombol 2 — Lihat Manfaat
-          ======================================== */}
+          {/* ===========================
+              🔘 Tombol Lihat Manfaat
+          ============================= */}
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
             <Link
               href="/manfaat"
@@ -79,10 +76,11 @@ export default function AboutSection() {
               Lihat Manfaatnya
             </Link>
           </motion.div>
+        </motion.div>
 
-        {/* =======================================
-            🖼 Kolom Gambar
-        ======================================== */}
+        {/* ===========================
+            🖼 KOLUM GAMBAR
+        ============================= */}
         <motion.div
           initial={{ opacity: 0, x: 40 }}
           whileInView={{ opacity: 1, x: 0 }}
