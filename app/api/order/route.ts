@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
 
-// ---- SAFE ENV HANDLING FOR CLOUDFLARE ---- //
 const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? ""
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? ""
 const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
 
-// PRIVATE KEY aman (hindari undefined.replace)
-const PRIVATE_KEY = PRIVATE_KEY_RAW
-  ? PRIVATE_KEY_RAW.replace(/\\n/g, "\n")
-  : ""
+const PRIVATE_KEY = PRIVATE_KEY_RAW ? PRIVATE_KEY_RAW.replace(/\\n/g, "\n") : ""
 
 export async function POST(req: Request) {
   try {
@@ -19,29 +15,29 @@ export async function POST(req: Request) {
 
     const body = await req.json()
 
-    const cart = body.cart || []
-    if (!cart.length) {
+    const cart = body.cart
+    if (!Array.isArray(cart) || cart.length === 0) {
       throw new Error("Cart kosong!")
     }
 
+    if (cart.some((x) => !x.name || !x.qty || !x.price)) {
+      throw new Error("Data cart tidak valid")
+    }
+
     const produkList = cart
-      .map((x: any) => `${x.name} (${x.qty}x)`)
+      .map((x) => `${x.name} (${x.qty}x)`)
       .join(", ")
 
-    const totalQty = cart.reduce(
-      (acc: number, x: any) => acc + (x.qty || 0),
-      0
-    )
-
-    const subtotal = cart.reduce(
-      (acc: number, x: any) => acc + (x.qty * x.price || 0),
-      0
-    )
+    const totalQty = cart.reduce((acc, x) => acc + (x.qty || 0), 0)
+    const subtotal = cart.reduce((acc, x) => acc + (x.qty * x.price || 0), 0)
 
     const baseUrl =
       req.headers.get("origin") || "https://webkoje-cacs.vercel.app"
 
-    const invoiceId = "INV-" + Date.now()
+    // FIXED: Invoice ID SHORT VERSION anti error
+    const invoiceId =
+      "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase()
+
     const invoiceUrl = `${baseUrl}/invoice/${invoiceId}`
 
     const auth = new google.auth.JWT({
@@ -54,12 +50,12 @@ export async function POST(req: Request) {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: "Sheet1!A:L",
+      range: "Sheet1", // SAFER
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
           [
-            new Date().toLocaleString("id-ID"),
+            new Date().toLocaleString("id-ID"), // Tanggal
             invoiceId,
             body.nama,
             body.hp,
