@@ -7,13 +7,13 @@ import Link from "next/link"
 export default function AboutSection() {
   return (
     <section
-      // ❌ id="about" dihapus supaya nggak double sama wrapper di page.tsx
       className="relative bg-gradient-to-b from-[#f8fcfc] to-[#eef7f7] py-24 md:py-32 overflow-hidden"
     >
       {/* 🔹 Background efek */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(15,163,168,0.08),transparent_60%)] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-14 items-center px-6 md:px-14 lg:px-24 relative z-10">
+        
         {/* 🔹 Kolom teks */}
         <motion.div
           initial={{ opacity: 0, x: -40 }}
@@ -27,19 +27,24 @@ export default function AboutSection() {
           </h2>
 
           <p className="font-inter text-gray-700 leading-relaxed text-base md:text-lg mb-5">
-            <b>Cold-pressed fresh</b> — tanpa gula tambahan, tanpa pengawet, dan tanpa bahan kimia buatan.  
-            Setiap tetes KOJE24 lahir dari <b>komitmen kami terhadap kemurnian alam</b>, menghadirkan kesegaran sejati
-            yang menjaga keseimbangan tubuh dan pikiran.
+            KOJE24 adalah <b>premium cold-pressed juice</b> yang diciptakan untuk 
+            mereka yang ingin menjaga tubuh tetap fit, segar, dan seimbang — tanpa ribet.
+            Kami percaya bahwa kesehatan bukan sekadar tren, tapi <b>gaya hidup</b>. 
+            Setiap botol kami dibuat dengan standar kualitas tinggi, menggunakan 
+            buah & sayuran segar pilihan, diproses dengan teknologi cold-pressed 
+            agar nutrisi tetap utuh dan maksimal terserap tubuh.
           </p>
 
           <p className="font-inter text-gray-600 leading-relaxed text-base md:text-lg mb-8">
-            Kami fokus pada <b>manfaat nyata harian</b>: meningkatkan imun, memperbaiki pencernaan, menstabilkan metabolisme, 
-            dan membantu menutrisi kulit dari dalam.  
-            <br />Dengan KOJE24, Anda tidak hanya minum jus — Anda menikmati <b>ritual sehat alami</b> 🍃  
-            yang menjadi bagian dari gaya hidup modern yang peduli kesehatan.
+            Di KOJE24, kami menggabungkan <b>rasa yang enak</b> dan <b>manfaat yang nyata</b>.  
+            Mulai dari meningkatkan imun, menjaga metabolisme, hingga mendukung detoks harian,
+            semuanya dirancang untuk membuat tubuh terasa lebih ringan, segar, dan bertenaga.  
+            <br />
+            Ini bukan sekadar jus — ini adalah <b>pengalaman hidup sehat premium</b> 🍃  
+            yang bisa kamu nikmati setiap hari.
           </p>
 
-          {/* 🔹 Tombol Aksi */}
+          {/* 🔹 Tombol Aksi (jangan diubah) */}
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
             <Link
               href="/manfaat"
