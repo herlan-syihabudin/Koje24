@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { useState } from "react"
 import { useCartStore } from "@/stores/cartStore"
-import { useBestSellerRanking } from "@/lib/bestSeller" // ⭐ NEW
+import { useBestSellerRanking } from "@/lib/bestSeller" // ⭐ BEST SELLER SYSTEM
 
 type Product = {
   id: number
@@ -68,6 +68,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
 
     setAdded(p.id)
 
+    // FLY TO CART ANIMATION
     setTimeout(() => {
       const img = document.querySelector(`[data-id="product-${p.id}"]`) as HTMLElement | null
       const cartBtn = document.querySelector(".fixed.bottom-5.right-5 button") as HTMLElement | null
@@ -133,10 +134,24 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
           return (
             <div
               key={p.id}
-              className="group relative bg-white rounded-3xl overflow-hidden border border-[#e6eeee]/60 shadow-[0_5px_25px_rgba(0,0,0,0.05)] hover:-translate-y-2 hover:shadow-[0_10px_35px_rgba(15,163,168,0.25)] hover:border-[#0FA3A8]/40 transition-all duration-500 flex flex-col h-[450px]"
+              className="group relative bg-white rounded-3xl overflow-hidden 
+              border border-white/40 backdrop-blur-[2px]
+              shadow-[0_5px_25px_rgba(0,0,0,0.05)]
+              hover:-translate-y-2 hover:shadow-[0_10px_35px_rgba(15,163,168,0.25)]
+              hover:border-[#0FA3A8]/40
+              transition-all duration-500 flex flex-col h-[450px]"
             >
+
+              {/* ⭐ PREMIUM GLOW LAYER */}
+              <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-40 
+                transition-all duration-700 rounded-3xl 
+                blur-2xl bg-[#0FA3A8]/30 pointer-events-none"
+              />
+
+              {/* GAMBAR PRODUK */}
               <div className="relative w-full h-[230px] bg-[#f3f9f9] overflow-hidden rounded-t-3xl flex items-center justify-center">
-                
+
                 {!imgReady[p.id] && (
                   <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#e3f4f4] via-[#f0fafa] to-[#d7f0f0]" />
                 )}
@@ -147,33 +162,46 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                   alt={p.name}
                   fill
                   priority
-                  className={`object-cover object-center transition-transform duration-[800ms] ease-out group-hover:scale-105 ${
-                    imgReady[p.id] ? "opacity-100" : "opacity-0"
-                  }`}
+                  className={`object-cover object-center 
+                    transition-transform duration-[900ms] 
+                    ease-[cubic-bezier(0.22,1,0.36,1)]
+                    group-hover:scale-[1.07] group-hover:rotate-[0.8deg]
+                    ${imgReady[p.id] ? "opacity-100" : "opacity-0"}`}
                   onLoadingComplete={() => setImgReady((m) => ({ ...m, [p.id]: true }))}
                 />
 
-                {/* ⭐ Auto Best Seller Badge */}
+                {/* ⭐ SHINE SWIPE */}
+                <div
+                  className="absolute inset-0 bg-gradient-to-tr 
+                  from-transparent via-white/10 to-transparent 
+                  opacity-0 group-hover:opacity-100 
+                  transition-all duration-[900ms] blur-xl pointer-events-none"
+                />
+
+                {/* ⭐ BEST SELLER BADGE */}
                 {isBest && (
-                  <span className="absolute top-4 left-4 bg-[#E8C46B] text-[#0B4B50] text-[11px] font-bold px-3 py-1 rounded-full shadow-md animate-pulse">
+                  <span
+                    className="absolute top-4 left-4 bg-[#E8C46B] 
+                    text-[#0B4B50] text-[11px] font-bold px-3 py-1 
+                    rounded-full shadow-[0_3px_10px_rgba(0,0,0,0.2)]
+                    ring-1 ring-[#0FA3A8]/30"
+                  >
                     ⭐ Best Seller
                   </span>
                 )}
               </div>
 
+              {/* CONTENT */}
               <div className="p-5 flex flex-col justify-start h-auto">
                 <h3 className="font-playfair text-xl font-semibold mb-1">{p.name}</h3>
 
-                {/* ⭐ Rating Display */}
                 {stats?.reviews > 0 && (
                   <div className="flex items-center gap-1 mb-2">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <span
                         key={i}
                         className={`text-[13px] ${
-                          i < Math.round(stats.rating)
-                            ? "text-yellow-500"
-                            : "text-gray-300"
+                          i < Math.round(stats.rating) ? "text-yellow-500" : "text-gray-300"
                         }`}
                       >
                         ★
@@ -193,7 +221,9 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                   {p.isPackage ? (
                     <button
                       onClick={() => openPackage(p.name, p.price)}
-                      className="ml-auto bg-[#E8C46B] text-[#0B4B50] text-sm px-6 py-2 rounded-full font-semibold hover:brightness-110 active:scale-95"
+                      className="ml-auto bg-[#E8C46B] text-[#0B4B50] 
+                      text-sm px-6 py-2 rounded-full font-semibold 
+                      hover:brightness-110 active:scale-95 transition-all"
                     >
                       Ambil Paket
                     </button>
@@ -201,14 +231,17 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                     <div className="flex items-center gap-2 ml-auto">
                       <button
                         onClick={() => removeFromCart(p.id.toString())}
-                        className="bg-[#E8C46B] text-[#0B4B50] text-sm px-3 py-2 rounded-full"
+                        className="bg-[#E8C46B] text-[#0B4B50] 
+                        text-sm px-3 py-2 rounded-full active:scale-95 transition-all"
                       >
                         –
                       </button>
                       <span className="font-bold w-6 text-center">{qty}</span>
                       <button
                         onClick={() => handleAddProduct(p)}
-                        className="bg-[#0FA3A8] text-white text-sm px-3 py-2 rounded-full hover:bg-[#0DC1C7]"
+                        className="bg-[#0FA3A8] text-white text-sm 
+                        px-3 py-2 rounded-full hover:bg-[#0DC1C7] 
+                        active:scale-95 transition-all"
                       >
                         +
                       </button>
@@ -216,8 +249,10 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                   ) : (
                     <button
                       onClick={() => handleAddProduct(p)}
-                      className={`ml-auto text-white text-sm px-6 py-2 rounded-full min-w-[120px] ${
-                        isAdded ? "bg-emerald-500 scale-105" : "bg-[#0FA3A8] hover:bg-[#0DC1C7]"
+                      className={`ml-auto text-white text-sm px-6 py-2 rounded-full min-w-[120px] active:scale-95 transition-all ${
+                        isAdded
+                          ? "bg-emerald-500 scale-105"
+                          : "bg-[#0FA3A8] hover:bg-[#0DC1C7]"
                       }`}
                     >
                       {isAdded ? "✔ Ditambahkan" : "Tambah"}
