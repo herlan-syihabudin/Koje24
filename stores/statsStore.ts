@@ -3,6 +3,12 @@
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
 
+const memoryStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+}
+
 type StatsState = {
   orders: Record<string, number>
   addOrder: (id: string, qty: number) => void
@@ -24,7 +30,7 @@ export const useStatsStore = create<StatsState>()(
     {
       name: "koje-stats",
       storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? localStorage : undefined
+        typeof window !== "undefined" ? localStorage : memoryStorage
       ),
     }
   )
