@@ -5,15 +5,8 @@ const SHEET_ID = process.env.GOOGLE_SHEET_ID!
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
 const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
 
-// RANGE  — pastikan sesuai dengan sheet kamu
-const RANGE = "Testimoni!A:F" 
-// A = Timestamp
-// B = Nama
-// C = Kota
-// D = Varian
-// E = Pesan
-// F = Rating
-// G = ShowOnHome (opsional jika mau)
+// RANGE FIX — ambil sampai kolom G (showOnHome)
+const RANGE = "Testimoni!A:G"
 
 // ================================
 // 🔹 AUTH GOOGLE SHEETS
@@ -40,17 +33,17 @@ export async function GET() {
 
     const rows = res.data.values || []
 
-    // Buang header
+    // header di row[0]
     const body = rows.slice(1)
 
     const data = body.map((r) => ({
       timestamp: r[0] || "",
       nama: r[1] || "",
       kota: r[2] || "",
-      varian: r[3] || "",
-      pesan: r[4] || "",
-      rating: Number(r[5] || 5),
-      ShowOnHome: (r[6] || "").toString().trim().toLowerCase(), // TRUE/FALSE
+      pesan: r[3] || "",
+      rating: Number(r[4] || 5),
+      varian: r[5] || "",
+      showOnHome: (r[6] || "").toString().trim().toLowerCase(),
     }))
 
     return NextResponse.json(data)
@@ -88,9 +81,9 @@ export async function POST(req: Request) {
             new Date().toLocaleString("id-ID"),
             nama,
             kota || "",
-            varian || "",
             pesan,
             rate,
+            varian || "",
             showOnHome ? "TRUE" : "FALSE",
           ],
         ],
