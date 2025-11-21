@@ -27,11 +27,7 @@
 
   body {
     font-family: var(--font-body);
-    margin: 0;
-    padding: 0;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    background: transparent;
+    background: #ffffff;
     color: inherit;
   }
 
@@ -47,7 +43,7 @@
 
   p {
     line-height: 1.7;
-    color: #334;
+    color: inherit;
   }
 
   ::selection {
@@ -123,30 +119,6 @@
   }
 }
 
-/* === SECTION SPACING === */
-section {
-  padding-top: 1rem;
-  padding-bottom: 2rem;
-}
-
-@media (min-width: 1024px) { section { padding: 3rem 0; } }
-@media (max-width: 768px) { section { padding: 2rem 0; } }
-
-/* === FIX: SECTION SETELAH HERO HARUS BERSIH === */
-section:first-of-type {
-  background: transparent !important;
-  padding-top: 0 !important;
-}
-
-/* === GRADIENT UNTUK SECTION SETELAH HERO === */
-section:nth-of-type(even):not(:first-of-type) {
-  background: linear-gradient(to bottom, #f9fdfd, #f6fbfb);
-}
-
-section:nth-of-type(odd):not(:first-of-type) {
-  background: linear-gradient(to bottom, #ffffff, #f9fafa);
-}
-
 /* === FOOTER GLOW === */
 footer {
   position: relative;
@@ -214,18 +186,18 @@ footer > * { position: relative; z-index: 1; }
 
 .popup-content { -webkit-overflow-scrolling: touch; }
 
-/* === TABLE / INVOICE === */
+/* === TABLE === */
 table { border-collapse: collapse !important; width: 100%; }
 th, td { padding: 8px 10px; vertical-align: middle; }
 th { text-align: left; font-size: 12px; font-weight: 700; }
 td { font-size: 13px; color: #222; }
 
-/* === PRINT MODE === */
+/* === PRINT === */
 @media print {
   body { background: #fff !important; }
   img { max-height: 80px !important; }
   a { display: none !important; }
 }
 
-/* === FIX GRID === */
+/* === GRID FIX === */
 .grid { min-width: 0; }
