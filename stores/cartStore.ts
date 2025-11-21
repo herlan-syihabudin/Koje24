@@ -5,6 +5,7 @@ export type CartItem = {
   id: string
   name: string
   price: number
+  img?: string       // ✅ FIX 1 — tambahkan img (opsional biar aman)
   qty: number
 }
 
@@ -12,7 +13,7 @@ export interface CartState {
   items: CartItem[]
   totalQty: number
   totalPrice: number
-  addItem: (item: Omit<CartItem, "qty">) => void
+  addItem: (item: Omit<CartItem, "qty">) => void   // tetap sama, img ikut kebawa
   removeItem: (id: string) => void
   clearCart: () => void
 }
@@ -43,8 +44,12 @@ export const useCartStore = create<CartState>()(
         const items = [...get().items]
         const exist = items.find((i) => i.id === item.id)
 
-        if (exist) exist.qty += 1
-        else items.push({ ...item, qty: 1 })
+        if (exist) {
+          exist.qty += 1
+        } else {
+          // ✅ FIX 2 — img akan ikut masuk di sini
+          items.push({ ...item, qty: 1 })
+        }
 
         const totalQty = items.reduce((sum, i) => sum + i.qty, 0)
         const totalPrice = items.reduce((sum, i) => sum + i.qty * i.price, 0)
