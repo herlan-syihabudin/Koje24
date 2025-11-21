@@ -1,14 +1,7 @@
 "use client"
-import { create } from "zustand"
-import { persist } from "zustand/middleware"
 
-const safeStorage = {
-  getItem: (name: string) => (typeof window === "undefined" ? null : localStorage.getItem(name)),
-  setItem: (name: string, value: string) =>
-    typeof window !== "undefined" && localStorage.setItem(name, value),
-  removeItem: (name: string) =>
-    typeof window !== "undefined" && localStorage.removeItem(name),
-}
+import { create } from "zustand"
+import { persist, createJSONStorage } from "zustand/middleware"
 
 type StatsState = {
   orders: Record<string, number>
@@ -28,6 +21,11 @@ export const useStatsStore = create<StatsState>()(
           },
         })),
     }),
-    { name: "koje-stats", storage: safeStorage }
+    {
+      name: "koje-stats",
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined" ? localStorage : undefined
+      ),
+    }
   )
 )
