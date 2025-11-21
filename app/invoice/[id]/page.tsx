@@ -1,5 +1,9 @@
 import { google } from "googleapis"
 
+export const viewport = {
+  themeColor: "#0FA3A8",
+}
+
 const SHEET_ID = process.env.GOOGLE_SHEET_ID!
 const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
@@ -7,8 +11,9 @@ const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
 const HARGA_ONGKIR = 15000
 const KONTAK_CS = "6282213139580"
 
+// FIX: Tidak lowercase! biarkan ID apa adanya
 function normalize(v: any) {
-  return String(v || "").trim().toLowerCase()
+  return String(v || "").trim()
 }
 
 /* ============================================================
@@ -32,9 +37,10 @@ async function getOrder(invoiceId: string) {
 
   const rows = res.data.values || []
 
+  // FIX: Tanpa lowercase, cocok dengan ID di sheet
   const row =
-    rows.find((r) => normalize(r[1]) === clean) ||
-    rows.find((r) => normalize(r[11]).includes(clean))
+    rows.find((r) => String(r[1]).trim() === clean) ||
+    rows.find((r) => String(r[11]).trim().includes(clean))
 
   if (!row) return null
 
@@ -172,7 +178,9 @@ export default async function InvoicePage({ params }: any) {
 
             <tbody>
               <tr className="border-t">
-                <td className="p-3 font-medium text-slate-800">{data.produk}</td>
+                <td className="p-3 font-medium text-slate-800">
+                  {data.produk}
+                </td>
                 <td className="p-3 text-right">
                   Rp{pricePerItem.toLocaleString("id-ID")}
                 </td>
@@ -235,7 +243,10 @@ export default async function InvoicePage({ params }: any) {
 
         {/* FOOTER */}
         <div className="py-3 text-center text-[11px] border-t bg-slate-50">
-          <strong className="text-slate-700">TERIMA KASIH TELAH MEMERCAYAI KOJE24 🙏</strong><br />
+          <strong className="text-slate-700">
+            TERIMA KASIH TELAH MEMERCAYAI KOJE24 🙏
+          </strong>
+          <br />
           <span className="text-slate-400 text-[10px]">
             Invoice ini adalah bukti pembelian yang sah
           </span>
