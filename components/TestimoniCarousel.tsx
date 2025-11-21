@@ -43,7 +43,7 @@ export default function TestimoniCarousel() {
   return (
     <section className="py-24 bg-gradient-to-b from-[#f6fbfb] to-[#eef7f7] relative overflow-hidden">
       <div className="max-w-6xl mx-auto px-6 md:px-10">
-        
+
         <div className="flex justify-between items-center mb-10 flex-wrap gap-3">
           <h2 className="font-playfair text-3xl md:text-4xl font-semibold text-[#0B4B50]">
             Apa kata mereka tentang <span className="text-[#0FA3A8]">KOJE24</span>?
@@ -78,6 +78,7 @@ export default function TestimoniCarousel() {
             </div>
           ))}
         </Marquee>
+
       </div>
     </section>
   )
