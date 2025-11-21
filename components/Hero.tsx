@@ -6,7 +6,9 @@ import { useState } from "react"
 export default function Hero() {
   const { scrollY } = useScroll()
 
+  // PARALLAX DEPTH
   const y = useTransform(scrollY, [0, 400], [0, 110])
+  const glowY = useTransform(scrollY, [0, 350], [0, 60])
   const opacity = useTransform(scrollY, [0, 200], [1, 0.85])
   const ctaOpacity = useTransform(scrollY, [0, 120], [1, 0])
   const [loaded, setLoaded] = useState(false)
@@ -14,17 +16,19 @@ export default function Hero() {
   return (
     <section className="relative min-h-screen w-full flex items-center bg-[#020507] overflow-hidden">
 
-      {/* BG IMAGE PARALLAX */}
+      {/* ==== BACKGROUND BASE (gambar utama) ==== */}
       <motion.div style={{ y, opacity }} className="absolute inset-0">
         <Image
           src="/image/hero2.png"
           alt="KOJE24 Premium Juice"
           fill
           priority
-          quality={90}
+          quality={95}
           className="object-cover object-center"
           onLoadingComplete={() => setLoaded(true)}
         />
+
+        {/* Smooth fade-in */}
         <motion.div
           initial={{ opacity: 0.3, scale: 1.08 }}
           animate={loaded ? { opacity: 1, scale: 1 } : {}}
@@ -33,11 +37,36 @@ export default function Hero() {
         />
       </motion.div>
 
-      {/* DARK VIGNETTE PREMIUM */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/75 via-black/40 to-transparent pointer-events-none" />
+      {/* ==== DARK VIGNETTE PREMIUM (lebih soft & cinematic) ==== */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/55 to-transparent pointer-events-none" />
 
-      {/* CONTENT */}
+      {/* ==== CINEMATIC LIGHT SWEEP (tipis banget, aura mahal) ==== */}
+      <motion.div
+        style={{ y: glowY }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.12 }}
+        transition={{ duration: 1.5, delay: 0.3 }}
+        className="
+          absolute inset-0 
+          bg-gradient-to-r from-transparent via-white/10 to-transparent
+          blur-3xl
+          pointer-events-none
+        "
+      />
+
+      {/* ==== NOISE LAYER (super halus, bikin lebih premium) ==== */}
+      <div
+        className="
+          absolute inset-0 opacity-[0.06]
+          bg-[url('/noise.png')]
+          mix-blend-overlay pointer-events-none
+        "
+      />
+
+      {/* ==== CONTENT UTAMA ==== */}
       <div className="relative z-10 px-6 md:px-20 lg:px-32 w-full">
+        
+        {/* SUBHEADLINE */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -47,17 +76,19 @@ export default function Hero() {
           NATURAL • COLD-PRESSED
         </motion.p>
 
+        {/* HEADLINE */}
         <motion.h1
           initial={{ opacity: 0, y: 35 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.1 }}
           className="font-playfair text-white font-semibold leading-[1.05]
-          text-[2.7rem] sm:text-[3.4rem] md:text-[4.3rem] drop-shadow-xl"
+          text-[2.7rem] sm:text-[3.4rem] md:text-[4.3rem] drop-shadow-[0_4px_20px_rgba(0,0,0,0.55)]"
         >
           Explore the Taste,
           <span className="block text-[#0FA3A8]">Explore the World</span>
         </motion.h1>
 
+        {/* DESCRIPTION */}
         <motion.p
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
@@ -68,6 +99,7 @@ export default function Hero() {
           dan tanpa pengawet. Nutrisi tetap maksimal.
         </motion.p>
 
+        {/* CTA BUTTON */}
         <motion.div style={{ opacity: ctaOpacity }} className="mt-10">
           <a
             href="#produk"
@@ -80,14 +112,14 @@ export default function Hero() {
         </motion.div>
       </div>
 
-      {/* ULTRA SOFT PREMIUM BOTTOM FADE */}
-<div className="
-  absolute bottom-0 left-0 w-full h-32
-  bg-gradient-to-t
-  from-[#f8fcfc]/80 via-transparent to-transparent
-  opacity-90
-  pointer-events-none
-" />
+      {/* ==== ULTRA SOFT PREMIUM BOTTOM FADE ==== */}
+      <div className="
+        absolute bottom-0 left-0 w-full h-32
+        bg-gradient-to-t
+        from-[#f8fcfc]/80 via-transparent to-transparent
+        opacity-90
+        pointer-events-none
+      " />
     </section>
   )
 }
