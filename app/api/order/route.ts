@@ -5,15 +5,24 @@ const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? ""
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? ""
 const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
 
-const PRIVATE_KEY = PRIVATE_KEY_RAW ? PRIVATE_KEY_RAW.replace(/\\n/g, "\n") : ""
+// FIX: PRIVATE KEY aman untuk semua platform (Vercel, Cloudflare)
+const PRIVATE_KEY = PRIVATE_KEY_RAW
+  .replace(/\\n/g, "\n")
+  .replace(/\\\\n/g, "\n")
 
 export async function POST(req: Request) {
   try {
     if (!SHEET_ID || !CLIENT_EMAIL || !PRIVATE_KEY) {
-      throw new Error("Environment variable Google Sheet belum lengkap")
+      throw new Error("Environment Google Sheet belum lengkap")
     }
 
-    const body = await req.json()
+    // FIX: Guard JSON parsing
+    let body: any = {}
+    try {
+      body = await req.json()
+    } catch {
+      throw new Error("Body JSON tidak valid")
+    }
 
     const cart = body.cart
     if (!Array.isArray(cart) || cart.length === 0) {
@@ -34,12 +43,13 @@ export async function POST(req: Request) {
     const baseUrl =
       req.headers.get("origin") || "https://webkoje-cacs.vercel.app"
 
-    // FIXED: Invoice ID SHORT VERSION anti error
+    // FIX: Invoice pendek ala e-commerce profesional
     const invoiceId =
       "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase()
 
     const invoiceUrl = `${baseUrl}/invoice/${invoiceId}`
 
+    // === AUTH GOOGLE SHEET ===
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
@@ -48,14 +58,15 @@ export async function POST(req: Request) {
 
     const sheets = google.sheets({ version: "v4", auth })
 
+    // === APPEND DATA ===
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: "Sheet1", // SAFER
+      range: "Sheet1!A:L", // FIX: konsisten dengan reader
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
           [
-            new Date().toLocaleString("id-ID"), // Tanggal
+            new Date().toLocaleString("id-ID"),
             invoiceId,
             body.nama,
             body.hp,
