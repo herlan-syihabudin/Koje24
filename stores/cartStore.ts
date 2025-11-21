@@ -1,15 +1,7 @@
 "use client"
-import { create } from "zustand"
-import { persist } from "zustand/middleware"
 
-// SAFE STORAGE FIX → anti error saat SSR
-const safeStorage = {
-  getItem: (name: string) => (typeof window === "undefined" ? null : localStorage.getItem(name)),
-  setItem: (name: string, value: string) =>
-    typeof window !== "undefined" && localStorage.setItem(name, value),
-  removeItem: (name: string) =>
-    typeof window !== "undefined" && localStorage.removeItem(name),
-}
+import { create } from "zustand"
+import { persist, createJSONStorage } from "zustand/middleware"
 
 type CartItem = {
   id: string
@@ -29,8 +21,8 @@ interface CartState {
   clearCart: () => void
 }
 
-export const useCartStore = create(
-  persist<CartState>(
+export const useCartStore = create<CartState>()(
+  persist(
     (set, get) => ({
       items: [],
       totalQty: 0,
@@ -74,7 +66,9 @@ export const useCartStore = create(
     }),
     {
       name: "koje24-cart",
-      storage: safeStorage, // ⭐ FIX HERE
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined" ? localStorage : undefined
+      ),
     }
   )
 )
