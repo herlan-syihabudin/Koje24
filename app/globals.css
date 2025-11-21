@@ -32,7 +32,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 
-    /* ❗NO BACKGROUND + NO TEXT-COLOR → BIAR IKUT TAILWIND */
+    /* biarkan background ikut Tailwind */
     background: transparent;
     color: inherit;
   }
@@ -139,11 +139,18 @@ section {
   section { padding: 2rem 0; }
 }
 
-/* Alternating gradient (TIDAK BENTROK DENGAN HERO) */
-section:not(:first-child):nth-child(even) {
+/* === FIX UTAMA HERO KETIBAN GRADIENT === */
+section:first-of-type {
+  background: transparent !important;
+  padding-top: 0 !important; /* opsional biar lebih rapih */
+}
+
+/* === GRADIENT SECTION (TIDAK NGEGANGGU HERO) === */
+section:nth-of-type(even):not(:first-of-type) {
   background: linear-gradient(to bottom, #f9fdfd, #f6fbfb);
 }
-section:not(:first-child):nth-child(odd) {
+
+section:nth-of-type(odd):not(:first-of-type) {
   background: linear-gradient(to bottom, #ffffff, #f9fafa);
 }
 
@@ -163,7 +170,7 @@ footer::before {
 }
 footer > * { position: relative; z-index: 1; }
 
-/* === BODY LOCK (untuk Mobile Menu & Popup) === */
+/* === BODY LOCK (Popup / Menu Mobile) === */
 .body-lock {
   overflow: hidden;
   touch-action: none;
@@ -179,6 +186,7 @@ footer > * { position: relative; z-index: 1; }
   z-index: 300;
   animation: fadeInOverlay 0.25s ease;
 }
+
 @keyframes fadeInOverlay {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -204,7 +212,6 @@ footer > * { position: relative; z-index: 1; }
   to { transform: translateX(0); }
 }
 
-/* Close button */
 .popup-close-btn {
   position: absolute;
   top: max(16px, env(safe-area-inset-top));
