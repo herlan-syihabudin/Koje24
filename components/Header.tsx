@@ -18,20 +18,12 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  /** BODY LOCK FIX — jauh lebih aman */
   const lockBody = () => {
-    document.body.style.position = "fixed"
-    document.body.style.inset = "0"
-    document.body.style.overflow = "hidden"
-    document.body.style.height = "100dvh"
-    document.body.style.width = "100%"
+    document.body.classList.add("body-lock")
   }
-
   const unlockBody = () => {
-    document.body.style.position = ""
-    document.body.style.inset = ""
-    document.body.style.overflow = ""
-    document.body.style.height = ""
-    document.body.style.width = ""
+    document.body.classList.remove("body-lock")
   }
 
   const openMenu = () => {
@@ -45,11 +37,14 @@ export default function Header() {
     setTimeout(unlockBody, 150)
   }
 
+  /** SCROLL OFFSET FIX — lebih presisi */
   const scrollToSection = (href: string) => {
     const target = document.querySelector(href)
     if (!target) return
-    const offset = 80
-    const y = target.getBoundingClientRect().top + window.scrollY - offset
+
+    const headerOffset = isScrolled ? 78 : 120
+    const y = target.getBoundingClientRect().top + window.scrollY - headerOffset
+
     window.scrollTo({ top: y, behavior: "smooth" })
   }
 
@@ -77,6 +72,7 @@ export default function Header() {
       )}
 
       <div className="max-w-7xl mx-auto flex items-center justify-between py-4 px-5 md:px-10">
+        
         {/* LOGO */}
         <Link
           href="/"
