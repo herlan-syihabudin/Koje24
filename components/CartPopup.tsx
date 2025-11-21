@@ -1,13 +1,22 @@
 "use client"
+
 import { useEffect, useState } from "react"
 import { useCartStore } from "@/stores/cartStore"
 
 type FormState = { nama: string; hp: string; alamat: string; catatan: string }
 type ChangeEvt = React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 
+// === FIX TYPE UNTUK NEXT.JS STRICT ===
+type CartItemType = {
+  id: string
+  name: string
+  price: number
+  qty: number
+  img?: string
+}
+
 export default function CartPopup() {
-  const { items, addItem, removeItem, clearCart, totalPrice } =
-    useCartStore()
+  const { items, addItem, removeItem, clearCart, totalPrice } = useCartStore()
 
   const [form, setForm] = useState<FormState>({
     nama: "",
@@ -48,8 +57,18 @@ export default function CartPopup() {
 
     setLoading(true)
 
-    const produkText = items.map((i) => `${i.name}×${i.qty}`).join(", ")
-    const qtyTotal = items.reduce((acc, i) => acc + i.qty, 0)
+    // ================================
+    // FIX STRICT TYPESCRIPT DISINI
+    // ================================
+    const produkText = items
+      .map((i: CartItemType) => `${i.name}×${i.qty}`)
+      .join(", ")
+
+    const qtyTotal = items.reduce(
+      (acc: number, i: CartItemType) => acc + i.qty,
+      0
+    )
+
     const total = Number(totalPrice)
 
     try {
@@ -75,7 +94,7 @@ export default function CartPopup() {
 🍹 *Pesanan KOJE24*
 -------------------------
 ${items
-  .map((i) => `• ${i.name} × ${i.qty}`)
+  .map((i: CartItemType) => `• ${i.name} × ${i.qty}`)
   .join("\n")}
 
 📞 *HP:* ${form.hp}
@@ -133,7 +152,7 @@ Terima kasih sudah order KOJE24 🍹✨
 
           <div className="max-h-64 overflow-y-auto border-y py-3 mb-4 space-y-3">
             {items.length ? (
-              items.map((item) => (
+              items.map((item: CartItemType) => (
                 <div
                   key={item.id}
                   className="flex items-center justify-between text-sm text-[#0B4B50]"
