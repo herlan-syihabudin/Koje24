@@ -2,6 +2,15 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
+// SAFE STORAGE FIX → anti error saat SSR
+const safeStorage = {
+  getItem: (name: string) => (typeof window === "undefined" ? null : localStorage.getItem(name)),
+  setItem: (name: string, value: string) =>
+    typeof window !== "undefined" && localStorage.setItem(name, value),
+  removeItem: (name: string) =>
+    typeof window !== "undefined" && localStorage.removeItem(name),
+}
+
 type CartItem = {
   id: string
   name: string
@@ -65,7 +74,7 @@ export const useCartStore = create(
     }),
     {
       name: "koje24-cart",
-      getStorage: () => localStorage,
+      storage: safeStorage, // ⭐ FIX HERE
     }
   )
 )
