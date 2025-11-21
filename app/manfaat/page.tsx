@@ -105,95 +105,131 @@ export default function ManfaatPage() {
       </div>
 
       <div className="relative max-w-6xl mx-auto px-6 md:px-10 lg:px-16 py-16 md:py-20 space-y-16 md:space-y-20">
-        {/* HERO */}
-        <motion.section
-          initial={{ opacity: 0, y: 26 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-          className="mb-4"
-        >
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/70 border border-[#d7ecec] px-4 py-1 text-xs font-medium text-[#0FA3A8] shadow-sm mb-4">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#0FA3A8]" />
-            Manfaat minum KOJE24 setiap hari
-          </div>
+        {/* HERO UPGRADED PREMIUM */}
+<motion.section
+  initial={{ opacity: 0, y: 26 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.7, ease: "easeOut" }}
+  className="mb-4"
+>
+  {/* KARTU HERO BESAR + AURA */}
+  <div className="relative overflow-hidden rounded-[32px] bg-white/70 border border-white/70 shadow-[0_18px_55px_rgba(11,75,80,0.18)] px-5 py-6 md:px-8 md:py-8 lg:px-10 lg:py-9">
+    {/* Aura dalam hero */}
+    <div className="pointer-events-none absolute inset-0">
+      <div className="absolute -top-24 left-16 w-64 h-64 bg-[#0FA3A8]/15 blur-3xl rounded-full" />
+      <div className="absolute -bottom-24 right-10 w-72 h-72 bg-[#E8C46B]/18 blur-3xl rounded-full" />
+      <div className="absolute top-1/2 -left-10 w-40 h-40 bg-[#0B4B50]/8 blur-2xl rounded-full" />
+    </div>
 
-          <div className="grid md:grid-cols-[1.4fr_1fr] gap-8 md:gap-10 items-center">
-            <div>
-              <h1 className="font-playfair text-3xl md:text-4xl lg:text-5xl font-semibold leading-tight mb-4">
-                Bukan sekadar jus —{" "}
-                <span className="text-[#0FA3A8]">
-                  ritual kecil untuk tubuh yang lebih seimbang.
-                </span>
-              </h1>
+    <div className="relative grid md:grid-cols-[1.4fr_1fr] gap-8 md:gap-10 items-center">
+      {/* SIDE TEKS */}
+      <div>
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/80 border border-[#d7ecec] px-4 py-1 text-xs font-medium text-[#0FA3A8] shadow-[0_4px_14px_rgba(0,0,0,0.06)] mb-4">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#0FA3A8]" />
+          Manfaat minum KOJE24 setiap hari
+        </div>
 
-              <p className="font-inter text-sm md:text-base text-gray-600 leading-relaxed mb-6 max-w-xl">
-                KOJE24 diracik dari perpaduan sayur, buah, dan rempah alami.
-                Tanpa gula tambahan, tanpa pengawet, dan tanpa bahan kimia
-                yang tidak perlu — supaya yang masuk ke tubuh kamu benar-benar
-                sesuatu yang bisa bekerja <b>mendukung kesehatan jangka panjang</b>.
-              </p>
+        {/* Judul + highlight glow */}
+        <div className="relative mb-4">
+          <h1 className="font-playfair text-3xl md:text-4xl lg:text-5xl font-semibold leading-tight">
+            Bukan sekadar jus —{" "}
+            <span className="text-[#0FA3A8]">
+              ritual kecil untuk tubuh yang lebih seimbang.
+            </span>
+          </h1>
+          <div className="absolute -inset-2 rounded-[28px] bg-[#0FA3A8]/4 blur-xl -z-10" />
+        </div>
 
-              {/* Tagline chips */}
-              <div className="flex flex-wrap gap-3 mb-6">
-                <span className="px-4 py-2 rounded-full bg-white border border-[#dbeeee] text-xs md:text-sm text-[#0B4B50] shadow-[0_4px_14px_rgba(15,163,168,0.08)]">
-                  🍃 Cold-pressed, bukan sekadar diblender
-                </span>
-                <span className="px-4 py-2 rounded-full bg-white border border-[#dbeeee] text-xs md:text-sm text-[#0B4B50] shadow-[0_4px_14px_rgba(15,163,168,0.08)]">
-                  💧 Tanpa gula & pengawet
-                </span>
-                <span className="px-4 py-2 rounded-full bg-white border border-[#dbeeee] text-xs md:text-sm text-[#0B4B50] shadow-[0_4px_14px_rgba(15,163,168,0.08)]">
-                  🌗 Cocok untuk morning & night routine
-                </span>
-              </div>
+        {/* Paragraf */}
+        <p className="font-inter text-sm md:text-base text-gray-600 leading-relaxed mb-6 max-w-xl">
+          KOJE24 diracik dari perpaduan sayur, buah, dan rempah alami.
+          Tanpa gula tambahan, tanpa pengawet, dan tanpa bahan kimia
+          yang tidak perlu — supaya yang masuk ke tubuh kamu benar-benar
+          sesuatu yang bisa bekerja <b>mendukung kesehatan jangka panjang</b>.
+        </p>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <Link
-                  href="/#produk"
-                  className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-[#0FA3A8] text-white text-sm md:text-base font-semibold shadow-[0_6px_22px_rgba(15,163,168,0.45)] hover:bg-[#0DC1C7] active:scale-[0.97] transition-transform transition-colors"
-                >
-                  Lihat Varian KOJE24
-                </Link>
-                <p className="text-xs md:text-sm text-gray-500">
-                  Atur ritme sehat mulai dari 1 botol per hari.
-                </p>
-              </div>
-            </div>
-
-            {/* Snapshot Card */}
-            <motion.div
-              initial={{ opacity: 0, x: 25 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
-              className="relative"
+        {/* Chips fitur */}
+        <div className="flex flex-wrap gap-3 mb-6">
+          {[
+            "🍃 Cold-pressed, bukan sekadar diblender",
+            "💧 Tanpa gula & pengawet",
+            "🌗 Cocok untuk morning & night routine",
+          ].map((item) => (
+            <span
+              key={item}
+              className="px-4 py-2 rounded-full bg-white/90 border border-[#dbeeee] text-xs md:text-sm text-[#0B4B50] shadow-[0_4px_14px_rgba(15,163,168,0.08)] backdrop-blur-sm"
             >
-              <div className="absolute -top-6 -right-2 w-32 h-32 bg-[#0FA3A8]/15 blur-3xl rounded-full pointer-events-none" />
-              <div className="absolute bottom-0 -left-4 w-28 h-28 bg-[#E8C46B]/25 blur-3xl rounded-full pointer-events-none" />
+              {item}
+            </span>
+          ))}
+        </div>
 
-              <div className="relative rounded-3xl bg-white/85 border border-[#e0f1f1] shadow-[0_15px_45px_rgba(0,0,0,0.06)] p-5 flex flex-col gap-3">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0FA3A8] mb-1">
-                  Quick snapshot
-                </div>
-                <p className="text-sm text-gray-600">
-                  Dengan pola konsumsi yang konsisten, banyak pelanggan
-                  merasakan:
-                </p>
+        {/* CTA + mini-info */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/#produk"
+            className="inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-[#0FA3A8] text-white text-sm md:text-base font-semibold shadow-[0_10px_32px_rgba(15,163,168,0.5)] hover:bg-[#0DC1C7] hover:shadow-[0_14px_42px_rgba(15,163,168,0.6)] active:scale-[0.97] transition-all duration-300"
+          >
+            Lihat Varian KOJE24
+          </Link>
+          <p className="text-xs md:text-sm text-gray-500">
+            Atur ritme sehat mulai dari 1 botol per hari.
+          </p>
+        </div>
 
-                <ul className="mt-1 space-y-1.5 text-sm text-[#0B4B50]">
-                  <li>• Bangun tidur lebih enteng dan tidak terlalu &quot;berat&quot;.</li>
-                  <li>• Tidak mudah pilek / flu pada perubahan cuaca.</li>
-                  <li>• BAB lebih teratur dan pencernaan terasa lebih nyaman.</li>
-                  <li>• Kulit terlihat lebih cerah dan lembap dari dalam.</li>
-                </ul>
-
-                <p className="mt-2 text-[11px] text-gray-500">
-                  Catatan: KOJE24 bukan obat dan tidak menggantikan konsultasi
-                  profesional medis. Ini adalah <b>supportive habit</b> untuk
-                  gaya hidup sehat kamu.
-                </p>
-              </div>
-            </motion.div>
+        {/* Mini trust row */}
+        <div className="mt-4 flex flex-wrap gap-4 text-[11px] md:text-xs text-gray-500">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0FA3A8]" />
+            100% bahan segar harian
           </div>
-        </motion.section>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0FA3A8]" />
+            Dibuat dalam batch kecil, bukan massal
+          </div>
+        </div>
+      </div>
+
+      {/* SNAPSHOT CARD SIDE */}
+      <motion.div
+        initial={{ opacity: 0, x: 25 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
+        className="relative"
+      >
+        {/* Glow belakang kartu */}
+        <div className="absolute -top-8 -right-6 w-32 h-32 bg-[#0FA3A8]/18 blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute bottom-[-18px] -left-4 w-28 h-28 bg-[#E8C46B]/30 blur-3xl rounded-full pointer-events-none" />
+
+        <div className="relative rounded-3xl bg-white/70 backdrop-blur-xl border border-white/80 shadow-[0_18px_45px_rgba(0,0,0,0.12)] p-5 md:p-6 flex flex-col gap-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0FA3A8] mb-1">
+            QUICK SNAPSHOT
+          </div>
+          <p className="text-sm text-gray-600">
+            Dengan pola konsumsi yang konsisten, banyak pelanggan
+            merasakan:
+          </p>
+
+          <ul className="mt-1 space-y-1.5 text-sm text-[#0B4B50]">
+            <li>• Bangun tidur lebih enteng dan tidak terlalu &quot;berat&quot;.</li>
+            <li>• Tidak mudah pilek / flu pada perubahan cuaca.</li>
+            <li>• BAB lebih teratur dan pencernaan terasa lebih nyaman.</li>
+            <li>• Kulit terlihat lebih cerah dan lembap dari dalam.</li>
+          </ul>
+
+          <div className="h-px bg-gradient-to-r from-transparent via-[#0FA3A8]/30 to-transparent my-2" />
+
+          <p className="text-[11px] text-gray-500 leading-relaxed">
+            Catatan: KOJE24 bukan obat dan tidak menggantikan konsultasi
+            profesional medis. Ini adalah <b>supportive habit</b> untuk
+            gaya hidup sehat kamu.
+          </p>
+        </div>
+      </motion.div>
+    </div>
+  </div>
+</motion.section>
 
         {/* FUNCTION TAG STRIP */}
         <motion.section
