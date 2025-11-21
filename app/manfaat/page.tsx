@@ -1,6 +1,7 @@
-// app/manfaat/page.tsx
+"use client"
 
 import Link from "next/link"
+import { motion } from "framer-motion"
 
 const BENEFITS = [
   {
@@ -85,12 +86,32 @@ const MOMENTS = [
   },
 ]
 
+const FUNCTION_TAGS = [
+  "Detox Harian",
+  "Imun & Antioksidan",
+  "Pencernaan Sehat",
+  "Energy Booster",
+  "Skin Glow Support",
+  "Hydration & Mood",
+]
+
 export default function ManfaatPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#f8fcfc] via-[#f2f9f9] to-[#e6f3f3] text-[#0B4B50]">
-      <div className="max-w-6xl mx-auto px-6 md:px-10 lg:px-16 py-16 md:py-20">
+    <main className="min-h-screen bg-gradient-to-b from-[#f8fcfc] via-[#f2f9f9] to-[#e0f0f0] text-[#0B4B50] relative">
+      {/* Aura Background */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-32 -left-10 w-72 h-72 bg-[#0FA3A8]/12 blur-3xl rounded-full" />
+        <div className="absolute -bottom-40 right-[-60px] w-80 h-80 bg-[#E8C46B]/16 blur-3xl rounded-full" />
+      </div>
+
+      <div className="relative max-w-6xl mx-auto px-6 md:px-10 lg:px-16 py-16 md:py-20 space-y-16 md:space-y-20">
         {/* HERO */}
-        <section className="mb-14 md:mb-16">
+        <motion.section
+          initial={{ opacity: 0, y: 26 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="mb-4"
+        >
           <div className="inline-flex items-center gap-2 rounded-full bg-white/70 border border-[#d7ecec] px-4 py-1 text-xs font-medium text-[#0FA3A8] shadow-sm mb-4">
             <span className="w-1.5 h-1.5 rounded-full bg-[#0FA3A8]" />
             Manfaat minum KOJE24 setiap hari
@@ -112,6 +133,7 @@ export default function ManfaatPage() {
                 sesuatu yang bisa bekerja <b>mendukung kesehatan jangka panjang</b>.
               </p>
 
+              {/* Tagline chips */}
               <div className="flex flex-wrap gap-3 mb-6">
                 <span className="px-4 py-2 rounded-full bg-white border border-[#dbeeee] text-xs md:text-sm text-[#0B4B50] shadow-[0_4px_14px_rgba(15,163,168,0.08)]">
                   🍃 Cold-pressed, bukan sekadar diblender
@@ -137,11 +159,17 @@ export default function ManfaatPage() {
               </div>
             </div>
 
-            <div className="relative">
+            {/* Snapshot Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 25 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
+              className="relative"
+            >
               <div className="absolute -top-6 -right-2 w-32 h-32 bg-[#0FA3A8]/15 blur-3xl rounded-full pointer-events-none" />
               <div className="absolute bottom-0 -left-4 w-28 h-28 bg-[#E8C46B]/25 blur-3xl rounded-full pointer-events-none" />
 
-              <div className="relative rounded-3xl bg-white/80 border border-[#e0f1f1] shadow-[0_15px_45px_rgba(0,0,0,0.06)] p-5 flex flex-col gap-3">
+              <div className="relative rounded-3xl bg-white/85 border border-[#e0f1f1] shadow-[0_15px_45px_rgba(0,0,0,0.06)] p-5 flex flex-col gap-3">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#0FA3A8] mb-1">
                   Quick snapshot
                 </div>
@@ -163,26 +191,61 @@ export default function ManfaatPage() {
                   gaya hidup sehat kamu.
                 </p>
               </div>
-            </div>
+            </motion.div>
           </div>
-        </section>
+        </motion.section>
+
+        {/* FUNCTION TAG STRIP */}
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="rounded-3xl bg-white/80 border border-[#dfeeee] shadow-[0_10px_30px_rgba(11,75,80,0.06)] px-4 py-4 md:px-6 md:py-4 flex flex-wrap gap-2 md:gap-3 items-center"
+        >
+          <span className="text-xs md:text-sm font-semibold text-[#0FA3A8] whitespace-nowrap">
+            Fokus manfaat KOJE24:
+          </span>
+          <div className="flex flex-wrap gap-2 md:gap-3">
+            {FUNCTION_TAGS.map((t) => (
+              <span
+                key={t}
+                className="px-3 py-1 rounded-full bg-[#f4faf9] border border-[#d7ecec] text-[11px] md:text-xs text-[#0B4B50]"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        </motion.section>
 
         {/* BENEFIT GRID */}
-        <section className="mb-16 md:mb-20">
-          <h2 className="font-playfair text-2xl md:text-3xl font-semibold mb-3">
-            Manfaat utama ketika kamu rutin minum{" "}
-            <span className="text-[#0FA3A8]">KOJE24</span>
-          </h2>
-          <p className="font-inter text-sm md:text-base text-gray-600 mb-8 max-w-2xl">
-            Kamu bisa mulai dari 1–2 botol per hari, lalu sesuaikan dengan
-            kebutuhan tubuh. Setiap varian punya fungsi, tapi garis besarnya
-            kurang lebih seperti ini:
-          </p>
+        <motion.section
+          initial={{ opacity: 0, y: 22 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="space-y-6 md:space-y-8"
+        >
+          <div>
+            <h2 className="font-playfair text-2xl md:text-3xl font-semibold mb-3">
+              Manfaat utama ketika kamu rutin minum{" "}
+              <span className="text-[#0FA3A8]">KOJE24</span>
+            </h2>
+            <p className="font-inter text-sm md:text-base text-gray-600 mb-4 md:mb-2 max-w-2xl">
+              Kamu bisa mulai dari 1–2 botol per hari, lalu sesuaikan dengan
+              kebutuhan tubuh. Setiap varian punya fungsi, tapi garis besarnya
+              kurang lebih seperti ini:
+            </p>
+          </div>
 
           <div className="grid gap-6 md:gap-7 md:grid-cols-2">
-            {BENEFITS.map((b) => (
-              <div
+            {BENEFITS.map((b, idx) => (
+              <motion.div
                 key={b.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.5, delay: idx * 0.05 }}
                 className="relative overflow-hidden rounded-3xl bg-white/90 border border-[#e0f1f1] shadow-[0_8px_28px_rgba(11,75,80,0.07)] p-5 md:p-6"
               >
                 <div className="absolute -top-6 -right-10 w-24 h-24 bg-[#0FA3A8]/7 blur-2xl rounded-full" />
@@ -197,13 +260,69 @@ export default function ManfaatPage() {
                     {b.desc}
                   </p>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </section>
+        </motion.section>
 
-        {/* WHY COLD-PRESSED / WHY KOJE24 */}
-        <section className="mb-16 md:mb-20">
+        {/* NUTRIENT SNAPSHOT MINI PANEL */}
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="rounded-3xl bg-[#0B4B50] text-white px-5 py-5 md:px-7 md:py-6 shadow-[0_12px_40px_rgba(0,0,0,0.35)] border border-white/15"
+        >
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-teal-100/80 mb-1">
+                Nutrient snapshot
+              </p>
+              <h3 className="font-playfair text-xl md:text-2xl font-semibold">
+                Apa yang kamu dapat dari 1–2 botol KOJE24 per hari?
+              </h3>
+              <p className="mt-1 text-xs md:text-sm text-teal-50/80 max-w-xl">
+                Bukan angka pasti seperti label suplemen, tapi gambaran umum
+                dari pola konsumsi pelanggan kami yang rutin.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 text-xs md:text-sm">
+              <div className="bg-white/10 rounded-2xl px-3 py-2 border border-white/15">
+                <p className="text-[11px] uppercase tracking-wide text-teal-100/80">
+                  Vitamin Strength
+                </p>
+                <p className="font-semibold text-white">High</p>
+              </div>
+              <div className="bg-white/10 rounded-2xl px-3 py-2 border border-white/15">
+                <p className="text-[11px] uppercase tracking-wide text-teal-100/80">
+                  Antioxidant Level
+                </p>
+                <p className="font-semibold text-white">High</p>
+              </div>
+              <div className="bg-white/10 rounded-2xl px-3 py-2 border border-white/15">
+                <p className="text-[11px] uppercase tracking-wide text-teal-100/80">
+                  Fiber Support
+                </p>
+                <p className="font-semibold text-white">Medium</p>
+              </div>
+              <div className="bg-white/10 rounded-2xl px-3 py-2 border border-white/15">
+                <p className="text-[11px] uppercase tracking-wide text-teal-100/80">
+                  Hydration Score
+                </p>
+                <p className="font-semibold text-white">High</p>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* WHY COLD PRESSED */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+        >
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-7">
             <div>
               <h2 className="font-playfair text-2xl md:text-3xl font-semibold mb-2">
@@ -240,10 +359,15 @@ export default function ManfaatPage() {
               </div>
             ))}
           </div>
-        </section>
+        </motion.section>
 
         {/* TIMING / RITUAL */}
-        <section className="mb-18 md:mb-20">
+        <motion.section
+          initial={{ opacity: 0, y: 22 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+        >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-7">
             <div>
               <h2 className="font-playfair text-2xl md:text-3xl font-semibold mb-2">
@@ -277,12 +401,18 @@ export default function ManfaatPage() {
               </div>
             ))}
           </div>
-        </section>
+        </motion.section>
 
         {/* CTA FINAL */}
-        <section className="mt-10 md:mt-12">
+        <motion.section
+          initial={{ opacity: 0, y: 25 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="mt-4 md:mt-6"
+        >
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0B4B50] via-[#0C6C72] to-[#0FA3A8] text-white p-6 md:p-8 shadow-[0_14px_45px_rgba(0,0,0,0.25)]">
-            <div className="absolute inset-y-0 right-[-80px] w-64 bg-white/5 blur-3xl pointer-events-none" />
+            <div className="absolute inset-y-0 right-[-80px] w-64 bg-white/10 blur-3xl pointer-events-none" />
             <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h2 className="font-playfair text-2xl md:text-3xl font-semibold mb-2">
@@ -305,15 +435,15 @@ export default function ManfaatPage() {
                 <a
                   href="https://wa.me/6282213139580?text=Halo%20KOJE24%2C%20aku%20ingin%20konsultasi%20varian%20yang%20cocok%20untuk%20aku."
                   target="_blank"
-                  className="text-xs md:text-sm text-white/80 hover:text-white underline-offset-2 hover:underline"
                   rel="noreferrer"
+                  className="text-xs md:text-sm text-white/80 hover:text-white underline-offset-2 hover:underline"
                 >
                   Atau tanya dulu via WhatsApp sebelum order →
                 </a>
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
       </div>
     </main>
   )
