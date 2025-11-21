@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { useState } from "react"
 import { useCartStore } from "@/stores/cartStore"
-import { useBestSellerRanking } from "@/lib/bestSeller" // ⭐ BEST SELLER SYSTEM
+import { useBestSellerRanking } from "@/lib/bestSeller"
 
 type Product = {
   id: number
@@ -40,8 +40,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
   const items = useCartStore((state) => state.items)
   const addToCart = useCartStore((state) => state.addItem)
   const removeFromCart = useCartStore((state) => state.removeItem)
-
-  const rankStats = useBestSellerRanking() // ⭐ BEST SELLER SYSTEM
+  const rankStats = useBestSellerRanking()
 
   const [imgReady, setImgReady] = useState<Record<number, boolean>>({})
   const [added, setAdded] = useState<number | null>(null)
@@ -68,7 +67,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
 
     setAdded(p.id)
 
-    // FLY TO CART ANIMATION
+    // FLY ANIMATION
     setTimeout(() => {
       const img = document.querySelector(`[data-id="product-${p.id}"]`) as HTMLElement | null
       const cartBtn = document.querySelector(".fixed.bottom-5.right-5 button") as HTMLElement | null
@@ -105,7 +104,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
       })
 
       setTimeout(() => clone.remove(), 900)
-    }, 50)
+    }, 30)
 
     setTimeout(() => setAdded(null), 1000)
   }
@@ -118,11 +117,12 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
             Pilihan Produk KOJE24
           </h2>
           <p className="font-inter text-gray-600 text-base md:text-lg max-w-2xl mx-auto">
-            Setiap botol dibuat dari bahan alami segar — tanpa pengawet, tanpa gula tambahan.
+            Setiap botol dibuat dari bahan alami segar — tanpa pengawet & tanpa gula tambahan.
           </p>
         </div>
       )}
 
+      {/* 🔥 FIX LAYOUT DESKTOP — NO MORE BERANTAKAN */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 md:gap-10 xl:gap-12 max-w-[1400px] mx-auto place-items-stretch">
         {products.map((p) => {
           const priceNum = toNumber(p.price)
@@ -139,19 +139,11 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
               shadow-[0_5px_25px_rgba(0,0,0,0.05)]
               hover:-translate-y-2 hover:shadow-[0_10px_35px_rgba(15,163,168,0.25)]
               hover:border-[#0FA3A8]/40
-              transition-all duration-500 flex flex-col h-[450px]"
+              transition-all duration-500 flex flex-col"
             >
 
-              {/* ⭐ PREMIUM GLOW LAYER */}
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-40 
-                transition-all duration-700 rounded-3xl 
-                blur-2xl bg-[#0FA3A8]/30 pointer-events-none"
-              />
-
-              {/* GAMBAR PRODUK */}
+              {/* Gambar */}
               <div className="relative w-full h-[230px] bg-[#f3f9f9] overflow-hidden rounded-t-3xl flex items-center justify-center">
-
                 {!imgReady[p.id] && (
                   <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#e3f4f4] via-[#f0fafa] to-[#d7f0f0]" />
                 )}
@@ -164,35 +156,20 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                   priority
                   className={`object-cover object-center 
                     transition-transform duration-[900ms] 
-                    ease-[cubic-bezier(0.22,1,0.36,1)]
                     group-hover:scale-[1.07] group-hover:rotate-[0.8deg]
                     ${imgReady[p.id] ? "opacity-100" : "opacity-0"}`}
                   onLoadingComplete={() => setImgReady((m) => ({ ...m, [p.id]: true }))}
                 />
 
-                {/* ⭐ SHINE SWIPE */}
-                <div
-                  className="absolute inset-0 bg-gradient-to-tr 
-                  from-transparent via-white/10 to-transparent 
-                  opacity-0 group-hover:opacity-100 
-                  transition-all duration-[900ms] blur-xl pointer-events-none"
-                />
-
-                {/* ⭐ BEST SELLER BADGE */}
                 {isBest && (
-                  <span
-                    className="absolute top-4 left-4 bg-[#E8C46B] 
-                    text-[#0B4B50] text-[11px] font-bold px-3 py-1 
-                    rounded-full shadow-[0_3px_10px_rgba(0,0,0,0.2)]
-                    ring-1 ring-[#0FA3A8]/30"
-                  >
+                  <span className="absolute top-4 left-4 bg-[#E8C46B] text-[#0B4B50] text-[11px] font-bold px-3 py-1 rounded-full shadow">
                     ⭐ Best Seller
                   </span>
                 )}
               </div>
 
-              {/* CONTENT */}
-              <div className="p-5 flex flex-col justify-start h-auto">
+              {/* KONTEN — FLEX-1 BIAR RAPI */}
+              <div className="p-5 flex flex-col flex-1">
                 <h3 className="font-playfair text-xl font-semibold mb-1">{p.name}</h3>
 
                 {stats?.reviews > 0 && (
@@ -207,23 +184,22 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                         ★
                       </span>
                     ))}
-                    <span className="text-xs text-gray-500 ml-1">
-                      ({stats.reviews})
-                    </span>
+                    <span className="text-xs text-gray-500 ml-1">({stats.reviews})</span>
                   </div>
                 )}
 
-                <p className="font-inter text-sm text-gray-700 mb-4 leading-relaxed">{p.desc}</p>
+                <p className="font-inter text-sm text-gray-700 mb-4 leading-relaxed">
+                  {p.desc}
+                </p>
 
+                {/* BUTTON SELALU DI BAWAH */}
                 <div className="flex items-center justify-between mt-auto pt-2 border-t border-[#e6eeee]/60">
                   <span className="font-bold text-[#0B4B50] text-lg">{formatIDR(priceNum)}</span>
 
                   {p.isPackage ? (
                     <button
                       onClick={() => openPackage(p.name, p.price)}
-                      className="ml-auto bg-[#E8C46B] text-[#0B4B50] 
-                      text-sm px-6 py-2 rounded-full font-semibold 
-                      hover:brightness-110 active:scale-95 transition-all"
+                      className="ml-auto bg-[#E8C46B] text-[#0B4B50] text-sm px-6 py-2 rounded-full font-semibold hover:brightness-110 active:scale-95 transition-all"
                     >
                       Ambil Paket
                     </button>
@@ -231,17 +207,14 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                     <div className="flex items-center gap-2 ml-auto">
                       <button
                         onClick={() => removeFromCart(p.id.toString())}
-                        className="bg-[#E8C46B] text-[#0B4B50] 
-                        text-sm px-3 py-2 rounded-full active:scale-95 transition-all"
+                        className="bg-[#E8C46B] text-[#0B4B50] text-sm px-3 py-2 rounded-full active:scale-95 transition-all"
                       >
                         –
                       </button>
                       <span className="font-bold w-6 text-center">{qty}</span>
                       <button
                         onClick={() => handleAddProduct(p)}
-                        className="bg-[#0FA3A8] text-white text-sm 
-                        px-3 py-2 rounded-full hover:bg-[#0DC1C7] 
-                        active:scale-95 transition-all"
+                        className="bg-[#0FA3A8] text-white text-sm px-3 py-2 rounded-full hover:bg-[#0DC1C7] active:scale-95 transition-all"
                       >
                         +
                       </button>
@@ -250,9 +223,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                     <button
                       onClick={() => handleAddProduct(p)}
                       className={`ml-auto text-white text-sm px-6 py-2 rounded-full min-w-[120px] active:scale-95 transition-all ${
-                        isAdded
-                          ? "bg-emerald-500 scale-105"
-                          : "bg-[#0FA3A8] hover:bg-[#0DC1C7]"
+                        isAdded ? "bg-emerald-500 scale-105" : "bg-[#0FA3A8] hover:bg-[#0DC1C7]"
                       }`}
                     >
                       {isAdded ? "✔ Ditambahkan" : "Tambah"}
