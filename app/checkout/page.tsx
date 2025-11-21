@@ -18,7 +18,10 @@ export default function CheckoutPage() {
   const [status, setStatus] = useState<CheckoutState>("idle")
   const [errorMsg, setErrorMsg] = useState("")
 
-  const subtotal = items.reduce((acc, item) => acc + item.price * item.qty, 0)
+  const subtotal = items.reduce(
+  (acc: number, item) => acc + item.price * item.qty,
+  0
+)
   const ongkir = 15000
   const total = subtotal + (items.length > 0 ? ongkir : 0)
 
