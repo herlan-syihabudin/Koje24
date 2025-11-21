@@ -1,30 +1,19 @@
-"use client"
-
 import { create } from "zustand"
-import { persist, createJSONStorage } from "zustand/middleware"
+import { persist, createJSONStorage, StateStorage } from "zustand/middleware"
 
-const memoryStorage = {
-  getItem: () => null,
-  setItem: () => {},
-  removeItem: () => {},
-}
-
-type CartItem = {
-  id: string
-  name: string
-  price: number
-  img: string
-  qty: number
-}
-
-interface CartState {
-  items: CartItem[]
-  totalQty: number
-  totalPrice: number
-
-  addItem: (item: Omit<CartItem, "qty">) => void
-  removeItem: (id: string) => void
-  clearCart: () => void
+const storage: StateStorage = {
+  getItem: (name) => {
+    if (typeof window === "undefined") return null
+    return localStorage.getItem(name)
+  },
+  setItem: (name, value) => {
+    if (typeof window === "undefined") return
+    localStorage.setItem(name, value)
+  },
+  removeItem: (name) => {
+    if (typeof window === "undefined") return
+    localStorage.removeItem(name)
+  },
 }
 
 export const useCartStore = create<CartState>()(
@@ -65,9 +54,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "koje24-cart",
-      storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? localStorage : memoryStorage
-      ),
+      storage: createJSONStorage(() => storage),
     }
   )
 )
