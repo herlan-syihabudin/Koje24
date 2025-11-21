@@ -3,6 +3,12 @@
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
 
+const memoryStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+}
+
 type CartItem = {
   id: string
   name: string
@@ -32,11 +38,8 @@ export const useCartStore = create<CartState>()(
         const items = [...get().items]
         const exist = items.find((i) => i.id === item.id)
 
-        if (exist) {
-          exist.qty += 1
-        } else {
-          items.push({ ...item, qty: 1 })
-        }
+        if (exist) exist.qty += 1
+        else items.push({ ...item, qty: 1 })
 
         const totalQty = items.reduce((sum, i) => sum + i.qty, 0)
         const totalPrice = items.reduce((sum, i) => sum + i.qty * i.price, 0)
@@ -49,12 +52,8 @@ export const useCartStore = create<CartState>()(
         const exist = items.find((i) => i.id === id)
 
         if (!exist) return
-
-        if (exist.qty > 1) {
-          exist.qty -= 1
-        } else {
-          items = items.filter((i) => i.id !== id)
-        }
+        if (exist.qty > 1) exist.qty -= 1
+        else items = items.filter((i) => i.id !== id)
 
         const totalQty = items.reduce((sum, i) => sum + i.qty, 0)
         const totalPrice = items.reduce((sum, i) => sum + i.qty * i.price, 0)
@@ -67,7 +66,7 @@ export const useCartStore = create<CartState>()(
     {
       name: "koje24-cart",
       storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? localStorage : undefined
+        typeof window !== "undefined" ? localStorage : memoryStorage
       ),
     }
   )
