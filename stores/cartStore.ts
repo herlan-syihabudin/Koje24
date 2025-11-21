@@ -1,6 +1,22 @@
 import { create } from "zustand"
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware"
 
+export type CartItem = {
+  id: string
+  name: string
+  price: number
+  qty: number
+}
+
+export interface CartState {
+  items: CartItem[]
+  totalQty: number
+  totalPrice: number
+  addItem: (item: Omit<CartItem, "qty">) => void
+  removeItem: (id: string) => void
+  clearCart: () => void
+}
+
 const storage: StateStorage = {
   getItem: (name) => {
     if (typeof window === "undefined") return null
