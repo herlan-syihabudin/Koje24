@@ -6,7 +6,7 @@ import { useCartStore } from "@/stores/cartStore"
 
 type CheckoutState = "idle" | "submitting" | "error"
 
-type CartItemType = {
+export type CartItemType = {
   id: string
   name: string
   price: number
@@ -26,7 +26,7 @@ export default function CheckoutPage() {
   const [errorMsg, setErrorMsg] = useState("")
 
   // ============================
-  // FIXED STRICT TYPESCRIPT
+  // PERBAIKAN TS REDUCE + TYPE
   // ============================
   const subtotal = items.reduce(
     (acc: number, item: CartItemType) => acc + item.price * item.qty,
@@ -36,10 +36,12 @@ export default function CheckoutPage() {
   const ongkir = 15000
   const total = subtotal + (items.length > 0 ? ongkir : 0)
 
+  // Scroll to top
   useEffect(() => {
     window.scrollTo({ top: 0 })
   }, [])
 
+  // Redirect kalau keranjang kosong
   useEffect(() => {
     if (items.length === 0) {
       const t = setTimeout(() => {
@@ -49,6 +51,9 @@ export default function CheckoutPage() {
     }
   }, [items, router])
 
+  // ============================
+  // HANDLE SUBMIT
+  // ============================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!items.length) return
@@ -62,6 +67,16 @@ export default function CheckoutPage() {
       setStatus("submitting")
       setErrorMsg("")
 
+      // ============================
+      // FIX map ITEM → TANPA ERROR
+      // ============================
+      const cartMapped = items.map((it: CartItemType) => ({
+        id: it.id,
+        name: it.name,
+        qty: it.qty,
+        price: it.price,
+      }))
+
       const res = await fetch("/api/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -70,12 +85,7 @@ export default function CheckoutPage() {
           hp,
           alamat,
           note: catatan,
-          cart: items.map((it: CartItemType) => ({
-            id: it.id,
-            name: it.name,
-            qty: it.qty,
-            price: it.price,
-          })),
+          cart: cartMapped,
         }),
       })
 
@@ -132,8 +142,46 @@ export default function CheckoutPage() {
               </h2>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Form input here (unchanged) */}
-                {/* ... */}
+                <input
+                  type="text"
+                  placeholder="Nama lengkap"
+                  value={nama}
+                  onChange={(e) => setNama(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2"
+                />
+                <input
+                  type="text"
+                  placeholder="Nomor WhatsApp"
+                  value={hp}
+                  onChange={(e) => setHp(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2"
+                />
+                <input
+                  type="text"
+                  placeholder="Alamat lengkap"
+                  value={alamat}
+                  onChange={(e) => setAlamat(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2"
+                />
+                <textarea
+                  placeholder="Catatan tambahan (opsional)…"
+                  value={catatan}
+                  onChange={(e) => setCatatan(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 h-16 resize-none"
+                />
+
+                {errorMsg && (
+                  <p className="text-red-500 text-sm">{errorMsg}</p>
+                )}
+
+                <button
+                  disabled={disabled}
+                  className="w-full bg-[#0FA3A8] text-white rounded-full py-3 font-semibold disabled:opacity-50"
+                >
+                  {status === "submitting"
+                    ? "Memproses..."
+                    : "Buat Invoice & Lanjut WhatsApp"}
+                </button>
               </form>
             </section>
 
@@ -181,18 +229,10 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <div className="mt-1 rounded-2xl bg-[#f3fbfb] border border-[#d4ecec] px-3 py-3">
-                <p className="text-[11px] text-gray-600 leading-relaxed">
-                  Pembayaran melalui{" "}
-                  <span className="font-semibold text-[#0B4B50]">transfer bank</span>. Detail
-                  nomor rekening dan instruksi lengkap akan tertera di invoice.
-                </p>
-              </div>
-
               <button
                 type="button"
                 onClick={() => router.push("/#produk")}
-                className="mt-auto text-xs md:text-[11px] text-gray-500 hover:text-[#0FA3A8] underline-offset-2 hover:underline"
+                className="mt-auto text-xs text-gray-500 hover:text-[#0FA3A8] underline-offset-2 hover:underline"
               >
                 ← Kembali belanja dulu
               </button>
