@@ -26,7 +26,7 @@ export default function CartPopup() {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // buka modal
+  // buka modal dari event global
   useEffect(() => {
     const handler = () => setOpen(true)
     window.addEventListener("open-cart", handler)
@@ -35,6 +35,7 @@ export default function CartPopup() {
 
   const close = () => setOpen(false)
 
+  // lock scroll saat popup
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : ""
   }, [open])
@@ -57,7 +58,6 @@ export default function CartPopup() {
 
     setLoading(true)
 
-    // Produk text
     const produkText = items
       .map((i: CartItemType) => `${i.name}×${i.qty}`)
       .join(", ")
@@ -74,24 +74,21 @@ export default function CartPopup() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-  nama: form.nama,
-  hp: form.hp,
-  alamat: form.alamat,
-  note: form.catatan,
-  cart: items.map((i: CartItemType) => ({
-    id: i.id,
-    name: i.name,
-    qty: i.qty,
-    price: i.price,
-  })),
-})
+          nama: form.nama,
+          hp: form.hp,
+          alamat: form.alamat,
+          produk: produkText,
+          qty: qtyTotal,
+          total,
+        }),
+      }); // ← FIX: titik koma wajib di sini!
 
       const data = await res.json()
+
       if (!res.ok || !data.invoiceUrl) {
         throw new Error("API gagal memproses pesanan")
       }
 
-      // Pesan WA
       const text = `
 🍹 *Pesanan KOJE24*
 -------------------------
@@ -153,7 +150,7 @@ Terima kasih sudah order KOJE24 🍹✨
             Keranjang Kamu
           </h3>
 
-          {/* ITEMS */}
+          {/* ITEM LIST */}
           <div className="max-h-64 overflow-y-auto border-y py-3 mb-4 space-y-3">
             {items.length ? (
               items.map((item: CartItemType) => (
@@ -170,9 +167,9 @@ Terima kasih sudah order KOJE24 🍹✨
                     >
                       –
                     </button>
+
                     <span className="w-6 text-center">{item.qty}</span>
 
-                    {/* FIX: addItem TANPA img */}
                     <button
                       className="bg-[#0FA3A8] text-white px-3 py-1 rounded-full font-bold"
                       onClick={() =>
@@ -193,9 +190,7 @@ Terima kasih sudah order KOJE24 🍹✨
                 </div>
               ))
             ) : (
-              <p className="text-center text-gray-400">
-                Keranjang masih kosong
-              </p>
+              <p className="text-center text-gray-400">Keranjang masih kosong</p>
             )}
           </div>
 
