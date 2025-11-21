@@ -6,13 +6,12 @@ import { useCartStore } from "@/stores/cartStore"
 type FormState = { nama: string; hp: string; alamat: string; catatan: string }
 type ChangeEvt = React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 
-// === FIX TYPE UNTUK NEXT.JS STRICT ===
+// STRICT TYPE
 type CartItemType = {
   id: string
   name: string
   price: number
   qty: number
-  img?: string
 }
 
 export default function CartPopup() {
@@ -27,6 +26,7 @@ export default function CartPopup() {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  // buka modal
   useEffect(() => {
     const handler = () => setOpen(true)
     window.addEventListener("open-cart", handler)
@@ -57,9 +57,7 @@ export default function CartPopup() {
 
     setLoading(true)
 
-    // ================================
-    // FIX STRICT TYPESCRIPT DISINI
-    // ================================
+    // Produk text
     const produkText = items
       .map((i: CartItemType) => `${i.name}×${i.qty}`)
       .join(", ")
@@ -90,6 +88,7 @@ export default function CartPopup() {
         throw new Error("API gagal memproses pesanan")
       }
 
+      // Pesan WA
       const text = `
 🍹 *Pesanan KOJE24*
 -------------------------
@@ -129,6 +128,7 @@ Terima kasih sudah order KOJE24 🍹✨
 
   return (
     <>
+      {/* overlay */}
       <div
         className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
         onClick={close}
@@ -150,6 +150,7 @@ Terima kasih sudah order KOJE24 🍹✨
             Keranjang Kamu
           </h3>
 
+          {/* ITEMS */}
           <div className="max-h-64 overflow-y-auto border-y py-3 mb-4 space-y-3">
             {items.length ? (
               items.map((item: CartItemType) => (
@@ -167,6 +168,8 @@ Terima kasih sudah order KOJE24 🍹✨
                       –
                     </button>
                     <span className="w-6 text-center">{item.qty}</span>
+
+                    {/* FIX: addItem TANPA img */}
                     <button
                       className="bg-[#0FA3A8] text-white px-3 py-1 rounded-full font-bold"
                       onClick={() =>
@@ -174,7 +177,6 @@ Terima kasih sudah order KOJE24 🍹✨
                           id: item.id,
                           name: item.name,
                           price: item.price,
-                          img: item.img,
                         })
                       }
                     >
@@ -194,10 +196,12 @@ Terima kasih sudah order KOJE24 🍹✨
             )}
           </div>
 
+          {/* TOTAL */}
           <div className="text-right font-semibold text-[#0B4B50] mb-4">
             Total: Rp{totalPrice.toLocaleString("id-ID")}
           </div>
 
+          {/* FORM */}
           <div className="space-y-3 mb-5">
             <input
               type="text"
@@ -228,6 +232,7 @@ Terima kasih sudah order KOJE24 🍹✨
             />
           </div>
 
+          {/* BUTTON */}
           <button
             disabled={loading || items.length === 0}
             onClick={handleCheckout}
