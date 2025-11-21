@@ -1,6 +1,5 @@
 import "./globals.css"
 import type { ReactNode } from "react"
-import { CartProvider } from "@/components/CartContext"
 import { Inter, Playfair_Display } from "next/font/google"
 
 // FONTS
@@ -35,9 +34,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       className={`${inter.variable} ${playfair.variable}`}
       suppressHydrationWarning
     >
-      {/* ❗ BODY Background controlled by Tailwind */}
-      <body className="bg-[#020507] text-white antialiased font-inter">
-        <CartProvider>{children}</CartProvider>
+      <body className="antialiased font-inter bg-white text-[#0B4B50]">
+        {children}
       </body>
     </html>
   )
