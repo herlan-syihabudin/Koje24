@@ -1,4 +1,5 @@
 "use client"
+
 import Image from "next/image"
 import { motion } from "framer-motion"
 import Link from "next/link"
@@ -6,7 +7,7 @@ import Link from "next/link"
 export default function AboutSection() {
   return (
     <section
-      id="about"
+      // ❌ id="about" dihapus supaya nggak double sama wrapper di page.tsx
       className="relative bg-gradient-to-b from-[#f8fcfc] to-[#eef7f7] py-24 md:py-32 overflow-hidden"
     >
       {/* 🔹 Background efek */}
