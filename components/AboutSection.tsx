@@ -44,24 +44,7 @@ export default function AboutSection() {
           </p>
 
           {/* =======================================
-              🔘 Tombol 1 — Lihat Manfaat
-          ======================================== */}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
-            <Link
-              href="/manfaat"
-              aria-label="Lihat manfaat KOJE24"
-              className="bg-[#0FA3A8] text-white font-semibold px-10 py-3 rounded-full 
-                         hover:bg-[#0DC1C7] transition-all duration-300 
-                         shadow-[0_4px_15px_rgba(15,163,168,0.4)] 
-                         hover:shadow-[0_6px_25px_rgba(15,163,168,0.5)] 
-                         active:scale-[0.98] focus:ring-2 focus:ring-[#0FA3A8]/50"
-            >
-              Lihat Manfaatnya
-            </Link>
-          </motion.div>
-
-          {/* =======================================
-              🔘 Tombol 2 — Baca Selengkapnya
+              🔘 Tombol 1 — Baca Selengkapnya
           ======================================== */}
           <motion.div
             className="mt-5"
@@ -79,6 +62,23 @@ export default function AboutSection() {
             </Link>
           </motion.div>
         </motion.div>
+
+          {/* =======================================
+              🔘 Tombol 2 — Lihat Manfaat
+          ======================================== */}
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
+            <Link
+              href="/manfaat"
+              aria-label="Lihat manfaat KOJE24"
+              className="bg-[#0FA3A8] text-white font-semibold px-10 py-3 rounded-full 
+                         hover:bg-[#0DC1C7] transition-all duration-300 
+                         shadow-[0_4px_15px_rgba(15,163,168,0.4)] 
+                         hover:shadow-[0_6px_25px_rgba(15,163,168,0.5)] 
+                         active:scale-[0.98] focus:ring-2 focus:ring-[#0FA3A8]/50"
+            >
+              Lihat Manfaatnya
+            </Link>
+          </motion.div>
 
         {/* =======================================
             🖼 Kolom Gambar
