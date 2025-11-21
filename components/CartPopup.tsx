@@ -74,14 +74,17 @@ export default function CartPopup() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nama: form.nama,
-          hp: form.hp,
-          alamat: form.alamat,
-          produk: produkText,
-          qty: qtyTotal,
-          total,
-        }),
-      })
+  nama: form.nama,
+  hp: form.hp,
+  alamat: form.alamat,
+  note: form.catatan,
+  cart: items.map((i: CartItemType) => ({
+    id: i.id,
+    name: i.name,
+    qty: i.qty,
+    price: i.price,
+  })),
+})
 
       const data = await res.json()
       if (!res.ok || !data.invoiceUrl) {
