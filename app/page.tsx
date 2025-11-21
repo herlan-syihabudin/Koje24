@@ -15,47 +15,51 @@ import PackagesSection from "@/components/PackagesSection"
 import RatingPopup from "@/components/RatingPopup"
 
 export default function HomePage() {
-  return (
-    <main>
+  return (
+    <main>
 
-      <Header />
-      <Hero />
+      <Header />
+      <Hero />
 
-      {/* ========= PRODUK ========= */}
-      <section id="produk" className="scroll-mt-24">
-        <ProductGrid />
-      </section>
+      {/* PRODUK */}
+      <section id="produk" className="scroll-mt-24">
+        <ProductGrid />
+      </section>
 
-      {/* ========= TENTANG ========= */}
-      <section id="about" className="scroll-mt-24">
-        <AboutSection />
-      </section>
+      {/* ABOUT */}
+      <section id="about" className="scroll-mt-24">
+        <AboutSection />
+      </section>
 
-      {/* ========= PAKET ========= */}
-      <PackagesSection />
+      {/* PAKET */}
+      <section id="paket" className="scroll-mt-24">
+        <PackagesSection />
+      </section>
 
-      {/* ========= LANGGANAN ========= */}
-      <section id="langganan" className="scroll-mt-24">
-        <SubscriptionSection />
-      </section>
+      {/* LANGGANAN */}
+      <section id="langganan" className="scroll-mt-24">
+        <SubscriptionSection />
+      </section>
 
-      {/* ========= TESTIMONI ========= */}
-      <TestimoniCarousel />
+      {/* TESTIMONI */}
+      <section id="testimoni" className="scroll-mt-24">
+        <TestimoniCarousel />
+      </section>
 
-      {/* ========= FAQ ========= */}
-      <section id="faq" className="scroll-mt-24">
-        <FaqSection />
-      </section>
+      {/* FAQ */}
+      <section id="faq" className="scroll-mt-24">
+        <FaqSection />
+      </section>
 
-      <Footer />
+      <Footer />
 
-      {/* ========== POPUPS ========== */}
-      <CartPopup />
-      <PackagePopup />
-      <RatingPopup />
+      {/* POPUPS */}
+      <CartPopup />
+      <PackagePopup />
+      <RatingPopup />
 
-      <StickyCartBar />
+      <StickyCartBar />
 
-    </main>
-  )
+    </main>
+  )
 }
