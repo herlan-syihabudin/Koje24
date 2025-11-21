@@ -1,4 +1,4 @@
-/* === FONT IMPORT (harus paling atas) === */
+/* === FONT IMPORT === */
 @import "@fontsource/inter/400.css";
 @import "@fontsource/inter/600.css";
 @import "@fontsource/inter/700.css";
@@ -13,12 +13,11 @@
 :root {
   --brand: #0FA3A8;
   --brand-2: #0B4B50;
-  --bg: #f6fbfb;
   --font-heading: "Playfair Display", serif;
   --font-body: "Inter", sans-serif;
 }
 
-/* === BASE === */
+/* === BASE RESET === */
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -28,14 +27,14 @@
 
   body {
     font-family: var(--font-body);
-    background: var(--bg);
-    color: #0e1a1a;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     margin: 0;
     padding: 0;
-    letter-spacing: 0.02em;
-    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    /* ❗NO BACKGROUND + NO TEXT-COLOR → BIAR IKUT TAILWIND */
+    background: transparent;
+    color: inherit;
   }
 
   h1, h2, h3, h4 {
@@ -113,52 +112,6 @@
     transform: translateY(0);
   }
 
-  .product-card {
-    position: relative;
-    transition: all 0.35s ease;
-  }
-  .product-card:hover {
-    transform: translateY(-4px) scale(1.015);
-    box-shadow: 0 10px 24px rgba(15, 163, 168, 0.15);
-  }
-  .product-card img {
-    transition: transform 0.5s ease, filter 0.4s ease;
-  }
-  .product-card:hover img {
-    transform: scale(1.04);
-    filter: brightness(1.07);
-  }
-  .product-card::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 0;
-    height: 2px;
-    background: linear-gradient(90deg, #0FA3A8 0%, #0B4B50 100%);
-    transition: width 0.4s ease, opacity 0.4s ease;
-    transform: translateX(-50%);
-    opacity: 0.6;
-  }
-  .product-card:hover::after {
-    width: 80%;
-    opacity: 1;
-  }
-
-  .card-float {
-    opacity: 0;
-    transform: translateY(25px) scale(0.985);
-    transition: all 0.65s cubic-bezier(0.25, 1, 0.5, 1);
-  }
-  .card-float.show {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  .card-float:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(15, 163, 168, 0.15);
-  }
-
   button {
     transition: all 0.25s ease;
     letter-spacing: 0.02em;
@@ -172,56 +125,26 @@
   }
 }
 
-/* === ANIMATIONS === */
-@keyframes slideUp {
-  from { transform: translateY(100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
 /* === SECTION SPACING === */
 section {
   padding-top: 1rem;
   padding-bottom: 2rem;
 }
+
 @media (min-width: 1024px) {
   section { padding: 3rem 0; }
 }
+
 @media (max-width: 768px) {
   section { padding: 2rem 0; }
 }
-section + section { margin-top: -0.8rem; }
 
-/* === GRADIENT === */
-section:nth-child(even) {
+/* Alternating gradient (TIDAK BENTROK DENGAN HERO) */
+section:not(:first-child):nth-child(even) {
   background: linear-gradient(to bottom, #f9fdfd, #f6fbfb);
 }
-section:nth-child(odd) {
+section:not(:first-child):nth-child(odd) {
   background: linear-gradient(to bottom, #ffffff, #f9fafa);
-}
-
-/* Soft parallax */
-.parallax-soft {
-  transform: translateY(0);
-  transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
-  will-change: transform;
-}
-.parallax-soft.active {
-  transform: translateY(-10px);
-}
-
-/* Glow */
-.text-glow {
-  background: linear-gradient(90deg, #0B4B50 0%, #0FA3A8 50%, #0B4B50 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-size: 200% auto;
-  animation: glowShift 5s ease-in-out infinite;
-}
-@keyframes glowShift {
-  0% { background-position: 0%; }
-  50% { background-position: 100%; }
-  100% { background-position: 0%; }
 }
 
 /* === FOOTER GLOW === */
@@ -240,40 +163,20 @@ footer::before {
 }
 footer > * { position: relative; z-index: 1; }
 
-/* Safari Normalize */
-* {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-html, body {
-  margin: 0; padding: 0; box-sizing: border-box;
-}
-img, video {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-@supports(padding: max(0px)) {
-  body { padding-bottom: env(safe-area-inset-bottom); }
-}
-
-/* === POPUP ENGINE ADD-ON === */
-/* ==================================== */
-/* ⭐ BODY LOCK (anti scroll belakang) */
+/* === BODY LOCK (untuk Mobile Menu & Popup) === */
 .body-lock {
   overflow: hidden;
-  height: 100vh;
   touch-action: none;
+  height: 100vh;
 }
 
-/* ⭐ Overlay */
+/* === POPUP ENGINE === */
 .popup-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.55);
   backdrop-filter: blur(4px);
-  z-index: 99;
+  z-index: 300;
   animation: fadeInOverlay 0.25s ease;
 }
 @keyframes fadeInOverlay {
@@ -281,7 +184,6 @@ img, video {
   to { opacity: 1; }
 }
 
-/* ⭐ Popup container smooth */
 .popup-content {
   position: fixed;
   right: 0;
@@ -293,20 +195,21 @@ img, video {
   overflow-y: auto;
   padding-bottom: env(safe-area-inset-bottom);
   box-shadow: -8px 0 24px rgba(0,0,0,0.12);
-  z-index: 100;
+  z-index: 350;
   animation: popupSlide 0.33s cubic-bezier(0.25, 1, 0.5, 1);
 }
+
 @keyframes popupSlide {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
 
-/* ⭐ Close button fix all device */
+/* Close button */
 .popup-close-btn {
   position: absolute;
   top: max(16px, env(safe-area-inset-top));
   right: 16px;
-  z-index: 150;
+  z-index: 400;
   background: rgba(255,255,255,0.85);
   backdrop-filter: blur(10px);
   padding: 6px;
@@ -319,50 +222,33 @@ img, video {
   background: rgba(255,255,255,0.95);
 }
 
-/* ⭐ Prevent header overlap */
-@media (max-width: 768px) {
-  .popup-content {
-    padding-top: calc(60px + env(safe-area-inset-top));
-  }
-}
-
-/* ⭐ Scroll momentum iPhone */
 .popup-content {
   -webkit-overflow-scrolling: touch;
 }
-/* === GLOBAL RESET UNTUK INVOICE & TABLE === */
+
+/* === TABLE / INVOICE === */
 table {
   border-collapse: collapse !important;
   width: 100%;
 }
-
 th, td {
   padding: 8px 10px;
   vertical-align: middle;
 }
-
 th {
   text-align: left;
   font-size: 12px;
   font-weight: 700;
 }
-
 td {
   font-size: 13px;
   color: #222;
-  word-break: break-word;
 }
 
-/* Print Mode Optimization */
+/* === PRINT MODE === */
 @media print {
   body {
     background: #fff !important;
-  }
-  main {
-    margin: 0 !important;
-    padding: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
   }
   img {
     max-height: 80px !important;
@@ -372,7 +258,7 @@ td {
   }
 }
 
-/* Responsive Fix: Pastikan Grid Tidak Pecah */
+/* === FIX GRID BREAKING === */
 .grid {
   min-width: 0;
 }
