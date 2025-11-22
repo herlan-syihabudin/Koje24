@@ -42,8 +42,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {children}
         </CartProvider>
 
-        <ChatBubble />
-
         {/* Smooth scroll */}
         <script
           dangerouslySetInnerHTML={{
