@@ -17,8 +17,15 @@ export async function GET() {
       pesan: r?.pesan?.toString?.() ?? "",
       rating: Number(r?.rating ?? 0),
       img: r?.img?.toString?.() ?? "",
-      // 🔥 PAKSA SEMUA KEY JADI LOWERCASE
+
+      // ⭐ YANG ADA DI KODE LU (TIDAK DIUBAH)
       showOnHome: (r?.showOnHome ?? r?.ShowOnHome ?? "false")
+        .toString()
+        .trim()
+        .toLowerCase(),
+
+      // ⭐⭐ FIX TERPENTING: AMBIL KOLOM ACTIVE
+      active: (r?.active ?? r?.Active ?? "false")
         .toString()
         .trim()
         .toLowerCase(),
