@@ -1,26 +1,27 @@
-"use client"
-import { useState, useEffect } from "react"
-import { MessageCircle } from "lucide-react"
-import ChatWindow from "./ChatWindow"
+"use client";
+
+import { useState, useEffect } from "react";
+import { MessageCircle } from "lucide-react";
+import ChatWindow from "./ChatWindow";
 
 export default function ChatBubble() {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const close = (e: any) => {
-      const box = document.getElementById("chat-window")
-      const bubble = document.getElementById("chat-bubble-btn")
+      const box = document.getElementById("chat-window");
+      const bubble = document.getElementById("chat-bubble-btn");
 
-      if (!box || !open) return
+      if (!box || !open) return;
 
       if (!box.contains(e.target) && !bubble?.contains(e.target)) {
-        setOpen(false)
+        setOpen(false);
       }
-    }
+    };
 
-    document.addEventListener("mousedown", close)
-    return () => document.removeEventListener("mousedown", close)
-  }, [open])
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
 
   return (
     <>
@@ -29,25 +30,31 @@ export default function ChatBubble() {
       <button
         id="chat-bubble-btn"
         onClick={() => setOpen(true)}
-        className="
+        style={{
+          boxShadow: "0px 8px 24px rgba(15,163,168,0.32)",
+        }}
+        className={`
           fixed bottom-7 right-7 z-50
           w-14 h-14 rounded-full
           bg-[#0FA3A8] text-white shadow-xl
           flex items-center justify-center
           hover:bg-[#0c8c91] transition-all
-          animate-[float_3s_ease-in-out_infinite]
-        "
-        style={{ boxShadow: "0px 8px 24px rgba(15,163,168,0.32)" }}
+          animate-floatingBubble
+        `}
       >
         <MessageCircle size={26} />
       </button>
 
       <style jsx global>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-6px); }
+        @keyframes floatingBubble {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-6px);
+          }
         }
       `}</style>
     </>
-  )
+  );
 }
