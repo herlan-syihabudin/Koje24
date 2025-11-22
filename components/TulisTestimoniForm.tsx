@@ -7,7 +7,7 @@ type FormState = {
   pesan: string
   rating: number
   varian: string
-  img: string
+  img: string // ini akan diisi URL hasil upload blob
   active: string
   showOnHome: string
 }
@@ -15,10 +15,12 @@ type FormState = {
 export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => void }) {
   const [show, setShow] = useState(false)
   const [sending, setSending] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [lastSubmit, setLastSubmit] = useState<number | null>(null)
   const [statusMsg, setStatusMsg] = useState<string | null>(null)
-  const [errors, setErrors] = useState<Record<string, string>>({})
   const [hoverRating, setHoverRating] = useState<number | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [file, setFile] = useState<File | null>(null)
 
   const [form, setForm] = useState<FormState>({
     nama: "",
@@ -31,7 +33,15 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
     showOnHome: "false",
   })
 
-  const API_URL = "/api/testimonial"
+  const validate = () => {
+    const err: Record<string, string> = {}
+    if (form.nama.trim().length < 2) err.nama = "Nama minimal 2 karakter"
+    if (form.kota.trim().length < 2) err.kota = "Kota minimal 2 karakter"
+    if (form.pesan.trim().length < 10) err.pesan = "Minimal 10 karakter"
+    if (!form.varian) err.varian = "Pilih varian"
+    setErrors(err)
+    return Object.keys(err).length === 0
+  }
 
   const resetForm = () => {
     setForm({
@@ -44,103 +54,95 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
       active: "false",
       showOnHome: "false",
     })
-    setErrors({})
-    setStatusMsg(null)
+    setPreview(null)
+    setFile(null)
     setHoverRating(null)
+    setErrors({})
   }
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target
+  const uploadFileToBlob = async () => {
+    if (!file) return ""
 
-    if (name === "rating") {
-      setForm((prev) => ({ ...prev, rating: Number(value) }))
-    } else {
-      setForm((prev) => ({ ...prev, [name]: value }))
-    }
+    const fd = new FormData()
+    fd.append("file", file)
+
+    const res = await fetch("/api/upload", { method: "POST", body: fd })
+    const json = await res.json()
+
+    return json.url || ""
   }
 
-  const validate = () => {
-    const newErrors: Record<string, string> = {}
-
-    if (!form.nama || form.nama.trim().length < 2) newErrors.nama = "Nama minimal 2 karakter"
-    if (!form.kota || form.kota.trim().length < 2) newErrors.kota = "Kota minimal 2 karakter"
-    if (!form.pesan || form.pesan.trim().length < 10)
-      newErrors.pesan = "Minimal 10 karakter agar pengalamanmu lebih bermakna"
-    if (!form.varian) newErrors.varian = "Pilih varian"
-    if (form.rating < 1 || form.rating > 5) newErrors.rating = "Rating 1–5"
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault()
     setStatusMsg(null)
 
-    // anti-spam
-    if (lastSubmit && Date.now() - lastSubmit < 8000) {
-      setStatusMsg("Tunggu sebentar sebelum mengirim lagi ya 🙏")
+    if (!validate()) return
+
+    // Anti spam
+    if (lastSubmit && Date.now() - lastSubmit < 6000) {
+      setStatusMsg("Tunggu sebentar ya…")
       return
     }
 
-    if (!validate()) return
-
-    // ⭐ LOGIKA OTOMATIS (yang kita sepakati)
-    if (form.rating <= 3) {
-      form.active = "false"
-      form.showOnHome = "false"
-    } else {
-      form.active = "true"
-      form.showOnHome = "true"
-    }
+    setSending(true)
 
     try {
-      setSending(true)
+      // 🔥 Upload foto dulu kalau ada
+      let imageUrl = ""
+      if (file) {
+        imageUrl = await uploadFileToBlob()
+      }
 
-      const res = await fetch(API_URL, {
+      // 🔥 Auto-mod: hide rating jelek
+      if (form.rating <= 3) {
+        form.active = "false"
+        form.showOnHome = "false"
+      } else {
+        form.active = "true"
+        form.showOnHome = "true"
+      }
+
+      const payload = {
+        ...form,
+        img: imageUrl, // 🔥 URL foto final
+      }
+
+      // Kirim ke Google Sheet (API testimonial lu)
+      await fetch("/api/testimonial", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
 
-      if (!res.ok) throw new Error("Gagal submit")
-
       setLastSubmit(Date.now())
-      setStatusMsg("Terima kasih! Testimoni kamu sudah kami terima 🙌")
+      setStatusMsg("Terima kasih! Testimoni kamu sudah terkirim 🙌")
 
       onSuccess?.()
 
       setTimeout(() => {
         setShow(false)
         resetForm()
-      }, 900)
+      }, 1000)
     } catch (err) {
       console.error(err)
-      setStatusMsg("Ups! Ada kendala, coba lagi ya 🙏")
+      setStatusMsg("Terjadi kesalahan. Coba lagi ya 🙏")
     } finally {
       setSending(false)
     }
   }
 
-  const currentRating = hoverRating ?? form.rating
-
   return (
     <>
       <button
-        onClick={() => {
-          resetForm()
-          setShow(true)
-        }}
-        className="px-5 py-2 bg-[#0FA3A8] text-white rounded-full shadow hover:bg-[#0c8c91] transition"
+        onClick={() => setShow(true)}
+        className="px-5 py-2 bg-[#0FA3A8] text-white rounded-full shadow"
       >
         + Tulis Testimoni
       </button>
 
       {show && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl w-[90%] max-w-md p-6 relative shadow-xl animate-[fadeIn_0.2s_ease]">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-white w-[90%] max-w-md p-6 rounded-3xl shadow-xl relative">
 
             <button
               onClick={() => setShow(false)}
@@ -149,125 +151,111 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
               ✕
             </button>
 
-            <h3 className="text-xl font-semibold mb-1 text-[#0B4B50]">Tulis Testimoni Kamu 💬</h3>
-            <p className="text-xs text-gray-500 mb-4">Rating rendah otomatis tidak ditampilkan.</p>
+            <h3 className="text-xl font-semibold mb-3 text-[#0B4B50]">Tulis Testimoni Kamu 💬</h3>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-4">
 
-              {/* Nama + Kota */}
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <input
-                    name="nama"
-                    value={form.nama}
-                    onChange={handleChange}
-                    required
-                    placeholder="Nama"
-                    className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm"
-                  />
-                  {errors.nama && <p className="text-xs text-red-500">{errors.nama}</p>}
-                </div>
+              {/* input + errors */}
+              <input
+                name="nama"
+                value={form.nama}
+                onChange={(e) => setForm({ ...form, nama: e.target.value })}
+                placeholder="Nama"
+                className="border w-full p-2 rounded-lg"
+              />
+              {errors.nama && <p className="text-xs text-red-500">{errors.nama}</p>}
 
-                <div className="flex-1">
-                  <input
-                    name="kota"
-                    value={form.kota}
-                    onChange={handleChange}
-                    required
-                    placeholder="Kota"
-                    className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm"
-                  />
-                  {errors.kota && <p className="text-xs text-red-500">{errors.kota}</p>}
-                </div>
-              </div>
+              <input
+                name="kota"
+                value={form.kota}
+                onChange={(e) => setForm({ ...form, kota: e.target.value })}
+                placeholder="Kota"
+                className="border w-full p-2 rounded-lg"
+              />
+              {errors.kota && <p className="text-xs text-red-500">{errors.kota}</p>}
 
-              {/* Pesan */}
+              <textarea
+                name="pesan"
+                value={form.pesan}
+                onChange={(e) => setForm({ ...form, pesan: e.target.value })}
+                placeholder="Ceritakan pengalamanmu…"
+                className="border w-full p-2 rounded-lg min-h-[80px]"
+              />
+              {errors.pesan && <p className="text-xs text-red-500">{errors.pesan}</p>}
+
+              {/* Varian */}
+              <select
+                value={form.varian}
+                onChange={(e) => setForm({ ...form, varian: e.target.value })}
+                className="border w-full p-2 rounded-lg"
+              >
+                <option value="">Pilih Varian</option>
+                <option>Green Detox</option>
+                <option>Yellow Immunity</option>
+                <option>Beetroot</option>
+                <option>Sunrise</option>
+                <option>Carrot Boost</option>
+                <option>Ginger Shot</option>
+              </select>
+              {errors.varian && <p className="text-xs text-red-500">{errors.varian}</p>}
+
+              {/* Rating bintang */}
               <div>
-                <textarea
-                  name="pesan"
-                  value={form.pesan}
-                  onChange={handleChange}
-                  required
-                  placeholder="Ceritakan pengalamanmu…"
-                  className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm min-h-[80px]"
-                />
-                {errors.pesan && <p className="text-xs text-red-500">{errors.pesan}</p>}
-              </div>
-
-              {/* Varian + Rating */}
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <div className="flex-1">
-                  <select
-                    name="varian"
-                    value={form.varian}
-                    onChange={handleChange}
-                    required
-                    className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm"
-                  >
-                    <option value="">Pilih Varian</option>
-                    <option>Green Detox</option>
-                    <option>Yellow Immunity</option>
-                    <option>Beetroot</option>
-                    <option>Sunrise</option>
-                    <option>Carrot Boost</option>
-                    <option>Ginger Shot</option>
-                  </select>
-                  {errors.varian && <p className="text-xs text-red-500">{errors.varian}</p>}
-                </div>
-
-                {/* Rating bintang */}
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 mb-1">Rating</span>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onMouseEnter={() => setHoverRating(s)}
-                        onMouseLeave={() => setHoverRating(null)}
-                        onClick={() => setForm((prev) => ({ ...prev, rating: s }))}
-                        className="text-lg transition hover:scale-110"
-                      >
-                        <span className={s <= currentRating ? "text-yellow-400" : "text-gray-300"}>
-                          ★
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+                <p className="text-sm text-gray-500 mb-1">Rating</p>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(null)}
+                      onClick={() => setForm({ ...form, rating: star })}
+                      className="text-xl"
+                    >
+                      <span className={
+                        (hoverRating ?? form.rating) >= star
+                          ? "text-yellow-400"
+                          : "text-gray-300"
+                      }>
+                        ★
+                      </span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* URL gambar + preview */}
+              {/* Upload File */}
               <div>
                 <input
-                  name="img"
-                  value={form.img}
-                  onChange={handleChange}
-                  placeholder="URL foto (opsional)"
-                  className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] || null
+                    setFile(f)
+                    if (f) {
+                      setPreview(URL.createObjectURL(f))
+                    }
+                  }}
+                  className="border w-full p-2 rounded-lg"
                 />
-                {form.img && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Preview:</span>
-                    <img
-                      src={form.img}
-                      alt="Preview"
-                      className="w-10 h-10 rounded-md object-cover border border-[#e6eeee]"
-                      onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
-                    />
-                  </div>
+                {preview && (
+                  <img
+                    src={preview}
+                    className="mt-2 w-20 h-20 rounded-lg object-cover border"
+                  />
                 )}
               </div>
 
-              {statusMsg && <p className="text-xs text-center text-gray-600">{statusMsg}</p>}
+              {statusMsg && <p className="text-center text-gray-600 text-xs">{statusMsg}</p>}
 
               <button
                 type="submit"
                 disabled={sending}
-                className="w-full bg-[#0FA3A8] text-white rounded-full py-2 font-semibold text-sm mt-1 disabled:opacity-60"
+                className="w-full bg-[#0FA3A8] text-white py-2 rounded-full"
               >
-                {sending ? "Mengirim..." : "Kirim Testimoni"}
+                {sending ? "Mengirim…" : "Kirim Testimoni"}
               </button>
+
             </form>
           </div>
         </div>
