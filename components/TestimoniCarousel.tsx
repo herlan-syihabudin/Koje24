@@ -24,12 +24,17 @@ export default function TestimoniCarousel() {
         const json = await res.json()
 
         const filtered = json
-          .filter((x: any) =>
-            ["true", "1", "yes", "ya"].includes(
-              String(x.showOnHome).trim().toLowerCase()
-            )
-          )
-          .reverse()
+  .filter((x: any) =>
+    ["true", "1", "yes", "ya"].includes(
+      String(x.showOnHome).trim().toLowerCase()
+    )
+  )
+  .filter((x: any) =>
+    ["true", "1", "yes", "ya"].includes(
+      String(x.active).trim().toLowerCase()
+    )
+  )
+  .reverse()
 
         setData(filtered)
       } catch (err) {
