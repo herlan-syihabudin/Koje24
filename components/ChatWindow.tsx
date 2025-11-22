@@ -12,22 +12,10 @@ type ChatMessage = {
 const STORAGE_KEY = "koje24_chat_history";
 
 const QUICK_REPLIES = [
-  {
-    label: "Rekomendasi varian detox",
-    text: "Aku mau rekomendasi varian untuk detox harian dong.",
-  },
-  {
-    label: "Untuk imun & stamina",
-    text: "Varian mana yang paling bagus buat jaga imun & stamina?",
-  },
-  {
-    label: "Cara order di KOJE24",
-    text: "Gimana cara order di KOJE24 dari web ini?",
-  },
-  {
-    label: "Penyimpanan & masa simpan",
-    text: "Jus KOJE24 tahan berapa lama dan disimpan bagaimana?",
-  },
+  { label: "Rekomendasi varian detox", text: "Aku mau rekomendasi varian untuk detox harian dong." },
+  { label: "Untuk imun & stamina", text: "Varian mana yang paling bagus buat jaga imun & stamina?" },
+  { label: "Cara order di KOJE24", text: "Gimana cara order di KOJE24 dari web ini?" },
+  { label: "Penyimpanan & masa simpan", text: "Jus KOJE24 tahan berapa lama dan disimpan bagaimana?" },
 ];
 
 export default function ChatWindow({ onClose }: { onClose: () => void }) {
@@ -37,9 +25,10 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
 
   const chatRef = useRef<HTMLDivElement | null>(null);
 
-  // 🔹 Load history dari localStorage
+  // === LOAD HISTORY (default welcome jika kosong)
   useEffect(() => {
     if (typeof window === "undefined") return;
+
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
@@ -48,28 +37,26 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
           setMessages(parsed);
           return;
         }
-      } catch {
-        // ignore
-      }
+      } catch {}
     }
 
-    // default welcome message
     setMessages([
       {
         id: "welcome",
         from: "bot",
-        text: "Halo! Aku KOJE24 Assistant. Mau aku bantu pilih varian jus yang cocok buat kamu? 😊",
+        text: "Halo! Aku KOJE24 Assistant. Ada yang bisa aku bantu hari ini? 😊",
       },
     ]);
   }, []);
 
-  // 🔹 Save history setiap ada perubahan
+  // === SAVE HISTORY
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    }
   }, [messages]);
 
-  // 🔹 Auto scroll ke bawah
+  // === AUTO SCROLL
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTo({
@@ -79,6 +66,19 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
     }
   }, [messages, loading]);
 
+  // === AUTO CLOSE & RESET jika tidak ada aktivitas 3 menit
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(STORAGE_KEY);
+      }
+      onClose();
+    }, 180000); // 3 menit
+
+    return () => clearTimeout(timer);
+  }, [messages]);
+
+  // === SEND MESSAGE
   const sendMessage = async (text?: string) => {
     const content = (text ?? input).trim();
     if (!content || loading) return;
@@ -95,7 +95,6 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
     setLoading(true);
 
     try {
-      // buat format buat API (ambil 10 terakhir biar hemat token)
       const apiMessages = newMessages.slice(-10).map((m) => ({
         role: m.from === "user" ? "user" : "assistant",
         content: m.text,
@@ -107,14 +106,10 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
         body: JSON.stringify({ messages: apiMessages }),
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to fetch");
-      }
+      if (!res.ok) throw new Error("Failed to fetch");
 
       const data = await res.json();
-      const replyText: string =
-        data?.reply ??
-        "Maaf, lagi ada kendala sistem. Coba lagi sebentar ya 🙏";
+      const replyText = data?.reply ?? "Maaf, coba ulang beberapa saat lagi ya 🙏";
 
       const botMsg: ChatMessage = {
         id: `bot-${Date.now()}`,
@@ -123,15 +118,15 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
       };
 
       setMessages((prev) => [...prev, botMsg]);
-    } catch (err) {
-      console.error("Chat error:", err);
-      const errMsg: ChatMessage = {
-        id: `bot-error-${Date.now()}`,
-        from: "bot",
-        text:
-          "Maaf, koneksi ke server lagi bermasalah. Coba ulangi beberapa saat lagi ya 🙏",
-      };
-      setMessages((prev) => [...prev, errMsg]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `bot-error-${Date.now()}`,
+          from: "bot",
+          text: "Maaf, koneksi lagi gangguan. Coba lagi sebentar ya 🙏",
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -151,45 +146,43 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
       id="chat-window"
       className="fixed bottom-24 right-7 z-50 w-[320px] md:w-[360px] bg-white rounded-3xl shadow-2xl border border-[#e9f4f4] overflow-hidden animate-chatFadeIn"
     >
-      {/* Header */}
+      {/* HEADER */}
       <div className="bg-[#0FA3A8] text-white px-4 py-3 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm font-semibold">
             K
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col leading-tight">
             <p className="font-semibold text-sm">KOJE24 Assistant</p>
-            <span className="text-[11px] text-emerald-100">
-              Online • jawab dalam hitungan detik
-            </span>
+            <span className="text-[11px] text-emerald-100">Online • fast response</span>
           </div>
         </div>
+
+        {/* BTN CLOSE = AUTO RESET */}
         <button
-          onClick={onClose}
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              window.localStorage.removeItem(STORAGE_KEY);
+            }
+            onClose();
+          }}
           className="hover:bg-white/10 rounded-full p-1 transition"
         >
           <X size={18} />
         </button>
       </div>
 
-      {/* Chat Body */}
-      <div
-        ref={chatRef}
-        className="p-4 h-[260px] overflow-y-auto bg-[#f8fcfc] space-y-3"
-      >
+      {/* BODY */}
+      <div ref={chatRef} className="p-4 h-[260px] overflow-y-auto bg-[#f8fcfc] space-y-3">
         {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`flex ${
-              m.from === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
+          <div key={m.id} className={`flex ${m.from === "user" ? "justify-end" : "justify-start"}`}>
             <div className="flex gap-2 max-w-[80%]">
               {m.from === "bot" && (
                 <div className="mt-[2px] w-7 h-7 rounded-full bg-[#0FA3A8]/10 flex items-center justify-center text-[11px] font-semibold text-[#0FA3A8]">
                   K
                 </div>
               )}
+
               <div
                 className={`px-3 py-2 rounded-2xl text-sm leading-relaxed ${
                   m.from === "user"
@@ -203,7 +196,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
           </div>
         ))}
 
-        {/* Typing indicator */}
+        {/* LOADING TYPING */}
         {loading && (
           <div className="flex justify-start">
             <div className="flex gap-2 items-center max-w-[80%]">
@@ -216,14 +209,14 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
                   <span className="dot dot-2" />
                   <span className="dot dot-3" />
                 </span>
-                <span>KOJE24 sedang mengetik…</span>
+                <span>Mengetik…</span>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Quick Replies */}
+      {/* QUICK REPLIES */}
       <div className="px-3 pb-2 pt-1 bg-[#f8fcfc] border-t border-[#e8f2f2] flex flex-wrap gap-2">
         {QUICK_REPLIES.map((q) => (
           <button
@@ -237,11 +230,8 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
         ))}
       </div>
 
-      {/* Input */}
-      <form
-        onSubmit={handleSubmit}
-        className="flex items-center p-3 bg-white border-t"
-      >
+      {/* INPUT */}
+      <form onSubmit={handleSubmit} className="flex items-center p-3 bg-white border-t">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -257,7 +247,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
         </button>
       </form>
 
-      {/* Animasi global */}
+      {/* ANIMATION */}
       <style jsx global>{`
         @keyframes chatFadeIn {
           from {
@@ -275,9 +265,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
         }
 
         @keyframes bubbleDots {
-          0%,
-          80%,
-          100% {
+          0%, 80%, 100% {
             transform: scale(0.8);
             opacity: 0.4;
           }
@@ -291,15 +279,11 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
           width: 6px;
           height: 6px;
           border-radius: 999px;
-          background: #0fa3a8;
+          background: #0FA3A8;
           animation: bubbleDots 1.2s infinite ease-in-out;
         }
-        .dot-2 {
-          animation-delay: 0.15s;
-        }
-        .dot-3 {
-          animation-delay: 0.3s;
-        }
+        .dot-2 { animation-delay: 0.15s; }
+        .dot-3 { animation-delay: 0.3s; }
       `}</style>
     </div>
   );
