@@ -1,111 +1,80 @@
 import { NextResponse } from "next/server";
 
-export const runtime = "edge"; // cepat, murah, scalable
-
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const messages = body.messages ?? [];
+    const { messages } = await req.json();
 
-    // Safety: kalau kosong
-    if (!Array.isArray(messages)) {
+    // ====== VALIDASI AWAL ======
+    if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
-        { reply: "Format pesan tidak valid." },
+        { reply: "Input format tidak valid." },
         { status: 400 }
       );
     }
 
-    // Personality KOJE24 Assistant
-    const systemPrompt = `
-Kamu adalah KOJE24 Assistant — AI premium dengan karakter:
-- nada halus, ramah, elegan
-- jawab singkat, padat, mudah dipahami
-- selalu menawarkan bantuan lanjutan
-- paham tentang varian KOJE24 dan manfaatnya
+    // ====== AMBIL ENV ======
+    const endpoint = "https://api.openai.com/v1/responses";
+    const apiKey = process.env.OPENAI_API_KEY;
+    const orgId = process.env.OPENAI_ORG_ID;
+    const projectId = process.env.OPENAI_PROJECT_ID;
 
-VARIAN KOJE24:
-1. **Detox Green**  
-   - celery, lemon, cucumber, apple
-   - fungsi: detox harian, turunkan berat badan
-
-2. **Yellow Immunity**  
-   - pineapple, turmeric, ginger, lemon
-   - fungsi: tingkatkan imun, anti-radang
-
-3. **Sunrise Energy**  
-   - carrot, orange, honey
-   - fungsi: stamina, energi pagi
-
-4. **Beetroot Power**  
-   - beetroot, apple, lemon
-   - fungsi: perbaikan darah & sirkulasi
-
-5. **Lemongrass Fresh**  
-   - sereh, lemon
-   - fungsi: segarkan tubuh, relaksasi
-
-6. **Daily Celery**  
-   - 100% celery
-   - fungsi: detox cepat, turunkan tekanan darah
-
-RULES:
-- Jangan terlalu panjang.
-- Jangan kaku.
-- Selalu berikan opsi lanjutan seperti:
-  “Mau aku bantu pilihkan yang paling cocok buat kondisi kamu?”
-- Kalau user tanya harga → jawab format premium.
-- Kalau user tanya cara order → arahkan ke tombol WA atau form.
-- Kalau user tanya rekomendasi → tanya dulu tujuan mereka.
-`;
-
-    // Construct messages array
-    const formattedMessages = [
-      { role: "system", content: systemPrompt },
-      ...messages.map((m: any) => ({
-        role: m.role,
-        content: m.content,
-      })),
-    ];
-
-    // OPENAI REQUEST
-    const openaiRes = await fetch(
-      "https://api.openai.com/v1/responses",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          "OpenAI-Project": process.env.OPENAI_PROJECT_ID!,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: formattedMessages,
-          max_output_tokens: 200,
-        }),
-      }
-    );
-
-    if (!openaiRes.ok) {
-      const errText = await openaiRes.text();
-      console.error("OpenAI error:", errText);
+    if (!apiKey || !orgId || !projectId) {
+      console.log("Env missing:", { apiKey, orgId, projectId });
       return NextResponse.json(
-        { reply: "Server KOJE24 lagi penuh, coba 1–2 menit lagi ya 🙏" },
+        { reply: "Server kurang konfigurasi env." },
         { status: 500 }
       );
     }
 
-    const json = await openaiRes.json();
+    // ====== SYSTEM PROMPT (LEVEL DEWA) ======
+    const systemPrompt = `
+Kamu adalah KOJE24 Assistant — ramah, jelas, dan sangat membantu customer.
+Jawaban harus:
+- pendek, mudah dipahami
+- relevan untuk jus, varian, manfaat, pemakaian, order
+- tanpa bahas hal teknis atau coding
+- selalu promosi halus tanpa maksa
+`;
 
-    const reply =
-      json.output_text ?? json?.choices?.[0]?.message?.content ?? "Baik! Ada yang bisa aku bantu lagi?";
+    // ====== PANGGIL OPENAI ======
+    const openaiRes = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        "OpenAI-Organization": orgId,
+        "OpenAI-Project": projectId,
+      },
+      body: JSON.stringify({
+        model: "gpt-5.1-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...messages,
+        ],
+      }),
+    });
+
+    if (!openaiRes.ok) {
+      const errorText = await openaiRes.text();
+      console.error("OpenAI API Error:", errorText);
+
+      return NextResponse.json(
+        { reply: "Server lama merespon, coba beberapa detik lagi ya 🙏" },
+        { status: 500 }
+      );
+    }
+
+    const data = await openaiRes.json();
+    const reply = data.output_text || "Oke! Ada yang bisa aku bantu lagi?";
 
     return NextResponse.json({ reply });
   } catch (err) {
-    console.error("API Error:", err);
+    console.error("Server Fatal Error:", err);
     return NextResponse.json(
       {
         reply:
-          "Maaf, server sedang sibuk. Coba ulangi dalam beberapa saat ya 🙏",
+          "Maaf, server KOJE24 lagi ada kendala. Coba beberapa saat lagi ya 🙏",
+        error: String(err),
       },
       { status: 500 }
     );
