@@ -1,65 +1,87 @@
 "use client"
+
 import { useState, useRef, useEffect } from "react"
 import { X, SendHorizonal } from "lucide-react"
 
-export default function ChatWindow({ onClose }: { onClose: () => void }) {
+interface ChatWindowProps {
+  onClose: () => void
+}
+
+export default function ChatWindow({ onClose }: ChatWindowProps) {
   const [messages, setMessages] = useState([
     {
       from: "bot",
-      text: "Halo! Saya KOJE24 Assistant 🍃 Ada yang bisa saya bantu?",
+      text: "Halo! Ada yang bisa dibantu tentang KOJE24? 😊🍃",
     },
   ])
+
   const [input, setInput] = useState("")
-  const chatRef = useRef(null)
+  const chatRef = useRef<HTMLDivElement | null>(null)
 
-  const quickReplies = [
-    "Harga produk",
-    "Varian KOJE24",
-    "Cara order",
-    "Layanan langganan",
-    "Lokasi & pengiriman",
-    "Testimoni",
-  ]
-
+  // AUTO SCROLL TO BOTTOM
   useEffect(() => {
-    chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" })
+    if (chatRef.current) {
+      chatRef.current.scrollTo({
+        top: chatRef.current.scrollHeight,
+        behavior: "smooth",
+      })
+    }
   }, [messages])
 
+  // BOT AUTOREPLY LOGIC
+  const botReply = (userMsg: string) => {
+    const lower = userMsg.toLowerCase()
+
+    if (lower.includes("harga"))
+      return "Harga per botol KOJE24 mulai Rp25.000 – Rp35.000 ya kak 🍃"
+
+    if (lower.includes("order") || lower.includes("beli"))
+      return "Kamu bisa order langsung dari website atau klik tombol WhatsApp untuk chat admin 😊"
+
+    if (lower.includes("varian"))
+      return "Varian tersedia: Green Detox, Yellow Immunity, Beetroot, Sunrise, Carrot Boost, Ginger Shot!"
+
+    if (lower.includes("cara minum"))
+      return "Saran pemakaian: minum pagi hari sebelum makan untuk hasil terbaik 💚"
+
+    return "Siap kak! Ada lagi yang mau ditanyakan seputar KOJE24? 🙌"
+  }
+
+  // SEND MESSAGE
   const sendMsg = () => {
     if (!input.trim()) return
 
-    setMessages((prev) => [...prev, { from: "user", text: input }])
+    const msg = input
+    setMessages((prev) => [...prev, { from: "user", text: msg }])
+    setInput("")
 
     setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { from: "bot", text: "Baik, sedang saya cek ya… 🙏" },
-      ])
+      setMessages((prev) => [...prev, { from: "bot", text: botReply(msg) }])
     }, 500)
-
-    setInput("")
   }
 
   return (
-    <div className="fixed bottom-24 right-7 z-50 w-[92%] max-w-sm bg-white rounded-3xl shadow-2xl border border-[#e6eeee]/70 overflow-hidden animate-fadeIn">
-      <div className="bg-[#0FA3A8] text-white p-4 flex justify-between items-center">
-        <div>
-          <h3 className="font-semibold text-lg">KOJE24 Assistant</h3>
-          <p className="text-xs text-white/80">Online • Siap membantu 🍃</p>
-        </div>
-        <button onClick={onClose} className="text-white/80 hover:text-white">
+    <div className="fixed bottom-24 right-6 w-80 bg-white rounded-3xl shadow-xl border overflow-hidden z-[9999]">
+      {/* HEADER */}
+      <div className="flex items-center justify-between px-4 py-3 bg-[#0FA3A8] text-white">
+        <span className="font-semibold">KOJE24 Assistant</span>
+        <button onClick={onClose}>
           <X size={20} />
         </button>
       </div>
 
-      <div ref={chatRef} className="h-80 overflow-y-auto px-4 py-3 space-y-3 bg-[#f7fdfd]">
+      {/* CHAT CONTENT */}
+      <div
+        ref={chatRef}
+        className="h-72 p-4 overflow-y-auto space-y-3 bg-[#F8FAFA]"
+      >
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm shadow-sm ${
-              m.from === "bot"
-                ? "bg-white border border-[#e6eeee] text-gray-700"
-                : "ml-auto bg-[#0FA3A8] text-white"
+            className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${
+              m.from === "user"
+                ? "ml-auto bg-[#0FA3A8] text-white"
+                : "bg-white border text-gray-700"
             }`}
           >
             {m.text}
@@ -67,40 +89,23 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
         ))}
       </div>
 
-      <div className="px-4 py-2 flex gap-2 overflow-x-auto scrollbar-hide">
-        {quickReplies.map((q, i) => (
-          <button
-            key={i}
-            onClick={() => setMessages((prev) => [...prev, { from: "user", text: q }])}
-            className="bg-[#eef7f7] border border-[#dceeee] text-[#0B4B50] rounded-full px-3 py-1 text-xs whitespace-nowrap hover:bg-[#e6f3f3]"
-          >
-            {q}
-          </button>
-        ))}
-      </div>
-
-      <div className="border-t border-[#e6eeee] p-3 flex items-center gap-2 bg-white">
+      {/* INPUT FIELD */}
+      <div className="flex items-center gap-2 p-3 border-t bg-white">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMsg()}
-          className="flex-1 px-3 py-2 rounded-full border border-[#dceeee] text-sm focus:outline-none"
           placeholder="Tulis pesan..."
+          className="flex-1 px-3 py-2 border rounded-full text-sm"
         />
+
         <button
           onClick={sendMsg}
-          className="bg-[#0FA3A8] text-white p-2 rounded-full hover:bg-[#0c8c91]"
+          className="p-2 bg-[#0FA3A8] text-white rounded-full"
         >
           <SendHorizonal size={18} />
         </button>
       </div>
-
-      <style jsx global>{`
-        @keyframes fadeIn {
-          0% { opacity: 0; transform: translateY(10px); }
-          100% { opacity: 1; transform: translateY(0px); }
-        }
-      `}</style>
     </div>
   )
 }
