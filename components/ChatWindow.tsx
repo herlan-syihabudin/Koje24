@@ -9,7 +9,6 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
   ]);
   const [input, setInput] = useState("");
 
-  // FIX ERROR: wajib tentukan tipe
   const chatRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -31,16 +30,16 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
     setTimeout(() => {
       setMessages((m) => [
         ...m,
-        {
-          from: "bot",
-          text: "Terima kasih! Admin KOJE24 akan segera membantu 😊",
-        },
+        { from: "bot", text: "Terima kasih! Admin KOJE24 akan segera membantu 😊" },
       ]);
     }, 500);
   };
 
   return (
-    <div className="fixed bottom-24 right-7 z-50 w-[320px] md:w-[360px] bg-white rounded-3xl shadow-2xl border border-[#e9f4f4] overflow-hidden animate-fadeIn">
+    <div
+      id="chat-window"  // ⭐ FIX PALING PENTING
+      className="fixed bottom-24 right-7 z-50 w-[320px] md:w-[360px] bg-white rounded-3xl shadow-2xl border border-[#e9f4f4] overflow-hidden animate-chatFadeIn"
+    >
       {/* Header */}
       <div className="bg-[#0FA3A8] text-white px-4 py-3 flex justify-between items-center">
         <p className="font-semibold">KOJE24 Assistant</p>
@@ -50,16 +49,11 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* Chat Body */}
-      <div
-        ref={chatRef}
-        className="p-4 h-[260px] overflow-y-auto bg-[#f8fcfc]"
-      >
+      <div ref={chatRef} className="p-4 h-[260px] overflow-y-auto bg-[#f8fcfc]">
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`mb-3 flex ${
-              m.from === "user" ? "justify-end" : "justify-start"
-            }`}
+            className={`mb-3 flex ${m.from === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
               className={`px-3 py-2 rounded-2xl max-w-[75%] text-sm ${
@@ -90,9 +84,9 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
         </button>
       </div>
 
-      {/* Animation */}
+      {/* Animasi unik supaya gak tabrakan */}
       <style jsx global>{`
-        @keyframes fadeIn {
+        @keyframes chatFadeIn {
           from {
             opacity: 0;
             transform: translateY(15px);
