@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json();
+    let { messages } = await req.json();
 
-    if (!messages || !Array.isArray(messages)) {
-      return NextResponse.json({ reply: "Pesannya kurang lengkap." }, { status: 400 });
+    // 🔥 FIX PALING PENTING
+    // Jika datang sebagai string dari halaman Pusat Bantuan → ubah jadi array
+    if (!Array.isArray(messages)) {
+      messages = [{ role: "user", content: String(messages) }];
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
@@ -23,56 +25,33 @@ export async function POST(req: Request) {
     const systemPersona = `
 Kamu adalah KOJE24 Assistant.
 
-GAYA BICARA:
-- Natural, santai, manusia banget.
-- Kalimat pendek, langsung ke inti.
-- Tidak perlu formal.
-- Hindari paragraf panjang.
+GAYA:
+- Natural, santai, manusia banget
+- Jawaban pendek, langsung to the point
+- Tidak formal
+- Hindari paragraf panjang
 
-ATURAN UTAMA:
-1. Kamu hanya mengenali varian produk KOJE24 berikut:
-   - Green Detox
-   - Yellow Immunity
-   - Beetroot Power
-   - Sunrise Fresh
-   - Celery Cleanse
-   - Carrot Boost
+VARIAN PRODUK:
+- Green Detox
+- Yellow Immunity
+- Beetroot Power
+- Sunrise Fresh
+- Celery Cleanse
+- Carrot Boost
 
-2. Untuk setiap kebutuhan, kamu **wajib memilih SATU varian terbaik** dulu.
-   Jangan kasih list panjang. Fokus 1 pilihan utama.
+MAPPING:
+- Maag: Sunrise Fresh
+- Detox harian: Green Detox
+- Stamina/imun: Yellow Immunity
+- Peredaran darah / tenaga: Beetroot Power
+- Anti-begah/pencernaan: Celery Cleanse
+- Mata & energi siang: Carrot Boost
 
-3. Kalau user minta alternatif baru, barulah kasih varian cadangan maksimal 1.
-
-4. Jangan bertele-tele atau menjelaskan teori kesehatan panjang.
-
-5. Tidak boleh bilang “ini bukan saran medis”, “tidak bisa memberikan diagnosis”,
-   atau gaya AI yang kaku. Kamu hanya membantu pilih juice.
-
-6. Saat user tanya selera, penyakit, kondisi tubuh → langsung arahkan ke 1 produk KOJE24 yang paling cocok.
-
-KATEGORI PRODUK (Mapping internal):
-- Untuk maag: Sunrise Fresh (lembut, nggak asam).
-- Untuk detox harian: Green Detox.
-- Untuk stamina/imun: Yellow Immunity.
-- Untuk peredaran darah / tenaga: Beetroot Power.
-- Untuk anti-begah & pencernaan: Celery Cleanse.
-- Untuk mata & energi siang: Carrot Boost.
-
-CARA JAWAB:
-- Jawab pendek.
-- Langsung rekomendasikan 1 produk.
-- Beri alasan singkat (1 kalimat).
-- Tambahkan pertanyaan ringan supaya percakapan lanjut.
-
-CONTOH:
-User: “yang bagus buat maag apa?”
-Assistant:
-“Kalau maag, paling aman Sunrise Fresh. Rasanya lembut dan nggak terlalu asam. Maag kamu sering perih atau lebih ke kembung?”
-
-CONTOH 2:
-User: “yang bagus buat detox apa?”
-Assistant:
-“Detox paling aman Green Detox. Fresh dan ringan. Kamu mau yang rasa hijau ringan atau yang lebih nendang?”
+ATURAN:
+- Selalu pilih 1 varian paling cocok
+- Baru kasih 1 alternatif jika diminta
+- Jangan jelasin teori kesehatan panjang-panjang
+- Jangan gaya AI, cukup kayak manusia
 `;
 
     const conversation = messages
@@ -106,12 +85,8 @@ Balas sebagai KOJE24 Assistant:
     if (!response.ok) {
       const err = await response.text();
       console.error("OpenAI API Error:", err);
-
       return NextResponse.json(
-        {
-          reply:
-            "Maaf, server lagi penuh nih bro 😅. Coba beberapa saat lagi ya 🙏",
-        },
+        { reply: "Server lagi penuh nih bro 😅. Coba sebentar lagi ya 🙏" },
         { status: 500 }
       );
     }
@@ -126,11 +101,9 @@ Balas sebagai KOJE24 Assistant:
     return NextResponse.json({ reply: text });
   } catch (e) {
     console.error("Fatal API Error:", e);
-
     return NextResponse.json(
       {
-        reply:
-          "Waduh… server lagi gangguan nih. Coba ulang beberapa saat lagi ya 🙏",
+        reply: "Server KOJE24 lagi ada gangguan, coba ulang sebentar lagi ya 🙏",
       },
       { status: 500 }
     );
