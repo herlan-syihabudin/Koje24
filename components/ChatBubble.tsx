@@ -1,18 +1,43 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { MessageCircle } from "lucide-react"
 import ChatWindow from "./ChatWindow"
 
 export default function ChatBubble() {
   const [open, setOpen] = useState(false)
 
+  // Tutup ketika user klik area luar
+  useEffect(() => {
+    const close = (e: any) => {
+      const box = document.getElementById("chat-window")
+      const bubble = document.getElementById("chat-bubble-btn")
+
+      if (!box) return
+      if (!open) return
+
+      if (!box.contains(e.target) && !bubble?.contains(e.target)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", close)
+    return () => document.removeEventListener("mousedown", close)
+  }, [open])
+
   return (
     <>
       {/* Chat Window */}
-      {open && <ChatWindow onClose={() => setOpen(false)} />}
+      {open && (
+        <div
+          id="chat-window"
+          className="animate-[fadeIn_0.25s_ease-out]"
+        >
+          <ChatWindow onClose={() => setOpen(false)} />
+        </div>
+      )}
 
       {/* Floating Bubble */}
       <button
+        id="chat-bubble-btn"
         onClick={() => setOpen(true)}
         className="
           fixed bottom-7 right-7 z-50
@@ -34,6 +59,10 @@ export default function ChatBubble() {
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-6px); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0px); }
         }
       `}</style>
     </>
