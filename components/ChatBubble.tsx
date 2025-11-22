@@ -4,17 +4,21 @@ import { useState, useEffect } from "react";
 import { MessageCircle } from "lucide-react";
 import ChatWindow from "./ChatWindow";
 
+const SEEN_KEY = "koje24_chat_seen";
+
 export default function ChatBubble() {
   const [open, setOpen] = useState(false);
 
+  // 🔹 Tutup kalau klik di luar
   useEffect(() => {
-    const close = (e: any) => {
+    const close = (e: MouseEvent) => {
       const box = document.getElementById("chat-window");
       const bubble = document.getElementById("chat-bubble-btn");
 
       if (!box || !open) return;
+      const target = e.target as HTMLElement;
 
-      if (!box.contains(e.target) && !bubble?.contains(e.target)) {
+      if (!box.contains(target) && !bubble?.contains(target)) {
         setOpen(false);
       }
     };
@@ -22,6 +26,21 @@ export default function ChatBubble() {
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
+
+  // 🔹 Auto buka sekali (misal setelah 8 detik)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const alreadySeen = window.localStorage.getItem(SEEN_KEY);
+    if (alreadySeen) return;
+
+    const timer = setTimeout(() => {
+      setOpen(true);
+      window.localStorage.setItem(SEEN_KEY, "true");
+    }, 8000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <>
@@ -45,8 +64,17 @@ export default function ChatBubble() {
 
       <style jsx global>{`
         @keyframes floatingBubble {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-6px); }
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-6px);
+          }
+        }
+
+        .animate-floatingBubble {
+          animation: floatingBubble 2.4s ease-in-out infinite;
         }
       `}</style>
     </>
