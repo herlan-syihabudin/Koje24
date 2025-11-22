@@ -57,9 +57,18 @@ export default function PusatBantuanPage() {
   }, [])
 
   function handleAsk(e: FormEvent) {
-    e.preventDefault()
-    const trimmed = query.trim()
-    if (!trimmed) return
+  e.preventDefault()
+  const trimmed = query.trim()
+  if (!trimmed) return
+
+  // 🔥 Trigger untuk buka KOJE24 Assistant
+  window.dispatchEvent(
+    new CustomEvent("open-koje24", { detail: trimmed })
+  )
+
+  // optional bersihin input
+  setQuery("")
+}
 
     // 👉 TEMPAT MASUK BOT
     // Di sini nanti lu sambungin ke KOJE24 Assistant.
