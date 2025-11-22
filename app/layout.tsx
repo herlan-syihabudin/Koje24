@@ -2,6 +2,7 @@ import "./globals.css"
 import type { ReactNode } from "react"
 import { Inter, Playfair_Display } from "next/font/google"
 import { CartProvider } from "@/components/CartContext" // ⭐ WAJIB: agar Checkout bisa baca cart
+import ChatBubble from "@/components/ChatBubble"
 
 // === FONTS ===
 const inter = Inter({
