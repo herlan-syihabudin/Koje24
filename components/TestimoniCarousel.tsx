@@ -55,7 +55,7 @@ export default function TestimoniCarousel() {
           </h2>
 
           <div className="flex items-center gap-3">
-            <TulisTestimoniForm />
+            <TulisTestimoniForm onSuccess={() => {}} />
             <a href="/testimoni" className="text-[#0FA3A8] font-medium hover:underline">
               Lihat Semua →
             </a>
