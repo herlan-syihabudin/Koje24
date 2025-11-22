@@ -1,15 +1,19 @@
 "use client"
 import { useState } from "react"
 
-export default function TulisTestimoniForm({ onSuccess }) {
+type Props = {
+  onSuccess?: () => void
+}
+
+export default function TulisTestimoniForm({ onSuccess }: Props) {
   const [show, setShow] = useState(false)
   const [sending, setSending] = useState(false)
-  const [errors, setErrors] = useState({})
-  const [lastSubmit, setLastSubmit] = useState(null)
-  const [statusMsg, setStatusMsg] = useState(null)
-  const [hoverRating, setHoverRating] = useState(null)
-  const [preview, setPreview] = useState(null)
-  const [file, setFile] = useState(null)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [lastSubmit, setLastSubmit] = useState<number | null>(null)
+  const [statusMsg, setStatusMsg] = useState<string | null>(null)
+  const [hoverRating, setHoverRating] = useState<number | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [file, setFile] = useState<File | null>(null)
 
   const [form, setForm] = useState({
     nama: "",
@@ -22,11 +26,8 @@ export default function TulisTestimoniForm({ onSuccess }) {
     showOnHome: false,
   })
 
-  // =============================
-  // VALIDATION
-  // =============================
   const validate = () => {
-    const err = {}
+    const err: Record<string, string> = {}
     if (form.nama.trim().length < 2) err.nama = "Nama minimal 2 karakter"
     if (form.kota.trim().length < 2) err.kota = "Kota minimal 2 karakter"
     if (form.pesan.trim().length < 10) err.pesan = "Minimal 10 karakter"
@@ -36,9 +37,6 @@ export default function TulisTestimoniForm({ onSuccess }) {
     return Object.keys(err).length === 0
   }
 
-  // =============================
-  // FILE UPLOAD (VERCEL BLOB)
-  // =============================
   const uploadFileToBlob = async () => {
     if (!file) return ""
 
@@ -50,10 +48,7 @@ export default function TulisTestimoniForm({ onSuccess }) {
     return json.url || ""
   }
 
-  // =============================
-  // SUBMIT HANDLER
-  // =============================
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault()
     setStatusMsg(null)
 
@@ -67,11 +62,9 @@ export default function TulisTestimoniForm({ onSuccess }) {
     setSending(true)
 
     try {
-      // Upload foto dulu
       let imageUrl = ""
       if (file) imageUrl = await uploadFileToBlob()
 
-      // Logic hide otomatis
       const newForm = {
         ...form,
         active: form.rating > 3,
@@ -114,7 +107,10 @@ export default function TulisTestimoniForm({ onSuccess }) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-3xl p-6 w-[90%] max-w-md relative">
 
-            <button onClick={() => setShow(false)} className="absolute right-4 top-3 text-xl text-gray-400">
+            <button
+              onClick={() => setShow(false)}
+              className="absolute right-4 top-3 text-xl text-gray-400"
+            >
               ✕
             </button>
 
@@ -161,9 +157,8 @@ export default function TulisTestimoniForm({ onSuccess }) {
               </select>
               {errors.varian && <p className="text-xs text-red-500">{errors.varian}</p>}
 
-              {/* Rating */}
               <div className="flex gap-1">
-                {[1,2,3,4,5].map(star => (
+                {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
                     type="button"
@@ -172,14 +167,19 @@ export default function TulisTestimoniForm({ onSuccess }) {
                     onClick={() => setForm({ ...form, rating: star })}
                     className="text-xl"
                   >
-                    <span className={(hoverRating ?? form.rating) >= star ? "text-yellow-400" : "text-gray-300"}>
+                    <span
+                      className={
+                        (hoverRating ?? form.rating) >= star
+                          ? "text-yellow-400"
+                          : "text-gray-300"
+                      }
+                    >
                       ★
                     </span>
                   </button>
                 ))}
               </div>
 
-              {/* Upload foto */}
               <input
                 type="file"
                 accept="image/*"
@@ -192,10 +192,15 @@ export default function TulisTestimoniForm({ onSuccess }) {
               />
 
               {preview && (
-                <img src={preview} className="w-20 h-20 rounded-lg object-cover mt-2 border" />
+                <img
+                  src={preview}
+                  className="w-20 h-20 rounded-lg object-cover mt-2 border"
+                />
               )}
 
-              {statusMsg && <p className="text-xs text-center text-gray-600">{statusMsg}</p>}
+              {statusMsg && (
+                <p className="text-xs text-center text-gray-600">{statusMsg}</p>
+              )}
 
               <button
                 type="submit"
@@ -204,6 +209,7 @@ export default function TulisTestimoniForm({ onSuccess }) {
               >
                 {sending ? "Mengirim…" : "Kirim Testimoni"}
               </button>
+
             </form>
           </div>
         </div>
