@@ -2,7 +2,7 @@ import "./globals.css"
 import type { ReactNode } from "react"
 import { Inter, Playfair_Display } from "next/font/google"
 import { CartProvider } from "@/components/CartContext" // ⭐ WAJIB: agar Checkout bisa baca cart
-import ChatBubble from "@/components/ChatBubble"
+import ChatBubble from "@/components/ChatBubble" // ⬅️ Tambahan aman
 
 // === FONTS ===
 const inter = Inter({
@@ -45,6 +45,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <CartProvider>
           {children}
         </CartProvider>
+
+        {/* ⭐ Tambah Chat Bubble (tidak ganggu fitur lain sama sekali) */}
+        <ChatBubble />
 
         {/* ⭐ Smooth scrolling seluruh web */}
         <script
