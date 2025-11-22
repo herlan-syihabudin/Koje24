@@ -7,24 +7,23 @@ export default function KOJE24Assistant() {
   const [messages, setMessages] = useState<any[]>([])
   const [input, setInput] = useState("")
 
-  // 🔥 Listen event dari halaman Pusat Bantuan
+  // 🔥 Listener untuk buka dari halaman Pusat Bantuan
   useEffect(() => {
     function handler(e: any) {
-      const firstQuestion = e.detail
+      const first = e.detail
       setOpen(true)
 
-      if (firstQuestion) {
-        sendMessage(firstQuestion)
+      if (first) {
+        sendMessage(first)
       }
     }
 
     window.addEventListener("open-koje24", handler)
     return () => window.removeEventListener("open-koje24", handler)
-  }, [])
+  }, [messages])
 
-  // 🔥 Kirim pesan ke API router milik lu
+  // 🔥 Kirim pesan ke API sesuai format router lu
   async function sendMessage(text: string) {
-    // Tambahkan pesan user ke UI
     setMessages((prev) => [...prev, { role: "user", content: text }])
 
     const res = await fetch("/api/koje24-assistant", {
@@ -40,7 +39,6 @@ export default function KOJE24Assistant() {
 
     const data = await res.json()
 
-    // Tambahkan balasan bot ke UI
     setMessages((prev) => [
       ...prev,
       { role: "assistant", content: data.reply },
@@ -68,7 +66,7 @@ export default function KOJE24Assistant() {
       {open && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end justify-center z-50">
           <div className="w-full max-w-md bg-white rounded-t-2xl shadow-xl p-4 flex flex-col">
-            
+
             {/* Header */}
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-semibold text-[#0b4b50]">
@@ -77,7 +75,7 @@ export default function KOJE24Assistant() {
               <button onClick={() => setOpen(false)}>✕</button>
             </div>
 
-            {/* Chat Area */}
+            {/* Chat */}
             <div className="h-80 overflow-y-auto flex flex-col gap-3 p-1">
               {messages.map((m, i) => (
                 <div
@@ -108,7 +106,7 @@ export default function KOJE24Assistant() {
                 Kirim
               </button>
             </form>
-          
+
           </div>
         </div>
       )}
