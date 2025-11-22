@@ -4,51 +4,50 @@ export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
 
+    // ===== VALIDATION =====
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
-        { reply: "Pesan tidak valid." },
+        { reply: "Pesannya kurang lengkap." },
         { status: 400 }
       );
     }
 
-    // ===== ENV =====
     const apiKey = process.env.OPENAI_API_KEY;
     const orgId = process.env.OPENAI_ORG_ID;
     const projectId = process.env.OPENAI_PROJECT_ID;
 
     if (!apiKey || !orgId || !projectId) {
-      console.error("Missing ENV =>", { apiKey, orgId, projectId });
+      console.error("MISSING ENV:", { apiKey, orgId, projectId });
       return NextResponse.json(
-        { reply: "Server belum lengkap konfigurasinya." },
+        { reply: "Server belum terkonfigurasi dengan benar." },
         { status: 500 }
       );
     }
 
-    // ===== SYSTEM PROMPT (mode dewa) =====
-    const systemPrompt = `
+    // ===== SYSTEM PROMPT =====
+    const systemPersona = `
 Kamu adalah KOJE24 Assistant.
-Jawab dengan sangat ramah, singkat, dan jelas.
-Fokus pada cold-pressed juice KOJE24, manfaat, rekomendasi varian, cara order, penyimpanan.
-Tidak boleh membahas kode atau hal teknis.
-Tonjolkan nilai produk tanpa memaksa.
+Ramah, ringkas, dan profesional.
+Jawab hanya tentang cold-pressed juice KOJE24, manfaat, varian, cara order, penyimpanan.
 `;
 
-    // ===== GABUNG SEMUA PESAN JADI TEXT (SESUSAI API BARU) =====
-    const historyText = messages
-      .map((m: any) => `${m.role === "user" ? "User" : "Asisten"}: ${m.content}`)
+    // ===== CONVERT CHAT MESSAGES → SINGLE TEXT =====
+    const conversation = messages
+      .map((m: any) => `${m.role === "user" ? "User" : "Bot"}: ${m.content}`)
       .join("\n");
 
     const finalInput = `
-System: ${systemPrompt}
+SYSTEM:
+${systemPersona}
 
-Riwayat percakapan:
-${historyText}
+RIWAYAT CHAT:
+${conversation}
 
 Balas sebagai KOJE24 Assistant:
 `;
 
-    // ===== CALL RESPONSES API (FORMAT BARU) =====
-    const openaiRes = await fetch("https://api.openai.com/v1/responses", {
+    // ===== CALL RESPONSES API =====
+    const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -57,32 +56,33 @@ Balas sebagai KOJE24 Assistant:
         "OpenAI-Project": projectId,
       },
       body: JSON.stringify({
-        model: "gpt-5.1-mini",
-        input: finalInput,
+        model: "gpt-4.1",   // <── MODEL 100% ADA
+        input: finalInput,  // <── FORMAT BARU
       }),
     });
 
-    if (!openaiRes.ok) {
-      const errorText = await openaiRes.text();
-      console.error("OpenAI API Error:", errorText);
-
+    if (!response.ok) {
+      const err = await response.text();
+      console.error("OpenAI API Error:", err);
       return NextResponse.json(
-        { reply: "Server lagi sibuk. Coba lagi sebentar ya 🙏" },
+        {
+          reply:
+            "Server KOJE24 lagi penuh nih bro 😅. Coba ulang sebentar lagi ya 🙏",
+        },
         { status: 500 }
       );
     }
 
-    const data = await openaiRes.json();
-    const reply = data.output_text ?? "Siap! Ada lagi yang bisa aku bantu?";
+    const data = await response.json();
+    const text = data.output_text || "Siap! Ada lagi yang mau ditanyakan?";
 
-    return NextResponse.json({ reply });
-  } catch (err) {
-    console.error("Fatal Error:", err);
-
+    return NextResponse.json({ reply: text });
+  } catch (e) {
+    console.error("Fatal API Error:", e);
     return NextResponse.json(
       {
         reply:
-          "Maaf, server KOJE24 lagi gangguan. Coba beberapa detik lagi ya 🙏",
+          "Waduh… server lagi gangguan nih. Coba ulang beberapa saat lagi ya 🙏",
       },
       { status: 500 }
     );
