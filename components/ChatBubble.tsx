@@ -30,9 +30,7 @@ export default function ChatBubble() {
       <button
         id="chat-bubble-btn"
         onClick={() => setOpen(true)}
-        style={{
-          boxShadow: "0px 8px 24px rgba(15,163,168,0.32)",
-        }}
+        style={{ boxShadow: "0px 8px 24px rgba(15,163,168,0.32)" }}
         className={`
           fixed bottom-7 right-7 z-50
           w-14 h-14 rounded-full
@@ -47,12 +45,8 @@ export default function ChatBubble() {
 
       <style jsx global>{`
         @keyframes floatingBubble {
-          0%, 100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-6px);
-          }
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
         }
       `}</style>
     </>
