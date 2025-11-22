@@ -27,7 +27,6 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
     rating: 5,
     varian: "",
     img: "",
-    // 🔒 default: semua testimoni baru TIDAK langsung tampil
     active: "false",
     showOnHome: "false",
   })
@@ -50,10 +49,11 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
     setHoverRating(null)
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target
 
-    // khusus rating → number
     if (name === "rating") {
       setForm((prev) => ({ ...prev, rating: Number(value) }))
     } else {
@@ -64,21 +64,12 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
   const validate = () => {
     const newErrors: Record<string, string> = {}
 
-    if (!form.nama || form.nama.trim().length < 2) {
-      newErrors.nama = "Nama minimal 2 karakter"
-    }
-    if (!form.kota || form.kota.trim().length < 2) {
-      newErrors.kota = "Kota minimal 2 karakter"
-    }
-    if (!form.pesan || form.pesan.trim().length < 10) {
-      newErrors.pesan = "Ceritakan pengalamanmu minimal 10 karakter"
-    }
-    if (!form.varian) {
-      newErrors.varian = "Pilih salah satu varian"
-    }
-    if (form.rating < 1 || form.rating > 5) {
-      newErrors.rating = "Rating antara 1 sampai 5"
-    }
+    if (!form.nama || form.nama.trim().length < 2) newErrors.nama = "Nama minimal 2 karakter"
+    if (!form.kota || form.kota.trim().length < 2) newErrors.kota = "Kota minimal 2 karakter"
+    if (!form.pesan || form.pesan.trim().length < 10)
+      newErrors.pesan = "Minimal 10 karakter agar pengalamanmu lebih bermakna"
+    if (!form.varian) newErrors.varian = "Pilih varian"
+    if (form.rating < 1 || form.rating > 5) newErrors.rating = "Rating 1–5"
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -88,13 +79,22 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
     e.preventDefault()
     setStatusMsg(null)
 
-    // anti spam: tunggu 8 detik antar submit
+    // anti-spam
     if (lastSubmit && Date.now() - lastSubmit < 8000) {
-      setStatusMsg("Tunggu sebentar sebelum mengirim testimoni lagi ya 😊")
+      setStatusMsg("Tunggu sebentar sebelum mengirim lagi ya 🙏")
       return
     }
 
     if (!validate()) return
+
+    // ⭐ LOGIKA OTOMATIS (yang kita sepakati)
+    if (form.rating <= 3) {
+      form.active = "false"
+      form.showOnHome = "false"
+    } else {
+      form.active = "true"
+      form.showOnHome = "true"
+    }
 
     try {
       setSending(true)
@@ -105,21 +105,20 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
         body: JSON.stringify(form),
       })
 
-      if (!res.ok) {
-        throw new Error("Gagal mengirim testimoni")
-      }
+      if (!res.ok) throw new Error("Gagal submit")
 
       setLastSubmit(Date.now())
-      setStatusMsg("Terima kasih! Testimoni kamu sudah kami terima dan akan ditinjau dulu 🙌")
+      setStatusMsg("Terima kasih! Testimoni kamu sudah kami terima 🙌")
+
       onSuccess?.()
-      // kasih sedikit delay biar user lihat teks sukses
+
       setTimeout(() => {
         setShow(false)
         resetForm()
       }, 900)
     } catch (err) {
       console.error(err)
-      setStatusMsg("Ups, ada kendala saat mengirim. Coba lagi sebentar lagi ya 🙏")
+      setStatusMsg("Ups! Ada kendala, coba lagi ya 🙏")
     } finally {
       setSending(false)
     }
@@ -140,24 +139,21 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
       </button>
 
       {show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-[90%] max-w-md p-6 relative shadow-xl mx-auto
-                          animate-[fadeIn_0.2s_ease-out]">
-            {/* tombol close */}
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl w-[90%] max-w-md p-6 relative shadow-xl animate-[fadeIn_0.2s_ease]">
+
             <button
               onClick={() => setShow(false)}
               className="absolute right-4 top-3 text-gray-400 hover:text-gray-600 text-xl"
-              type="button"
             >
               ✕
             </button>
 
             <h3 className="text-xl font-semibold mb-1 text-[#0B4B50]">Tulis Testimoni Kamu 💬</h3>
-            <p className="text-xs text-gray-500 mb-4">
-              Testimoni baru akan kami review dulu sebelum tampil di halaman utama.
-            </p>
+            <p className="text-xs text-gray-500 mb-4">Rating rendah otomatis tidak ditampilkan.</p>
 
             <form onSubmit={handleSubmit} className="space-y-3">
+
               {/* Nama + Kota */}
               <div className="flex gap-2">
                 <div className="flex-1">
@@ -167,10 +163,11 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
                     onChange={handleChange}
                     required
                     placeholder="Nama"
-                    className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0FA3A8]"
+                    className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm"
                   />
-                  {errors.nama && <p className="text-xs text-red-500 mt-1">{errors.nama}</p>}
+                  {errors.nama && <p className="text-xs text-red-500">{errors.nama}</p>}
                 </div>
+
                 <div className="flex-1">
                   <input
                     name="kota"
@@ -178,9 +175,9 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
                     onChange={handleChange}
                     required
                     placeholder="Kota"
-                    className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0FA3A8]"
+                    className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm"
                   />
-                  {errors.kota && <p className="text-xs text-red-500 mt-1">{errors.kota}</p>}
+                  {errors.kota && <p className="text-xs text-red-500">{errors.kota}</p>}
                 </div>
               </div>
 
@@ -191,10 +188,10 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
                   value={form.pesan}
                   onChange={handleChange}
                   required
-                  placeholder="Ceritakan pengalamanmu setelah minum KOJE24…"
-                  className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm min-h-[80px] focus:outline-none focus:ring-1 focus:ring-[#0FA3A8]"
+                  placeholder="Ceritakan pengalamanmu…"
+                  className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm min-h-[80px]"
                 />
-                {errors.pesan && <p className="text-xs text-red-500 mt-1">{errors.pesan}</p>}
+                {errors.pesan && <p className="text-xs text-red-500">{errors.pesan}</p>}
               </div>
 
               {/* Varian + Rating */}
@@ -205,7 +202,7 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
                     value={form.varian}
                     onChange={handleChange}
                     required
-                    className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0FA3A8]"
+                    className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm"
                   >
                     <option value="">Pilih Varian</option>
                     <option>Green Detox</option>
@@ -215,30 +212,28 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
                     <option>Carrot Boost</option>
                     <option>Ginger Shot</option>
                   </select>
-                  {errors.varian && <p className="text-xs text-red-500 mt-1">{errors.varian}</p>}
+                  {errors.varian && <p className="text-xs text-red-500">{errors.varian}</p>}
                 </div>
 
                 {/* Rating bintang */}
-                <div className="flex flex-col items-start">
+                <div className="flex flex-col">
                   <span className="text-xs text-gray-500 mb-1">Rating</span>
                   <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
+                    {[1, 2, 3, 4, 5].map((s) => (
                       <button
-                        key={star}
+                        key={s}
                         type="button"
-                        onMouseEnter={() => setHoverRating(star)}
+                        onMouseEnter={() => setHoverRating(s)}
                         onMouseLeave={() => setHoverRating(null)}
-                        onClick={() => setForm((prev) => ({ ...prev, rating: star }))}
-                        className="text-lg transition transform hover:scale-110"
+                        onClick={() => setForm((prev) => ({ ...prev, rating: s }))}
+                        className="text-lg transition hover:scale-110"
                       >
-                        <span className={star <= currentRating ? "text-yellow-400" : "text-gray-300"}>
+                        <span className={s <= currentRating ? "text-yellow-400" : "text-gray-300"}>
                           ★
                         </span>
                       </button>
                     ))}
-                    <span className="ml-1 text-xs text-gray-500">{currentRating}/5</span>
                   </div>
-                  {errors.rating && <p className="text-xs text-red-500 mt-1">{errors.rating}</p>}
                 </div>
               </div>
 
@@ -248,8 +243,8 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
                   name="img"
                   value={form.img}
                   onChange={handleChange}
-                  placeholder="URL foto (opsional, misalnya dari Instagram)"
-                  className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0FA3A8]"
+                  placeholder="URL foto (opsional)"
+                  className="w-full border border-[#e6eeee] rounded-lg p-2 text-sm"
                 />
                 {form.img && (
                   <div className="mt-2 flex items-center gap-2">
@@ -258,22 +253,18 @@ export default function TulisTestimoniForm({ onSuccess }: { onSuccess?: () => vo
                       src={form.img}
                       alt="Preview"
                       className="w-10 h-10 rounded-md object-cover border border-[#e6eeee]"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none"
-                      }}
+                      onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
                     />
                   </div>
                 )}
               </div>
 
-              {/* status & submit */}
-              {statusMsg && <p className="text-xs text-center text-gray-600 mt-1">{statusMsg}</p>}
+              {statusMsg && <p className="text-xs text-center text-gray-600">{statusMsg}</p>}
 
               <button
                 type="submit"
                 disabled={sending}
-                className="w-full bg-[#0FA3A8] text-white rounded-full py-2 font-semibold text-sm mt-1
-                           disabled:opacity-70 disabled:cursor-not-allowed hover:bg-[#0c8c91] transition"
+                className="w-full bg-[#0FA3A8] text-white rounded-full py-2 font-semibold text-sm mt-1 disabled:opacity-60"
               >
                 {sending ? "Mengirim..." : "Kirim Testimoni"}
               </button>
