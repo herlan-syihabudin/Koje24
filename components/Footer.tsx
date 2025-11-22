@@ -23,7 +23,8 @@ export default function Footer() {
       </div>
 
       {/* 🧩 Main Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 md:gap-8 mb-12 text-gray-300 relative z-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 md:gap-8 mb-12 text-gray-300 relative z-10">
+        
         {/* 🔹 Brand Info */}
         <div>
           <div className="flex items-center gap-3 mb-4">
@@ -51,29 +52,36 @@ export default function Footer() {
         <div>
           <h5 className="font-semibold text-white mb-3">Menu</h5>
           <ul className="space-y-2 text-sm">
+            <li><a href="#produk" className="hover:text-[#E8C46B] transition-colors duration-300">Produk</a></li>
+            <li><a href="#about" className="hover:text-[#E8C46B] transition-colors duration-300">Tentang KOJE24</a></li>
+            <li><a href="#langganan" className="hover:text-[#E8C46B] transition-colors duration-300">Langganan Paket</a></li>
+            <li><a href="#testimoni" className="hover:text-[#E8C46B] transition-colors duration-300">Testimoni</a></li>
+            <li><a href="/bantuan" className="hover:text-[#E8C46B] transition-colors duration-300">Pusat Bantuan</a></li>
+          </ul>
+        </div>
+
+        {/* 🔹 Bantuan KOJE24 Assistant */}
+        <div>
+          <h5 className="font-semibold text-white mb-3">Butuh Bantuan?</h5>
+          <ul className="space-y-2 text-sm">
             <li>
-              <a href="#produk" className="hover:text-[#E8C46B] transition-colors duration-300">
-                Produk
+              <button
+                onClick={() =>
+                  window.dispatchEvent(new CustomEvent("open-koje24"))
+                }
+                className="hover:text-[#E8C46B] transition-colors duration-300"
+              >
+                KOJE24 Assistant (Chat Cepat)
+              </button>
+            </li>
+            <li>
+              <a href="/bantuan" className="hover:text-[#E8C46B] transition-colors duration-300">
+                FAQ & Informasi Bantuan
               </a>
             </li>
             <li>
-              <a href="#about" className="hover:text-[#E8C46B] transition-colors duration-300">
-                Tentang KOJE24
-              </a>
-            </li>
-            <li>
-              <a href="#langganan" className="hover:text-[#E8C46B] transition-colors duration-300">
-                Langganan Paket
-              </a>
-            </li>
-            <li>
-              <a href="#testimoni" className="hover:text-[#E8C46B] transition-colors duration-300">
-                Testimoni
-              </a>
-            </li>
-            <li>
-              <a href="#faq" className="hover:text-[#E8C46B] transition-colors duration-300">
-                FAQ
+              <a href="mailto:info@koje24.id" className="hover:text-[#E8C46B] transition-colors duration-300">
+                Email Support
               </a>
             </li>
           </ul>
