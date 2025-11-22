@@ -37,7 +37,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      id="chat-window"  // ⭐ FIX PALING PENTING
+      id="chat-window"
       className="fixed bottom-24 right-7 z-50 w-[320px] md:w-[360px] bg-white rounded-3xl shadow-2xl border border-[#e9f4f4] overflow-hidden animate-chatFadeIn"
     >
       {/* Header */}
@@ -84,7 +84,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
         </button>
       </div>
 
-      {/* Animasi unik supaya gak tabrakan */}
+      {/* Animasi aman */}
       <style jsx global>{`
         @keyframes chatFadeIn {
           from {
