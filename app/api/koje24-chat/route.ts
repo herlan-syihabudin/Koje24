@@ -98,7 +98,7 @@ Balas sebagai KOJE24 Assistant:
         "OpenAI-Project": projectId,
       },
       body: JSON.stringify({
-        model: "gpt-5.1",
+        model: "gpt-4.1-mini",
         input: finalInput,
       }),
     });
