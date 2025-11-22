@@ -2,7 +2,17 @@
 
 import { useEffect, useState, FormEvent } from "react"
 import { motion } from "framer-motion"
-import { Search, User, ShoppingBag, CreditCard, Truck, RefreshCcw, Percent, MessageCircle, HelpCircle } from "lucide-react"
+import {
+  Search,
+  User,
+  ShoppingBag,
+  CreditCard,
+  Truck,
+  RefreshCcw,
+  Percent,
+  MessageCircle,
+  HelpCircle,
+} from "lucide-react"
 
 type Topic = {
   id: string
@@ -45,7 +55,7 @@ export default function PusatBantuanPage() {
   const [query, setQuery] = useState("")
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0)
 
-  // Tentukan salam berdasarkan waktu lokal user (WIB kira-kira sama, cukup client-side)
+  // Greeting otomatis
   useEffect(() => {
     const now = new Date()
     const hour = now.getHours()
@@ -56,40 +66,34 @@ export default function PusatBantuanPage() {
     else setGreeting("Malam")
   }, [])
 
+  // 🔥 Trigger buka chat KOJE24 Assistant
   function handleAsk(e: FormEvent) {
-  e.preventDefault()
-  const trimmed = query.trim()
-  if (!trimmed) return
+    e.preventDefault()
+    const trimmed = query.trim()
+    if (!trimmed) return
 
-  // 🔥 Trigger untuk buka KOJE24 Assistant
-  window.dispatchEvent(
-    new CustomEvent("open-koje24", { detail: trimmed })
-  )
+    window.dispatchEvent(
+      new CustomEvent("open-koje24", { detail: trimmed })
+    )
 
-  // optional bersihin input
-  setQuery("")
-}
-
-    // 👉 TEMPAT MASUK BOT
-    // Di sini nanti lu sambungin ke KOJE24 Assistant.
-    // Misal:
-    // window.KOJE24Assistant?.open(trimmed)
     console.log("Tanya KOJE24:", trimmed)
 
-    // optional: clear / biarin isi query-nya
+    setQuery("")
   }
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#f5fbfb] to-white">
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-12">
-        {/* Breadcrumb kecil */}
+
+        {/* Breadcrumb */}
         <div className="inline-flex items-center gap-2 rounded-full bg-white/80 border border-[#d7ecec] px-4 py-1 text-xs font-medium text-[#0b4b50] shadow-sm mb-6">
           <span className="h-2 w-2 rounded-full bg-[#0FA3A8]" />
           Pusat Bantuan KOJE24
         </div>
 
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1.1fr)] items-start">
-          {/* Kolom kiri: greeting + search */}
+
+          {/* ------------------ KIRI ------------------ */}
           <div>
             <motion.h1
               initial={{ opacity: 0, y: 12 }}
@@ -105,10 +109,11 @@ export default function PusatBantuanPage() {
               jawab secepat mungkin.
             </p>
 
-            {/* Search bar = pintu ke bot, tanpa kata "chatbot" */}
+            {/* Search Bar */}
             <form onSubmit={handleAsk} className="relative mb-4">
               <div className="flex items-center gap-3 rounded-full bg-white border border-[#d7ecec] px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-[#0FA3A8]/40">
                 <Search className="h-4 w-4 text-slate-400" />
+
                 <input
                   type="text"
                   value={query}
@@ -116,6 +121,7 @@ export default function PusatBantuanPage() {
                   className="flex-1 bg-transparent text-sm sm:text-base outline-none placeholder:text-slate-400"
                   placeholder="Tulis pertanyaanmu di sini, misalnya: “Jus yang cocok untuk maag apa?”"
                 />
+
                 <button
                   type="submit"
                   className="hidden sm:inline-flex items-center justify-center rounded-full bg-[#0FA3A8] px-4 py-2 text-xs font-semibold text-white shadow hover:bg-[#0b8f93] transition"
@@ -123,7 +129,8 @@ export default function PusatBantuanPage() {
                   Tanya KOJE24
                 </button>
               </div>
-              {/* Tombol untuk mobile */}
+
+              {/* Mobile Button */}
               <button
                 type="submit"
                 className="sm:hidden mt-3 w-full rounded-full bg-[#0FA3A8] py-2.5 text-xs font-semibold text-white shadow hover:bg-[#0b8f93] transition"
@@ -133,11 +140,11 @@ export default function PusatBantuanPage() {
             </form>
 
             <p className="text-[11px] sm:text-xs text-slate-500">
-              Online • Jawaban cepat dalam hitungan detik (tanpa perlu menyebut kata “chatbot” 🤫)
+              Online • Jawaban cepat dalam hitungan detik
             </p>
           </div>
 
-          {/* Kolom kanan: rekomendasi cepat (seperti Tokped) */}
+          {/* ------------------ KANAN ------------------ */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -148,14 +155,13 @@ export default function PusatBantuanPage() {
               Pertanyaan yang paling sering ditanyakan
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 mb-4">
-              Misalnya: “Yang cocok buat maag apa?”, “Kalau buat imun harian?”, atau “Cara order paket langganan
-              gimana?”.
+              Misalnya: “Yang cocok buat maag apa?”, “Kalau buat imun harian?”, atau “Cara order paket langganan gimana?”.
             </p>
 
             <ul className="space-y-2 mb-4 text-xs sm:text-sm text-slate-600">
-              <li>• Pilih varian sesuai kebutuhan harianmu (Detox, Imun, Maag, dll).</li>
-              <li>• Cek jadwal kirim & area layanan sebelum checkout.</li>
-              <li>• Chat KOJE24 kalau butuh rekomendasi personal.</li>
+              <li>• Pilih varian sesuai kebutuhan harian.</li>
+              <li>• Cek jadwal kirim sebelum checkout.</li>
+              <li>• Chat KOJE24 untuk rekomendasi personal.</li>
             </ul>
 
             <div className="flex flex-wrap gap-2 text-[11px] sm:text-xs">
@@ -173,14 +179,14 @@ export default function PusatBantuanPage() {
         </div>
       </section>
 
-      {/* Grid Topik seperti Tokped tapi visual KOJE24 */}
+      {/* ------------------ GRID TOPIK ------------------ */}
       <section className="border-t border-[#e1f0f0] bg-white/60">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <h2 className="text-lg sm:text-xl font-semibold text-[#0b4b50] mb-1">
             Pilih topik sesuai kendalamu
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 mb-6">
-            Supaya bantuan lebih cepat, mulai dari kategori yang paling mendekati pertanyaanmu.
+            Mulai dari kategori yang paling sesuai dengan kebutuhanmu.
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -190,7 +196,6 @@ export default function PusatBantuanPage() {
                 <button
                   key={topic.id}
                   className="group flex flex-col items-start gap-2 rounded-2xl bg-white border border-[#d7ecec] px-4 py-4 text-left shadow-xs hover:shadow-md hover:border-[#0FA3A8]/50 transition"
-                  type="button"
                 >
                   <span className="inline-flex items-center justify-center rounded-xl bg-[#f0fbfb] p-2 mb-1">
                     <Icon className="h-4 w-4 text-[#0FA3A8]" />
@@ -206,14 +211,16 @@ export default function PusatBantuanPage() {
         </div>
       </section>
 
-      {/* FAQ tetap ada di bawah */}
+      {/* ------------------ FAQ ------------------ */}
       <section className="bg-gradient-to-b from-white to-[#f5fbfb] border-t border-[#e1f0f0]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+
           <h2 className="text-xl sm:text-2xl font-semibold text-[#0b4b50] text-center mb-2">
             Pertanyaan yang Sering Diajukan
           </h2>
+
           <p className="text-xs sm:text-sm text-slate-600 text-center mb-8">
-            Temukan jawaban seputar KOJE24 — dari penyimpanan, manfaat, sampai cara pemesanan 🍃
+            Temukan jawaban seputar KOJE24 — penyimpanan, manfaat, & cara pemesanan 🍃
           </p>
 
           <div className="space-y-3">
@@ -232,10 +239,12 @@ export default function PusatBantuanPage() {
                     <span className="text-sm sm:text-base font-medium text-[#0b4b50]">
                       {faq.question}
                     </span>
+
                     <span className="ml-4 flex h-6 w-6 items-center justify-center rounded-full bg-[#f0fbfb] text-[#0b4b50] text-xs">
                       {isOpen ? "−" : "+"}
                     </span>
                   </button>
+
                   {isOpen && (
                     <div className="px-4 sm:px-5 pb-4 text-xs sm:text-sm text-slate-600">
                       {faq.answer}
@@ -245,6 +254,7 @@ export default function PusatBantuanPage() {
               )
             })}
           </div>
+
         </div>
       </section>
     </main>
