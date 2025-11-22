@@ -11,7 +11,17 @@ export default function SemuaTestimoni() {
       try {
         const res = await fetch("/api/testimonial", { cache: "no-store" })
         const json = await res.json()
-        setData(json.reverse())
+
+        // ⭐ FILTER ACTIVE = TRUE
+        const filtered = json
+          .filter((x: any) =>
+            ["true", "1", "yes", "ya"].includes(
+              String(x.active).trim().toLowerCase()
+            )
+          )
+          .reverse()
+
+        setData(filtered)
       } finally {
         setLoading(false)
       }
