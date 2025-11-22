@@ -1,65 +1,72 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { FaBars, FaTimes, FaWhatsapp } from "react-icons/fa"
-import { ShoppingCart } from "lucide-react"
-import Link from "next/link"
-import { useCartStore } from "@/stores/cartStore"
+import { useState, useEffect } from "react";
+import { FaBars, FaTimes, FaWhatsapp } from "react-icons/fa";
+import { ShoppingCart } from "lucide-react";
+import Link from "next/link";
+import { useCartStore } from "@/stores/cartStore";
+import { useRouter } from "next/navigation";
 
 export default function Header() {
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  const totalQty = useCartStore((state) => state.totalQty)
+  const router = useRouter();
+  const totalQty = useCartStore((state) => state.totalQty);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 60)
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+    const handleScroll = () => setIsScrolled(window.scrollY > 60);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-  /** BODY LOCK FIX — jauh lebih aman */
-  const lockBody = () => {
-    document.body.classList.add("body-lock")
-  }
-  const unlockBody = () => {
-    document.body.classList.remove("body-lock")
-  }
+  // BODY LOCK FIX
+  const lockBody = () => document.body.classList.add("body-lock");
+  const unlockBody = () => document.body.classList.remove("body-lock");
 
   const openMenu = () => {
-    setMenuOpen(true)
-    window.scrollTo({ top: 0 })
-    lockBody()
-  }
+    setMenuOpen(true);
+    window.scrollTo({ top: 0 });
+    lockBody();
+  };
 
   const closeMenu = () => {
-    setMenuOpen(false)
-    setTimeout(unlockBody, 150)
-  }
+    setMenuOpen(false);
+    setTimeout(unlockBody, 150);
+  };
 
-  /** SCROLL OFFSET FIX — lebih presisi */
+  // SMART SCROLL
   const scrollToSection = (href: string) => {
-    const target = document.querySelector(href)
-    if (!target) return
+    const target = document.querySelector(href);
+    if (!target) return;
 
-    const headerOffset = isScrolled ? 78 : 120
-    const y = target.getBoundingClientRect().top + window.scrollY - headerOffset
+    const headerOffset = isScrolled ? 78 : 120;
+    const y = target.getBoundingClientRect().top + window.scrollY - headerOffset;
 
-    window.scrollTo({ top: y, behavior: "smooth" })
-  }
+    window.scrollTo({ top: y, behavior: "smooth" });
+  };
 
   const navClick = (href: string) => {
-    closeMenu()
-    setTimeout(() => scrollToSection(href), 180)
-  }
+    closeMenu();
 
+    // untuk halaman route seperti /bantuan
+    if (href.startsWith("/")) {
+      router.push(href);
+      return;
+    }
+
+    // scroll section
+    setTimeout(() => scrollToSection(href), 180);
+  };
+
+  // ==== NAV ITEM BARU ====
   const navItems = [
     { label: "Produk", href: "#produk" },
     { label: "Tentang KOJE24", href: "#about" },
     { label: "Langganan", href: "#langganan" },
     { label: "Testimoni", href: "#testimoni" },
-    { label: "FAQ", href: "#faq" },
-  ]
+    { label: "Bantuan", href: "/bantuan" }, // <<< sudah ganti dari FAQ
+  ];
 
   return (
     <header
@@ -77,9 +84,9 @@ export default function Header() {
         <Link
           href="/"
           onClick={(e) => {
-            e.preventDefault()
-            closeMenu()
-            window.scrollTo({ top: 0, behavior: "smooth" })
+            e.preventDefault();
+            closeMenu();
+            window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           className={`text-2xl font-playfair font-bold transition-colors duration-500
             ${isScrolled ? "text-[#0B4B50]" : "text-white"}
@@ -105,7 +112,7 @@ export default function Header() {
             </button>
           ))}
 
-          {/* CART ICON */}
+          {/* CART */}
           <button
             aria-label="Buka keranjang"
             className="relative"
@@ -119,6 +126,7 @@ export default function Header() {
             )}
           </button>
 
+          {/* WA BUTTON */}
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
@@ -144,7 +152,7 @@ export default function Header() {
         </button>
       </div>
 
-      {/* MOBILE OVERLAY */}
+      {/* MOBILE MENU */}
       {menuOpen && (
         <div
           className="
@@ -191,5 +199,5 @@ export default function Header() {
         </div>
       )}
     </header>
-  )
+  );
 }
