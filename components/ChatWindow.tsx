@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react"
 import { X, SendHorizonal } from "lucide-react"
 
-export default function ChatWindow({ onClose }) {
+export default function ChatWindow({ onClose }: { onClose: () => void }) {
   const [messages, setMessages] = useState([
     {
       from: "bot",
@@ -21,7 +21,6 @@ export default function ChatWindow({ onClose }) {
     "Testimoni",
   ]
 
-  // auto-scroll every new message
   useEffect(() => {
     chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" })
   }, [messages])
@@ -31,7 +30,6 @@ export default function ChatWindow({ onClose }) {
 
     setMessages((prev) => [...prev, { from: "user", text: input }])
 
-    // Bot auto reply simple placeholders
     setTimeout(() => {
       setMessages((prev) => [
         ...prev,
@@ -43,17 +41,7 @@ export default function ChatWindow({ onClose }) {
   }
 
   return (
-    <div
-      className="
-        fixed bottom-24 right-7 z-50
-        w-[92%] max-w-sm
-        bg-white rounded-3xl shadow-2xl
-        border border-[#e6eeee]/70
-        overflow-hidden
-        animate-fadeIn
-      "
-    >
-      {/* Header */}
+    <div className="fixed bottom-24 right-7 z-50 w-[92%] max-w-sm bg-white rounded-3xl shadow-2xl border border-[#e6eeee]/70 overflow-hidden animate-fadeIn">
       <div className="bg-[#0FA3A8] text-white p-4 flex justify-between items-center">
         <div>
           <h3 className="font-semibold text-lg">KOJE24 Assistant</h3>
@@ -64,11 +52,7 @@ export default function ChatWindow({ onClose }) {
         </button>
       </div>
 
-      {/* Chat Body */}
-      <div
-        ref={chatRef}
-        className="h-80 overflow-y-auto px-4 py-3 space-y-3 bg-[#f7fdfd]"
-      >
+      <div ref={chatRef} className="h-80 overflow-y-auto px-4 py-3 space-y-3 bg-[#f7fdfd]">
         {messages.map((m, i) => (
           <div
             key={i}
@@ -83,14 +67,11 @@ export default function ChatWindow({ onClose }) {
         ))}
       </div>
 
-      {/* Quick Reply */}
       <div className="px-4 py-2 flex gap-2 overflow-x-auto scrollbar-hide">
         {quickReplies.map((q, i) => (
           <button
             key={i}
-            onClick={() =>
-              setMessages((prev) => [...prev, { from: "user", text: q }])
-            }
+            onClick={() => setMessages((prev) => [...prev, { from: "user", text: q }])}
             className="bg-[#eef7f7] border border-[#dceeee] text-[#0B4B50] rounded-full px-3 py-1 text-xs whitespace-nowrap hover:bg-[#e6f3f3]"
           >
             {q}
@@ -98,7 +79,6 @@ export default function ChatWindow({ onClose }) {
         ))}
       </div>
 
-      {/* Input */}
       <div className="border-t border-[#e6eeee] p-3 flex items-center gap-2 bg-white">
         <input
           value={input}
@@ -109,7 +89,7 @@ export default function ChatWindow({ onClose }) {
         />
         <button
           onClick={sendMsg}
-          className="bg-[#0FA3A8] text-white p-2 rounded-full hover:bg-[#0c8c91] transition-all"
+          className="bg-[#0FA3A8] text-white p-2 rounded-full hover:bg-[#0c8c91]"
         >
           <SendHorizonal size={18} />
         </button>
@@ -117,14 +97,8 @@ export default function ChatWindow({ onClose }) {
 
       <style jsx global>{`
         @keyframes fadeIn {
-          0% {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0px);
-          }
+          0% { opacity: 0; transform: translateY(10px); }
+          100% { opacity: 1; transform: translateY(0px); }
         }
       `}</style>
     </div>
