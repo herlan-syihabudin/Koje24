@@ -9,7 +9,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
   ]);
   const [input, setInput] = useState("");
 
-  // FIX: kasih tipe HTMLElement | null
+  // FIX ERROR: wajib tentukan tipe
   const chatRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -29,11 +29,13 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
     setInput("");
 
     setTimeout(() => {
-      const botReply = {
-        from: "bot",
-        text: "Terima kasih! Admin KOJE24 akan segera membantu 😊",
-      };
-      setMessages((m) => [...m, botReply]);
+      setMessages((m) => [
+        ...m,
+        {
+          from: "bot",
+          text: "Terima kasih! Admin KOJE24 akan segera membantu 😊",
+        },
+      ]);
     }, 500);
   };
 
