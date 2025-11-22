@@ -65,7 +65,7 @@ export default function Header() {
     { label: "Tentang KOJE24", href: "#about" },
     { label: "Langganan", href: "#langganan" },
     { label: "Testimoni", href: "#testimoni" },
-    { label: "Bantuan", href: "/bantuan" }, // <<< sudah ganti dari FAQ
+    { label: "Bantuan", href: "/pusat-bantuan" }, // <<< sudah ganti dari FAQ
   ];
 
   return (
