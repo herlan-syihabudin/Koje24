@@ -39,18 +39,31 @@ export default function KOJE24Assistant() {
 
   // Main send
   async function sendMessage(text: string) {
-    const userMsg = { role: "user", content: text }
+  const userMsg = { role: "user", content: text }
 
-    // PUSH DULU state baru (biar messages update)
-    setMessages(prev => {
-      const updated = [...prev, userMsg]
+  // tampilkan dulu di UI
+  setMessages((prev) => [...prev, userMsg])
 
-      // Panggil API di dalam callback agar menggunakan updated messages
-      fetch("/api/koje24-assistant", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: updated })
-      })
+  // Pakai riwayat yang benar (state lama + pesan baru)
+  const history = [...messages, userMsg]
+
+  const res = await fetch("/api/koje24-assistant", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messages: history, // ⬅️ PENTING: bukan messages yang stale
+    }),
+  })
+
+  const data = await res.json()
+
+  const botMsg = {
+    role: "assistant",
+    content: data.reply,
+  }
+
+  setMessages((prev) => [...prev, botMsg])
+}
         .then(res => res.json())
         .then(data => {
           setMessages(p => [...p, { role: "assistant", content: data.reply }])
