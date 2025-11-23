@@ -45,9 +45,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {children}
         </CartProvider>
 
-        {/* ⬇️ KOJE24 Assistant (Auto-hide di semua halaman kecuali Bantuan) */}
-        <KOJE24Assistant />
-
         {/* Smooth Scroll */}
         <script
           dangerouslySetInnerHTML={{
