@@ -190,8 +190,8 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                 )}
 
                 <p className="font-inter text-sm text-gray-700 mb-4 leading-relaxed">
-                  {p.desc}
-                </p>
+  {p.desc ?? p.slogan}
+</p>
 
                 {/* BUTTON AREA */}
                 <div className="flex items-center justify-between mt-auto pt-2 border-t border-[#e6eeee]/60">
