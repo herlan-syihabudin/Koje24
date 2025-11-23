@@ -17,9 +17,9 @@ export const products: Product[] = [
     price: 18000,
     img: "/images/products/golden-detox.png",
     color: "#F4B940",
-    desc: "Kunyit • Wortel • Jahe • Jeruk • Lemon — racikan detoks kuat untuk mendukung metabolisme.",
+    slogan: "Clean Your Body, Boost Your Day.",
     ingredients: ["Kunyit", "Wortel", "Jahe", "Jeruk", "Lemon"],
-    slogan: "Clean Your Body, Boost Your Day."
+    desc: "Detoks kuat untuk mendukung metabolisme & membantu membersihkan tubuh dari dalam.",
   },
   {
     id: "green-revive",
@@ -27,9 +27,9 @@ export const products: Product[] = [
     price: 18000,
     img: "/images/products/green-revive.png",
     color: "#4CAF50",
-    desc: "Pakcoy • Nanas • Timun — segarkan tubuh, bantu hidrasi, dan tingkatkan vitalitas harian.",
+    slogan: "Fresh Green Energy in Every Sip.",
     ingredients: ["Pakcoy", "Nanas", "Timun"],
-    slogan: "Fresh Green Energy in Every Sip."
+    desc: "Memberikan hidrasi, energi hijau, dan rasa segar alami sepanjang hari.",
   },
   {
     id: "sunrise-boost",
@@ -37,9 +37,9 @@ export const products: Product[] = [
     price: 18000,
     img: "/images/products/sunrise-boost.png",
     color: "#FFA024",
-    desc: "Wortel • Apel • Tomat — energi pagi kaya vitamin untuk bangkit lebih kuat.",
+    slogan: "Start Your Day with Natural Power.",
     ingredients: ["Wortel", "Apel", "Tomat"],
-    slogan: "Start Your Day with Natural Power."
+    desc: "Energi pagi kaya vitamin untuk bantu tubuh lebih siap memulai hari.",
   },
   {
     id: "lemongrass-fresh",
@@ -47,9 +47,9 @@ export const products: Product[] = [
     price: 18000,
     img: "/images/products/lemongrass-fresh.png",
     color: "#E6F89A",
-    desc: "Lemon • Serai — rasa segar menenangkan untuk mood lebih stabil dan tubuh terasa ringan.",
+    slogan: "Calm. Fresh. Naturally Bright.",
     ingredients: ["Lemon", "Serai"],
-    slogan: "Calm. Fresh. Naturally Bright."
+    desc: "Rasa segar menenangkan untuk mood lebih stabil dan tubuh terasa lebih ringan.",
   },
   {
     id: "yellow-immunity",
@@ -57,9 +57,9 @@ export const products: Product[] = [
     price: 18000,
     img: "/images/products/yellow-immunity.png",
     color: "#FFE65A",
-    desc: "Nanas • Lemon — vitamin C tinggi untuk bantu perkuat sistem imun secara alami.",
+    slogan: "Stronger Immunity, Brighter Day.",
     ingredients: ["Nanas", "Lemon"],
-    slogan: "Stronger Immunity, Brighter Day."
+    desc: "Vitamin C tinggi yang membantu memperkuat sistem imun secara alami.",
   },
   {
     id: "red-vitality",
@@ -67,16 +67,16 @@ export const products: Product[] = [
     price: 18000,
     img: "/images/products/red-vitality.png",
     color: "#C9253E",
-    desc: "Bit • Nanas • Apel — stamina booster alami untuk aktivitas sepanjang hari.",
+    slogan: "Natural Strength from Within.",
     ingredients: ["Bit", "Nanas", "Apel"],
-    slogan: "Natural Strength from Within."
+    desc: "Booster stamina alami untuk menjaga performa tubuh sepanjang hari.",
   },
   {
     id: "paket-detox-3hari",
     name: "Paket Detox 3 Hari",
-    desc: "6 botol/hari kombinasi varian sehat untuk detoks total selama 3 hari.",
     price: 320000,
     img: "/image/paket-detox.jpg",
-    isPackage: true
-  }
+    isPackage: true,
+    desc: "6 botol/hari kombinasi varian sehat untuk detoks total selama 3 hari.",
+  },
 ]
