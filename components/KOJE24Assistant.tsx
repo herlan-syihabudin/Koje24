@@ -6,64 +6,61 @@ export default function KOJE24Assistant() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<any[]>([])
   const [input, setInput] = useState("")
-  const [active, setActive] = useState(false) // muncul hanya di halaman /bantuan
+  const [active, setActive] = useState(false)
 
-  // =============================
-  // 🔥 BIKIN MUNCUL HANYA DI /bantuan
-  // =============================
+  // Only show on /bantuan
   useEffect(() => {
     if (typeof window === "undefined") return
-    const path = window.location.pathname
-    setActive(path.includes("bantuan"))
+    setActive(window.location.pathname.includes("/bantuan"))
   }, [])
 
-  if (!active) return null // ⬅️ jangan render kalau bukan halaman bantuan
+  if (!active) return null
 
-  // =============================
-  // 🔥 Listener event dari halaman bantuan
-  // =============================
+  // Listen from bantuan page
   useEffect(() => {
     function handler(e: any) {
       const first = e.detail
       setOpen(true)
       if (first) sendMessage(first)
     }
-
     window.addEventListener("open-koje24", handler)
     return () => window.removeEventListener("open-koje24", handler)
   }, [])
 
-  // =============================
-  // 🔥 Auto Reset 2 Menit
-  // =============================
+  // Auto Reset 2 Minutes
   useEffect(() => {
     if (!open) return
-
     const timer = setTimeout(() => {
       setMessages([])
       setOpen(false)
-    }, 2 * 60 * 1000) // 2 menit
-
+    }, 120000)
     return () => clearTimeout(timer)
   }, [open])
 
-  // =============================
-  // 🔥 Kirim pesan ke API backend
-  // =============================
+  // Main send
   async function sendMessage(text: string) {
     const userMsg = { role: "user", content: text }
-    setMessages((prev) => [...prev, userMsg])
 
-    const res = await fetch("/api/koje24-assistant", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [...messages, userMsg] }),
+    // PUSH DULU state baru (biar messages update)
+    setMessages(prev => {
+      const updated = [...prev, userMsg]
+
+      // Panggil API di dalam callback agar menggunakan updated messages
+      fetch("/api/koje24-assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: updated })
+      })
+        .then(res => res.json())
+        .then(data => {
+          setMessages(p => [...p, { role: "assistant", content: data.reply }])
+        })
+        .catch(() => {
+          setMessages(p => [...p, { role: "assistant", content: "Lagi gangguan server bro 🙏" }])
+        })
+
+      return updated
     })
-
-    const data = await res.json()
-
-    const botMsg = { role: "assistant", content: data.reply }
-    setMessages((prev) => [...prev, botMsg])
   }
 
   function submit(e: any) {
@@ -73,12 +70,8 @@ export default function KOJE24Assistant() {
     setInput("")
   }
 
-  // =============================
-  // 🔥 UI Chat
-  // =============================
   return (
     <>
-      {/* Floating Button */}
       <button
         className="fixed bottom-6 right-6 bg-[#0FA3A8] text-white px-4 py-2 rounded-full shadow-lg z-[200]"
         onClick={() => setOpen(true)}
@@ -90,22 +83,18 @@ export default function KOJE24Assistant() {
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end justify-center z-[300]">
           <div className="w-full max-w-md bg-white rounded-t-2xl shadow-xl p-4 flex flex-col">
 
-            {/* Header */}
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-semibold text-[#0b4b50]">
-                KOJE24 Assistant
-              </h2>
+              <h2 className="text-lg font-semibold text-[#0b4b50]">KOJE24 Assistant</h2>
               <button
                 onClick={() => {
+                  setMessages([])
                   setOpen(false)
-                  setMessages([]) // RESET SAAT DITUTUP
                 }}
               >
                 ✕
               </button>
             </div>
 
-            {/* Chat Box */}
             <div className="h-80 overflow-y-auto flex flex-col gap-3 p-1">
               {messages.map((m, i) => (
                 <div
@@ -121,18 +110,14 @@ export default function KOJE24Assistant() {
               ))}
             </div>
 
-            {/* Input */}
             <form onSubmit={submit} className="mt-3 flex gap-2">
               <input
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={e => setInput(e.target.value)}
                 className="flex-1 border border-[#cdeaea] rounded-full px-4 py-2 text-sm"
                 placeholder="Tulis pesan..."
               />
-              <button
-                type="submit"
-                className="bg-[#0FA3A8] text-white px-4 py-2 rounded-full"
-              >
+              <button type="submit" className="bg-[#0FA3A8] text-white px-4 py-2 rounded-full">
                 Kirim
               </button>
             </form>
