@@ -20,15 +20,20 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // BODY LOCK FIX 100%
+  // BODY LOCK
   const lockBody = () => {
     document.body.classList.add("body-lock");
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
+    document.body.style.background = "transparent";
   };
 
   const unlockBody = () => {
     document.body.classList.remove("body-lock");
     document.body.style.overflow = "auto";
+    document.body.style.position = "static";
+    document.body.style.background = "transparent";
   };
 
   const openMenu = () => {
@@ -39,7 +44,7 @@ export default function Header() {
 
   const closeMenu = () => {
     setMenuOpen(false);
-    unlockBody(); // langsung, tanpa delay
+    unlockBody();
   };
 
   // SMART SCROLL
@@ -56,20 +61,14 @@ export default function Header() {
   const navClick = (href: string) => {
     closeMenu();
 
-    // FULL CLEANUP – anti overlay ghost
-    unlockBody();
-
-    // internal page
     if (href.startsWith("/")) {
       router.push(href);
       return;
     }
 
-    // scroll section
-    setTimeout(() => scrollToSection(href), 150);
+    setTimeout(() => scrollToSection(href), 180);
   };
 
-  // NAV ITEM
   const navItems = [
     { label: "Produk", href: "#produk" },
     { label: "Tentang KOJE24", href: "#about" },
@@ -89,7 +88,7 @@ export default function Header() {
       )}
 
       <div className="max-w-7xl mx-auto flex items-center justify-between py-4 px-5 md:px-10">
-        
+
         {/* LOGO */}
         <Link
           href="/"
