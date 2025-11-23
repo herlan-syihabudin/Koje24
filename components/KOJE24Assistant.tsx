@@ -8,7 +8,7 @@ export default function KOJE24Assistant() {
   const [input, setInput] = useState("")
   const [active, setActive] = useState(false)
 
-  // === MUNCUL HANYA DI /bantuan ===
+  // Only show on /bantuan
   useEffect(() => {
     if (typeof window === "undefined") return
     setActive(window.location.pathname.includes("/bantuan"))
@@ -16,7 +16,7 @@ export default function KOJE24Assistant() {
 
   if (!active) return null
 
-  // === LISTENER DARI SEARCH BAR ===
+  // Listener dari halaman bantuan
   useEffect(() => {
     function handler(e: any) {
       const first = e.detail
@@ -26,9 +26,9 @@ export default function KOJE24Assistant() {
 
     window.addEventListener("open-koje24", handler)
     return () => window.removeEventListener("open-koje24", handler)
-  }, [messages])
+  }, [])
 
-  // === AUTO RESET 2 MENIT ===
+  // Auto Reset 2 Menit
   useEffect(() => {
     if (!open) return
     const timer = setTimeout(() => {
@@ -38,14 +38,14 @@ export default function KOJE24Assistant() {
     return () => clearTimeout(timer)
   }, [open])
 
-  // === FUNGSI UTAMA KIRIM PESAN ===
+  // MAIN SEND MESSAGE FUNCTION
   async function sendMessage(text: string) {
     const userMsg = { role: "user", content: text }
 
-    // tampilkan dulu di UI
-    setMessages((prev) => [...prev, userMsg])
+    // Tampilkan dulu di UI
+    setMessages(prev => [...prev, userMsg])
 
-    // hindari state stale
+    // Buat riwayat yang benar
     const history = [...messages, userMsg]
 
     try {
@@ -59,14 +59,14 @@ export default function KOJE24Assistant() {
 
       const botMsg = {
         role: "assistant",
-        content: data.reply || "Siap bro 👍",
+        content: data.reply,
       }
 
-      setMessages((prev) => [...prev, botMsg])
+      setMessages(prev => [...prev, botMsg])
     } catch (err) {
-      setMessages((prev) => [
+      setMessages(prev => [
         ...prev,
-        { role: "assistant", content: "Server lagi gangguan bro 🙏" },
+        { role: "assistant", content: "Server error kak 🙏" },
       ])
     }
   }
@@ -78,7 +78,6 @@ export default function KOJE24Assistant() {
     setInput("")
   }
 
-  // === UI CHATBOX ===
   return (
     <>
       {/* Floating Button */}
@@ -95,7 +94,9 @@ export default function KOJE24Assistant() {
 
             {/* Header */}
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-semibold text-[#0b4b50]">KOJE24 Assistant</h2>
+              <h2 className="text-lg font-semibold text-[#0b4b50]">
+                KOJE24 Assistant
+              </h2>
               <button
                 onClick={() => {
                   setMessages([])
@@ -106,7 +107,7 @@ export default function KOJE24Assistant() {
               </button>
             </div>
 
-            {/* Chat Messages */}
+            {/* Chat Box */}
             <div className="h-80 overflow-y-auto flex flex-col gap-3 p-1">
               {messages.map((m, i) => (
                 <div
@@ -126,7 +127,7 @@ export default function KOJE24Assistant() {
             <form onSubmit={submit} className="mt-3 flex gap-2">
               <input
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={e => setInput(e.target.value)}
                 className="flex-1 border border-[#cdeaea] rounded-full px-4 py-2 text-sm"
                 placeholder="Tulis pesan..."
               />
