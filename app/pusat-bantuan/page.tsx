@@ -14,6 +14,8 @@ import {
   HelpCircle,
 } from "lucide-react"
 
+import KOJE24Assistant from "@/components/KOJE24Assistant"   // ⬅️ TAMBAHKAN INI
+
 type Topic = {
   id: string
   label: string
@@ -66,7 +68,7 @@ export default function PusatBantuanPage() {
     else setGreeting("Malam")
   }, [])
 
-  // 🔥 Trigger buka chat KOJE24 Assistant
+  // Trigger buka chat
   function handleAsk(e: FormEvent) {
     e.preventDefault()
     const trimmed = query.trim()
@@ -75,8 +77,6 @@ export default function PusatBantuanPage() {
     window.dispatchEvent(
       new CustomEvent("open-koje24", { detail: trimmed })
     )
-
-    console.log("Tanya KOJE24:", trimmed)
 
     setQuery("")
   }
@@ -92,8 +92,8 @@ export default function PusatBantuanPage() {
         </div>
 
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1.1fr)] items-start">
-
-          {/* ------------------ KIRI ------------------ */}
+          
+          {/* KIRI */}
           <div>
             <motion.h1
               initial={{ opacity: 0, y: 12 }}
@@ -105,8 +105,7 @@ export default function PusatBantuanPage() {
             </motion.h1>
 
             <p className="text-sm sm:text-base text-slate-600 max-w-xl mb-6">
-              Ketik pertanyaanmu seputar varian jus, manfaat, pemesanan, pengiriman, atau penyimpanan. KOJE24 akan bantu
-              jawab secepat mungkin.
+              Ketik pertanyaanmu seputar varian jus, manfaat, pemesanan, pengiriman, atau penyimpanan.
             </p>
 
             {/* Search Bar */}
@@ -119,7 +118,7 @@ export default function PusatBantuanPage() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   className="flex-1 bg-transparent text-sm sm:text-base outline-none placeholder:text-slate-400"
-                  placeholder="Tulis pertanyaanmu di sini, misalnya: “Jus yang cocok untuk maag apa?”"
+                  placeholder="Tulis pertanyaanmu…"
                 />
 
                 <button
@@ -130,7 +129,7 @@ export default function PusatBantuanPage() {
                 </button>
               </div>
 
-              {/* Mobile Button */}
+              {/* Mobile */}
               <button
                 type="submit"
                 className="sm:hidden mt-3 w-full rounded-full bg-[#0FA3A8] py-2.5 text-xs font-semibold text-white shadow hover:bg-[#0b8f93] transition"
@@ -144,7 +143,7 @@ export default function PusatBantuanPage() {
             </p>
           </div>
 
-          {/* ------------------ KANAN ------------------ */}
+          {/* KANAN */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -154,9 +153,6 @@ export default function PusatBantuanPage() {
             <h2 className="text-sm sm:text-base font-semibold text-[#0b4b50] mb-2">
               Pertanyaan yang paling sering ditanyakan
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600 mb-4">
-              Misalnya: “Yang cocok buat maag apa?”, “Kalau buat imun harian?”, atau “Cara order paket langganan gimana?”.
-            </p>
 
             <ul className="space-y-2 mb-4 text-xs sm:text-sm text-slate-600">
               <li>• Pilih varian sesuai kebutuhan harian.</li>
@@ -179,15 +175,12 @@ export default function PusatBantuanPage() {
         </div>
       </section>
 
-      {/* ------------------ GRID TOPIK ------------------ */}
+      {/* GRID TOPIK */}
       <section className="border-t border-[#e1f0f0] bg-white/60">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <h2 className="text-lg sm:text-xl font-semibold text-[#0b4b50] mb-1">
             Pilih topik sesuai kendalamu
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 mb-6">
-            Mulai dari kategori yang paling sesuai dengan kebutuhanmu.
-          </p>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {topics.map((topic) => {
@@ -211,17 +204,12 @@ export default function PusatBantuanPage() {
         </div>
       </section>
 
-      {/* ------------------ FAQ ------------------ */}
+      {/* FAQ */}
       <section className="bg-gradient-to-b from-white to-[#f5fbfb] border-t border-[#e1f0f0]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
-
           <h2 className="text-xl sm:text-2xl font-semibold text-[#0b4b50] text-center mb-2">
             Pertanyaan yang Sering Diajukan
           </h2>
-
-          <p className="text-xs sm:text-sm text-slate-600 text-center mb-8">
-            Temukan jawaban seputar KOJE24 — penyimpanan, manfaat, & cara pemesanan 🍃
-          </p>
 
           <div className="space-y-3">
             {faqs.map((faq, idx) => {
@@ -254,9 +242,11 @@ export default function PusatBantuanPage() {
               )
             })}
           </div>
-
         </div>
       </section>
+
+      {/* ================= CHATBOT DI SINI ================= */}
+      <KOJE24Assistant />
     </main>
   )
 }
