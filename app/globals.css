@@ -201,3 +201,49 @@ td { font-size: 13px; color: #222; }
 
 /* === GRID FIX === */
 .grid { min-width: 0; }
+
+@keyframes slide-up-high {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up-high {
+  animation: slide-up-high 0.35s cubic-bezier(.16,.68,.43,1.01);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  background: #0FA3A8;
+  border-radius: 50%;
+  animation: bubble 1s infinite;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bubble {
+  0% {
+    transform: translateY(0);
+    opacity: .4;
+  }
+  50% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: .4;
+  }
+}
+
