@@ -9,22 +9,18 @@ export default function KOJE24Assistant() {
   const [active, setActive] = useState(false)
 
   // ==========================================================
-  // FIX ACTIVE DETECTION (ANTI SSR CRASH)
+  // DETEKSI HALAMAN (jalan SEKALI saja, aman buat SSR)
   // ==========================================================
   useEffect(() => {
     if (typeof window === "undefined") return
-
     const p = window.location.pathname
-
     if (p === "/pusat-bantuan" || p.startsWith("/pusat-bantuan")) {
       setActive(true)
     }
   }, [])
 
-  if (!active) return <></>
-
   // ==========================================================
-  // EVENT LISTENER FIX
+  // EVENT LISTENER (buka chat dari form di halaman bantuan)
   // ==========================================================
   useEffect(() => {
     function handler(e: any) {
@@ -38,7 +34,7 @@ export default function KOJE24Assistant() {
   }, [])
 
   // ==========================================================
-  // AUTO RESET
+  // AUTO RESET CHAT 2 MENIT
   // ==========================================================
   useEffect(() => {
     if (!open) return
@@ -50,7 +46,7 @@ export default function KOJE24Assistant() {
   }, [open])
 
   // ==========================================================
-  // SAFE SEND MESSAGE (NO OUTDATED STATE)
+  // KIRIM PESAN KE API (history SELALU AKURAT)
   // ==========================================================
   async function sendMessage(text: string) {
     const userMsg = { role: "user", content: text.trim() }
@@ -67,14 +63,14 @@ export default function KOJE24Assistant() {
         .then(data => {
           const botMsg = {
             role: "assistant",
-            content: data.reply || "Siap kak 🙏"
+            content: data.reply || "Siap kak 🙏",
           }
           setMessages(h => [...h, botMsg])
         })
         .catch(() => {
           setMessages(h => [
             ...h,
-            { role: "assistant", content: "Server error kak 🙏" }
+            { role: "assistant", content: "Server error kak 🙏" },
           ])
         })
 
@@ -88,6 +84,9 @@ export default function KOJE24Assistant() {
     sendMessage(input)
     setInput("")
   }
+
+  // ⬅️ BARU DI SINI BOLEH CONDITIONAL RETURN
+  if (!active) return null
 
   // ==========================================================
   // UI
@@ -109,7 +108,12 @@ export default function KOJE24Assistant() {
               <h2 className="text-lg font-semibold text-[#0b4b50]">
                 KOJE24 Assistant
               </h2>
-              <button onClick={() => { setMessages([]); setOpen(false) }}>
+              <button
+                onClick={() => {
+                  setMessages([])
+                  setOpen(false)
+                }}
+              >
                 ✕
               </button>
             </div>
