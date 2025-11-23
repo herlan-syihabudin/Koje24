@@ -1,48 +1,59 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 
 export default function KOJE24Assistant() {
+  const pathname = usePathname()
+
+  // Chat UI state
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<any[]>([])
   const [input, setInput] = useState("")
-  const chatRef = useRef<HTMLDivElement>(null)
 
-  // ======================================================
-  // FIX 1: Listener hanya dibuat sekali
-  // ======================================================
+  // Auto reset timer
+  let timeoutRef: NodeJS.Timeout | null = null
+
+  // Reset function
+  const resetChat = () => {
+    setMessages([])
+    setOpen(false)
+  }
+
+  // Auto-close setelah 2 menit tidak ada aktivitas
+  const startInactivityTimer = () => {
+    if (timeoutRef) clearTimeout(timeoutRef)
+    timeoutRef = setTimeout(() => {
+      resetChat()
+    }, 120000) // 2 menit
+  }
+
+  useEffect(() => {
+    if (open) startInactivityTimer()
+  }, [open, messages])
+
+  // 🔥 Event Trigger dari halaman Bantuan
   useEffect(() => {
     function handler(e: any) {
-      const first = e.detail
       setOpen(true)
-
-      if (first) {
-        sendMessage(first)
-      }
+      const first = e.detail
+      if (first) sendMessage(first)
     }
 
     window.addEventListener("open-koje24", handler)
     return () => window.removeEventListener("open-koje24", handler)
   }, [])
 
-  // Auto scroll
-  useEffect(() => {
-    if (chatRef.current) {
-      chatRef.current.scrollTop = chatRef.current.scrollHeight
-    }
-  }, [messages])
-
-  // ======================================================
-  // FIX 2: Kirim history chat terbaru ke API
-  // ======================================================
+  // Kirim pesan ke API
   async function sendMessage(text: string) {
-    const newMessages = [...messages, { role: "user", content: text }]
-    setMessages(newMessages)
+    setMessages((prev) => [...prev, { role: "user", content: text }])
 
     const res = await fetch("/api/koje24-assistant", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: newMessages }),
+      body: JSON.stringify({
+        messages: [...messages, { role: "user", content: text }],
+      }),
     })
 
     const data = await res.json()
@@ -53,23 +64,27 @@ export default function KOJE24Assistant() {
     ])
   }
 
-  function handleSubmit(e: any) {
+  const handleSubmit = (e: any) => {
     e.preventDefault()
     if (!input.trim()) return
-
     sendMessage(input)
     setInput("")
   }
 
+  // ❌ Jangan tampilkan bubble di homepage
+  if (pathname !== "/bantuan") return null
+
   return (
     <>
       {/* Floating button */}
-      <button
-        className="fixed bottom-6 right-6 bg-[#0FA3A8] text-white px-4 py-2 rounded-full shadow-lg"
-        onClick={() => setOpen(true)}
-      >
-        KOJE24 Assistant
-      </button>
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          className="fixed bottom-6 right-6 bg-[#0FA3A8] text-white px-4 py-2 rounded-full shadow-lg z-50"
+        >
+          KOJE24 Assistant
+        </button>
+      )}
 
       {open && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end justify-center z-50">
@@ -77,15 +92,19 @@ export default function KOJE24Assistant() {
 
             {/* Header */}
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-semibold text-[#0b4b50]">KOJE24 Assistant</h2>
-              <button onClick={() => setOpen(false)}>✕</button>
+              <h2 className="text-lg font-semibold text-[#0b4b50]">
+                KOJE24 Assistant
+              </h2>
+              <button
+                onClick={() => resetChat()}
+                className="text-lg text-gray-600"
+              >
+                ✕
+              </button>
             </div>
 
-            {/* Chat */}
-            <div
-              ref={chatRef}
-              className="h-80 overflow-y-auto flex flex-col gap-3 p-1"
-            >
+            {/* Chat list */}
+            <div className="h-80 overflow-y-auto flex flex-col gap-3 p-1">
               {messages.map((m, i) => (
                 <div
                   key={i}
@@ -108,7 +127,10 @@ export default function KOJE24Assistant() {
                 className="flex-1 border border-[#cdeaea] rounded-full px-4 py-2 text-sm"
                 placeholder="Tulis pesan..."
               />
-              <button type="submit" className="bg-[#0FA3A8] text-white px-4 py-2 rounded-full">
+              <button
+                type="submit"
+                className="bg-[#0FA3A8] text-white px-4 py-2 rounded-full"
+              >
                 Kirim
               </button>
             </form>
