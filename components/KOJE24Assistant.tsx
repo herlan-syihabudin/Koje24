@@ -9,19 +9,22 @@ export default function KOJE24Assistant() {
   const [active, setActive] = useState(false)
 
   // ==========================================================
-  // FIX 1 — DETEKSI HALAMAN YANG BENAR
+  // FIX ACTIVE DETECTION (ANTI SSR CRASH)
   // ==========================================================
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const p = window.location.pathname
-      setActive(p === "/pusat-bantuan" || p.startsWith("/pusat-bantuan"))
+    if (typeof window === "undefined") return
+
+    const p = window.location.pathname
+
+    if (p === "/pusat-bantuan" || p.startsWith("/pusat-bantuan")) {
+      setActive(true)
     }
   }, [])
 
-  if (!active) return null
+  if (!active) return <></>
 
   // ==========================================================
-  // FIX 2 — EVENT LISTENER AMAN UNTUK TERIMA PERTANYAAN DARI FORM
+  // EVENT LISTENER FIX
   // ==========================================================
   useEffect(() => {
     function handler(e: any) {
@@ -35,7 +38,7 @@ export default function KOJE24Assistant() {
   }, [])
 
   // ==========================================================
-  // Auto Reset 2 menit
+  // AUTO RESET
   // ==========================================================
   useEffect(() => {
     if (!open) return
@@ -47,12 +50,11 @@ export default function KOJE24Assistant() {
   }, [open])
 
   // ==========================================================
-  // FIX 3 — HISTORY SELALU AKURAT (setMessages callback)
+  // SAFE SEND MESSAGE (NO OUTDATED STATE)
   // ==========================================================
   async function sendMessage(text: string) {
     const userMsg = { role: "user", content: text.trim() }
 
-    // update messages dan kirim fetch dari dalam callback (TIDAK OUTDATED)
     setMessages(prev => {
       const newHistory = [...prev, userMsg]
 
@@ -80,7 +82,6 @@ export default function KOJE24Assistant() {
     })
   }
 
-  // INPUT TEXTBOX
   function submit(e: any) {
     e.preventDefault()
     if (!input.trim()) return
@@ -89,7 +90,7 @@ export default function KOJE24Assistant() {
   }
 
   // ==========================================================
-  // UI CHAT
+  // UI
   // ==========================================================
   return (
     <>
