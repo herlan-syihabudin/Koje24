@@ -14,7 +14,11 @@ import {
   HelpCircle,
 } from "lucide-react"
 
-import KOJE24Assistant from "@/components/KOJE24Assistant"   // ⬅️ TAMBAHKAN INI
+// ⬅️ FIX PALING PENTING
+import dynamic from "next/dynamic"
+const KOJE24Assistant = dynamic(() => import("@/components/KOJE24Assistant"), {
+  ssr: false,
+})
 
 type Topic = {
   id: string
@@ -245,7 +249,7 @@ export default function PusatBantuanPage() {
         </div>
       </section>
 
-      {/* ================= CHATBOT DI SINI ================= */}
+      {/* CHATBOT */}
       <KOJE24Assistant />
     </main>
   )
