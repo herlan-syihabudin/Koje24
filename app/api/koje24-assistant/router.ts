@@ -4,10 +4,8 @@ export async function POST(req: Request) {
   try {
     let { messages } = await req.json();
 
-    // 🔥 FIX PALING PENTING
-    // Jika datang sebagai string dari halaman Pusat Bantuan → ubah jadi array
-    if (!Array.isArray(messages)) {
-      messages = [{ role: "user", content: String(messages) }];
+    if (!messages || typeof messages !== "object") {
+      messages = [{ role: "user", content: "Halo" }];
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
@@ -15,57 +13,25 @@ export async function POST(req: Request) {
     const projectId = process.env.OPENAI_PROJECT_ID;
 
     if (!apiKey || !orgId || !projectId) {
-      console.error("MISSING ENV:", { apiKey, orgId, projectId });
+      console.error("❌ MISSING ENV:", { apiKey, orgId, projectId });
       return NextResponse.json(
-        { reply: "Server belum terkonfigurasi dengan benar." },
+        { reply: "Server belum siap, ENV belum ada." },
         { status: 500 }
       );
     }
 
     const systemPersona = `
-Kamu adalah KOJE24 Assistant.
-
-GAYA:
-- Natural, santai, manusia banget
-- Jawaban pendek, langsung to the point
-- Tidak formal
-- Hindari paragraf panjang
-
-VARIAN PRODUK:
-- Green Detox
-- Yellow Immunity
-- Beetroot Power
-- Sunrise Fresh
-- Celery Cleanse
-- Carrot Boost
-
-MAPPING:
-- Maag: Sunrise Fresh
-- Detox harian: Green Detox
-- Stamina/imun: Yellow Immunity
-- Peredaran darah / tenaga: Beetroot Power
-- Anti-begah/pencernaan: Celery Cleanse
-- Mata & energi siang: Carrot Boost
-
-ATURAN:
-- Selalu pilih 1 varian paling cocok
-- Baru kasih 1 alternatif jika diminta
-- Jangan jelasin teori kesehatan panjang-panjang
-- Jangan gaya AI, cukup kayak manusia
-`;
-
-    const conversation = messages
-      .map((m: any) => `${m.role === "user" ? "User" : "Bot"}: ${m.content}`)
-      .join("\n");
+Kamu adalah KOJE24 Assistant...
+    `;
 
     const finalInput = `
 SYSTEM:
 ${systemPersona}
 
-RIWAYAT CHAT:
-${conversation}
+CHAT:
+${messages.map((m: any) => `${m.role}: ${m.content}`).join("\n")}
 
-Balas sebagai KOJE24 Assistant:
+Balas pendek, natural, manusia banget:
 `;
 
     const response = await fetch("https://api.openai.com/v1/responses", {
@@ -83,27 +49,29 @@ Balas sebagai KOJE24 Assistant:
     });
 
     if (!response.ok) {
-      const err = await response.text();
-      console.error("OpenAI API Error:", err);
+      const errText = await response.text();
+      console.error("❌ OpenAI API error:", errText);
+
       return NextResponse.json(
-        { reply: "Server lagi penuh nih bro 😅. Coba sebentar lagi ya 🙏" },
+        { reply: "Server KOJE24 lagi penuh bro, coba lagi ya 🙏" },
         { status: 500 }
       );
     }
 
     const data = await response.json();
 
-    const text =
+    const output =
       data.output_text ||
       data.output?.[0]?.content?.[0]?.text ||
-      "Siap! Ada lagi yang mau ditanyakan?";
+      "Siap bro! Ada lagi mau ditanya?";
 
-    return NextResponse.json({ reply: text });
+    return NextResponse.json({ reply: output });
   } catch (e) {
-    console.error("Fatal API Error:", e);
+    console.error("❌ Fatal Error:", e);
     return NextResponse.json(
       {
-        reply: "Server KOJE24 lagi ada gangguan, coba ulang sebentar lagi ya 🙏",
+        reply:
+          "Server KOJE24 lagi gangguan, coba ulang sebentar lagi ya 🙏",
       },
       { status: 500 }
     );
