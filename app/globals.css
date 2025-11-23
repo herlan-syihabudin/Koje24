@@ -246,4 +246,19 @@ td { font-size: 13px; color: #222; }
     opacity: .4;
   }
 }
+body.body-lock {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100%;
+  height: 100%;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body::before,
+body::after {
+  display: none !important;
+  content: none !important;
+  background: transparent !important;
+}
 
