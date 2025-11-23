@@ -2,7 +2,6 @@ import "./globals.css";
 import type { ReactNode } from "react";
 import { Inter, Playfair_Display } from "next/font/google";
 import { CartProvider } from "@/components/CartContext";
-import KOJE24Assistant from "@/components/KOJE24Assistant"; // Assistant (muncul hanya di halaman /bantuan)
 
 const inter = Inter({
   subsets: ["latin"],
@@ -39,13 +38,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <body className="antialiased font-inter bg-white text-[#0B4B50]">
-        
-        {/* GLOBAL CART CONTEXT */}
         <CartProvider>
           {children}
         </CartProvider>
 
-        {/* Smooth Scroll */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
