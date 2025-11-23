@@ -18,58 +18,53 @@ export default function KOJE24Assistant() {
   const bodyRef = useRef<HTMLDivElement | null>(null)
 
   // ==========================================================
-  // AKTIFKAN HANYA DI /pusat-bantuan (atau url yang mengandung "bantuan")
+  // MUNCUL HANYA DI /pusat-bantuan
   // ==========================================================
   useEffect(() => {
     if (typeof window === "undefined") return
-    const p = window.location.pathname
-    if (p.includes("bantuan")) {
+    if (window.location.pathname.includes("bantuan")) {
       setActive(true)
     }
   }, [])
 
   // ==========================================================
-  // WELCOME MESSAGE + LOAD HISTORY (localStorage)
+  // LOAD HISTORY + WELCOME MESSAGE
   // ==========================================================
   useEffect(() => {
-    if (!active) return
-    if (typeof window === "undefined") return
+    if (!active || typeof window === "undefined") return
 
     try {
       const saved = window.localStorage.getItem("koje24-chat")
-      if (saved) {
-        setMessages(JSON.parse(saved))
-      } else {
+
+      if (saved) setMessages(JSON.parse(saved))
+      else {
         setMessages([
           {
             role: "assistant",
             content:
-              "Halo 👋 Aku KOJE24 Assistant. Ceritakan keluhan atau tujuanmu, nanti aku bantu pilih varian yang pas ya."
+              "Halo 👋 Aku KOJE24 Assistant. Ceritain keluhanmu ya, nanti aku bantu pilih varian yang pas."
           }
         ])
       }
     } catch {
-      // fallback kalau JSON error
       setMessages([
         {
           role: "assistant",
           content:
-            "Halo 👋 Aku KOJE24 Assistant. Ceritakan keluhan atau tujuanmu, nanti aku bantu pilih varian yang pas ya."
+            "Halo 👋 Aku KOJE24 Assistant. Ceritain keluhanmu ya, nanti aku bantu pilih varian yang pas."
         }
       ])
     }
   }, [active])
 
   // ==========================================================
-  // SIMPAN HISTORY + AUTO SCROLL BAWAH
+  // SAVE HISTORY + AUTO-SCROLL
   // ==========================================================
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
         window.localStorage.setItem("koje24-chat", JSON.stringify(messages))
-      } catch {
-        // abaikan kalau quota penuh
-      }
+      } catch {}
     }
 
     if (bodyRef.current) {
@@ -81,7 +76,7 @@ export default function KOJE24Assistant() {
   }, [messages])
 
   // ==========================================================
-  // EVENT LISTENER DARI FORM / PUSAT BANTUAN
+  // LISTENER DARI FORM BANTUAN
   // ==========================================================
   useEffect(() => {
     function handler(e: any) {
@@ -92,11 +87,10 @@ export default function KOJE24Assistant() {
 
     window.addEventListener("open-koje24", handler)
     return () => window.removeEventListener("open-koje24", handler)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ==========================================================
-  // AUTO RESET 2 MENIT SETELAH CHAT TERBUKA (INAKTIF)
+  // AUTO RESET 2 MENIT
   // ==========================================================
   useEffect(() => {
     if (!open) {
@@ -107,35 +101,27 @@ export default function KOJE24Assistant() {
       return
     }
 
-    if (resetTimerRef.current) {
-      clearTimeout(resetTimerRef.current)
-    }
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
 
     resetTimerRef.current = setTimeout(() => {
       setMessages([])
       setOpen(false)
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem("koje24-chat")
-      }
+      window.localStorage.removeItem("koje24-chat")
     }, 120000)
 
     return () => {
-      if (resetTimerRef.current) {
-        clearTimeout(resetTimerRef.current)
-        resetTimerRef.current = null
-      }
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
     }
   }, [open, messages.length])
 
   // ==========================================================
-  // KIRIM PESAN KE API + TYPING INDICATOR
+  // SEND MESSAGE
   // ==========================================================
   async function sendMessage(text: string) {
     const trimmed = text.trim()
     if (!trimmed) return
 
     const userMsg: ChatMessage = { role: "user", content: trimmed }
-
     setIsTyping(true)
 
     setMessages(prev => {
@@ -150,22 +136,20 @@ export default function KOJE24Assistant() {
         .then(data => {
           const botMsg: ChatMessage = {
             role: "assistant",
-            content:
-              data.reply || "Siap kak, ada lagi yang mau ditanya? 😊",
+            content: data.reply || "Siap kak! 😊"
           }
           setMessages(h => [...h, botMsg])
         })
         .catch(() => {
-          const errMsg: ChatMessage = {
-            role: "assistant",
-            content:
-              "Maaf kak, server lagi gangguan sebentar 🙏 coba kirim ulang ya.",
-          }
-          setMessages(h => [...h, errMsg])
+          setMessages(h => [
+            ...h,
+            {
+              role: "assistant",
+              content: "Maaf kak, server sedang lambat 🙏 coba kirim ulang."
+            }
+          ])
         })
-        .finally(() => {
-          setIsTyping(false)
-        })
+        .finally(() => setIsTyping(false))
 
       return newHistory
     })
@@ -181,36 +165,44 @@ export default function KOJE24Assistant() {
   if (!active) return null
 
   // ==========================================================
-  // UI SUPER PREMIUM
+  // UI PREMIUM — PANEL TOKOPEDIA STYLE
   // ==========================================================
   return (
     <>
-      {/* Floating Button */}
+      {/* BUTTON */}
       <button
-        className="fixed bottom-6 right-6 bg-[#0FA3A8] text-white px-4 py-2 rounded-full shadow-2xl hover:shadow-[0_0_25px_rgba(15,163,168,0.6)] transition-all duration-300 z-[200] flex items-center gap-2"
+        className="fixed bottom-7 right-7 bg-[#0FA3A8] text-white px-5 py-3 rounded-full shadow-xl hover:shadow-[0_0_35px_rgba(15,163,168,0.65)] transition-all duration-300 z-[200] flex items-center gap-2"
         onClick={() => setOpen(true)}
       >
-        <span className="text-lg">🤖</span>
-        <span className="font-medium">KOJE24</span>
+        🤖 <span className="font-semibold">KOJE24</span>
       </button>
 
+      {/* CHAT PANEL */}
       {open && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end justify-center z-[300]">
-          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-slide-up-high">
+          <div
+            className="
+              w-full 
+              max-w-md 
+              bg-white 
+              rounded-3xl 
+              shadow-2xl 
+              overflow-hidden 
+              animate-slide-up 
+              max-h-[85vh]
+              flex flex-col
+            "
+          >
 
             {/* HEADER */}
-            <div className="px-5 py-4 bg-white/90 backdrop-blur-xl border-b border-[#e6f5f5] flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#0FA3A8] flex items-center justify-center text-white font-bold">
+            <div className="px-5 py-4 bg-white border-b border-[#e4f3f3] flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-[#0FA3A8] text-white flex items-center justify-center font-bold">
                   K
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-[#0b4b50] tracking-tight">
-                    KOJE24 Assistant
-                  </h2>
-                  <p className="text-[11px] text-slate-500">
-                    Online • Jawaban cepat dalam hitungan detik
-                  </p>
+                  <h2 className="text-lg font-semibold text-[#0b4b50]">KOJE24 Assistant</h2>
+                  <p className="text-[11px] text-slate-500">Online • Jawaban cepat</p>
                 </div>
               </div>
 
@@ -222,18 +214,18 @@ export default function KOJE24Assistant() {
               </button>
             </div>
 
-            {/* CHAT BODY */}
+            {/* BODY */}
             <div
               ref={bodyRef}
-              id="chat-body"
-              className="h-96 overflow-y-auto px-4 py-4 space-y-4 bg-[#f6fefe]"
+              className="flex-1 overflow-y-auto px-4 py-4 bg-[#f6fefe] space-y-4"
             >
               {messages.map((m, i) => (
                 <div
                   key={i}
-                  className={`flex items-end gap-2 ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex items-end gap-2 ${
+                    m.role === "user" ? "justify-end" : "justify-start"
+                  }`}
                 >
-                  {/* Avatar bot */}
                   {m.role !== "user" && (
                     <div className="w-7 h-7 rounded-full bg-[#0FA3A8] text-white flex items-center justify-center text-xs">
                       K
@@ -250,7 +242,6 @@ export default function KOJE24Assistant() {
                     {m.content}
                   </div>
 
-                  {/* Avatar user */}
                   {m.role === "user" && (
                     <div className="w-7 h-7 rounded-full bg-[#e3f7f7] border border-[#cdeaea] flex items-center justify-center text-xs text-[#0b4b50]">
                       U
@@ -259,7 +250,6 @@ export default function KOJE24Assistant() {
                 </div>
               ))}
 
-              {/* TYPING INDICATOR */}
               {isTyping && (
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-full bg-[#0FA3A8] text-white flex items-center justify-center text-xs">
@@ -276,8 +266,8 @@ export default function KOJE24Assistant() {
               )}
             </div>
 
-            {/* QUICK REPLIES */}
-            <div className="px-4 pb-2 pt-1 flex gap-2 overflow-x-auto bg-white/90">
+            {/* QUICK REPLY */}
+            <div className="px-4 pb-3 pt-1 flex gap-2 overflow-x-auto bg-white border-t border-[#e8f5f5]">
               {[
                 "Rekomendasi detox harian",
                 "Varian aman untuk maag",
@@ -287,27 +277,26 @@ export default function KOJE24Assistant() {
               ].map((q, idx) => (
                 <button
                   key={idx}
-                  type="button"
                   onClick={() => sendMessage(q)}
-                  className="bg-[#e5f7f7] text-[#0b4b50] px-3 py-1.5 rounded-full text-xs border border-[#cdeaea] hover:bg-[#dff1f1] transition whitespace-nowrap"
+                  className="bg-[#e8fafa] text-[#0b4b50] px-3 py-1.5 rounded-full text-xs border border-[#cdeaea] hover:bg-[#def3f3] transition whitespace-nowrap"
                 >
                   {q}
                 </button>
               ))}
             </div>
 
-            {/* INPUT AREA */}
-            <form onSubmit={submit} className="p-4 bg-white border-t border-[#e3f3f3]">
+            {/* INPUT */}
+            <form onSubmit={submit} className="p-4 bg-white border-t border-[#e4f3f3]">
               <div className="flex items-center gap-2 bg-[#f0fbfb] border border-[#d6eded] rounded-full px-4 py-2.5">
                 <input
                   value={input}
                   onChange={e => setInput(e.target.value)}
-                  className="flex-1 bg-transparent outline-none text-sm text-[#0b4b50] placeholder:text-slate-400"
+                  className="flex-1 bg-transparent outline-none text-sm text-[#0b4b50]"
                   placeholder="Tulis pesan…"
                 />
                 <button
                   type="submit"
-                  className="bg-[#0FA3A8] text-white px-4 py-1.5 rounded-full text-sm font-medium shadow-sm hover:bg-[#0b8f93] transition"
+                  className="bg-[#0FA3A8] text-white px-4 py-1.5 rounded-full text-sm shadow-sm hover:bg-[#0b8f93] transition"
                 >
                   Kirim
                 </button>
