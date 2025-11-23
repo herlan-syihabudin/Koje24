@@ -8,28 +8,35 @@ export default function KOJE24Assistant() {
   const [input, setInput] = useState("")
   const [active, setActive] = useState(false)
 
-  // Only show on /bantuan
+  // ==========================================================
+  // FIX 1 — DETEKSI HALAMAN YANG BENAR
+  // ==========================================================
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setActive(window.location.pathname.includes("/bantuan"))
+      const p = window.location.pathname
+      setActive(p === "/pusat-bantuan" || p.startsWith("/pusat-bantuan"))
     }
   }, [])
 
   if (!active) return null
 
-  // Event listener dari halaman bantuan
+  // ==========================================================
+  // FIX 2 — EVENT LISTENER AMAN UNTUK TERIMA PERTANYAAN DARI FORM
+  // ==========================================================
   useEffect(() => {
     function handler(e: any) {
-      const first = e.detail
+      if (!e?.detail) return
       setOpen(true)
-      if (first) sendMessage(first)
+      sendMessage(e.detail)
     }
 
     window.addEventListener("open-koje24", handler)
     return () => window.removeEventListener("open-koje24", handler)
   }, [])
 
-  // Auto reset 2 menit
+  // ==========================================================
+  // Auto Reset 2 menit
+  // ==========================================================
   useEffect(() => {
     if (!open) return
     const t = setTimeout(() => {
@@ -39,40 +46,41 @@ export default function KOJE24Assistant() {
     return () => clearTimeout(t)
   }, [open])
 
-  // ======================================
-  // SEND MESSAGE FIXED
-  // ======================================
+  // ==========================================================
+  // FIX 3 — HISTORY SELALU AKURAT (setMessages callback)
+  // ==========================================================
   async function sendMessage(text: string) {
-    const userMsg = { role: "user", content: text }
+    const userMsg = { role: "user", content: text.trim() }
 
-    // tampilkan dulu pesan user
-    setMessages(prev => [...prev, userMsg])
+    // update messages dan kirim fetch dari dalam callback (TIDAK OUTDATED)
+    setMessages(prev => {
+      const newHistory = [...prev, userMsg]
 
-    const history = [...messages, userMsg]
-
-    try {
-      const res = await fetch("/api/koje24-assistant", {
+      fetch("/api/koje24-assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({ messages: newHistory }),
       })
+        .then(res => res.json())
+        .then(data => {
+          const botMsg = {
+            role: "assistant",
+            content: data.reply || "Siap kak 🙏"
+          }
+          setMessages(h => [...h, botMsg])
+        })
+        .catch(() => {
+          setMessages(h => [
+            ...h,
+            { role: "assistant", content: "Server error kak 🙏" }
+          ])
+        })
 
-      const data = await res.json()
-
-      const botMsg = {
-        role: "assistant",
-        content: data.reply || "Siap kak 🙏",
-      }
-
-      setMessages(prev => [...prev, botMsg])
-    } catch (err) {
-      setMessages(prev => [
-        ...prev,
-        { role: "assistant", content: "Server error kak 🙏" },
-      ])
-    }
+      return newHistory
+    })
   }
 
+  // INPUT TEXTBOX
   function submit(e: any) {
     e.preventDefault()
     if (!input.trim()) return
@@ -80,9 +88,9 @@ export default function KOJE24Assistant() {
     setInput("")
   }
 
-  // ======================================
-  // UI
-  // ======================================
+  // ==========================================================
+  // UI CHAT
+  // ==========================================================
   return (
     <>
       <button
