@@ -1,13 +1,16 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 
 export default function KOJE24Assistant() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<any[]>([])
   const [input, setInput] = useState("")
+  const chatRef = useRef<HTMLDivElement>(null)
 
-  // 🔥 Listener untuk buka dari halaman Pusat Bantuan
+  // ======================================================
+  // FIX 1: Listener hanya dibuat sekali
+  // ======================================================
   useEffect(() => {
     function handler(e: any) {
       const first = e.detail
@@ -20,21 +23,26 @@ export default function KOJE24Assistant() {
 
     window.addEventListener("open-koje24", handler)
     return () => window.removeEventListener("open-koje24", handler)
+  }, [])
+
+  // Auto scroll
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight
+    }
   }, [messages])
 
-  // 🔥 Kirim pesan ke API sesuai format router lu
+  // ======================================================
+  // FIX 2: Kirim history chat terbaru ke API
+  // ======================================================
   async function sendMessage(text: string) {
-    setMessages((prev) => [...prev, { role: "user", content: text }])
+    const newMessages = [...messages, { role: "user", content: text }]
+    setMessages(newMessages)
 
     const res = await fetch("/api/koje24-assistant", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: [
-          ...messages,
-          { role: "user", content: text }
-        ]
-      }),
+      body: JSON.stringify({ messages: newMessages }),
     })
 
     const data = await res.json()
@@ -69,14 +77,15 @@ export default function KOJE24Assistant() {
 
             {/* Header */}
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-semibold text-[#0b4b50]">
-                KOJE24 Assistant
-              </h2>
+              <h2 className="text-lg font-semibold text-[#0b4b50]">KOJE24 Assistant</h2>
               <button onClick={() => setOpen(false)}>✕</button>
             </div>
 
             {/* Chat */}
-            <div className="h-80 overflow-y-auto flex flex-col gap-3 p-1">
+            <div
+              ref={chatRef}
+              className="h-80 overflow-y-auto flex flex-col gap-3 p-1"
+            >
               {messages.map((m, i) => (
                 <div
                   key={i}
@@ -99,10 +108,7 @@ export default function KOJE24Assistant() {
                 className="flex-1 border border-[#cdeaea] rounded-full px-4 py-2 text-sm"
                 placeholder="Tulis pesan..."
               />
-              <button
-                type="submit"
-                className="bg-[#0FA3A8] text-white px-4 py-2 rounded-full"
-              >
+              <button type="submit" className="bg-[#0FA3A8] text-white px-4 py-2 rounded-full">
                 Kirim
               </button>
             </form>
