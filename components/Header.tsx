@@ -14,26 +14,30 @@ export default function Header() {
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
 
-  /** --------------------------------------------------
-   *  SCROLL DETECTOR
-   * -------------------------------------------------- */
+  // =====================================
+  //  SCROLL LISTENER
+  // =====================================
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 60);
+    const handleScroll = () => {
+      if (!menuOpen) {
+        setIsScrolled(window.scrollY > 60);
+      }
+    };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [menuOpen]);
 
-  /** --------------------------------------------------
-   *  BODY LOCK FIX (NO MORE OVERLAY BUG)
-   * -------------------------------------------------- */
+  // =====================================
+  //  BODY LOCK FIX (html + body)
+  // =====================================
   const lockBody = () => {
+    document.documentElement.classList.add("overflow-hidden");
     document.body.classList.add("overflow-hidden");
-    document.body.style.height = "100vh";
   };
 
   const unlockBody = () => {
+    document.documentElement.classList.remove("overflow-hidden");
     document.body.classList.remove("overflow-hidden");
-    document.body.style.height = "auto";
   };
 
   const openMenu = () => {
@@ -47,9 +51,9 @@ export default function Header() {
     setTimeout(unlockBody, 150);
   };
 
-  /** --------------------------------------------------
-   *  SMART NAV SCROLL
-   * -------------------------------------------------- */
+  // =====================================
+  // SMART SCROLL
+  // =====================================
   const scrollToSection = (href: string) => {
     const target = document.querySelector(href);
     if (!target) return;
@@ -68,12 +72,12 @@ export default function Header() {
       return;
     }
 
-    setTimeout(() => scrollToSection(href), 200);
+    setTimeout(() => scrollToSection(href), 180);
   };
 
-  /** --------------------------------------------------
-   *  NAVIGATION ITEMS
-   * -------------------------------------------------- */
+  // =====================================
+  // NAV ITEMS
+  // =====================================
   const navItems = [
     { label: "Produk", href: "#produk" },
     { label: "Tentang KOJE24", href: "#about" },
@@ -86,13 +90,16 @@ export default function Header() {
     <header
       className={`
         fixed top-0 w-full z-[100] transition-all duration-700
-        ${isScrolled
-          ? "bg-white/80 backdrop-blur-xl shadow-lg border-b border-white/30"
-          : "bg-transparent backdrop-blur-0"}
+        ${
+          menuOpen
+            ? "bg-white/95 backdrop-blur-xl shadow-md"
+            : isScrolled
+            ? "bg-white/80 backdrop-blur-xl shadow-md"
+            : "bg-transparent"
+        }
       `}
     >
-      {/* LINE GRADIENT */}
-      {isScrolled && (
+      {isScrolled && !menuOpen && (
         <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-[#0FA3A8]/20 to-[#0B4B50]/20" />
       )}
 
@@ -106,25 +113,29 @@ export default function Header() {
             closeMenu();
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
-          className={`text-2xl font-playfair font-bold transition-all duration-500
-            ${isScrolled ? "text-[#0B4B50]" : "text-white drop-shadow-md"}
+          className={`
+            text-2xl font-playfair font-bold transition-colors duration-500
+            ${menuOpen || isScrolled ? "text-[#0B4B50]" : "text-white"}
           `}
         >
           KOJE
-          <span className={isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}>24</span>
+          <span className={menuOpen || isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}>24</span>
         </Link>
 
-        {/* DESKTOP MENU */}
+        {/* DESKTOP NAV */}
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <button
               key={item.href}
               onClick={() => navClick(item.href)}
-              className={`font-medium transition-all duration-300 ${
-                isScrolled
-                  ? "text-[#0B4B50] hover:text-[#0FA3A8]"
-                  : "text-white hover:text-[#E8C46B] drop-shadow-lg"
-              }`}
+              className={`
+                font-medium transition-all duration-300
+                ${
+                  menuOpen || isScrolled
+                    ? "text-[#0B4B50] hover:text-[#0FA3A8]"
+                    : "text-white hover:text-[#E8C46B]"
+                }
+              `}
             >
               {item.label}
             </button>
@@ -132,14 +143,11 @@ export default function Header() {
 
           {/* CART */}
           <button
-            aria-label="open-cart"
+            aria-label="Buka keranjang"
             className="relative"
             onClick={() => window.dispatchEvent(new CustomEvent("open-cart"))}
           >
-            <ShoppingCart
-              size={26}
-              className={`${isScrolled ? "text-[#0B4B50]" : "text-white drop-shadow-lg"}`}
-            />
+            <ShoppingCart size={24} className={menuOpen || isScrolled ? "text-[#0B4B50]" : "text-white"} />
             {totalQty > 0 && (
               <span className="absolute -top-2 -right-2 bg-[#E8C46B] text-[#0B4B50] text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
                 {totalQty}
@@ -147,48 +155,47 @@ export default function Header() {
             )}
           </button>
 
-          {/* WA DESKTOP */}
+          {/* WA */}
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
-            className={`ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm shadow-md transition-all
+            className={`
+              ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm shadow-md transition-all
               ${
-                isScrolled
+                menuOpen || isScrolled
                   ? "bg-[#0FA3A8] text-white hover:bg-[#0B4B50]"
-                  : "bg-white/15 text-white hover:bg-white/25 backdrop-blur-md"
+                  : "bg-white/15 text-white hover:bg-white/25 backdrop-blur-sm"
               }
             `}
           >
-            <FaWhatsapp /> Chat
+            <FaWhatsapp /> Chat Sekarang
           </a>
         </nav>
 
-        {/* BURGER MOBILE */}
+        {/* MOBILE BURGER */}
         <button
           onClick={openMenu}
-          className={`md:hidden text-3xl transition-all duration-500 ${
-            isScrolled ? "text-[#0B4B50]" : "text-white drop-shadow-lg"
+          className={`md:hidden text-2xl transition-colors ${
+            menuOpen || isScrolled ? "text-[#0B4B50]" : "text-white"
           }`}
         >
           <FaBars />
         </button>
       </div>
 
-      {/* MOBILE MENU FULLSCREEN */}
+      {/* MOBILE MENU */}
       {menuOpen && (
         <div
           className="
-            fixed left-0 top-0 
-            w-screen h-[100dvh]
-            z-[200]
+            fixed left-0 top-0 w-screen h-[100dvh] z-[200]
             flex flex-col items-center justify-center
-            bg-white/90 backdrop-blur-2xl
+            bg-white/95 backdrop-blur-xl
             transition-all duration-300
           "
         >
           <button
             onClick={closeMenu}
-            className="absolute top-6 right-6 text-4xl text-[#0B4B50] hover:text-[#0FA3A8]"
+            className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8]"
           >
             <FaTimes />
           </button>
@@ -203,15 +210,15 @@ export default function Header() {
                 {item.label}
               </button>
             ))}
-
-            <a
-              href="https://wa.me/6282213139580"
-              target="_blank"
-              className="mt-10 flex items-center justify-center gap-2 px-10 py-4 rounded-full bg-[#0FA3A8] text-white hover:bg-[#0B4B50] transition-all shadow-lg text-xl"
-            >
-              <FaWhatsapp /> Chat Sekarang
-            </a>
           </div>
+
+          <a
+            href="https://wa.me/6282213139580"
+            target="_blank"
+            className="mt-10 flex items-center justify-center gap-2 px-8 py-3 rounded-full bg-[#0FA3A8] text-white hover:bg-[#0B4B50] transition-all shadow-lg"
+          >
+            <FaWhatsapp /> Chat Sekarang
+          </a>
 
           <div className="absolute bottom-6 text-sm text-gray-500">
             © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
