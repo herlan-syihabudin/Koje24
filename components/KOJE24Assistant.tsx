@@ -16,7 +16,7 @@ export default function KOJE24Assistant() {
 
   if (!active) return null
 
-  // Listener dari halaman bantuan
+  // Listen event dari halaman bantuan
   useEffect(() => {
     function handler(e: any) {
       const first = e.detail
@@ -28,7 +28,7 @@ export default function KOJE24Assistant() {
     return () => window.removeEventListener("open-koje24", handler)
   }, [])
 
-  // Auto Reset 2 Menit
+  // Reset 2 menit
   useEffect(() => {
     if (!open) return
     const timer = setTimeout(() => {
@@ -38,14 +38,11 @@ export default function KOJE24Assistant() {
     return () => clearTimeout(timer)
   }, [open])
 
-  // MAIN SEND MESSAGE FUNCTION
+  // MAIN SEND FUNCTION
   async function sendMessage(text: string) {
     const userMsg = { role: "user", content: text }
-
-    // Tampilkan dulu di UI
     setMessages(prev => [...prev, userMsg])
 
-    // Buat riwayat yang benar
     const history = [...messages, userMsg]
 
     try {
@@ -57,12 +54,9 @@ export default function KOJE24Assistant() {
 
       const data = await res.json()
 
-      const botMsg = {
-        role: "assistant",
-        content: data.reply,
-      }
-
+      const botMsg = { role: "assistant", content: data.reply }
       setMessages(prev => [...prev, botMsg])
+
     } catch (err) {
       setMessages(prev => [
         ...prev,
@@ -94,17 +88,8 @@ export default function KOJE24Assistant() {
 
             {/* Header */}
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-semibold text-[#0b4b50]">
-                KOJE24 Assistant
-              </h2>
-              <button
-                onClick={() => {
-                  setMessages([])
-                  setOpen(false)
-                }}
-              >
-                ✕
-              </button>
+              <h2 className="text-lg font-semibold text-[#0b4b50]">KOJE24 Assistant</h2>
+              <button onClick={() => { setMessages([]); setOpen(false) }}>✕</button>
             </div>
 
             {/* Chat Box */}
@@ -131,10 +116,7 @@ export default function KOJE24Assistant() {
                 className="flex-1 border border-[#cdeaea] rounded-full px-4 py-2 text-sm"
                 placeholder="Tulis pesan..."
               />
-              <button
-                type="submit"
-                className="bg-[#0FA3A8] text-white px-4 py-2 rounded-full"
-              >
+              <button type="submit" className="bg-[#0FA3A8] text-white px-4 py-2 rounded-full">
                 Kirim
               </button>
             </form>
