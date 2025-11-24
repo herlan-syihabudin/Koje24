@@ -13,10 +13,10 @@ export default function Footer() {
       {/* 🌫️ Soft Background Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.05),transparent_70%)] pointer-events-none" />
 
-      {/* 🧩 Main Wrapper */}
+      {/* MAIN WRAPPER */}
       <div className="max-w-7xl mx-auto relative z-10">
-        
-        {/* 🔥 Header Footer */}
+
+        {/* HEADER */}
         <div className="text-center mb-14">
           <h3 className="font-playfair text-3xl md:text-4xl font-semibold tracking-tight">
             Stay Healthy With <span className="text-[#E8C46B]">KOJE24</span>
@@ -26,24 +26,19 @@ export default function Footer() {
           </p>
         </div>
 
-        {/* ============================ */}
-        {/*     MAIN 4-COLUMN GRID       */}
-        {/* ============================ */}
+        {/* GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12 text-gray-300">
 
           {/* 1. BRAND */}
           <div>
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center mb-4">
               <Image
                 src="/image/logo-koje24-putih-removebg-preview.png"
                 alt="KOJE24"
-                width={48}
-                height={48}
-                className="rounded-full ring-2 ring-[#E8C46B]/40"
+                width={52}
+                height={52}
+                className="object-contain md:w-[52px] md:h-[52px] w-[40px] h-[40px]"
               />
-              <h4 className="font-playfair text-xl font-bold text-white tracking-wide">
-                KOJE24
-              </h4>
             </div>
 
             <p className="text-sm leading-relaxed mb-3">
@@ -146,6 +141,7 @@ export default function Footer() {
 
       {/* Glow Accent */}
       <div className="absolute -bottom-20 -left-10 w-80 h-80 bg-[#0FA3A8]/10 blur-[110px]" />
+
     </footer>
   )
 }
