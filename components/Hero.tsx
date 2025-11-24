@@ -27,8 +27,8 @@ export default function Hero() {
           alt="KOJE24 Premium Juice"
           fill
           priority
-          quality={95}
-          className="object-cover object-right"   // ⬅️ fix composition
+          quality={96}
+          className="object-cover object-center md:object-right"
           onLoadingComplete={() => setLoaded(true)}
         />
 
@@ -51,7 +51,14 @@ export default function Hero() {
         pointer-events-none
       " />
 
-      {/* ==== LIGHT SWEEP (subtle) ==== */}
+      {/* ==== RIGHT LIGHT BOOST (lebih hidup) ==== */}
+      <div className="
+        absolute inset-y-0 right-0 w-[45%]
+        bg-gradient-to-l from-white/6 to-transparent
+        pointer-events-none
+      " />
+
+      {/* ==== LIGHT SWEEP ==== */}
       <motion.div
         style={{ y: glowY }}
         className="
@@ -66,14 +73,14 @@ export default function Hero() {
         "
       />
 
-      {/* ==== NOISE ==== */}
-      <div className="
-        absolute inset-0 
-        opacity-[0.06]
-        bg-[url('/noise.png')] 
-        mix-blend-overlay
-        pointer-events-none
-      " />
+      {/* ==== NOISE TEXTURE ==== */}
+      <div
+        className="
+          absolute inset-0 opacity-[0.06]
+          bg-[url('/noise.png')]
+          mix-blend-overlay pointer-events-none
+        "
+      />
 
       {/* ==== CONTENT ==== */}
       <div className="relative z-10 px-6 md:px-20 lg:px-32 w-full max-w-5xl">
@@ -94,7 +101,7 @@ export default function Hero() {
           className="
             font-playfair font-semibold text-white leading-[1.05]
             text-[2.7rem] sm:text-[3.4rem] md:text-[4.3rem]
-            drop-shadow-[0_8px_25px_rgba(0,0,0,0.8)]
+            drop-shadow-[0_8px_25px_rgba(0,0,0,0.85)]
           "
         >
           Explore the Taste,
@@ -110,32 +117,41 @@ export default function Hero() {
           Cold-pressed juice harian dari bahan alami terbaik. Tanpa gula tambahan
           dan tanpa pengawet. Nutrisi tetap maksimal.
         </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.25 }}
-          className="mt-10"
-        >
-          <a
-            href="#produk"
-            className="
-              inline-block bg-[#0FA3A8] hover:bg-[#0DC1C7]
-              text-white font-semibold px-10 py-4 rounded-full 
-              shadow-xl transition-all duration-300 hover:scale-[1.05]
-            "
-          >
-            Coba Sekarang
-          </a>
-        </motion.div>
       </div>
 
-      {/* Bottom fade */}
+      {/* ==== BOTTOM FADE SUPER SOFT ==== */}
       <div className="
-        absolute bottom-0 left-0 w-full h-28
-        bg-gradient-to-t from-[#f8fcfc]/75 to-transparent 
+        absolute bottom-0 left-0 w-full h-20
+        bg-gradient-to-t from-[#f8fcfc]/60 to-transparent 
         pointer-events-none
       " />
+
+      {/* ==== FLOATING CTA (PREMIUM MODE) ==== */}
+      <motion.div
+        style={{
+          opacity: useTransform(scrollY, [0, 200], [1, 0]),
+          filter: useTransform(scrollY, [0, 200], ["blur(0px)", "blur(6px)"]),
+          y: useTransform(scrollY, [0, 200], [0, 22])
+        }}
+        className="
+          md:hidden 
+          fixed bottom-6 left-1/2 -translate-x-1/2
+          z-30
+        "
+      >
+        <a
+          href="#produk"
+          className="
+            bg-[#0FA3A8] hover:bg-[#0DC1C7]
+            text-white font-semibold
+            px-9 py-4 rounded-full
+            shadow-xl backdrop-blur-md
+            transition-all duration-300
+          "
+        >
+          Coba Sekarang
+        </a>
+      </motion.div>
     </section>
   )
 }
