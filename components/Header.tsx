@@ -19,10 +19,11 @@ export default function Header() {
      SMART SCROLL LISTENER
   ============================ */
   useEffect(() => {
-    if (menuOpen) return; // ❗ saat menu terbuka, header freeze total
+    if (menuOpen) return;
 
     const handleScroll = () => {
       const y = window.scrollY;
+
       setIsScrolled(y > 20);
       setShrink(y > 80);
     };
@@ -32,37 +33,52 @@ export default function Header() {
   }, [menuOpen]);
 
   /* ===========================
-     BODY LOCK
+     BODY LOCK FIX (IOS SAFE)
   ============================ */
   const lockBody = () => {
-    document.body.classList.add("overflow-hidden", "touch-none");
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
   };
 
   const unlockBody = () => {
-    document.body.classList.remove("overflow-hidden", "touch-none");
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.width = "";
   };
 
   /* ===========================
-     OPEN MENU
+     OPEN MENU FIX
+     (Anti Delay, Anti Half-open)
   ============================ */
   const openMenu = () => {
     setMenuOpen(true);
-    setTimeout(() => setMenuAnimate(true), 10);
-    window.scrollTo({ top: 0, behavior: "instant" }); // no transition
+
+    requestAnimationFrame(() => {
+      setMenuAnimate(true);
+    });
+
+    window.scrollTo({ top: 0, behavior: "instant" });
     lockBody();
   };
 
   /* ===========================
-     CLOSE MENU
+     CLOSE MENU FIX
+     (Smooth & Safe)
   ============================ */
   const closeMenu = () => {
     setMenuAnimate(false);
     unlockBody();
-    setTimeout(() => setMenuOpen(false), 200);
+
+    setTimeout(() => {
+      setMenuOpen(false);
+    }, 200);
   };
 
   /* ===========================
-     SMART SCROLL TO SECTION
+     SCROLL TO SECTION
   ============================ */
   const scrollToSection = (href: string) => {
     const target = document.querySelector(href);
@@ -103,29 +119,27 @@ export default function Header() {
     <header
       className={`
         fixed top-0 w-full z-[200]
-        ${menuOpen
-          ? "bg-transparent py-5 transition-none" /* FREEZE MODE */
-          : isScrolled
-          ? "backdrop-blur-xl bg-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-700"
-          : "bg-transparent transition-all duration-700"
+        ${
+          menuOpen
+            ? "bg-transparent py-5"
+            : isScrolled
+            ? "backdrop-blur-xl bg-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-700"
+            : "bg-transparent transition-all duration-700"
         }
         ${menuOpen ? "" : shrink ? "py-2" : "py-5"}
       `}
     >
-      {/* Bottom Gradient (hide when menu open) */}
       {isScrolled && !menuOpen && (
         <div className="absolute bottom-0 left-0 h-[1.5px] w-full bg-gradient-to-r from-[#0FA3A8]/40 via-[#0B4B50]/40 to-[#0FA3A8]/40" />
       )}
 
       <div
         className={`max-w-7xl mx-auto flex items-center justify-between px-5 md:px-10
-          ${shrink && !menuOpen ? "h-[60px]" : "h-[82px]"}
-          transition-all duration-700
-        `}
+        ${shrink && !menuOpen ? "h-[60px]" : "h-[82px]"}
+        transition-all duration-700
+      `}
       >
-        {/* ===========================
-            LOGO
-        ============================ */}
+        {/* LOGO */}
         <Link
           href="/"
           onClick={(e) => {
@@ -147,21 +161,21 @@ export default function Header() {
         >
           KOJE
           <span
-            className={`${
-              menuOpen
-                ? "text-[#E8C46B]"
-                : isScrolled
-                ? "text-[#0FA3A8]"
-                : "text-[#E8C46B]"
-            }`}
+            className={`
+              ${
+                menuOpen
+                  ? "text-[#E8C46B]"
+                  : isScrolled
+                  ? "text-[#0FA3A8]"
+                  : "text-[#E8C46B]"
+              }
+            `}
           >
             24
           </span>
         </Link>
 
-        {/* ===========================
-            DESKTOP MENU
-        ============================ */}
+        {/* DESKTOP MENU */}
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <button
@@ -224,9 +238,7 @@ export default function Header() {
           </a>
         </nav>
 
-        {/* ===========================
-            MOBILE ICON
-        ============================ */}
+        {/* MOBILE ICON */}
         <button
           onClick={openMenu}
           className={`
@@ -244,15 +256,12 @@ export default function Header() {
         </button>
       </div>
 
-      {/* ===========================
-          MOBILE MENU OVERLAY
-      ============================ */}
+      {/* MOBILE MENU OVERLAY */}
       {menuOpen && (
         <div
           className={`
             fixed inset-0 z-[300] flex flex-col items-center justify-center gap-8
-            bg-white/95 backdrop-blur-xl
-            transition-all duration-200
+            bg-white/95 backdrop-blur-xl transition-all duration-300
             ${menuAnimate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
           `}
         >
@@ -263,7 +272,6 @@ export default function Header() {
             <X size={32} />
           </button>
 
-          {/* NAV ITEMS MOBILE */}
           {navItems.map((item) => (
             <button
               key={item.href}
@@ -274,7 +282,6 @@ export default function Header() {
             </button>
           ))}
 
-          {/* WA */}
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
