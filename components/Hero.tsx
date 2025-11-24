@@ -17,6 +17,11 @@ export default function Hero() {
   const glowY = useTransform(scrollY, [0, 350], [0, isMobile ? 0 : 60])
   const opacity = useTransform(scrollY, [0, 200], [1, 0.88])
 
+  // CTA animation – makin dikit scroll, makin blur & hilang
+  const ctaOpacity = useTransform(scrollY, [0, 100], [1, 0])
+  const ctaY = useTransform(scrollY, [0, 100], [0, -24])
+  const ctaBlur = useTransform(scrollY, [0, 100], ["blur(0px)", "blur(10px)"])
+
   return (
     <section className="relative min-h-screen w-full flex items-center bg-[#020507] overflow-hidden">
 
@@ -28,7 +33,7 @@ export default function Hero() {
           fill
           priority
           quality={95}
-          className="object-cover object-right md:object-right object-center"
+          className="object-cover object-center md:object-right"
           onLoadingComplete={() => setLoaded(true)}
         />
 
@@ -51,6 +56,13 @@ export default function Hero() {
         pointer-events-none
       " />
 
+      {/* ==== RIGHT LIGHT BOOST (biar botol lebih hidup) ==== */}
+      <div className="
+        absolute inset-y-0 right-0 w-[45%]
+        bg-gradient-to-l from-white/6 to-transparent
+        pointer-events-none
+      " />
+
       {/* ==== LIGHT SWEEP (subtle) ==== */}
       <motion.div
         style={{ y: glowY }}
@@ -58,10 +70,10 @@ export default function Hero() {
           absolute inset-0
           bg-gradient-to-r 
           from-transparent 
-          via-white/10 
+          via-white/12 
           to-transparent
           blur-[120px]
-          opacity-20
+          opacity-25
           pointer-events-none
         "
       />
@@ -94,7 +106,7 @@ export default function Hero() {
           className="
             font-playfair font-semibold text-white leading-[1.05]
             text-[2.7rem] sm:text-[3.4rem] md:text-[4.3rem]
-            drop-shadow-[0_8px_25px_rgba(0,0,0,0.8)]
+            drop-shadow-[0_10px_30px_rgba(0,0,0,0.85)]
           "
         >
           Explore the Taste,
@@ -114,9 +126,9 @@ export default function Hero() {
         {/* ==== CTA HERO (Fade/Blur Saat Scroll) ==== */}
         <motion.div
           style={{
-            opacity: useTransform(scrollY, [0, 120], [1, 0]),
-            y: useTransform(scrollY, [0, 120], [0, -20]),
-            filter: useTransform(scrollY, [0, 120], ["blur(0px)", "blur(6px)"]),
+            opacity: ctaOpacity,
+            y: ctaY,
+            filter: ctaBlur,
           }}
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -137,10 +149,10 @@ export default function Hero() {
 
       </div>
 
-      {/* Bottom fade */}
+      {/* Bottom fade – dibuat lebih tipis & premium */}
       <div className="
-        absolute bottom-0 left-0 w-full h-28
-        bg-gradient-to-t from-[#f8fcfc]/75 to-transparent 
+        absolute bottom-0 left-0 w-full h-20
+        bg-gradient-to-t from-[#f8fcfc]/60 to-transparent 
         pointer-events-none
       " />
     </section>
