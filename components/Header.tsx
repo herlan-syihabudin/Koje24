@@ -10,50 +10,47 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [shrink, setShrink] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [menuAnimate, setMenuAnimate] = useState(false); // 🔥 FIX
+  const [menuAnimate, setMenuAnimate] = useState(false);
 
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
 
-  /* SCROLL */
+  /* SMART SCROLL LISTENER */
   useEffect(() => {
+    if (menuOpen) return; // ❗ Stop calculation saat menu terbuka
     const handleScroll = () => {
       const y = window.scrollY;
       setIsScrolled(y > 20);
       setShrink(y > 80);
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [menuOpen]); // ❗ Re-enable only when menu closed
 
   /* BODY LOCK */
   const lockBody = () => {
     document.body.classList.add("overflow-hidden", "touch-none");
   };
-
   const unlockBody = () => {
     document.body.classList.remove("overflow-hidden", "touch-none");
   };
 
-  /* OPEN MENU (Tanpa glitch) */
+  /* OPEN MENU */
   const openMenu = () => {
     setMenuOpen(true);
-    setTimeout(() => setMenuAnimate(true), 10); // animate masuk
-    window.scrollTo({ top: 0 });
+    setTimeout(() => setMenuAnimate(true), 10);
+    window.scrollTo({ top: 0, behavior: "instant" });
     lockBody();
   };
 
-  /* CLOSE MENU (Smooth 100%) */
+  /* CLOSE MENU */
   const closeMenu = () => {
-    setMenuAnimate(false); // animate keluar
+    setMenuAnimate(false);
     unlockBody();
-
-    setTimeout(() => {
-      setMenuOpen(false);
-    }, 200); // sesuai durasi animasi
+    setTimeout(() => setMenuOpen(false), 200);
   };
 
-  /* SMART SCROLL */
+  /* SMART SCROLL TO SECTION */
   const scrollToSection = (href: string) => {
     const target = document.querySelector(href);
     if (!target) return;
@@ -83,17 +80,22 @@ export default function Header() {
     <header
       className={`
         fixed top-0 w-full z-[200] transition-all duration-700
-        ${isScrolled ? "backdrop-blur-xl bg-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.05)]" : "bg-transparent"}
+        ${menuOpen
+          ? "bg-transparent"
+          : isScrolled
+          ? "backdrop-blur-xl bg-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
+          : "bg-transparent"
+        }
         ${shrink ? "py-2" : "py-5"}
       `}
     >
-      {isScrolled && (
+      {isScrolled && !menuOpen && (
         <div className="absolute bottom-0 left-0 h-[1.5px] w-full bg-gradient-to-r from-[#0FA3A8]/40 via-[#0B4B50]/40 to-[#0FA3A8]/40" />
       )}
 
       <div
         className={`max-w-7xl mx-auto flex items-center justify-between px-5 md:px-10 transition-all duration-700
-        ${shrink ? "h-[60px]" : "h-[82px]"}`}
+          ${shrink ? "h-[60px]" : "h-[82px]"}`}
       >
         {/* LOGO */}
         <Link
@@ -106,13 +108,30 @@ export default function Header() {
           className={`
             font-playfair font-bold transition-all duration-700
             ${shrink ? "text-xl" : "text-2xl"}
-            ${isScrolled ? "text-[#0B4B50]" : "text-white"}
+            ${
+              menuOpen
+                ? "text-white"
+                : isScrolled
+                ? "text-[#0B4B50]"
+                : "text-white"
+            }
           `}
         >
-          KOJE<span className={isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}>24</span>
+          KOJE
+          <span
+            className={`${
+              menuOpen
+                ? "text-[#E8C46B]"
+                : isScrolled
+                ? "text-[#0FA3A8]"
+                : "text-[#E8C46B]"
+            }`}
+          >
+            24
+          </span>
         </Link>
 
-        {/* DESKTOP */}
+        {/* DESKTOP MENU */}
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <button
@@ -120,7 +139,13 @@ export default function Header() {
               onClick={() => navClick(item.href)}
               className={`
                 font-medium transition-all duration-300
-                ${isScrolled ? "text-[#0B4B50] hover:text-[#0FA3A8]" : "text-white hover:text-[#E8C46B]"}
+                ${
+                  menuOpen
+                    ? "text-white"
+                    : isScrolled
+                    ? "text-[#0B4B50] hover:text-[#0FA3A8]"
+                    : "text-white hover:text-[#E8C46B]"
+                }
               `}
             >
               {item.label}
@@ -132,7 +157,16 @@ export default function Header() {
             onClick={() => window.dispatchEvent(new CustomEvent("open-cart"))}
             className="relative"
           >
-            <ShoppingCart size={24} className={isScrolled ? "text-[#0B4B50]" : "text-white"} />
+            <ShoppingCart
+              size={24}
+              className={
+                menuOpen
+                  ? "text-white"
+                  : isScrolled
+                  ? "text-[#0B4B50]"
+                  : "text-white"
+              }
+            />
             {totalQty > 0 && (
               <span className="absolute -top-2 -right-2 bg-[#E8C46B] text-[#0B4B50] text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
                 {totalQty}
@@ -146,7 +180,13 @@ export default function Header() {
             target="_blank"
             className={`
               ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm shadow-md transition-all
-              ${isScrolled ? "bg-[#0FA3A8] text-white hover:bg-[#0B4B50]" : "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30"}
+              ${
+                menuOpen
+                  ? "bg-white/20 text-white"
+                  : isScrolled
+                  ? "bg-[#0FA3A8] text-white hover:bg-[#0B4B50]"
+                  : "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30"
+              }
             `}
           >
             <MessageCircle size={20} /> Chat
@@ -156,13 +196,19 @@ export default function Header() {
         {/* MOBILE ICON */}
         <button
           onClick={openMenu}
-          className={`md:hidden text-2xl ${isScrolled ? "text-[#0B4B50]" : "text-white"}`}
+          className={`md:hidden text-2xl ${
+            menuOpen
+              ? "text-white"
+              : isScrolled
+              ? "text-[#0B4B50]"
+              : "text-white"
+          }`}
         >
           <Menu size={26} />
         </button>
       </div>
 
-      {/* MOBILE MENU (NO DELAY VERSION) */}
+      {/* MOBILE MENU OVERLAY */}
       {menuOpen && (
         <div
           className={`
