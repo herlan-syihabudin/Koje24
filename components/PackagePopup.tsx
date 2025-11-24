@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
+import { X } from "lucide-react"
 
 type PackageData = { name: string; price: number }
 type Form = { nama: string; alamat: string; catatan: string }
@@ -13,214 +14,226 @@ const VARIANTS = [
   "Beetroot",
 ]
 
-interface PackagePopupProps {
-  planId?: string
-  onClose?: () => void
-}
-
-export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
+export default function PackagePopup() {
   const [open, setOpen] = useState(false)
   const [pkg, setPkg] = useState<PackageData | null>(null)
-  const [form, setForm] = useState<Form>({ nama: "", alamat: "", catatan: "" })
+  const [form, setForm] = useState<Form>({
+    nama: "",
+    alamat: "",
+    catatan: "",
+  })
   const [qty, setQty] = useState<Record<string, number>>({})
 
-  /* ============================================================
-     LOCK / UNLOCK BODY
-  ============================================================ */
+  /* BODY LOCK – versi premium */
   const lockBody = () => {
-    document.body.style.overflow = "hidden"
-    document.documentElement.style.overflow = "hidden"
+    document.body.classList.add("overflow-hidden")
+    document.documentElement.classList.add("overflow-hidden")
   }
 
   const unlockBody = () => {
-    document.body.style.overflow = "auto"
-    document.documentElement.style.overflow = "auto"
+    document.body.classList.remove("overflow-hidden")
+    document.documentElement.classList.remove("overflow-hidden")
   }
 
-  /* ============================================================
-     OPEN PACKAGE EVENT
-  ============================================================ */
+  /* LISTENER */
   useEffect(() => {
-    const onOpen = (e: Event) => {
-      const detail = (e as CustomEvent).detail as PackageData
-      setPkg(detail)
+    const onOpen = (e: any) => {
+      setPkg(e.detail)
       setQty({})
       setOpen(true)
-      lockBody()     // 🔥 body scroll langsung dikunci
+      lockBody()
     }
-    window.addEventListener("open-package", onOpen as EventListener)
-    return () => window.removeEventListener("open-package", onOpen as EventListener)
+
+    window.addEventListener("open-package", onOpen)
+    return () => window.removeEventListener("open-package", onOpen)
   }, [])
 
-  /* ============================================================
-     CLOSE POPUP
-  ============================================================ */
+  /* CLOSE */
   const close = () => {
     setOpen(false)
-    unlockBody()
-    if (onClose) onClose()
+    setTimeout(() => unlockBody(), 300)
   }
 
-  /* ============================================================
-     Form Handler
-  ============================================================ */
-  const onChange =
-    (key: keyof Form) =>
-    (e: any) =>
-      setForm((f) => ({ ...f, [key]: e.target.value }))
+  /* FORM HANDLERS */
+  const onChange = (key: keyof Form) => (e: any) =>
+    setForm((f) => ({ ...f, [key]: e.target.value }))
 
   const getMaxQty = () => {
     if (!pkg) return 6
-    const match = pkg.name.match(/\d+/)
-    return match ? parseInt(match[0]) : 6
+    const m = pkg.name.match(/\d+/)
+    return m ? parseInt(m[0]) : 6
   }
 
-  const totalQty = Object.values(qty).reduce((a, b) => a + b, 0)
   const maxQty = getMaxQty()
+  const totalQty = Object.values(qty).reduce((a, b) => a + b, 0)
 
   const increase = (v: string) => {
     if (totalQty >= maxQty) return
-    setQty((prev) => ({ ...prev, [v]: (prev[v] || 0) + 1 }))
+    setQty((p) => ({ ...p, [v]: (p[v] || 0) + 1 }))
   }
 
   const decrease = (v: string) => {
     setQty((prev) => {
-      const current = prev[v] || 0
-      if (current <= 1) {
+      if (!prev[v]) return prev
+      if (prev[v] === 1) {
         const copy = { ...prev }
         delete copy[v]
         return copy
       }
-      return { ...prev, [v]: current - 1 }
+      return { ...prev, [v]: prev[v] - 1 }
     })
   }
 
   const handleVariantClick = (v: string) => {
     if (qty[v]) return
     if (totalQty >= maxQty) return
-    setQty((prev) => ({ ...prev, [v]: 1 }))
+    setQty((p) => ({ ...p, [v]: 1 }))
   }
 
+  /* WA CHECKOUT */
   const handleCheckout = () => {
-    if (!pkg) return alert("Pilih paket dulu, bro!")
-    if (totalQty !== maxQty)
-      return alert(`Isi paket harus pas ${maxQty} botol, bro!`)
+    if (!pkg) return
+    if (totalQty !== maxQty) {
+      alert(`Isi paket harus pas ${maxQty} botol, bro!`)
+      return
+    }
 
-    const selected =
-      Object.entries(qty)
-        .map(([name, q]) => `🥤 ${name} × ${q}`)
-        .join("\n") || "-"
+    const selected = Object.entries(qty)
+      .map(([v, q]) => `🥤 ${v} × ${q}`)
+      .join("\n")
 
-    const pesan = encodeURIComponent(
+    const msg = encodeURIComponent(
       `🧃 *Paket KOJE24*\n\n📦 ${pkg.name}\n💰 Rp${pkg.price.toLocaleString(
         "id-ID"
-      )}\n\n${selected}\n\n👤 *Nama:* ${form.nama}\n🏡 *Alamat:* ${form.alamat}\n📝 *Catatan:* ${form.catatan}`
+      )}\n\n${selected}\n\n👤 *Nama:* ${form.nama}\n🏡 *Alamat:* ${
+        form.alamat
+      }\n📝 *Catatan:* ${form.catatan}`
     )
 
-    window.open(`https://wa.me/6282213139580?text=${pesan}`, "_blank")
+    window.open(`https://wa.me/6282213139580?text=${msg}`, "_blank")
   }
 
   /* ============================================================
-     RESPONSIVE POPUP CONTENT (scrollable container fix)
+     UI — POPUP PREMIUM
   ============================================================ */
 
   return (
     <>
-      {/* overlay */}
+      {/* OVERLAY */}
       <div
-        className={`fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm transition-opacity duration-200 
-        ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        className={`
+          fixed inset-0 z-[110] bg-black/40 backdrop-blur-md
+          transition-all duration-300 
+          ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}
+        `}
         onClick={close}
       />
 
-      {/* popup container */}
+      {/* POPUP WRAPPER */}
       <div
-        className={`fixed inset-0 z-[71] flex items-center justify-center px-4 transition-all duration-200 
-        ${open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
-        onClick={close}
+        className={`
+          fixed inset-0 z-[120] flex items-center justify-center px-4
+          transition-all duration-300 
+          ${open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}
+        `}
       >
-        {/* SCROLLABLE BOX */}
+        {/* POPUP BOX */}
         <div
-          className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6 relative 
-          max-h-[90vh] overflow-y-auto overscroll-contain 
-          scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300"
+          className="
+            bg-white w-full max-w-lg rounded-[28px] shadow-2xl 
+            max-h-[88vh] overflow-y-auto overscroll-contain
+            relative p-7
+            animate-[fadeInUp_0.35s_ease]
+            scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300
+          "
           onClick={(e) => e.stopPropagation()}
         >
           {/* CLOSE BUTTON */}
           <button
             onClick={close}
-            className="sticky top-0 right-0 ml-auto block text-gray-500 hover:text-[#0FA3A8] 
-            font-bold text-lg bg-white rounded-full p-1 z-20"
+            className="
+              absolute top-5 right-5 p-1 rounded-full 
+              bg-white shadow-md hover:bg-gray-100 
+              transition-all
+            "
           >
-            ✕
+            <X size={22} className="text-gray-500" />
           </button>
 
           {/* TITLE */}
-          <h3 className="text-xl font-playfair font-semibold text-[#0B4B50] mt-2 mb-3">
-            Pilih Varian untuk Paket
+          <h3 className="text-2xl font-playfair font-semibold text-[#0B4B50] mb-2">
+            Pilih Varian
           </h3>
 
           {/* PACKAGE INFO */}
-          {pkg ? (
-            <p className="mb-4 text-[#0B4B50]">
-              {pkg.name} — <b>Rp{pkg.price.toLocaleString("id-ID")}</b> <br />
+          {pkg && (
+            <p className="text-[#0B4B50] mb-5">
+              {pkg.name} —{" "}
+              <b className="text-[#0FA3A8]">
+                Rp{pkg.price.toLocaleString("id-ID")}
+              </b>
+              <br />
               <span className="text-sm text-gray-500">
-                Pilih total {maxQty} botol (terpilih {totalQty})
+                Total botol harus <b>{maxQty}</b> (dipilih {totalQty})
               </span>
             </p>
-          ) : (
-            <p className="mb-4 text-gray-500">Pilih paket terlebih dahulu.</p>
           )}
 
-          {/* VARIANTS */}
-          <div className="grid grid-cols-2 gap-2 mb-4">
+          {/* VARIANT GRID */}
+          <div className="grid grid-cols-2 gap-2 mb-5">
             {VARIANTS.map((v) => (
               <div
                 key={v}
                 onClick={() => handleVariantClick(v)}
-                className={`flex items-center justify-between border rounded-lg px-3 py-2 text-sm cursor-pointer
-                ${
-                  qty[v]
-                    ? "bg-[#0FA3A8]/10 border-[#0FA3A8]"
-                    : "border-gray-300 hover:bg-gray-100"
-                }`}
+                className={`
+                  px-3 py-3 rounded-xl border cursor-pointer select-none
+                  shadow-sm transition-all
+                  ${
+                    qty[v]
+                      ? "bg-[#0FA3A8]/10 border-[#0FA3A8] shadow-md"
+                      : "border-gray-300 hover:bg-gray-100"
+                  }
+                `}
               >
-                <span className="truncate text-[13px]">{v}</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{v}</span>
 
-                {qty[v] && (
-                  <div className="flex items-center gap-[3px] -mr-1">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        decrease(v)
-                      }}
-                      className="bg-[#E8C46B] text-[#0B4B50] w-5 h-5 rounded-full flex items-center justify-center 
-                      text-[11px] font-bold hover:brightness-95"
-                    >
-                      –
-                    </button>
+                  {qty[v] && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          decrease(v)
+                        }}
+                        className="w-6 h-6 text-[14px] bg-[#E8C46B] text-[#0B4B50] rounded-full flex items-center justify-center font-bold"
+                      >
+                        –
+                      </button>
 
-                    <span className="w-4 text-center text-[13px] font-semibold">
-                      {qty[v]}
-                    </span>
+                      <span className="text-sm font-semibold min-w-[18px] text-center">
+                        {qty[v]}
+                      </span>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        increase(v)
-                      }}
-                      disabled={totalQty >= maxQty}
-                      className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold
-                      ${
-                        totalQty >= maxQty
-                          ? "bg-gray-300 text-white cursor-not-allowed"
-                          : "bg-[#0FA3A8] text-white hover:bg-[#0DC1C7]"
-                      }`}
-                    >
-                      +
-                    </button>
-                  </div>
-                )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          increase(v)
+                        }}
+                        disabled={totalQty >= maxQty}
+                        className={`
+                          w-6 h-6 text-[14px] font-bold rounded-full flex items-center justify-center
+                          ${
+                            totalQty >= maxQty
+                              ? "bg-gray-300 text-white cursor-not-allowed"
+                              : "bg-[#0FA3A8] text-white hover:bg-[#0DC1C7]"
+                          }
+                        `}
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -231,27 +244,32 @@ export default function PackagePopup({ planId, onClose }: PackagePopupProps) {
             placeholder="Nama lengkap"
             value={form.nama}
             onChange={onChange("nama")}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2"
+            className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm mb-3 focus:ring-2 focus:ring-[#0FA3A8]/40 outline-none"
           />
+
           <input
             type="text"
             placeholder="Alamat pengiriman"
             value={form.alamat}
             onChange={onChange("alamat")}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2"
+            className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm mb-3 focus:ring-2 focus:ring-[#0FA3A8]/40 outline-none"
           />
+
           <textarea
             placeholder="Catatan (opsional)"
             value={form.catatan}
             onChange={onChange("catatan")}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm h-16 resize-none"
+            className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm mb-3 h-20 resize-none focus:ring-2 focus:ring-[#0FA3A8]/40 outline-none"
           />
 
+          {/* CHECKOUT */}
           <button
             onClick={handleCheckout}
-            disabled={!pkg}
-            className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold hover:bg-[#0DC1C7] 
-            transition-all mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="
+              w-full py-3 bg-[#0FA3A8] hover:bg-[#0DC1C7] 
+              text-white font-semibold rounded-full 
+              shadow-lg transition-all active:scale-[0.97]
+            "
           >
             Checkout via WhatsApp
           </button>
