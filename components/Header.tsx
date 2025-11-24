@@ -158,38 +158,43 @@ export default function Header() {
       </div>
 
       {/* MOBILE MENU */}
-      {menuOpen && (
-        <div className="fixed inset-0 bg-white/90 backdrop-blur-xl z-[300] flex flex-col items-center justify-center gap-8 transition-all">
-          <button
-            onClick={closeMenu}
-            className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8]"
-          >
-            <FaTimes />
-          </button>
+{menuOpen && (
+  <div
+    className={`
+      fixed inset-0 z-[300]
+      bg-white/90 backdrop-blur-xl
+      flex flex-col items-center justify-center gap-8
+      transition-all duration-300
+      ${menuOpen ? "mobile-menu-show" : "mobile-menu-hide"}
+    `}
+  >
+    <button
+      onClick={closeMenu}
+      className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8]"
+    >
+      <FaTimes />
+    </button>
 
-          {navItems.map((item) => (
-            <button
-              key={item.href}
-              onClick={() => navClick(item.href)}
-              className="text-3xl font-semibold text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
-            >
-              {item.label}
-            </button>
-          ))}
+    {navItems.map((item) => (
+      <button
+        key={item.href}
+        onClick={() => navClick(item.href)}
+        className="text-3xl font-semibold text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
+      >
+        {item.label}
+      </button>
+    ))}
 
-          <a
-            href="https://wa.me/6282213139580"
-            target="_blank"
-            className="mt-10 flex items-center justify-center gap-2 px-10 py-3 bg-[#0FA3A8] text-white rounded-full text-xl hover:bg-[#0B4B50] transition-all shadow-xl"
-          >
-            <FaWhatsapp /> Chat Sekarang
-          </a>
+    <a
+      href="https://wa.me/6282213139580"
+      target="_blank"
+      className="mt-10 flex items-center justify-center gap-2 px-10 py-3 bg-[#0FA3A8] text-white rounded-full text-xl hover:bg-[#0B4B50] transition-all shadow-xl"
+    >
+      <FaWhatsapp /> Chat Sekarang
+    </a>
 
-          <div className="absolute bottom-8 text-sm text-gray-500">
-            © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
-          </div>
-        </div>
-      )}
-    </header>
-  );
-}
+    <div className="absolute bottom-8 text-sm text-gray-500">
+      © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
+    </div>
+  </div>
+)}
