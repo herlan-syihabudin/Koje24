@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 type Props = {
   onSuccess?: () => void
@@ -25,6 +25,18 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     active: false,
     showOnHome: false,
   })
+
+  /* ==============================
+      LOCK BODY WHEN MODAL OPEN
+  ===============================*/
+  useEffect(() => {
+    if (show) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+    return () => (document.body.style.overflow = "")
+  }, [show])
 
   const validate = () => {
     const err: Record<string, string> = {}
@@ -104,11 +116,27 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
       </button>
 
       {show && (
-        <div className="fixed inset-0 bg-black/45 flex items-center justify-center z-[999] px-3">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md relative shadow-[0_20px_60px_rgba(15,163,168,0.25)]">
+        <div
+          className="
+            fixed inset-0 z-[9999]
+            bg-black/60 backdrop-blur-sm
+            flex items-center justify-center
+            overflow-y-auto
+            py-10 px-4
+          "
+        >
+          <div
+            className="
+              relative w-full max-w-md
+              bg-white rounded-3xl shadow-xl
+              p-6
+            "
+            style={{ maxHeight: "90vh", overflowY: "auto" }}
+          >
+            {/* TOMBOL X SELALU TERLIHAT */}
             <button
               onClick={() => setShow(false)}
-              className="absolute right-4 top-3 text-xl text-gray-400 hover:text-gray-600"
+              className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-[#0FA3A8]"
             >
               ✕
             </button>
@@ -121,7 +149,9 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               bisa tampil di beranda.
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
+            {/* FORM */}
+            <form onSubmit={handleSubmit} className="space-y-3 pb-3">
+
               {/* NAMA */}
               <div>
                 <label className="text-xs font-medium text-gray-600">
@@ -131,7 +161,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                   value={form.nama}
                   onChange={(e) => setForm({ ...form, nama: e.target.value })}
                   placeholder="Contoh: Herlan S."
-                  className="mt-1 border border-[#e2e8f0] focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40 p-2 rounded-lg w-full text-sm outline-none"
+                  className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm outline-none focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40"
                 />
                 {errors.nama && (
                   <p className="text-[11px] text-red-500 mt-1">{errors.nama}</p>
@@ -147,7 +177,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                   value={form.kota}
                   onChange={(e) => setForm({ ...form, kota: e.target.value })}
                   placeholder="Contoh: Bekasi"
-                  className="mt-1 border border-[#e2e8f0] focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40 p-2 rounded-lg w-full text-sm outline-none"
+                  className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm outline-none focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40"
                 />
                 {errors.kota && (
                   <p className="text-[11px] text-red-500 mt-1">{errors.kota}</p>
@@ -161,12 +191,10 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 </label>
                 <textarea
                   value={form.pesan}
-                  onChange={(e) =>
-                    setForm({ ...form, pesan: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, pesan: e.target.value })}
                   placeholder="Contoh: Setelah rutin minum KOJE24, badan terasa lebih segar dan ringan..."
                   rows={3}
-                  className="mt-1 border border-[#e2e8f0] focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40 p-2 rounded-lg w-full text-sm outline-none resize-none"
+                  className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm outline-none resize-none focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40"
                 />
                 {errors.pesan && (
                   <p className="text-[11px] text-red-500 mt-1">{errors.pesan}</p>
@@ -180,10 +208,8 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 </label>
                 <select
                   value={form.varian}
-                  onChange={(e) =>
-                    setForm({ ...form, varian: e.target.value })
-                  }
-                  className="mt-1 border border-[#e2e8f0] focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40 p-2 rounded-lg w-full text-sm outline-none bg-white"
+                  onChange={(e) => setForm({ ...form, varian: e.target.value })}
+                  className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm outline-none bg-white focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40"
                 >
                   <option value="">Pilih Varian</option>
                   <option>Green Detox</option>
@@ -194,9 +220,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                   <option>Ginger Shot</option>
                 </select>
                 {errors.varian && (
-                  <p className="text-[11px] text-red-500 mt-1">
-                    {errors.varian}
-                  </p>
+                  <p className="text-[11px] text-red-500 mt-1">{errors.varian}</p>
                 )}
               </div>
 
@@ -212,9 +236,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                       type="button"
                       onMouseEnter={() => setHoverRating(star)}
                       onMouseLeave={() => setHoverRating(null)}
-                      onClick={() =>
-                        setForm({ ...form, rating: star })
-                      }
+                      onClick={() => setForm({ ...form, rating: star })}
                       className="text-xl"
                     >
                       <span
@@ -262,6 +284,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 </p>
               )}
 
+              {/* SUBMIT */}
               <button
                 type="submit"
                 disabled={sending}
@@ -269,6 +292,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               >
                 {sending ? "Mengirim…" : "Kirim Testimoni"}
               </button>
+
             </form>
           </div>
         </div>
