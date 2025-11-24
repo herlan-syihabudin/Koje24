@@ -30,17 +30,20 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
       LOCK BODY WHEN MODAL OPEN
   ===============================*/
   useEffect(() => {
-  if (show) {
-    document.body.style.overflow = "hidden"
-  } else {
-    document.body.style.overflow = ""
-  }
+    if (show) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
 
-  return () => {
-    document.body.style.overflow = ""
-  }
-}, [show])
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [show])
 
+  /* ==============================
+            VALIDATION
+  ===============================*/
   const validate = () => {
     const err: Record<string, string> = {}
     if (form.nama.trim().length < 2) err.nama = "Nama minimal 2 karakter"
@@ -52,17 +55,21 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     return Object.keys(err).length === 0
   }
 
+  /* ==============================
+        FILE UPLOAD (BLOB)
+  ===============================*/
   const uploadFileToBlob = async () => {
     if (!file) return ""
-
     const fd = new FormData()
     fd.append("file", file)
-
     const res = await fetch("/api/upload", { method: "POST", body: fd })
     const json = await res.json()
     return json.url || ""
   }
 
+  /* ==============================
+            SUBMIT FORM
+  ===============================*/
   const handleSubmit = async (e: any) => {
     e.preventDefault()
     setStatusMsg(null)
@@ -109,6 +116,9 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     }
   }
 
+  /* ==============================
+            RENDER UI
+  ===============================*/
   return (
     <>
       <button
@@ -123,20 +133,19 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
           className="
             fixed inset-0 z-[9999]
             bg-black/60 backdrop-blur-sm
-            flex items-center justify-center
             overflow-y-auto
-            py-10 px-4
+            pt-[90px] pb-10 px-4
           "
         >
           <div
             className="
-              relative w-full max-w-md
-              bg-white rounded-3xl shadow-xl
-              p-6
+              bg-white w-full max-w-md mx-auto
+              rounded-3xl shadow-xl p-6 relative
+              max-h-[calc(100vh-150px)]
+              overflow-y-auto
             "
-            style={{ maxHeight: "90vh", overflowY: "auto" }}
           >
-            {/* TOMBOL X SELALU TERLIHAT */}
+            {/* TOMBOL CLOSE */}
             <button
               onClick={() => setShow(false)}
               className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-[#0FA3A8]"
