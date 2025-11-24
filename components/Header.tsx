@@ -10,11 +10,12 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [shrink, setShrink] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
+  const [menuAnimate, setMenuAnimate] = useState(false); // 🔥 FIX
 
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
 
+  /* SCROLL */
   useEffect(() => {
     const handleScroll = () => {
       const y = window.scrollY;
@@ -34,20 +35,22 @@ export default function Header() {
     document.body.classList.remove("overflow-hidden", "touch-none");
   };
 
+  /* OPEN MENU (Tanpa glitch) */
   const openMenu = () => {
-    setIsClosing(false);
     setMenuOpen(true);
+    setTimeout(() => setMenuAnimate(true), 10); // animate masuk
     window.scrollTo({ top: 0 });
     lockBody();
   };
 
+  /* CLOSE MENU (Smooth 100%) */
   const closeMenu = () => {
-    setIsClosing(true);
+    setMenuAnimate(false); // animate keluar
     unlockBody();
+
     setTimeout(() => {
       setMenuOpen(false);
-      setIsClosing(false);
-    }, 220); // durasi fade-out
+    }, 200); // sesuai durasi animasi
   };
 
   /* SMART SCROLL */
@@ -65,7 +68,7 @@ export default function Header() {
       router.push(href);
       return;
     }
-    setTimeout(() => scrollToSection(href), 230);
+    setTimeout(() => scrollToSection(href), 240);
   };
 
   const navItems = [
@@ -109,7 +112,7 @@ export default function Header() {
           KOJE<span className={isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}>24</span>
         </Link>
 
-        {/* DESKTOP MENU */}
+        {/* DESKTOP */}
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <button
@@ -159,14 +162,14 @@ export default function Header() {
         </button>
       </div>
 
-      {/* MOBILE OVERLAY MENU */}
+      {/* MOBILE MENU (NO DELAY VERSION) */}
       {menuOpen && (
         <div
           className={`
-            fixed inset-0 bg-white/95 backdrop-blur-xl z-[300]
-            flex flex-col items-center justify-center gap-8
-            transition-opacity duration-200
-            ${isClosing ? "opacity-0" : "opacity-100"}
+            fixed inset-0 z-[300] flex flex-col items-center justify-center gap-8
+            bg-white/95 backdrop-blur-xl
+            transition-all duration-200
+            ${menuAnimate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
           `}
         >
           <button
