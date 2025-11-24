@@ -30,13 +30,16 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
       LOCK BODY WHEN MODAL OPEN
   ===============================*/
   useEffect(() => {
-    if (show) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = ""
-    }
-    return () => (document.body.style.overflow = "")
-  }, [show])
+  if (show) {
+    document.body.style.overflow = "hidden"
+  } else {
+    document.body.style.overflow = ""
+  }
+
+  return () => {
+    document.body.style.overflow = ""
+  }
+}, [show])
 
   const validate = () => {
     const err: Record<string, string> = {}
