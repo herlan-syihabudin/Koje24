@@ -10,6 +10,7 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [shrink, setShrink] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
@@ -24,27 +25,37 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const lockBody = () => document.body.classList.add("overflow-hidden");
-  const unlockBody = () => document.body.classList.remove("overflow-hidden");
+  /* BODY LOCK */
+  const lockBody = () => {
+    document.body.classList.add("overflow-hidden", "touch-none");
+  };
+
+  const unlockBody = () => {
+    document.body.classList.remove("overflow-hidden", "touch-none");
+  };
 
   const openMenu = () => {
+    setIsClosing(false);
     setMenuOpen(true);
-    lockBody();
     window.scrollTo({ top: 0 });
+    lockBody();
   };
 
   const closeMenu = () => {
-    setMenuOpen(false);
+    setIsClosing(true);
     unlockBody();
+    setTimeout(() => {
+      setMenuOpen(false);
+      setIsClosing(false);
+    }, 220); // durasi fade-out
   };
 
+  /* SMART SCROLL */
   const scrollToSection = (href: string) => {
     const target = document.querySelector(href);
     if (!target) return;
-
     const offset = shrink ? 65 : 110;
     const y = target.getBoundingClientRect().top + window.scrollY - offset;
-
     window.scrollTo({ top: y, behavior: "smooth" });
   };
 
@@ -54,7 +65,7 @@ export default function Header() {
       router.push(href);
       return;
     }
-    setTimeout(() => scrollToSection(href), 20);
+    setTimeout(() => scrollToSection(href), 230);
   };
 
   const navItems = [
@@ -62,12 +73,13 @@ export default function Header() {
     { label: "Tentang KOJE24", href: "#about" },
     { label: "Langganan", href: "#langganan" },
     { label: "Testimoni", href: "#testimoni" },
-    { label: "Bantuan", href: "/pusat-bantuan" }
+    { label: "Bantuan", href: "/pusat-bantuan" },
   ];
 
   return (
     <header
-      className={`fixed top-0 w-full z-[200] transition-all duration-700
+      className={`
+        fixed top-0 w-full z-[200] transition-all duration-700
         ${isScrolled ? "backdrop-blur-xl bg-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.05)]" : "bg-transparent"}
         ${shrink ? "py-2" : "py-5"}
       `}
@@ -80,6 +92,7 @@ export default function Header() {
         className={`max-w-7xl mx-auto flex items-center justify-between px-5 md:px-10 transition-all duration-700
         ${shrink ? "h-[60px]" : "h-[82px]"}`}
       >
+        {/* LOGO */}
         <Link
           href="/"
           onClick={(e) => {
@@ -96,6 +109,7 @@ export default function Header() {
           KOJE<span className={isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}>24</span>
         </Link>
 
+        {/* DESKTOP MENU */}
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <button
@@ -110,6 +124,7 @@ export default function Header() {
             </button>
           ))}
 
+          {/* CART */}
           <button
             onClick={() => window.dispatchEvent(new CustomEvent("open-cart"))}
             className="relative"
@@ -122,6 +137,7 @@ export default function Header() {
             )}
           </button>
 
+          {/* WA */}
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
@@ -134,6 +150,7 @@ export default function Header() {
           </a>
         </nav>
 
+        {/* MOBILE ICON */}
         <button
           onClick={openMenu}
           className={`md:hidden text-2xl ${isScrolled ? "text-[#0B4B50]" : "text-white"}`}
@@ -142,43 +159,46 @@ export default function Header() {
         </button>
       </div>
 
-      {/* MOBILE MENU (SELALU MOUNTED) */}
-      <div
-        className={`
-          fixed inset-0 z-[300] flex flex-col items-center justify-center
-          bg-white/95 backdrop-blur-xl transition-all duration-200
-          ${menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}
-        `}
-      >
-        <button
-          onClick={closeMenu}
-          className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8]"
+      {/* MOBILE OVERLAY MENU */}
+      {menuOpen && (
+        <div
+          className={`
+            fixed inset-0 bg-white/95 backdrop-blur-xl z-[300]
+            flex flex-col items-center justify-center gap-8
+            transition-opacity duration-200
+            ${isClosing ? "opacity-0" : "opacity-100"}
+          `}
         >
-          <X size={32} />
-        </button>
-
-        {navItems.map((item) => (
           <button
-            key={item.href}
-            onClick={() => navClick(item.href)}
-            className="text-3xl font-semibold text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
+            onClick={closeMenu}
+            className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8]"
           >
-            {item.label}
+            <X size={32} />
           </button>
-        ))}
 
-        <a
-          href="https://wa.me/6282213139580"
-          target="_blank"
-          className="mt-10 flex items-center justify-center gap-3 px-10 py-3 bg-[#0FA3A8] text-white rounded-full text-xl hover:bg-[#0B4B50] transition-all shadow-xl"
-        >
-          <MessageCircle size={28} /> Chat Sekarang
-        </a>
+          {navItems.map((item) => (
+            <button
+              key={item.href}
+              onClick={() => navClick(item.href)}
+              className="text-3xl font-semibold text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
+            >
+              {item.label}
+            </button>
+          ))}
 
-        <div className="absolute bottom-8 text-sm text-gray-500">
-          © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
+          <a
+            href="https://wa.me/6282213139580"
+            target="_blank"
+            className="mt-10 flex items-center justify-center gap-3 px-10 py-3 bg-[#0FA3A8] text-white rounded-full text-xl hover:bg-[#0B4B50] transition-all shadow-xl"
+          >
+            <MessageCircle size={28} /> Chat Sekarang
+          </a>
+
+          <div className="absolute bottom-8 text-sm text-gray-500">
+            © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
+          </div>
         </div>
-      </div>
+      )}
     </header>
   );
 }
