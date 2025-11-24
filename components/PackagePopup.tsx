@@ -8,10 +8,10 @@ type Form = { nama: string; alamat: string; catatan: string }
 const VARIANTS = [
   "Green Detox",
   "Yellow Immunity",
-  "Carrot Boost",
-  "Red Series",
-  "Sunrise",
-  "Beetroot",
+  "Green Revive",
+  "Sunrise Boost",
+  "Lemongrass Fresh",
+  "Red Vitality",
 ]
 
 export default function PackagePopup() {
@@ -24,18 +24,21 @@ export default function PackagePopup() {
   })
   const [qty, setQty] = useState<Record<string, number>>({})
 
-  /* BODY LOCK – versi premium */
+  /* =========================================
+     BODY LOCK (tidak diubah)
+  ========================================= */
   const lockBody = () => {
     document.body.classList.add("overflow-hidden")
     document.documentElement.classList.add("overflow-hidden")
   }
-
   const unlockBody = () => {
     document.body.classList.remove("overflow-hidden")
     document.documentElement.classList.remove("overflow-hidden")
   }
 
-  /* LISTENER */
+  /* =========================================
+     LISTENER (tidak diubah)
+  ========================================= */
   useEffect(() => {
     const onOpen = (e: any) => {
       setPkg(e.detail)
@@ -43,18 +46,21 @@ export default function PackagePopup() {
       setOpen(true)
       lockBody()
     }
-
     window.addEventListener("open-package", onOpen)
     return () => window.removeEventListener("open-package", onOpen)
   }, [])
 
-  /* CLOSE */
+  /* =========================================
+     CLOSE
+  ========================================= */
   const close = () => {
     setOpen(false)
     setTimeout(() => unlockBody(), 300)
   }
 
-  /* FORM HANDLERS */
+  /* =========================================
+     FORM & VARIANT LOGIC (tidak diubah)
+  ========================================= */
   const onChange = (key: keyof Form) => (e: any) =>
     setForm((f) => ({ ...f, [key]: e.target.value }))
 
@@ -76,9 +82,9 @@ export default function PackagePopup() {
     setQty((prev) => {
       if (!prev[v]) return prev
       if (prev[v] === 1) {
-        const copy = { ...prev }
-        delete copy[v]
-        return copy
+        const cp = { ...prev }
+        delete cp[v]
+        return cp
       }
       return { ...prev, [v]: prev[v] - 1 }
     })
@@ -90,7 +96,6 @@ export default function PackagePopup() {
     setQty((p) => ({ ...p, [v]: 1 }))
   }
 
-  /* WA CHECKOUT */
   const handleCheckout = () => {
     if (!pkg) return
     if (totalQty !== maxQty) {
@@ -113,38 +118,41 @@ export default function PackagePopup() {
     window.open(`https://wa.me/6282213139580?text=${msg}`, "_blank")
   }
 
-  /* ============================================================
-     UI — POPUP PREMIUM
-  ============================================================ */
-
+  /* =========================================
+     PREMIUM UI — versi internasional
+  ========================================= */
   return (
     <>
       {/* OVERLAY */}
       <div
         className={`
-          fixed inset-0 z-[110] bg-black/40 backdrop-blur-md
-          transition-all duration-300 
-          ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}
+          fixed inset-0 z-[110]
+          bg-black/50 backdrop-blur-[6px]
+          transition-all duration-300
+          ${open ? "opacity-100" : "opacity-0 pointer-events-none"}
         `}
         onClick={close}
       />
 
-      {/* POPUP WRAPPER */}
+      {/* WRAPPER */}
       <div
         className={`
-          fixed inset-0 z-[120] flex items-center justify-center px-4
-          transition-all duration-300 
+          fixed inset-0 z-[120]
+          flex items-center justify-center
+          px-4 transition-all duration-300
           ${open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}
         `}
       >
-        {/* POPUP BOX */}
+        {/* POPUP */}
         <div
           className="
-            bg-white w-full max-w-lg rounded-[28px] shadow-2xl 
-            max-h-[88vh] overflow-y-auto overscroll-contain
-            relative p-7
-            animate-[fadeInUp_0.35s_ease]
-            scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300
+            w-full max-w-lg bg-white rounded-[30px]
+            shadow-[0_20px_50px_rgba(0,0,0,0.15)]
+            ring-1 ring-[#0FA3A8]/15
+            p-7 relative overflow-hidden
+            max-h-[90vh] overflow-y-auto overscroll-contain
+            animate-[fadeInUp_0.45s_cubic-bezier(.16,.72,.43,1)]
+            backdrop-blur-xl
           "
           onClick={(e) => e.stopPropagation()}
         >
@@ -152,9 +160,10 @@ export default function PackagePopup() {
           <button
             onClick={close}
             className="
-              absolute top-5 right-5 p-1 rounded-full 
-              bg-white shadow-md hover:bg-gray-100 
-              transition-all
+              absolute top-5 right-5 p-2 rounded-full
+              bg-white shadow-lg
+              ring-1 ring-black/5
+              hover:bg-gray-100 transition-all
             "
           >
             <X size={22} className="text-gray-500" />
@@ -162,16 +171,13 @@ export default function PackagePopup() {
 
           {/* TITLE */}
           <h3 className="text-2xl font-playfair font-semibold text-[#0B4B50] mb-2">
-            Pilih Varian
+            Pilih Varian Juice
           </h3>
 
-          {/* PACKAGE INFO */}
           {pkg && (
-            <p className="text-[#0B4B50] mb-5">
-              {pkg.name} —{" "}
-              <b className="text-[#0FA3A8]">
-                Rp{pkg.price.toLocaleString("id-ID")}
-              </b>
+            <p className="text-[#0B4B50] mb-6 leading-relaxed">
+              <span className="font-semibold">{pkg.name}</span> —{" "}
+              <b className="text-[#0FA3A8]">Rp{pkg.price.toLocaleString("id-ID")}</b>
               <br />
               <span className="text-sm text-gray-500">
                 Total botol harus <b>{maxQty}</b> (dipilih {totalQty})
@@ -179,14 +185,14 @@ export default function PackagePopup() {
             </p>
           )}
 
-          {/* VARIANT GRID */}
-          <div className="grid grid-cols-2 gap-2 mb-5">
+          {/* VARIANTS */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
             {VARIANTS.map((v) => (
               <div
                 key={v}
                 onClick={() => handleVariantClick(v)}
                 className={`
-                  px-3 py-3 rounded-xl border cursor-pointer select-none
+                  px-3 py-3 rounded-xl border cursor-pointer
                   shadow-sm transition-all
                   ${
                     qty[v]
@@ -196,7 +202,7 @@ export default function PackagePopup() {
                 `}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{v}</span>
+                  <span className="text-[14px] font-medium">{v}</span>
 
                   {qty[v] && (
                     <div className="flex items-center gap-1">
@@ -244,7 +250,11 @@ export default function PackagePopup() {
             placeholder="Nama lengkap"
             value={form.nama}
             onChange={onChange("nama")}
-            className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm mb-3 focus:ring-2 focus:ring-[#0FA3A8]/40 outline-none"
+            className="
+              w-full border border-gray-300 rounded-2xl px-4 py-3 mb-3 text-sm
+              focus:ring-2 focus:ring-[#0FA3A8]/40 outline-none
+              shadow-sm
+            "
           />
 
           <input
@@ -252,22 +262,30 @@ export default function PackagePopup() {
             placeholder="Alamat pengiriman"
             value={form.alamat}
             onChange={onChange("alamat")}
-            className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm mb-3 focus:ring-2 focus:ring-[#0FA3A8]/40 outline-none"
+            className="
+              w-full border border-gray-300 rounded-2xl px-4 py-3 mb-3 text-sm
+              focus:ring-2 focus:ring-[#0FA3A8]/40 outline-none
+              shadow-sm
+            "
           />
 
           <textarea
             placeholder="Catatan (opsional)"
             value={form.catatan}
             onChange={onChange("catatan")}
-            className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm mb-3 h-20 resize-none focus:ring-2 focus:ring-[#0FA3A8]/40 outline-none"
+            className="
+              w-full border border-gray-300 rounded-2xl px-4 py-3 mb-4 text-sm h-20 resize-none
+              focus:ring-2 focus:ring-[#0FA3A8]/40 outline-none
+              shadow-sm
+            "
           />
 
-          {/* CHECKOUT */}
+          {/* BUTTON */}
           <button
             onClick={handleCheckout}
             className="
-              w-full py-3 bg-[#0FA3A8] hover:bg-[#0DC1C7] 
-              text-white font-semibold rounded-full 
+              w-full py-3 bg-[#0FA3A8] hover:bg-[#0DC1C7]
+              text-white font-semibold rounded-full
               shadow-lg transition-all active:scale-[0.97]
             "
           >
