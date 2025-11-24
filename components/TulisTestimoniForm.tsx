@@ -26,24 +26,20 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     showOnHome: false,
   })
 
-  /* ==============================
+  /* =======================================
       LOCK BODY WHEN MODAL OPEN
-  ===============================*/
+  ========================================*/
   useEffect(() => {
     if (show) {
       document.body.style.overflow = "hidden"
     } else {
       document.body.style.overflow = ""
     }
-
     return () => {
       document.body.style.overflow = ""
     }
   }, [show])
 
-  /* ==============================
-            VALIDATION
-  ===============================*/
   const validate = () => {
     const err: Record<string, string> = {}
     if (form.nama.trim().length < 2) err.nama = "Nama minimal 2 karakter"
@@ -55,21 +51,17 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     return Object.keys(err).length === 0
   }
 
-  /* ==============================
-        FILE UPLOAD (BLOB)
-  ===============================*/
   const uploadFileToBlob = async () => {
     if (!file) return ""
+
     const fd = new FormData()
     fd.append("file", file)
+
     const res = await fetch("/api/upload", { method: "POST", body: fd })
     const json = await res.json()
     return json.url || ""
   }
 
-  /* ==============================
-            SUBMIT FORM
-  ===============================*/
   const handleSubmit = async (e: any) => {
     e.preventDefault()
     setStatusMsg(null)
@@ -116,9 +108,6 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     }
   }
 
-  /* ==============================
-            RENDER UI
-  ===============================*/
   return (
     <>
       <button
@@ -131,21 +120,21 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
       {show && (
         <div
           className="
-            fixed inset-0 z-[9999]
+            fixed inset-0 z-[99999]
             bg-black/60 backdrop-blur-sm
             overflow-y-auto
-            pt-[90px] pb-10 px-4
+            flex justify-center
+            pt-24 pb-10 px-4
           "
         >
           <div
             className="
-              bg-white w-full max-w-md mx-auto
-              rounded-3xl shadow-xl p-6 relative
-              max-h-[calc(100vh-150px)]
-              overflow-y-auto
+              relative w-full max-w-md
+              bg-white rounded-3xl shadow-xl
+              p-6
             "
           >
-            {/* TOMBOL CLOSE */}
+            {/* TOMBOL CLOSE SELALU AMAN */}
             <button
               onClick={() => setShow(false)}
               className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-[#0FA3A8]"
@@ -157,50 +146,36 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               Tulis Testimoni Kamu 💬
             </h3>
             <p className="text-xs text-gray-500 mb-4">
-              Ceritakan pengalamanmu setelah minum KOJE24. Ulasan bintang 4–5
-              bisa tampil di beranda.
+              Ceritakan pengalamanmu setelah minum KOJE24. Ulasan bintang 4–5 bisa tampil di beranda.
             </p>
 
             {/* FORM */}
             <form onSubmit={handleSubmit} className="space-y-3 pb-3">
 
-              {/* NAMA */}
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  Nama Lengkap
-                </label>
+                <label className="text-xs font-medium text-gray-600">Nama Lengkap</label>
                 <input
                   value={form.nama}
                   onChange={(e) => setForm({ ...form, nama: e.target.value })}
                   placeholder="Contoh: Herlan S."
                   className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm outline-none focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40"
                 />
-                {errors.nama && (
-                  <p className="text-[11px] text-red-500 mt-1">{errors.nama}</p>
-                )}
+                {errors.nama && <p className="text-[11px] text-red-500 mt-1">{errors.nama}</p>}
               </div>
 
-              {/* KOTA */}
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  Kota / Domisili
-                </label>
+                <label className="text-xs font-medium text-gray-600">Kota / Domisili</label>
                 <input
                   value={form.kota}
                   onChange={(e) => setForm({ ...form, kota: e.target.value })}
                   placeholder="Contoh: Bekasi"
                   className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm outline-none focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40"
                 />
-                {errors.kota && (
-                  <p className="text-[11px] text-red-500 mt-1">{errors.kota}</p>
-                )}
+                {errors.kota && <p className="text-[11px] text-red-500 mt-1">{errors.kota}</p>}
               </div>
 
-              {/* PESAN */}
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  Ceritakan Pengalamanmu
-                </label>
+                <label className="text-xs font-medium text-gray-600">Ceritakan Pengalamanmu</label>
                 <textarea
                   value={form.pesan}
                   onChange={(e) => setForm({ ...form, pesan: e.target.value })}
@@ -208,16 +183,11 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                   rows={3}
                   className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm outline-none resize-none focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40"
                 />
-                {errors.pesan && (
-                  <p className="text-[11px] text-red-500 mt-1">{errors.pesan}</p>
-                )}
+                {errors.pesan && <p className="text-[11px] text-red-500 mt-1">{errors.pesan}</p>}
               </div>
 
-              {/* VARIAN */}
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  Varian Favorit
-                </label>
+                <label className="text-xs font-medium text-gray-600">Varian Favorit</label>
                 <select
                   value={form.varian}
                   onChange={(e) => setForm({ ...form, varian: e.target.value })}
@@ -231,16 +201,11 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                   <option>Carrot Boost</option>
                   <option>Ginger Shot</option>
                 </select>
-                {errors.varian && (
-                  <p className="text-[11px] text-red-500 mt-1">{errors.varian}</p>
-                )}
+                {errors.varian && <p className="text-[11px] text-red-500 mt-1">{errors.varian}</p>}
               </div>
 
-              {/* RATING */}
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  Rating Kepuasan
-                </label>
+                <label className="text-xs font-medium text-gray-600">Rating Kepuasan</label>
                 <div className="flex gap-1 mt-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -252,11 +217,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                       className="text-xl"
                     >
                       <span
-                        className={
-                          (hoverRating ?? form.rating) >= star
-                            ? "text-yellow-400"
-                            : "text-gray-300"
-                        }
+                        className={(hoverRating ?? form.rating) >= star ? "text-yellow-400" : "text-gray-300"}
                       >
                         ★
                       </span>
@@ -265,11 +226,8 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 </div>
               </div>
 
-              {/* FOTO OPSIONAL */}
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  Foto (opsional)
-                </label>
+                <label className="text-xs font-medium text-gray-600">Foto (opsional)</label>
                 <input
                   type="file"
                   accept="image/*"
@@ -285,18 +243,14 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                   <img
                     src={preview}
                     className="w-20 h-20 rounded-lg object-cover mt-2 border border-[#e2e8f0]"
-                    alt="Preview"
                   />
                 )}
               </div>
 
               {statusMsg && (
-                <p className="text-[11px] text-center text-gray-600 mt-1">
-                  {statusMsg}
-                </p>
+                <p className="text-[11px] text-center text-gray-600 mt-1">{statusMsg}</p>
               )}
 
-              {/* SUBMIT */}
               <button
                 type="submit"
                 disabled={sending}
@@ -304,7 +258,6 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               >
                 {sending ? "Mengirim…" : "Kirim Testimoni"}
               </button>
-
             </form>
           </div>
         </div>
