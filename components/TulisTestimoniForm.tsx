@@ -26,20 +26,25 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     showOnHome: false,
   })
 
-  /* ==============================
-      LOCK BODY WHEN MODAL OPEN
-  ===============================*/
+  /* ============================================================
+       BODY LOCK FIX (AMAN UNTUK iOS & ANDROID)
+       TANPA position:fixed (yang bikin modal bocor)
+  ============================================================ */
   useEffect(() => {
     if (show) {
-      document.body.style.overflow = "hidden"
+      document.body.classList.add("body-lock")
     } else {
-      document.body.style.overflow = ""
+      document.body.classList.remove("body-lock")
     }
+
     return () => {
-      document.body.style.overflow = ""
+      document.body.classList.remove("body-lock")
     }
   }, [show])
 
+  /* ==============================
+        VALIDASI
+  ============================== */
   const validate = () => {
     const err: Record<string, string> = {}
     if (form.nama.trim().length < 2) err.nama = "Nama minimal 2 karakter"
@@ -51,6 +56,9 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     return Object.keys(err).length === 0
   }
 
+  /* ==============================
+        UPLOAD FOTO
+  ============================== */
   const uploadFileToBlob = async () => {
     if (!file) return ""
 
@@ -62,6 +70,9 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     return json.url || ""
   }
 
+  /* ==============================
+         SUBMIT FORM
+  ============================== */
   const handleSubmit = async (e: any) => {
     e.preventDefault()
     setStatusMsg(null)
@@ -74,6 +85,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     }
 
     setSending(true)
+
     try {
       let imageUrl = ""
       if (file) imageUrl = await uploadFileToBlob()
@@ -93,9 +105,12 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
 
       setLastSubmit(Date.now())
       setStatusMsg("Terima kasih! Testimoni kamu terkirim 🙌")
+
       onSuccess?.()
 
-      setTimeout(() => setShow(false), 900)
+      setTimeout(() => {
+        setShow(false)
+      }, 900)
     } catch (err) {
       console.error(err)
       setStatusMsg("Terjadi kesalahan, coba lagi.")
@@ -103,6 +118,14 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
       setSending(false)
     }
   }
+
+  /* ================================================================
+      FULL UI FIX — ANTI BOCOR, ANTI NABRAK NAVBAR, AMAN DI SEMUA HP
+      - Overlay pakai z-50+
+      - Modal di tengah
+      - Scroll internal
+      - X selalu visible
+  ================================================================ */
 
   return (
     <>
@@ -115,13 +138,13 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
 
       {show && (
         <div
+          data-testimoni-modal
           className="
-            fixed inset-0
-            z-[999999]    /* ⬅️ FIX UTAMA: modal selalu paling atas */
+            fixed inset-0 z-[99999]
             bg-black/60 backdrop-blur-sm
             flex items-center justify-center
+            px-4 py-10
             overflow-y-auto
-            py-10 px-4
           "
         >
           <div
@@ -133,13 +156,12 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
             style={{
               maxHeight: "90vh",
               overflowY: "auto",
-              WebkitOverflowScrolling: "touch",
             }}
           >
-            {/* Tombol Close SELALU berada di atas */}
+            {/* Tombol X (fix selalu terlihat) */}
             <button
               onClick={() => setShow(false)}
-              className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-[#0FA3A8] z-[999999]"
+              className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-[#0FA3A8]"
             >
               ✕
             </button>
@@ -147,7 +169,6 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
             <h3 className="text-xl font-semibold mb-1 text-[#0B4B50]">
               Tulis Testimoni Kamu 💬
             </h3>
-
             <p className="text-xs text-gray-500 mb-4">
               Ceritakan pengalamanmu setelah minum KOJE24. Ulasan bintang 4–5
               bisa tampil di beranda.
@@ -155,6 +176,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
 
             {/* FORM */}
             <form onSubmit={handleSubmit} className="space-y-3 pb-3">
+
               {/* NAMA */}
               <div>
                 <label className="text-xs font-medium text-gray-600">
@@ -194,8 +216,10 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 </label>
                 <textarea
                   value={form.pesan}
-                  onChange={(e) => setForm({ ...form, pesan: e.target.value })}
-                  placeholder="Contoh: Setelah rutin minum KOJE24, badan terasa lebih segar..."
+                  onChange={(e) =>
+                    setForm({ ...form, pesan: e.target.value })
+                  }
+                  placeholder="Contoh: Setelah rutin minum KOJE24, badan terasa lebih segar dan ringan..."
                   rows={3}
                   className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm outline-none resize-none focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40"
                 />
@@ -211,7 +235,9 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 </label>
                 <select
                   value={form.varian}
-                  onChange={(e) => setForm({ ...form, varian: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, varian: e.target.value })
+                  }
                   className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm outline-none bg-white focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40"
                 >
                   <option value="">Pilih Varian</option>
@@ -223,7 +249,9 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                   <option>Ginger Shot</option>
                 </select>
                 {errors.varian && (
-                  <p className="text-[11px] text-red-500 mt-1">{errors.varian}</p>
+                  <p className="text-[11px] text-red-500 mt-1">
+                    {errors.varian}
+                  </p>
                 )}
               </div>
 
@@ -239,7 +267,9 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                       type="button"
                       onMouseEnter={() => setHoverRating(star)}
                       onMouseLeave={() => setHoverRating(null)}
-                      onClick={() => setForm({ ...form, rating: star })}
+                      onClick={() =>
+                        setForm({ ...form, rating: star })
+                      }
                       className="text-xl"
                     >
                       <span
@@ -256,7 +286,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 </div>
               </div>
 
-              {/* FOTO OPSIONAL */}
+              {/* FOTO */}
               <div>
                 <label className="text-xs font-medium text-gray-600">
                   Foto (opsional)
@@ -281,6 +311,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 )}
               </div>
 
+              {/* STATUS */}
               {statusMsg && (
                 <p className="text-[11px] text-center text-gray-600 mt-1">
                   {statusMsg}
@@ -295,6 +326,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               >
                 {sending ? "Mengirim…" : "Kirim Testimoni"}
               </button>
+
             </form>
           </div>
         </div>
