@@ -15,59 +15,79 @@ export default function Header() {
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
 
-  /* SMART SCROLL LISTENER */
+  /* ===========================
+     SMART SCROLL LISTENER
+  ============================ */
   useEffect(() => {
-    if (menuOpen) return; // ❗ Stop calculation saat menu terbuka
+    if (menuOpen) return; // ❗ saat menu terbuka, header freeze total
+
     const handleScroll = () => {
       const y = window.scrollY;
       setIsScrolled(y > 20);
       setShrink(y > 80);
     };
+
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [menuOpen]); // ❗ Re-enable only when menu closed
+  }, [menuOpen]);
 
-  /* BODY LOCK */
+  /* ===========================
+     BODY LOCK
+  ============================ */
   const lockBody = () => {
     document.body.classList.add("overflow-hidden", "touch-none");
   };
+
   const unlockBody = () => {
     document.body.classList.remove("overflow-hidden", "touch-none");
   };
 
-  /* OPEN MENU */
+  /* ===========================
+     OPEN MENU
+  ============================ */
   const openMenu = () => {
     setMenuOpen(true);
     setTimeout(() => setMenuAnimate(true), 10);
-    window.scrollTo({ top: 0, behavior: "instant" });
+    window.scrollTo({ top: 0, behavior: "instant" }); // no transition
     lockBody();
   };
 
-  /* CLOSE MENU */
+  /* ===========================
+     CLOSE MENU
+  ============================ */
   const closeMenu = () => {
     setMenuAnimate(false);
     unlockBody();
     setTimeout(() => setMenuOpen(false), 200);
   };
 
-  /* SMART SCROLL TO SECTION */
+  /* ===========================
+     SMART SCROLL TO SECTION
+  ============================ */
   const scrollToSection = (href: string) => {
     const target = document.querySelector(href);
     if (!target) return;
+
     const offset = shrink ? 65 : 110;
     const y = target.getBoundingClientRect().top + window.scrollY - offset;
+
     window.scrollTo({ top: y, behavior: "smooth" });
   };
 
   const navClick = (href: string) => {
     closeMenu();
+
     if (href.startsWith("/")) {
       router.push(href);
       return;
     }
+
     setTimeout(() => scrollToSection(href), 240);
   };
 
+  /* ===========================
+     NAV ITEMS
+  ============================ */
   const navItems = [
     { label: "Produk", href: "#produk" },
     { label: "Tentang KOJE24", href: "#about" },
@@ -76,28 +96,36 @@ export default function Header() {
     { label: "Bantuan", href: "/pusat-bantuan" },
   ];
 
+  /* ===========================
+     RENDER
+  ============================ */
   return (
     <header
       className={`
-        fixed top-0 w-full z-[200] transition-all duration-700
+        fixed top-0 w-full z-[200]
         ${menuOpen
-          ? "bg-transparent"
+          ? "bg-transparent py-5 transition-none" /* FREEZE MODE */
           : isScrolled
-          ? "backdrop-blur-xl bg-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
-          : "bg-transparent"
+          ? "backdrop-blur-xl bg-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-700"
+          : "bg-transparent transition-all duration-700"
         }
-        ${shrink ? "py-2" : "py-5"}
+        ${menuOpen ? "" : shrink ? "py-2" : "py-5"}
       `}
     >
+      {/* Bottom Gradient (hide when menu open) */}
       {isScrolled && !menuOpen && (
         <div className="absolute bottom-0 left-0 h-[1.5px] w-full bg-gradient-to-r from-[#0FA3A8]/40 via-[#0B4B50]/40 to-[#0FA3A8]/40" />
       )}
 
       <div
-        className={`max-w-7xl mx-auto flex items-center justify-between px-5 md:px-10 transition-all duration-700
-          ${shrink ? "h-[60px]" : "h-[82px]"}`}
+        className={`max-w-7xl mx-auto flex items-center justify-between px-5 md:px-10
+          ${shrink && !menuOpen ? "h-[60px]" : "h-[82px]"}
+          transition-all duration-700
+        `}
       >
-        {/* LOGO */}
+        {/* ===========================
+            LOGO
+        ============================ */}
         <Link
           href="/"
           onClick={(e) => {
@@ -107,7 +135,7 @@ export default function Header() {
           }}
           className={`
             font-playfair font-bold transition-all duration-700
-            ${shrink ? "text-xl" : "text-2xl"}
+            ${shrink && !menuOpen ? "text-xl" : "text-2xl"}
             ${
               menuOpen
                 ? "text-white"
@@ -131,7 +159,9 @@ export default function Header() {
           </span>
         </Link>
 
-        {/* DESKTOP MENU */}
+        {/* ===========================
+            DESKTOP MENU
+        ============================ */}
         <nav className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
             <button
@@ -167,6 +197,7 @@ export default function Header() {
                   : "text-white"
               }
             />
+
             {totalQty > 0 && (
               <span className="absolute -top-2 -right-2 bg-[#E8C46B] text-[#0B4B50] text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
                 {totalQty}
@@ -174,7 +205,7 @@ export default function Header() {
             )}
           </button>
 
-          {/* WA */}
+          {/* WA BUTTON */}
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
@@ -193,22 +224,29 @@ export default function Header() {
           </a>
         </nav>
 
-        {/* MOBILE ICON */}
+        {/* ===========================
+            MOBILE ICON
+        ============================ */}
         <button
           onClick={openMenu}
-          className={`md:hidden text-2xl ${
-            menuOpen
-              ? "text-white"
-              : isScrolled
-              ? "text-[#0B4B50]"
-              : "text-white"
-          }`}
+          className={`
+            md:hidden text-2xl
+            ${
+              menuOpen
+                ? "text-white"
+                : isScrolled
+                ? "text-[#0B4B50]"
+                : "text-white"
+            }
+          `}
         >
           <Menu size={26} />
         </button>
       </div>
 
-      {/* MOBILE MENU OVERLAY */}
+      {/* ===========================
+          MOBILE MENU OVERLAY
+      ============================ */}
       {menuOpen && (
         <div
           className={`
@@ -225,6 +263,7 @@ export default function Header() {
             <X size={32} />
           </button>
 
+          {/* NAV ITEMS MOBILE */}
           {navItems.map((item) => (
             <button
               key={item.href}
@@ -235,6 +274,7 @@ export default function Header() {
             </button>
           ))}
 
+          {/* WA */}
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
