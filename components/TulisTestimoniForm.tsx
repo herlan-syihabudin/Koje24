@@ -55,7 +55,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     if (!validate()) return
 
     if (lastSubmit && Date.now() - lastSubmit < 6000) {
-      setStatusMsg("Tunggu sebentar...")
+      setStatusMsg("Tunggu sebentar sebelum mengirim lagi…")
       return
     }
 
@@ -98,118 +98,177 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     <>
       <button
         onClick={() => setShow(true)}
-        className="px-5 py-2 bg-[#0FA3A8] text-white rounded-full shadow"
+        className="px-5 py-2 bg-[#0FA3A8] text-white rounded-full shadow-md hover:shadow-lg text-sm md:text-base transition-all"
       >
         + Tulis Testimoni
       </button>
 
       {show && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl p-6 w-[90%] max-w-md relative">
-
+        <div className="fixed inset-0 bg-black/45 flex items-center justify-center z-[999] px-3">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md relative shadow-[0_20px_60px_rgba(15,163,168,0.25)]">
             <button
               onClick={() => setShow(false)}
-              className="absolute right-4 top-3 text-xl text-gray-400"
+              className="absolute right-4 top-3 text-xl text-gray-400 hover:text-gray-600"
             >
               ✕
             </button>
 
-            <h3 className="text-xl font-semibold mb-4 text-[#0B4B50]">Tulis Testimoni Kamu 💬</h3>
+            <h3 className="text-xl font-semibold mb-1 text-[#0B4B50]">
+              Tulis Testimoni Kamu 💬
+            </h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Ceritakan pengalamanmu setelah minum KOJE24. Ulasan bintang 4–5
+              bisa tampil di beranda.
+            </p>
 
             <form onSubmit={handleSubmit} className="space-y-3">
-
-              <input
-                value={form.nama}
-                onChange={(e) => setForm({ ...form, nama: e.target.value })}
-                placeholder="Nama"
-                className="border p-2 rounded-lg w-full"
-              />
-              {errors.nama && <p className="text-xs text-red-500">{errors.nama}</p>}
-
-              <input
-                value={form.kota}
-                onChange={(e) => setForm({ ...form, kota: e.target.value })}
-                placeholder="Kota"
-                className="border p-2 rounded-lg w-full"
-              />
-              {errors.kota && <p className="text-xs text-red-500">{errors.kota}</p>}
-
-              <textarea
-                value={form.pesan}
-                onChange={(e) => setForm({ ...form, pesan: e.target.value })}
-                placeholder="Ceritakan pengalamanmu…"
-                className="border p-2 rounded-lg w-full"
-              />
-              {errors.pesan && <p className="text-xs text-red-500">{errors.pesan}</p>}
-
-              <select
-                value={form.varian}
-                onChange={(e) => setForm({ ...form, varian: e.target.value })}
-                className="border p-2 rounded-lg w-full"
-              >
-                <option value="">Pilih Varian</option>
-                <option>Green Detox</option>
-                <option>Yellow Immunity</option>
-                <option>Beetroot</option>
-                <option>Sunrise</option>
-                <option>Carrot Boost</option>
-                <option>Ginger Shot</option>
-              </select>
-              {errors.varian && <p className="text-xs text-red-500">{errors.varian}</p>}
-
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onMouseEnter={() => setHoverRating(star)}
-                    onMouseLeave={() => setHoverRating(null)}
-                    onClick={() => setForm({ ...form, rating: star })}
-                    className="text-xl"
-                  >
-                    <span
-                      className={
-                        (hoverRating ?? form.rating) >= star
-                          ? "text-yellow-400"
-                          : "text-gray-300"
-                      }
-                    >
-                      ★
-                    </span>
-                  </button>
-                ))}
+              {/* NAMA */}
+              <div>
+                <label className="text-xs font-medium text-gray-600">
+                  Nama Lengkap
+                </label>
+                <input
+                  value={form.nama}
+                  onChange={(e) => setForm({ ...form, nama: e.target.value })}
+                  placeholder="Contoh: Herlan S."
+                  className="mt-1 border border-[#e2e8f0] focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40 p-2 rounded-lg w-full text-sm outline-none"
+                />
+                {errors.nama && (
+                  <p className="text-[11px] text-red-500 mt-1">{errors.nama}</p>
+                )}
               </div>
 
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] || null
-                  setFile(f)
-                  if (f) setPreview(URL.createObjectURL(f))
-                }}
-                className="border p-2 rounded-lg w-full"
-              />
-
-              {preview && (
-                <img
-                  src={preview}
-                  className="w-20 h-20 rounded-lg object-cover mt-2 border"
+              {/* KOTA */}
+              <div>
+                <label className="text-xs font-medium text-gray-600">
+                  Kota / Domisili
+                </label>
+                <input
+                  value={form.kota}
+                  onChange={(e) => setForm({ ...form, kota: e.target.value })}
+                  placeholder="Contoh: Bekasi"
+                  className="mt-1 border border-[#e2e8f0] focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40 p-2 rounded-lg w-full text-sm outline-none"
                 />
-              )}
+                {errors.kota && (
+                  <p className="text-[11px] text-red-500 mt-1">{errors.kota}</p>
+                )}
+              </div>
+
+              {/* PESAN */}
+              <div>
+                <label className="text-xs font-medium text-gray-600">
+                  Ceritakan Pengalamanmu
+                </label>
+                <textarea
+                  value={form.pesan}
+                  onChange={(e) =>
+                    setForm({ ...form, pesan: e.target.value })
+                  }
+                  placeholder="Contoh: Setelah rutin minum KOJE24, badan terasa lebih segar dan ringan..."
+                  rows={3}
+                  className="mt-1 border border-[#e2e8f0] focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40 p-2 rounded-lg w-full text-sm outline-none resize-none"
+                />
+                {errors.pesan && (
+                  <p className="text-[11px] text-red-500 mt-1">{errors.pesan}</p>
+                )}
+              </div>
+
+              {/* VARIAN */}
+              <div>
+                <label className="text-xs font-medium text-gray-600">
+                  Varian Favorit
+                </label>
+                <select
+                  value={form.varian}
+                  onChange={(e) =>
+                    setForm({ ...form, varian: e.target.value })
+                  }
+                  className="mt-1 border border-[#e2e8f0] focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40 p-2 rounded-lg w-full text-sm outline-none bg-white"
+                >
+                  <option value="">Pilih Varian</option>
+                  <option>Green Detox</option>
+                  <option>Yellow Immunity</option>
+                  <option>Beetroot</option>
+                  <option>Sunrise</option>
+                  <option>Carrot Boost</option>
+                  <option>Ginger Shot</option>
+                </select>
+                {errors.varian && (
+                  <p className="text-[11px] text-red-500 mt-1">
+                    {errors.varian}
+                  </p>
+                )}
+              </div>
+
+              {/* RATING */}
+              <div>
+                <label className="text-xs font-medium text-gray-600">
+                  Rating Kepuasan
+                </label>
+                <div className="flex gap-1 mt-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(null)}
+                      onClick={() =>
+                        setForm({ ...form, rating: star })
+                      }
+                      className="text-xl"
+                    >
+                      <span
+                        className={
+                          (hoverRating ?? form.rating) >= star
+                            ? "text-yellow-400"
+                            : "text-gray-300"
+                        }
+                      >
+                        ★
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* FOTO OPSIONAL */}
+              <div>
+                <label className="text-xs font-medium text-gray-600">
+                  Foto (opsional)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] || null
+                    setFile(f)
+                    if (f) setPreview(URL.createObjectURL(f))
+                  }}
+                  className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm"
+                />
+
+                {preview && (
+                  <img
+                    src={preview}
+                    className="w-20 h-20 rounded-lg object-cover mt-2 border border-[#e2e8f0]"
+                    alt="Preview"
+                  />
+                )}
+              </div>
 
               {statusMsg && (
-                <p className="text-xs text-center text-gray-600">{statusMsg}</p>
+                <p className="text-[11px] text-center text-gray-600 mt-1">
+                  {statusMsg}
+                </p>
               )}
 
               <button
                 type="submit"
                 disabled={sending}
-                className="w-full bg-[#0FA3A8] text-white py-2 rounded-full"
+                className="w-full bg-[#0FA3A8] hover:bg-[#0B4B50] text-white py-2.5 rounded-full text-sm font-medium mt-2 transition-all disabled:opacity-60"
               >
                 {sending ? "Mengirim…" : "Kirim Testimoni"}
               </button>
-
             </form>
           </div>
         </div>
