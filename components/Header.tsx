@@ -14,30 +14,20 @@ export default function Header() {
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
 
-  // =====================================
-  //  SCROLL LISTENER
-  // =====================================
   useEffect(() => {
-    const handleScroll = () => {
-      if (!menuOpen) {
-        setIsScrolled(window.scrollY > 60);
-      }
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 60);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [menuOpen]);
+  }, []);
 
-  // =====================================
-  //  BODY LOCK FIX (html + body)
-  // =====================================
+  // BODY LOCK FIX
   const lockBody = () => {
-    document.documentElement.classList.add("overflow-hidden");
     document.body.classList.add("overflow-hidden");
+    document.documentElement.classList.add("overflow-hidden");
   };
-
   const unlockBody = () => {
-    document.documentElement.classList.remove("overflow-hidden");
     document.body.classList.remove("overflow-hidden");
+    document.documentElement.classList.remove("overflow-hidden");
   };
 
   const openMenu = () => {
@@ -48,17 +38,15 @@ export default function Header() {
 
   const closeMenu = () => {
     setMenuOpen(false);
-    setTimeout(unlockBody, 150);
+    setTimeout(unlockBody, 200);
   };
 
-  // =====================================
   // SMART SCROLL
-  // =====================================
   const scrollToSection = (href: string) => {
     const target = document.querySelector(href);
     if (!target) return;
 
-    const headerOffset = isScrolled ? 78 : 120;
+    const headerOffset = isScrolled ? 70 : 110;
     const y = target.getBoundingClientRect().top + window.scrollY - headerOffset;
 
     window.scrollTo({ top: y, behavior: "smooth" });
@@ -71,13 +59,9 @@ export default function Header() {
       router.push(href);
       return;
     }
-
     setTimeout(() => scrollToSection(href), 180);
   };
 
-  // =====================================
-  // NAV ITEMS
-  // =====================================
   const navItems = [
     { label: "Produk", href: "#produk" },
     { label: "Tentang KOJE24", href: "#about" },
@@ -90,20 +74,13 @@ export default function Header() {
     <header
       className={`
         fixed top-0 w-full z-[100] transition-all duration-700
-        ${
-          menuOpen
-            ? "bg-white/95 backdrop-blur-xl shadow-md"
-            : isScrolled
-            ? "bg-white/80 backdrop-blur-xl shadow-md"
-            : "bg-transparent"
+        ${isScrolled
+          ? "bg-white/70 backdrop-blur-2xl shadow-[0_4px_20px_rgba(0,0,0,0.07)] py-2"
+          : "bg-transparent backdrop-blur-0 py-4"
         }
       `}
     >
-      {isScrolled && !menuOpen && (
-        <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-[#0FA3A8]/20 to-[#0B4B50]/20" />
-      )}
-
-      <div className="max-w-7xl mx-auto flex items-center justify-between py-4 px-5 md:px-10">
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-5 md:px-10 transition-all duration-700">
 
         {/* LOGO */}
         <Link
@@ -114,12 +91,12 @@ export default function Header() {
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           className={`
-            text-2xl font-playfair font-bold transition-colors duration-500
-            ${menuOpen || isScrolled ? "text-[#0B4B50]" : "text-white"}
+            text-2xl font-playfair font-bold tracking-wide transition-all duration-700
+            ${isScrolled ? "text-[#0B4B50]" : "text-white"}
           `}
         >
           KOJE
-          <span className={menuOpen || isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}>24</span>
+          <span className={isScrolled ? "text-[#0FA3A8]" : "text-[#E8C46B]"}>24</span>
         </Link>
 
         {/* DESKTOP NAV */}
@@ -129,11 +106,10 @@ export default function Header() {
               key={item.href}
               onClick={() => navClick(item.href)}
               className={`
-                font-medium transition-all duration-300
-                ${
-                  menuOpen || isScrolled
-                    ? "text-[#0B4B50] hover:text-[#0FA3A8]"
-                    : "text-white hover:text-[#E8C46B]"
+                font-medium text-[15px] transition-all duration-500
+                ${isScrolled
+                  ? "text-[#0B4B50] hover:text-[#0FA3A8]"
+                  : "text-white hover:text-[#E8C46B]"
                 }
               `}
             >
@@ -147,7 +123,10 @@ export default function Header() {
             className="relative"
             onClick={() => window.dispatchEvent(new CustomEvent("open-cart"))}
           >
-            <ShoppingCart size={24} className={menuOpen || isScrolled ? "text-[#0B4B50]" : "text-white"} />
+            <ShoppingCart
+              size={24}
+              className={isScrolled ? "text-[#0B4B50]" : "text-white"}
+            />
             {totalQty > 0 && (
               <span className="absolute -top-2 -right-2 bg-[#E8C46B] text-[#0B4B50] text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
                 {totalQty}
@@ -155,29 +134,29 @@ export default function Header() {
             )}
           </button>
 
-          {/* WA */}
+          {/* WA BUTTON */}
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
             className={`
-              ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm shadow-md transition-all
-              ${
-                menuOpen || isScrolled
-                  ? "bg-[#0FA3A8] text-white hover:bg-[#0B4B50]"
-                  : "bg-white/15 text-white hover:bg-white/25 backdrop-blur-sm"
+              ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm shadow-md transition-all duration-500
+              ${isScrolled
+                ? "bg-[#0FA3A8] text-white hover:bg-[#0B4B50]"
+                : "bg-white/15 text-white hover:bg-white/25 backdrop-blur-sm"
               }
             `}
           >
-            <FaWhatsapp /> Chat Sekarang
+            <FaWhatsapp /> Chat
           </a>
         </nav>
 
         {/* MOBILE BURGER */}
         <button
           onClick={openMenu}
-          className={`md:hidden text-2xl transition-colors ${
-            menuOpen || isScrolled ? "text-[#0B4B50]" : "text-white"
-          }`}
+          className={`
+            md:hidden text-2xl transition-colors duration-500
+            ${isScrolled ? "text-[#0B4B50]" : "text-white"}
+          `}
         >
           <FaBars />
         </button>
@@ -187,10 +166,10 @@ export default function Header() {
       {menuOpen && (
         <div
           className="
-            fixed left-0 top-0 w-screen h-[100dvh] z-[200]
+            fixed inset-0 z-[200]
             flex flex-col items-center justify-center
-            bg-white/95 backdrop-blur-xl
-            transition-all duration-300
+            bg-white/70 backdrop-blur-2xl
+            transition-all duration-500
           "
         >
           <button
@@ -210,15 +189,18 @@ export default function Header() {
                 {item.label}
               </button>
             ))}
-          </div>
 
-          <a
-            href="https://wa.me/6282213139580"
-            target="_blank"
-            className="mt-10 flex items-center justify-center gap-2 px-8 py-3 rounded-full bg-[#0FA3A8] text-white hover:bg-[#0B4B50] transition-all shadow-lg"
-          >
-            <FaWhatsapp /> Chat Sekarang
-          </a>
+            <a
+              href="https://wa.me/6282213139580"
+              target="_blank"
+              className="
+                mt-10 flex items-center justify-center gap-2 px-8 py-3 rounded-full
+                bg-[#0FA3A8] text-white hover:bg-[#0B4B50] transition-all shadow-lg
+              "
+            >
+              <FaWhatsapp /> Chat Sekarang
+            </a>
+          </div>
 
           <div className="absolute bottom-6 text-sm text-gray-500">
             © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
