@@ -37,7 +37,7 @@ export default function Footer() {
                 alt="KOJE24"
                 width={52}
                 height={52}
-                className="object-contain md:w-[52px] md:h-[52px] w-[40px] h-[40px]"
+                className="object-contain md:w-[82px] md:h-[82px] w-[52px] h-[52px]"
               />
             </div>
 
