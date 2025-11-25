@@ -28,8 +28,8 @@ type ShippingInfo = {
 }
 
 // 📍 KOORDINAT BASE KOJE24 (GANTI SEKALI AJA PAKAI TITIK TOKO / RUMAH)
-const ORIGIN_LAT = -6.3085  // TODO: ganti dengan latitude KOJE24
-const ORIGIN_LNG = 107.0343 // TODO: ganti dengan longitude KOJE24
+const ORIGIN_LAT = -6.3180335  // TODO: ganti dengan latitude KOJE24
+const ORIGIN_LNG = 107.0426622 // TODO: ganti dengan longitude KOJE24
 
 // 👉 ambil lat/lng dari URL Google Maps
 function extractLatLngFromUrl(url: string): { lat: number; lng: number } | null {
