@@ -1,6 +1,6 @@
 "use client";
 
-import { useBestSellerRanking } from "@/lib/bestseller";
+import { useBestSellerRanking } from "@/lib/bestSeller";
 
 export default function ProductCard({
   id,
