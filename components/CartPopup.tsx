@@ -6,7 +6,6 @@ import { useCartStore } from "@/stores/cartStore"
 type FormState = { nama: string; hp: string; alamat: string; catatan: string }
 type ChangeEvt = React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 
-// STRICT TYPE
 type CartItemType = {
   id: string
   name: string
@@ -26,7 +25,6 @@ export default function CartPopup() {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // buka modal dari event global
   useEffect(() => {
     const handler = () => setOpen(true)
     window.addEventListener("open-cart", handler)
@@ -35,7 +33,6 @@ export default function CartPopup() {
 
   const close = () => setOpen(false)
 
-  // lock scroll saat popup
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : ""
   }, [open])
@@ -81,7 +78,7 @@ export default function CartPopup() {
           qty: qtyTotal,
           total,
         }),
-      }); // ← FIX: titik koma wajib di sini!
+      })
 
       const data = await res.json()
 
@@ -128,13 +125,9 @@ Terima kasih sudah order KOJE24 🍹✨
 
   return (
     <>
-      {/* overlay */}
-      <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
-        onClick={close}
-      />
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]" onClick={close} />
 
-      <div className="fixed inset-0 grid place-items-center z-[61] p-4">
+      <div className="fixed inset-0 overflow-y-auto flex items-center justify-center z-[61] p-4">
         <div
           className="bg-white w-full max-w-md rounded-3xl p-6 relative shadow-2xl"
           onClick={(e) => e.stopPropagation()}
@@ -150,7 +143,6 @@ Terima kasih sudah order KOJE24 🍹✨
             Keranjang Kamu
           </h3>
 
-          {/* ITEM LIST */}
           <div className="max-h-64 overflow-y-auto border-y py-3 mb-4 space-y-3">
             {items.length ? (
               items.map((item: CartItemType) => (
@@ -194,12 +186,10 @@ Terima kasih sudah order KOJE24 🍹✨
             )}
           </div>
 
-          {/* TOTAL */}
           <div className="text-right font-semibold text-[#0B4B50] mb-4">
             Total: Rp{totalPrice.toLocaleString("id-ID")}
           </div>
 
-          {/* FORM */}
           <div className="space-y-3 mb-5">
             <input
               type="text"
@@ -208,6 +198,7 @@ Terima kasih sudah order KOJE24 🍹✨
               onChange={onChange("hp")}
               className="w-full border rounded-lg px-3 py-2 text-sm focus:border-[#0FA3A8]"
             />
+
             <input
               type="text"
               placeholder="Nama lengkap"
@@ -215,6 +206,7 @@ Terima kasih sudah order KOJE24 🍹✨
               onChange={onChange("nama")}
               className="w-full border rounded-lg px-3 py-2 text-sm focus:border-[#0FA3A8]"
             />
+
             <input
               type="text"
               placeholder="Alamat lengkap"
@@ -222,6 +214,7 @@ Terima kasih sudah order KOJE24 🍹✨
               onChange={onChange("alamat")}
               className="w-full border rounded-lg px-3 py-2 text-sm focus:border-[#0FA3A8]"
             />
+
             <textarea
               placeholder="Catatan tambahan (opsional)…"
               value={form.catatan}
@@ -230,7 +223,6 @@ Terima kasih sudah order KOJE24 🍹✨
             />
           </div>
 
-          {/* BUTTON */}
           <button
             disabled={loading || items.length === 0}
             onClick={handleCheckout}
