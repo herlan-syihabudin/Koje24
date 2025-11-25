@@ -159,22 +159,21 @@ footer > * {
 }
 
 /* ===========================================================
-   KOJE24 MODAL — FIX FINAL
+   KOJE24 MODAL — FIX FINAL PREMIUM
 =========================================================== */
 
-/* Overlay modal — FIX FINAL */
+/* Overlay modal */
 .koje-modal-overlay {
   position: fixed !important;
   inset: 0 !important;
   background: rgba(0, 0, 0, 0.55);
   z-index: 999999999 !important;
 
-  /* FIX PALING PENTING */
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 0 !important;
 
+  padding: 0 !important; /* FIX utama */
   pointer-events: auto !important;
 }
 
@@ -182,12 +181,12 @@ footer > * {
 .koje-modal-box {
   position: relative !important;
   z-index: 1000000000 !important;
-  background: white;
-  border-radius: 22px;
   max-width: 420px;
   width: 92%;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
-  pointer-events: auto !important;
+  max-height: 85vh !important;
+  overflow-y: auto !important;
+  border-radius: 22px;
+  background: white;
 }
 
 /* Saat modal terbuka → matikan klik semua elemen lain */
