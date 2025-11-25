@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { useState } from "react"
 import { useCartStore } from "@/stores/cartStore"
-import { useBestSellerRanking } from "@/lib/bestSeller"   // 🔥 FIXED
+import { getBestSellerList } from "@/lib/bestSeller"
 import { products } from "@/lib/products"   
 
 const toNumber = (p: number | string): number =>
@@ -16,7 +16,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
   const addToCart = useCartStore((state) => state.addItem)
   const removeFromCart = useCartStore((state) => state.removeItem)
 
-  const rankStats = useBestSellerRanking() // 🔥 ambil ranking realtime
+  const rankStats = getBestSellerList()
 
   const [imgReady, setImgReady] = useState<Record<string, boolean>>({})
   const [added, setAdded] = useState<string | null>(null)
