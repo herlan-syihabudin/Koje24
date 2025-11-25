@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Inter, Playfair_Display } from "next/font/google";
 import { CartProvider } from "@/components/CartContext";
 import { SpeedInsights } from "@vercel/speed-insights/next"; // ← DITAMBAHKAN
+import StickyCartBar from "@/components/StickyCartBar"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -45,6 +46,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
         {/* --- Speed Insights (TAMBAHAN) --- */}
         <SpeedInsights />
+
+        <StickyCartBar />
 
         <script
           dangerouslySetInnerHTML={{
