@@ -27,23 +27,17 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     showOnHome: false,
   })
 
-  /* ===============================
-      BODY LOCK FIX (ANTI LEAK)
-  ===============================*/
+  /* ==================================
+        BODY LOCK (TIDAK DIRUBAH)
+  ===================================*/
   useEffect(() => {
-    if (show) {
-      document.body.classList.add("body-lock")
-    } else {
-      document.body.classList.remove("body-lock")
-    }
+    if (show) document.body.classList.add("body-lock")
+    else document.body.classList.remove("body-lock")
 
-    // EMERGENCY FIX jika modal sempat bocor
-    return () => {
-      document.body.classList.remove("body-lock")
-    }
+    return () => document.body.classList.remove("body-lock")
   }, [show])
 
-  /* =============================== */
+  /* ==================================*/
   const validate = () => {
     const err: Record<string, string> = {}
 
@@ -56,7 +50,6 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     return Object.keys(err).length === 0
   }
 
-  /* =============================== */
   const uploadFileToBlob = async () => {
     if (!file) return ""
     const fd = new FormData()
@@ -66,7 +59,6 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     return json.url || ""
   }
 
-  /* =============================== */
   const handleSubmit = async (e: any) => {
     e.preventDefault()
     setStatusMsg(null)
@@ -121,41 +113,40 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
 
       {/* =============================== */}
       {show && (
-  <div
-    onClick={() => setShow(false)}
-    className="
-      fixed inset-0 
-      bg-black/60 backdrop-blur-sm
-      z-[999999]
-      overflow-y-auto
-      flex
-      items-start
-      justify-center
-      pt-10
-      pb-10
-    "
-  >
-    <div
-      onClick={(e) => e.stopPropagation()}
-      className="
-        relative w-[92%] sm:w-full max-w-md
-        bg-white rounded-3xl shadow-xl
-        p-6
-        z-[1000000]
-        max-h-[85vh]
-        overflow-y-auto
-      "
-      style={{ marginTop: "20px" }}
-    >
+        <div
+          onClick={() => setShow(false)}
+          className="
+            fixed inset-0
+            bg-black/60 backdrop-blur-sm
+            z-[999999]          /* FIX OVERLAY */
+            overflow-y-auto
+            flex items-start justify-center
+            pt-10 pb-10
+          "
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="
+              relative
+              w-[92%] sm:w-full max-w-md
+              bg-white rounded-3xl shadow-xl
+              p-6
+              z-[1000000]        /* FIX MODAL HIGHEST */
+              max-h-[85vh]
+              overflow-y-auto
+            "
+            style={{ marginTop: "20px" }}
+          >
             {/* CLOSE BUTTON */}
             <button
               type="button"
               onClick={() => setShow(false)}
-              className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-[#0FA3A8] z-[1000002]"
+              className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-[#0FA3A8] z-[1000002]" /* FIX */
             >
               ✕
             </button>
 
+            {/* TITLE */}
             <h3 className="text-xl font-semibold mb-1 text-[#0B4B50]">
               Tulis Testimoni Kamu 💬
             </h3>
@@ -165,6 +156,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
 
             {/* FORM */}
             <form onSubmit={handleSubmit} className="space-y-3 pb-3">
+
               {/* NAMA */}
               <div>
                 <label className="text-xs font-medium text-gray-600">Nama Lengkap</label>
@@ -225,7 +217,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               <div>
                 <label className="text-xs font-medium text-gray-600">Rating Kepuasan</label>
                 <div className="flex gap-1 mt-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
+                  {[1,2,3,4,5].map((star)=>(
                     <button
                       key={star}
                       type="button"
@@ -268,6 +260,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 <p className="text-[11px] text-center text-gray-600 mt-1">{statusMsg}</p>
               )}
 
+              {/* SUBMIT */}
               <button
                 type="submit"
                 disabled={sending}
@@ -276,6 +269,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 {sending ? "Mengirim…" : "Kirim Testimoni"}
               </button>
             </form>
+
           </div>
         </div>
       )}
