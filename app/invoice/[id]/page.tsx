@@ -103,9 +103,9 @@ export default async function InvoicePage({ params }: any) {
 
   // Produk multi row
   const products = data.produkRaw
-    .split(", ")
-    .map((p) => p.trim())
-    .filter((x) => x.length > 0)
+  .split(", ")
+  .map((p: string) => p.trim())
+  .filter((x: string) => x.length > 0)
 
   const safeSubtotal = data.subtotal || 0
   const grandTotal = safeSubtotal + HARGA_ONGKIR
