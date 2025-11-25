@@ -27,7 +27,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     showOnHome: false,
   })
 
-  /* BODY LOCK FIX */
+  // BODY LOCK
   useEffect(() => {
     if (show) document.body.classList.add("body-lock")
     else document.body.classList.remove("body-lock")
@@ -45,6 +45,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     return Object.keys(err).length === 0
   }
 
+  /* UPLOAD */
   const uploadFileToBlob = async () => {
     if (!file) return ""
     const fd = new FormData()
@@ -110,16 +111,15 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
         <div
           onClick={() => setShow(false)}
           className="
-            fixed inset-0
+            fixed inset-0 z-[999999]
             bg-black/60 backdrop-blur-sm
-            z-[999999]
+
+            flex justify-center 
+            items-start md:items-center
+
             overflow-y-auto
-            flex 
-            items-start md:items-center         /* HP = atas, Desktop = center */
-            justify-center
-            pt-20 md:pt-0                       /* HP ada jarak, Desktop nol */
-            pb-10
-            koje-modal-overlay
+            pt-20 md:pt-0
+            pb-12
           "
         >
           <div
@@ -130,9 +130,9 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               bg-white rounded-3xl shadow-xl
               p-6
               z-[1000000]
-              max-h-[85vh]
+
+              max-h-[88vh]
               overflow-y-auto
-              koje-modal-box
             "
           >
             {/* CLOSE */}
@@ -153,6 +153,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
 
             {/* FORM */}
             <form onSubmit={handleSubmit} className="space-y-3 pb-3">
+              
               {/* NAMA */}
               <div>
                 <label className="text-xs font-medium text-gray-600">Nama Lengkap</label>
@@ -213,7 +214,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               <div>
                 <label className="text-xs font-medium text-gray-600">Rating Kepuasan</label>
                 <div className="flex gap-1 mt-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
+                  {[1,2,3,4,5].map((star)=>(
                     <button
                       key={star}
                       type="button"
@@ -264,6 +265,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               >
                 {sending ? "Mengirim…" : "Kirim Testimoni"}
               </button>
+
             </form>
           </div>
         </div>
