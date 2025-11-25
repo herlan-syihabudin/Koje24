@@ -5,6 +5,7 @@ const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? ""
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? ""
 const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
 
+// Bersihkan private key
 const PRIVATE_KEY = PRIVATE_KEY_RAW
   .replace(/\\n/g, "\n")
   .replace(/\\\\n/g, "\n")
@@ -16,23 +17,44 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { nama, hp, alamat, note, payment, cart } = body
+
+    const {
+      nama,
+      hp,
+      alamat,
+      catatan,
+      mapsUrl,
+      cart,
+      subtotal,
+      ongkir,
+      grandTotal,
+      zone,
+      distanceKm,
+    } = body
 
     if (!nama || !hp || !alamat) {
       throw new Error("Data customer belum lengkap")
-    }
-
-    if (!payment) {
-      throw new Error("Metode pembayaran belum dipilih")
     }
 
     if (!Array.isArray(cart) || cart.length === 0) {
       throw new Error("Cart kosong!")
     }
 
-    const produkList = cart.map((x) => `${x.name} (${x.qty}x)`).join(", ")
-    const qtyTotal = cart.reduce((a, x) => a + x.qty, 0)
-    const subtotal = cart.reduce((a, x) => a + x.price * x.qty, 0)
+    // Buat list produk & hitung qty/subtotal dari server (lebih aman)
+    const produkList = cart
+      .map((x: any) => `${x.name} (${x.qty}x)`)
+      .join(", ")
+
+    const qtyTotal = cart.reduce(
+      (a: number, x: any) => a + (Number(x.qty) || 0),
+      0
+    )
+
+    const subtotalSafe = cart.reduce(
+      (a: number, x: any) =>
+        a + (Number(x.price) * Number(x.qty) || 0),
+      0
+    )
 
     const invoiceId =
       "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase()
@@ -45,23 +67,27 @@ export async function POST(req: NextRequest) {
     const invoiceUrl = `${baseUrl}/invoice/${invoiceId}`
 
     // ============================
-    // METODE PEMBAYARAN
+    // COMBINE INFO ONGKIR + LOKASI DI KOLOM CATATAN
     // ============================
-    let paymentLabel = "Transfer"
-    let feeInfo = "-"
+    const parts: string[] = []
 
-    if (payment === "qris") {
-      paymentLabel = "QRIS"
-      feeInfo = "0.7% (dummy)"
-    }
+    if (catatan) parts.push(`Catatan: ${catatan}`)
+    if (mapsUrl) parts.push(`Maps: ${mapsUrl}`)
+    if (typeof distanceKm === "number")
+      parts.push(`Jarak: ~${distanceKm.toFixed(1)} km`)
+    if (zone) parts.push(`Zona: ${zone}`)
+    if (typeof ongkir === "number")
+      parts.push(`Ongkir: Rp${Number(ongkir).toLocaleString("id-ID")}`)
+    if (typeof grandTotal === "number")
+      parts.push(
+        `Total+Ongkir: Rp${Number(grandTotal).toLocaleString("id-ID")}`
+      )
 
-    if (payment === "cod") {
-      paymentLabel = "COD"
-      feeInfo = "-"
-    }
+    const noteCell = parts.length > 0 ? parts.join(" | ") : "-"
 
     // ============================
     // GOOGLE SHEET
+    // Struktur lama dipertahankan: A–L
     // ============================
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
@@ -73,24 +99,23 @@ export async function POST(req: NextRequest) {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: "Sheet1!A:M",
+      range: "Sheet1!A:L",
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
           [
-            new Date().toLocaleString("id-ID"), // A
-            invoiceId,                          // B
-            nama,                               // C
-            hp,                                 // D
-            alamat,                             // E
-            produkList,                         // F
-            qtyTotal,                           // G
-            subtotal,                           // H
-            "Pending",                          // I
-            paymentLabel,                       // J
-            feeInfo,                            // K
-            note || "-",                        // L
-            invoiceUrl                          // M
+            new Date().toLocaleString("id-ID"), // A timestamp
+            invoiceId,                          // B invoice
+            nama,                               // C nama
+            hp,                                 // D hp
+            alamat,                             // E alamat
+            produkList,                         // F produk
+            qtyTotal,                           // G total qty
+            subtotalSafe,                       // H subtotal produk
+            "Pending",                          // I status
+            "Manual",                           // J pembayaran (sementara "Manual")
+            noteCell,                           // K berisi info ongkir + map + catatan
+            invoiceUrl,                         // L link invoice
           ],
         ],
       },
