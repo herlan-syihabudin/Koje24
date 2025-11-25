@@ -228,8 +228,3 @@ td { font-size: 13px; color: #222; }
   100% { transform: translateY(0); opacity: .4; }
 }
 
-/* === FIX MODAL TESTIMONI === */
-.testimoni-modal {
-  position: fixed !important;
-  z-index: 99999 !important;
-}
