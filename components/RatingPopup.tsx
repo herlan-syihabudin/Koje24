@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
-import { updateProductRating } from "@/lib/bestSeller"
+import { updateRating } from "@/lib/bestSeller"
 
 export default function RatingPopup() {
   const [open, setOpen] = useState(false)
@@ -18,8 +18,9 @@ export default function RatingPopup() {
 
   const submitRating = () => {
     Object.entries(ratings).forEach(([id, star]) =>
-      updateProductRating(Number(id), star)
+      updateRating(Number(id), star) // 🔥 FIX
     )
+
     alert("Terima kasih! ⭐ Rating tersimpan.")
     setOpen(false)
   }
@@ -37,7 +38,7 @@ export default function RatingPopup() {
           <div key={p.id} className="mb-3">
             <p className="text-sm font-inter">{p.name}</p>
             <div className="flex gap-1">
-              {[1,2,3,4,5].map((i) => (
+              {[1, 2, 3, 4, 5].map((i) => (
                 <span
                   key={i}
                   onClick={() =>
