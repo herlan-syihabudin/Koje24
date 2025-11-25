@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect, useState } from "react"
+
 export interface RankData {
   rating: number
   reviews: number
@@ -51,7 +53,7 @@ export function updateRating(productId: number, newRating: number) {
     prev.reviews += 1
   }
 
-  // Hitung skor final (formula marketplace)
+  // Hitung skor final (formula marketplace umum)
   const s = stats[productId]
   s.score = s.rating * 5 + s.reviews * 3
 
@@ -59,7 +61,7 @@ export function updateRating(productId: number, newRating: number) {
 }
 
 /* ======================================================
-   🔥 AMBIL RANKING BEST SELLER
+   🔥 HITUNG & AMBIL RANKING BEST SELLER
 ====================================================== */
 export function getBestSellerList() {
   const stats = getStats()
@@ -78,6 +80,30 @@ export function getBestSellerList() {
   })
 
   saveStats(stats)
+
+  return stats
+}
+
+/* ======================================================
+   🔥 HOOK: Ambil ranking secara realtime (dipakai ProductGrid)
+====================================================== */
+export function useBestSellerRanking() {
+  const [stats, setStats] = useState<Record<number, RankData>>({})
+
+  useEffect(() => {
+    // Ambil ranking awal
+    const s = getBestSellerList()
+    setStats({ ...s })
+
+    // Listener untuk perubahan localStorage (rating baru)
+    const handler = () => {
+      const s2 = getBestSellerList()
+      setStats({ ...s2 })
+    }
+
+    window.addEventListener("storage", handler)
+    return () => window.removeEventListener("storage", handler)
+  }, [])
 
   return stats
 }
