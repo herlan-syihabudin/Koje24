@@ -184,16 +184,14 @@ export default async function InvoicePage({ params }: any) {
             </thead>
 
             <tbody>
-              {products.map((prod, i) => (
-                <tr key={i} className="border-t">
-                  <td className="p-3 font-medium text-slate-800">{prod}</td>
-                  <td className="p-3 text-right text-slate-800">
-                    {prod.includes("(")
-                      ? prod.split("(")[1].replace(")", "")
-                      : "-"}
-                  </td>
-                </tr>
-              ))}
+              {products.map((prod: string, i: number) => (
+  <tr key={i} className="border-t">
+    <td className="p-3 font-medium text-slate-800">{prod}</td>
+    <td className="p-3 text-right text-slate-800">
+      {prod.includes("(") ? prod.split("(")[1].replace(")", "") : "-"}
+    </td>
+  </tr>
+))}
             </tbody>
           </table>
         </div>
