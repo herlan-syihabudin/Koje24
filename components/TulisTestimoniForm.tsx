@@ -28,13 +28,19 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
   })
 
   /* ===============================
-      BODY LOCK SAFE
+      BODY LOCK FIX (ANTI LEAK)
   ===============================*/
   useEffect(() => {
-    if (show) document.body.classList.add("body-lock")
-    else document.body.classList.remove("body-lock")
+    if (show) {
+      document.body.classList.add("body-lock")
+    } else {
+      document.body.classList.remove("body-lock")
+    }
 
-    return () => document.body.classList.remove("body-lock")
+    // EMERGENCY FIX jika modal sempat bocor
+    return () => {
+      document.body.classList.remove("body-lock")
+    }
   }, [show])
 
   /* =============================== */
@@ -115,29 +121,29 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
 
       {/* =============================== */}
       {show && (
-  <div
-    onClick={() => setShow(false)}
-    className="
-      fixed inset-0 
-      bg-black/60 backdrop-blur-sm
-      z-[999999]
-      overflow-hidden
-      flex
-      items-center
-      justify-center
-    "
-  >
+        <div
+          onClick={() => setShow(false)}
+          className="
+            fixed inset-0 
+            bg-black/60 backdrop-blur-sm
+            z-[999999]
+            flex items-center justify-center
+            overflow-hidden
+            pointer-events-auto
+          "
+        >
           <div
-  onClick={(e) => e.stopPropagation()}
-  className="
-    relative w-full max-w-md
-    bg-white rounded-3xl shadow-xl
-    p-6
-    z-[1000000]
-    max-h-[90vh]
-    overflow-y-auto
-  "
->
+            onClick={(e) => e.stopPropagation()}
+            className="
+              relative w-full max-w-md
+              bg-white rounded-3xl shadow-xl
+              p-6
+              z-[1000000]
+              max-h-[90vh]
+              overflow-y-auto
+              pointer-events-auto
+            "
+          >
             {/* CLOSE BUTTON */}
             <button
               type="button"
