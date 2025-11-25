@@ -1,11 +1,11 @@
 import { create } from "zustand"
-import { persist, createJSONStorage, StateStorage } from "zustand/middleware"
+import { persist, createJSONStorage } from "zustand/middleware"
 
 export type CartItem = {
   id: string
   name: string
   price: number
-  img?: string       // ✅ FIX 1 — tambahkan img (opsional biar aman)
+  img?: string
   qty: number
 }
 
@@ -13,24 +13,9 @@ export interface CartState {
   items: CartItem[]
   totalQty: number
   totalPrice: number
-  addItem: (item: Omit<CartItem, "qty">) => void   // tetap sama, img ikut kebawa
+  addItem: (item: Omit<CartItem, "qty">) => void
   removeItem: (id: string) => void
   clearCart: () => void
-}
-
-const storage: StateStorage = {
-  getItem: (name) => {
-    if (typeof window === "undefined") return null
-    return localStorage.getItem(name)
-  },
-  setItem: (name, value) => {
-    if (typeof window === "undefined") return
-    localStorage.setItem(name, value)
-  },
-  removeItem: (name) => {
-    if (typeof window === "undefined") return
-    localStorage.removeItem(name)
-  },
 }
 
 export const useCartStore = create<CartState>()(
@@ -47,12 +32,11 @@ export const useCartStore = create<CartState>()(
         if (exist) {
           exist.qty += 1
         } else {
-          // ✅ FIX 2 — img akan ikut masuk di sini
           items.push({ ...item, qty: 1 })
         }
 
-        const totalQty = items.reduce((sum, i) => sum + i.qty, 0)
-        const totalPrice = items.reduce((sum, i) => sum + i.qty * i.price, 0)
+        const totalQty = items.reduce((s, i) => s + i.qty, 0)
+        const totalPrice = items.reduce((s, i) => s + i.qty * i.price, 0)
 
         set({ items, totalQty, totalPrice })
       },
@@ -65,8 +49,8 @@ export const useCartStore = create<CartState>()(
         if (exist.qty > 1) exist.qty -= 1
         else items = items.filter((i) => i.id !== id)
 
-        const totalQty = items.reduce((sum, i) => sum + i.qty, 0)
-        const totalPrice = items.reduce((sum, i) => sum + i.qty * i.price, 0)
+        const totalQty = items.reduce((s, i) => s + i.qty, 0)
+        const totalPrice = items.reduce((s, i) => s + i.qty * i.price, 0)
 
         set({ items, totalQty, totalPrice })
       },
@@ -75,7 +59,12 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "koje24-cart",
-      storage: createJSONStorage(() => storage),
+
+      // 🔥 FIX PALING PENTING — AMAN UNTUK SSR
+      storage:
+        typeof window !== "undefined"
+          ? createJSONStorage(() => localStorage)
+          : undefined,
     }
   )
 )
