@@ -135,118 +135,19 @@ footer::before {
 }
 footer > * { position: relative; z-index: 1; }
 
-/* === BODY LOCK (VERSI FIXED, AMAN) === */
-.body-lock {
-  overflow: hidden !important;
-  touch-action: none;
-}
-
-/* === POPUP ENGINE === */
-.popup-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(4px);
-  z-index: 300;
-  animation: fadeInOverlay 0.25s ease;
-}
-@keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
-
-.popup-content {
-  position: fixed;
-  right: 0;
-  top: 0;
-  width: 92%;
-  max-width: 420px;
-  height: 100%;
-  background: #ffffff;
-  overflow-y: auto;
-  padding-bottom: env(safe-area-inset-bottom);
-  box-shadow: -8px 0 24px rgba(0,0,0,0.12);
-  z-index: 350;
-  animation: popupSlide 0.33s cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-@keyframes popupSlide { from { transform: translateX(100%);} to { transform: translateX(0);} }
-
-.popup-close-btn {
-  position: absolute;
-  top: max(16px, env(safe-area-inset-top));
-  right: 16px;
-  z-index: 400;
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(10px);
-  padding: 6px;
-  border-radius: 50%;
-  box-shadow: 0 0 8px rgba(0,0,0,0.1);
-  transition: all 0.25s;
-}
-.popup-close-btn:hover { transform: scale(1.07); background: rgba(255,255,255,0.95); }
-
-.popup-content {
-  -webkit-overflow-scrolling: touch;
-}
-
-/* === TABLE === */
-table { border-collapse: collapse !important; width: 100%; }
-th, td { padding: 8px 10px; vertical-align: middle; }
-th { text-align: left; font-size: 12px; font-weight: 700; }
-td { font-size: 13px; color: #222; }
-
-/* === PRINT === */
-@media print {
-  body { background: #fff !important; }
-  img { max-height: 80px !important; }
-  a { display: none !important; }
-}
-
-/* === GRID FIX === */
-.grid { min-width: 0; }
-
-@keyframes slide-up-high {
-  from { transform: translateY(50px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.animate-slide-up-high {
-  animation: slide-up-high 0.35s cubic-bezier(.16,.68,.43,1.01);
-}
-
-.dot {
-  width: 6px;
-  height: 6px;
-  background: #0FA3A8;
-  border-radius: 50%;
-  animation: bubble 1s infinite;
-}
-.dot:nth-child(2) { animation-delay: 0.2s; }
-.dot:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes bubble {
-  0% { transform: translateY(0); opacity: .4; }
-  50% { transform: translateY(-4px); opacity: 1; }
-  100% { transform: translateY(0); opacity: .4; }
-}
-.testimoni-modal {
-  position: fixed !important;
-  z-index: 999999 !important;
-  pointer-events: auto !important;
-}
-
-.testimoni-modal * {
-  pointer-events: auto !important;
-}
-/* =========================================
-    FIX: BODY LOCK (anti scroll leak)
-========================================= */
+/* ===========================================================
+   BODY LOCK (FINAL VERSION — FIX SCROLL LEAK & SAFE)
+=========================================================== */
 .body-lock {
   overflow: hidden !important;
   height: 100vh !important;
+  position: fixed !important;
+  width: 100% !important;
 }
 
-/* =========================================
-    FIX: DESKTOP MODAL CENTER
-========================================= */
+/* ===========================================================
+   FIX: DESKTOP MODAL CENTER (TIDAK DIUBAH)
+=========================================================== */
 @media (min-width: 768px) {
   .koje-modal-overlay {
     display: flex !important;
@@ -261,4 +162,3 @@ td { font-size: 13px; color: #222; }
     margin-top: 0 !important;
   }
 }
-
