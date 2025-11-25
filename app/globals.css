@@ -236,4 +236,29 @@ td { font-size: 13px; color: #222; }
 .testimoni-modal * {
   pointer-events: auto !important;
 }
+/* =========================================
+    FIX: BODY LOCK (anti scroll leak)
+========================================= */
+.body-lock {
+  overflow: hidden !important;
+  height: 100vh !important;
+}
+
+/* =========================================
+    FIX: DESKTOP MODAL CENTER
+========================================= */
+@media (min-width: 768px) {
+  .koje-modal-overlay {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .koje-modal-box {
+    max-height: 80vh !important;
+    margin-top: 0 !important;
+  }
+}
 
