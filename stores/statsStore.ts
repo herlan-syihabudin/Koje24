@@ -29,9 +29,12 @@ export const useStatsStore = create<StatsState>()(
     }),
     {
       name: "koje-stats",
-      storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? localStorage : memoryStorage
-      ),
+
+      // 🔥 FIX PALING AMAN — jika SSR, jangan pakai storage
+      storage:
+        typeof window !== "undefined"
+          ? createJSONStorage(() => localStorage)
+          : undefined,
     }
   )
 )
