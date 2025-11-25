@@ -28,20 +28,19 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
   })
 
   /* ===============================
-      BODY LOCK — SAFE VERSION
+      BODY LOCK SAFE
   ===============================*/
   useEffect(() => {
-    if (show) {
-      document.body.classList.add("body-lock")
-    } else {
-      document.body.classList.remove("body-lock")
-    }
+    if (show) document.body.classList.add("body-lock")
+    else document.body.classList.remove("body-lock")
+
     return () => document.body.classList.remove("body-lock")
   }, [show])
 
   /* =============================== */
   const validate = () => {
     const err: Record<string, string> = {}
+
     if (form.nama.trim().length < 2) err.nama = "Nama minimal 2 karakter"
     if (form.kota.trim().length < 2) err.kota = "Kota minimal 2 karakter"
     if (form.pesan.trim().length < 10) err.pesan = "Minimal 10 karakter"
@@ -117,32 +116,32 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
       {/* =============================== */}
       {show && (
         <div
-          onClick={() => setShow(false)}               // << FIX BACKDROP CLOSE
+          onClick={() => setShow(false)}
           className="
             fixed inset-0 
             bg-black/60 backdrop-blur-sm
             flex items-center justify-center 
-            z-[99999]
+            z-[1000000]
             overflow-y-auto
             py-10 px-4
             testimoni-modal
           "
         >
           <div
-            onClick={(e) => e.stopPropagation()}       // << FIX STOP BUBBLE
+            onClick={(e) => e.stopPropagation()}
             className="
               relative w-full max-w-md
               bg-white rounded-3xl shadow-xl
               p-6
-              z-[100000]
+              z-[1000001]
             "
-            style={{ maxHeight: "90vh", overflowY: "auto" }}
+            style={{ maxHeight: '90vh', overflowY: 'auto' }}
           >
             {/* CLOSE BUTTON */}
             <button
-              type="button"                            // << FIX
+              type="button"
               onClick={() => setShow(false)}
-              className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-[#0FA3A8] z-[100001]"
+              className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-[#0FA3A8] z-[1000002]"
             >
               ✕
             </button>
@@ -154,22 +153,18 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               Ceritakan pengalamanmu setelah minum KOJE24. Ulasan bintang 4–5 bisa tampil di beranda.
             </p>
 
+            {/* FORM */}
             <form onSubmit={handleSubmit} className="space-y-3 pb-3">
-
               {/* NAMA */}
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  Nama Lengkap
-                </label>
+                <label className="text-xs font-medium text-gray-600">Nama Lengkap</label>
                 <input
                   value={form.nama}
                   onChange={(e) => setForm({ ...form, nama: e.target.value })}
                   placeholder="Contoh: Herlan S."
-                  className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm outline-none focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40"
+                  className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm focus:border-[#0FA3A8] focus:ring-1"
                 />
-                {errors.nama && (
-                  <p className="text-[11px] text-red-500 mt-1">{errors.nama}</p>
-                )}
+                {errors.nama && <p className="text-[11px] text-red-500">{errors.nama}</p>}
               </div>
 
               {/* KOTA */}
@@ -179,28 +174,22 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                   value={form.kota}
                   onChange={(e) => setForm({ ...form, kota: e.target.value })}
                   placeholder="Contoh: Bekasi"
-                  className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm outline-none focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40"
+                  className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm focus:border-[#0FA3A8] focus:ring-1"
                 />
-                {errors.kota && (
-                  <p className="text-[11px] text-red-500 mt-1">{errors.kota}</p>
-                )}
+                {errors.kota && <p className="text-[11px] text-red-500">{errors.kota}</p>}
               </div>
 
               {/* PESAN */}
               <div>
-                <label className="text-xs font-medium text-gray-600">
-                  Ceritakan Pengalamanmu
-                </label>
+                <label className="text-xs font-medium text-gray-600">Ceritakan Pengalamanmu</label>
                 <textarea
                   value={form.pesan}
                   onChange={(e) => setForm({ ...form, pesan: e.target.value })}
-                  placeholder="Contoh: Setelah rutin minum KOJE24, badan terasa lebih segar dan ringan..."
+                  placeholder="Contoh: Setelah rutin minum KOJE24..."
                   rows={3}
-                  className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm outline-none resize-none focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40"
+                  className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm resize-none focus:border-[#0FA3A8] focus:ring-1"
                 />
-                {errors.pesan && (
-                  <p className="text-[11px] text-red-500 mt-1">{errors.pesan}</p>
-                )}
+                {errors.pesan && <p className="text-[11px] text-red-500">{errors.pesan}</p>}
               </div>
 
               {/* VARIAN */}
@@ -209,7 +198,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 <select
                   value={form.varian}
                   onChange={(e) => setForm({ ...form, varian: e.target.value })}
-                  className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm outline-none bg-white focus:border-[#0FA3A8] focus:ring-1 focus:ring-[#0FA3A8]/40"
+                  className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm bg-white focus:border-[#0FA3A8] focus:ring-1"
                 >
                   <option value="">Pilih Varian</option>
                   <option>Green Detox</option>
@@ -219,9 +208,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                   <option>Carrot Boost</option>
                   <option>Ginger Shot</option>
                 </select>
-                {errors.varian && (
-                  <p className="text-[11px] text-red-500 mt-1">{errors.varian}</p>
-                )}
+                {errors.varian && <p className="text-[11px] text-red-500">{errors.varian}</p>}
               </div>
 
               {/* RATING */}
@@ -237,9 +224,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                       onClick={() => setForm({ ...form, rating: star })}
                       className="text-xl"
                     >
-                      <span
-                        className={(hoverRating ?? form.rating) >= star ? "text-yellow-400" : "text-gray-300"}
-                      >
+                      <span className={(hoverRating ?? form.rating) >= star ? "text-yellow-400" : "text-gray-300"}>
                         ★
                       </span>
                     </button>
@@ -260,7 +245,6 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                   }}
                   className="mt-1 border border-[#e2e8f0] p-2 rounded-lg w-full text-sm"
                 />
-
                 {preview && (
                   <img
                     src={preview}
@@ -269,6 +253,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 )}
               </div>
 
+              {/* STATUS */}
               {statusMsg && (
                 <p className="text-[11px] text-center text-gray-600 mt-1">{statusMsg}</p>
               )}
