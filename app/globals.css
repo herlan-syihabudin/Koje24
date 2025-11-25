@@ -135,11 +135,10 @@ footer::before {
 }
 footer > * { position: relative; z-index: 1; }
 
-/* === BODY LOCK === */
+/* === BODY LOCK (VERSI FIXED, AMAN) === */
 .body-lock {
-  overflow: hidden;
+  overflow: hidden !important;
   touch-action: none;
-  height: 100vh;
 }
 
 /* === POPUP ENGINE === */
@@ -184,7 +183,9 @@ footer > * { position: relative; z-index: 1; }
 }
 .popup-close-btn:hover { transform: scale(1.07); background: rgba(255,255,255,0.95); }
 
-.popup-content { -webkit-overflow-scrolling: touch; }
+.popup-content {
+  -webkit-overflow-scrolling: touch;
+}
 
 /* === TABLE === */
 table { border-collapse: collapse !important; width: 100%; }
@@ -203,14 +204,8 @@ td { font-size: 13px; color: #222; }
 .grid { min-width: 0; }
 
 @keyframes slide-up-high {
-  from {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(50px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .animate-slide-up-high {
@@ -224,41 +219,17 @@ td { font-size: 13px; color: #222; }
   border-radius: 50%;
   animation: bubble 1s infinite;
 }
-
-.dot:nth-child(2) {
-  animation-delay: 0.2s;
-}
-.dot:nth-child(3) {
-  animation-delay: 0.4s;
-}
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
 
 @keyframes bubble {
-  0% {
-    transform: translateY(0);
-    opacity: .4;
-  }
-  50% {
-    transform: translateY(-4px);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0);
-    opacity: .4;
-  }
+  0% { transform: translateY(0); opacity: .4; }
+  50% { transform: translateY(-4px); opacity: 1; }
+  100% { transform: translateY(0); opacity: .4; }
 }
-body.body-lock {
-  overflow: hidden !important;
+
+/* === FIX MODAL TESTIMONI === */
+.testimoni-modal {
   position: fixed !important;
-  width: 100%;
-  height: 100%;
-  background: transparent !important;
-  box-shadow: none !important;
+  z-index: 99999 !important;
 }
-
-body::before,
-body::after {
-  display: none !important;
-  content: none !important;
-  background: transparent !important;
-}
-
