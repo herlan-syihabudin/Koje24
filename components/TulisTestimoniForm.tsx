@@ -27,25 +27,20 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     showOnHome: false,
   })
 
-  /* ==================================
-        BODY LOCK (TIDAK DIRUBAH)
-  ===================================*/
+  /* BODY LOCK */
   useEffect(() => {
     if (show) document.body.classList.add("body-lock")
     else document.body.classList.remove("body-lock")
-
     return () => document.body.classList.remove("body-lock")
   }, [show])
 
-  /* ==================================*/
+  /* VALIDATION */
   const validate = () => {
     const err: Record<string, string> = {}
-
     if (form.nama.trim().length < 2) err.nama = "Nama minimal 2 karakter"
     if (form.kota.trim().length < 2) err.kota = "Kota minimal 2 karakter"
     if (form.pesan.trim().length < 10) err.pesan = "Minimal 10 karakter"
     if (!form.varian) err.varian = "Pilih varian"
-
     setErrors(err)
     return Object.keys(err).length === 0
   }
@@ -64,7 +59,6 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     setStatusMsg(null)
 
     if (!validate()) return
-
     if (lastSubmit && Date.now() - lastSubmit < 6000) {
       setStatusMsg("Tunggu sebentar sebelum mengirim lagi…")
       return
@@ -111,17 +105,20 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
         + Tulis Testimoni
       </button>
 
-      {/* =============================== */}
+      {/* MODAL */}
       {show && (
         <div
           onClick={() => setShow(false)}
           className="
             fixed inset-0
             bg-black/60 backdrop-blur-sm
-            z-[999999]          /* FIX OVERLAY */
+            z-[999999]
             overflow-y-auto
-            flex items-start justify-center
-            pt-10 pb-10
+            flex 
+            items-start md:items-center   /* HP = atas, Desktop = center */
+            justify-center
+            pt-20 md:pt-0                /* HP kasih jarak, desktop reset */
+            pb-10
           "
         >
           <div
@@ -131,22 +128,20 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               w-[92%] sm:w-full max-w-md
               bg-white rounded-3xl shadow-xl
               p-6
-              z-[1000000]        /* FIX MODAL HIGHEST */
+              z-[1000000]
               max-h-[85vh]
               overflow-y-auto
             "
-            style={{ marginTop: "20px" }}
           >
-            {/* CLOSE BUTTON */}
+            {/* CLOSE */}
             <button
               type="button"
               onClick={() => setShow(false)}
-              className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-[#0FA3A8] z-[1000002]" /* FIX */
+              className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-[#0FA3A8] z-[1000002]"
             >
               ✕
             </button>
 
-            {/* TITLE */}
             <h3 className="text-xl font-semibold mb-1 text-[#0B4B50]">
               Tulis Testimoni Kamu 💬
             </h3>
@@ -156,7 +151,6 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
 
             {/* FORM */}
             <form onSubmit={handleSubmit} className="space-y-3 pb-3">
-
               {/* NAMA */}
               <div>
                 <label className="text-xs font-medium text-gray-600">Nama Lengkap</label>
@@ -269,7 +263,6 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 {sending ? "Mengirim…" : "Kirim Testimoni"}
               </button>
             </form>
-
           </div>
         </div>
       )}
