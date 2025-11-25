@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import { getBestSellerList } from "@/lib/bestSeller";
+import { useBestSellerRanking } from "@/lib/bestSeller"
 
 export default function ProductCard({
   id,
@@ -8,26 +8,28 @@ export default function ProductCard({
   price,
   img,
 }: {
-  id: number;
-  name: string;
-  price: number;
-  img: string;
+  id: number
+  name: string
+  price: number
+  img: string
 }) {
-  // Ambil data bestseller realtime
-  const ranking = getBestSellerList();
-  const isBest = ranking[id]?.isBestSeller === true;
+  // Wajib pakai HOOK agar aman SSR
+  const ranking = useBestSellerRanking()
+  const isBest = ranking[id]?.isBestSeller === true
 
   return (
     <div className="relative bg-white rounded-2xl border border-[#e6eeee] shadow-sm overflow-hidden">
 
       {/* 🔥 BADGE BEST SELLER */}
       {isBest && (
-        <div className="
-          absolute top-3 left-3 
-          bg-[#F4B400] text-white text-[11px] font-semibold 
-          px-2 py-1 rounded-full shadow-md z-20
-          animate-pulse
-        ">
+        <div
+          className="
+            absolute top-3 left-3 
+            bg-[#F4B400] text-white text-[11px] font-semibold 
+            px-2 py-1 rounded-full shadow-md z-20
+            animate-pulse
+          "
+        >
           ⭐ Best Seller
         </div>
       )}
@@ -41,5 +43,5 @@ export default function ProductCard({
         </p>
       </div>
     </div>
-  );
+  )
 }
