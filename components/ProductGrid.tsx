@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { useState } from "react"
 import { useCartStore } from "@/stores/cartStore"
-import { useBestSellerRanking } from "@/lib/bestSeller"
+import { useBestSellerRanking } from "@/lib/bestseller"   // 🔥 FIXED
 import { products } from "@/lib/products"   
 
 const toNumber = (p: number | string): number =>
@@ -15,7 +15,8 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
   const items = useCartStore((state) => state.items)
   const addToCart = useCartStore((state) => state.addItem)
   const removeFromCart = useCartStore((state) => state.removeItem)
-  const rankStats = useBestSellerRanking()
+
+  const rankStats = useBestSellerRanking() // 🔥 ambil ranking realtime
 
   const [imgReady, setImgReady] = useState<Record<string, boolean>>({})
   const [added, setAdded] = useState<string | null>(null)
@@ -42,7 +43,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
 
     setAdded(p.id)
 
-    // FLY animation tidak berubah
+    // FLY animation tetap
     setTimeout(() => {
       const imgDom = document.querySelector(`[data-id="product-${p.id}"]`) as HTMLElement | null
       const cartBtn = document.querySelector(".fixed.bottom-5.right-5 button") as HTMLElement | null
@@ -105,9 +106,10 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
           const priceNum = toNumber(p.price)
           const qty = qtyOf(p.id)
           const isAdded = added === p.id
-          const stats =
-  (rankStats as Record<string, { isBestSeller?: boolean; rating?: number; reviews?: number }>)[p.id]
-          const isBest = stats?.isBestSeller || false
+
+          // 🔥 BEST SELLER FIX — id dipaksa jadi number agar match
+          const stats = (rankStats as any)[Number(p.id)]
+          const isBest = stats?.isBestSeller === true
 
           return (
             <div
@@ -139,6 +141,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                   onLoadingComplete={() => setImgReady((m) => ({ ...m, [p.id]: true }))}
                 />
 
+                {/* 🔥 BEST SELLER BADGE */}
                 {isBest && (
                   <span className="absolute top-4 left-4 bg-[#E8C46B] text-[#0B4B50] text-[11px] font-bold px-3 py-1 rounded-full shadow">
                     ⭐ Best Seller
