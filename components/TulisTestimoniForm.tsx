@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { updateRating } from "@/lib/bestseller";
+import { updateRating } from "@/lib/bestSeller";
 
 type Props = { onSuccess?: () => void };
 
