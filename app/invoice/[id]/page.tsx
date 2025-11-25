@@ -11,13 +11,13 @@ const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
 const HARGA_ONGKIR = 15000
 const KONTAK_CS = "6282213139580"
 
-// FIX: Tidak lowercase! biarkan ID apa adanya
+// Prevent undefined / lowercase mismatch
 function normalize(v: any) {
   return String(v || "").trim()
 }
 
 /* ============================================================
-   FETCH DATA INVOICE
+   FETCH ORDER FROM GOOGLE SHEET
 ============================================================ */
 async function getOrder(invoiceId: string) {
   const clean = normalize(invoiceId)
@@ -37,11 +37,8 @@ async function getOrder(invoiceId: string) {
 
   const rows = res.data.values || []
 
-  // FIX: Tanpa lowercase, cocok dengan ID di sheet
-  const row =
-    rows.find((r) => String(r[1]).trim() === clean) ||
-    rows.find((r) => String(r[11]).trim().includes(clean))
-
+  // FIX PALING PENTING: cari via kolom B (index 1)
+  const row = rows.find((r) => String(r[1]).trim() === clean)
   if (!row) return null
 
   return {
@@ -50,7 +47,7 @@ async function getOrder(invoiceId: string) {
     nama: row[2] ?? "",
     hp: row[3] ?? "",
     alamat: row[4] ?? "",
-    produk: row[5] ?? "",
+    produkRaw: row[5] ?? "", // Example: "Golden Detox (2x), Sunrise (1x)"
     qty: Number(row[6]) || 0,
     subtotal: Number(row[7]) || 0,
     status: row[8] ?? "Pending",
@@ -61,7 +58,7 @@ async function getOrder(invoiceId: string) {
 }
 
 /* ============================================================
-   STATUS BADGE COLOR
+   STATUS COLOR
 ============================================================ */
 function getStatusColor(status: string) {
   switch (status.toLowerCase()) {
@@ -76,7 +73,7 @@ function getStatusColor(status: string) {
 }
 
 /* ============================================================
-   MAIN PAGE RENDER
+   MAIN PAGE
 ============================================================ */
 export default async function InvoicePage({ params }: any) {
   const id = params?.id || ""
@@ -104,11 +101,15 @@ export default async function InvoicePage({ params }: any) {
     )
   }
 
-  const pricePerItem =
-    data.qty > 0 ? Math.round(data.subtotal / data.qty) : data.subtotal
+  // Produk multi row
+  const products = data.produkRaw
+    .split(", ")
+    .map((p) => p.trim())
+    .filter((x) => x.length > 0)
 
   const safeSubtotal = data.subtotal || 0
   const grandTotal = safeSubtotal + HARGA_ONGKIR
+
   const statusClasses = getStatusColor(data.status)
 
   return (
@@ -127,7 +128,13 @@ export default async function InvoicePage({ params }: any) {
               Tel: {KONTAK_CS} • order@koje24.com
             </p>
           </div>
-          <img src="/logo-koje24.png" alt="KOJE24" className="h-12 w-auto" />
+
+          {/* FIX LOGO (stable untuk PDF) */}
+          <img
+            src="/logo-koje24.png"
+            alt="KOJE24"
+            className="h-12 w-auto print:h-10"
+          />
         </div>
 
         {/* CUSTOMER INFO */}
@@ -138,7 +145,9 @@ export default async function InvoicePage({ params }: any) {
             </p>
             <p className="font-semibold text-slate-900">{data.nama}</p>
             <p className="text-slate-600">{data.hp}</p>
-            <p className="text-slate-600 leading-snug max-w-[90%]">{data.alamat}</p>
+            <p className="text-slate-600 leading-snug max-w-[90%]">
+              {data.alamat}
+            </p>
           </div>
 
           <div>
@@ -169,26 +178,22 @@ export default async function InvoicePage({ params }: any) {
           <table className="w-full border border-slate-300 text-sm">
             <thead className="bg-slate-100 text-slate-600 uppercase text-[11px]">
               <tr>
-                <th className="p-2 text-left w-[50%]">Produk</th>
-                <th className="p-2 text-right w-[15%]">Harga</th>
+                <th className="p-2 text-left">Produk</th>
                 <th className="p-2 text-right w-[10%]">Qty</th>
-                <th className="p-2 text-right w-[25%]">Subtotal</th>
               </tr>
             </thead>
 
             <tbody>
-              <tr className="border-t">
-                <td className="p-3 font-medium text-slate-800">
-                  {data.produk}
-                </td>
-                <td className="p-3 text-right">
-                  Rp{pricePerItem.toLocaleString("id-ID")}
-                </td>
-                <td className="p-3 text-right text-slate-800">{data.qty}x</td>
-                <td className="p-3 text-right font-bold text-[#0B4B50]">
-                  Rp{safeSubtotal.toLocaleString("id-ID")}
-                </td>
-              </tr>
+              {products.map((prod, i) => (
+                <tr key={i} className="border-t">
+                  <td className="p-3 font-medium text-slate-800">{prod}</td>
+                  <td className="p-3 text-right text-slate-800">
+                    {prod.includes("(")
+                      ? prod.split("(")[1].replace(")", "")
+                      : "-"}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -202,12 +207,14 @@ export default async function InvoicePage({ params }: any) {
                 Rp{safeSubtotal.toLocaleString("id-ID")}
               </span>
             </div>
+
             <div className="flex justify-between">
               <span>Ongkir</span>
               <span className="font-semibold">
                 Rp{HARGA_ONGKIR.toLocaleString("id-ID")}
               </span>
             </div>
+
             <div className="border-t pt-3 flex justify-between text-lg font-bold text-[#0B4B50]">
               <span>TOTAL AKHIR</span>
               <span>Rp{grandTotal.toLocaleString("id-ID")}</span>
@@ -223,8 +230,13 @@ export default async function InvoicePage({ params }: any) {
             </p>
 
             <p className="font-semibold">{data.paymentMethod}</p>
-            <p>No.Rek: <strong className="text-red-600">{data.bankAccount}</strong></p>
-            <p>a/n <strong className="text-slate-800">{data.accountName}</strong></p>
+            <p>
+              No.Rek:{" "}
+              <strong className="text-red-600">{data.bankAccount}</strong>
+            </p>
+            <p>
+              a/n <strong className="text-slate-800">{data.accountName}</strong>
+            </p>
 
             <a
               href={`https://wa.me/${KONTAK_CS}?text=Saya%20sudah%20bayar%20Invoice%20${data.invoiceId}`}
