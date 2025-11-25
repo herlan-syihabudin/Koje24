@@ -9,9 +9,12 @@ export interface RankData {
 
 const STORAGE_KEY = "koje24-best-seller-data"
 
-// Ambil data history dari localStorage
+/* ======================================================
+   📌 Ambil data history dari localStorage
+====================================================== */
 function getStats(): Record<number, RankData> {
   if (typeof window === "undefined") return {}
+
   try {
     const d = localStorage.getItem(STORAGE_KEY)
     return d ? JSON.parse(d) : {}
@@ -36,7 +39,7 @@ export function updateRating(productId: number, newRating: number) {
       rating: newRating,
       reviews: 1,
       score: 0,
-      isBestSeller: false
+      isBestSeller: false,
     }
   } else {
     const prev = stats[productId]
@@ -48,9 +51,9 @@ export function updateRating(productId: number, newRating: number) {
     prev.reviews += 1
   }
 
-  // Hitung skor final
+  // Hitung skor final (formula marketplace)
   const s = stats[productId]
-  s.score = s.rating * 5 + s.reviews * 3 // 🔥 formula paling umum di marketplace
+  s.score = s.rating * 5 + s.reviews * 3
 
   saveStats(stats)
 }
@@ -61,11 +64,12 @@ export function updateRating(productId: number, newRating: number) {
 export function getBestSellerList() {
   const stats = getStats()
 
+  // Urutkan score terbesar → kecil
   const sorted = Object.entries(stats)
     .sort((a, b) => b[1].score - a[1].score)
-    .slice(0, 3) // top 3 best seller
+    .slice(0, 3) // Top 3 best seller
 
-  // Reset semua
+  // Reset semua flag
   Object.values(stats).forEach((s) => (s.isBestSeller = false))
 
   // Tandai best seller
