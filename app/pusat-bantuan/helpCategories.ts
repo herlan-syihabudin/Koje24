@@ -1,3 +1,5 @@
+// app/pusat-bantuan/helpCategories.ts
+
 export const helpCategories = {
   akun: {
     title: "Akun & Keamanan",
@@ -5,148 +7,148 @@ export const helpCategories = {
       {
         slug: "lupa-password",
         title: "Lupa Password",
-        summary: "Cara reset password jika kamu lupa password akun KOJE24.",
+        summary: "Cara reset password akun KOJE24 jika lupa.",
         content: `
 ## Cara Mengatasi Lupa Password
+
 1. Buka halaman login KOJE24.
-2. Klik **"Lupa Password"**.
-3. Masukkan email yang terdaftar.
-4. Cek email dan klik link reset password.
-5. Buat password baru.
+2. Klik **Lupa Password**.
+3. Masukkan email yang terdaftar di KOJE24.
+4. Cek email masuk → klik link reset password.
+5. Buat password baru dan login kembali.
 
-Jika email tidak masuk: cek spam atau hubungi Admin KOJE24.
-`
+**Catatan:** Jika email tidak masuk, cek folder spam atau gunakan fitur *kirim ulang*.`
       },
       {
-        slug: "ganti-email",
-        title: "Ganti Email Akun",
-        summary: "Panduan mengganti email lama dengan email baru.",
+        slug: "ubah-data-akun",
+        title: "Mengubah Data Akun",
+        summary: "Panduan mengganti nama, email, atau nomor WhatsApp.",
         content: `
-## Cara Mengganti Email Akun KOJE24
-1. Login ke akun KOJE24 kamu.
-2. Buka menu **Profil → Pengaturan Akun**.
-3. Masukkan email baru.
-4. Verifikasi email baru melalui link yang dikirimkan.
+## Cara Mengubah Data Akun
 
-Jika kesulitan, admin bisa bantu migrasi akunmu. 
-`
+1. Login ke akun KOJE24.
+2. Buka menu **Profil Saya**.
+3. Pilih data yang ingin diubah — nama, email, atau nomor WhatsApp.
+4. Klik **Simpan Perubahan**.
+
+Data akan tersimpan secara otomatis di sistem KOJE24.`
       },
       {
-        slug: "akun-terkunci",
-        title: "Akun Terkunci",
-        summary: "Akunmu terkunci karena salah password berulang? Ini solusinya.",
+        slug: "keamanan-akun",
+        title: "Tips Keamanan Akun",
+        summary: "Cara menjaga akun tetap aman dari penyalahgunaan.",
         content: `
-## Mengatasi Akun Terkunci
-Akun terkunci terjadi jika 5 kali salah password.
+## Tips Keamanan Akun KOJE24
 
-Cara membuka:
-1. Tunggu 10 menit dan coba login kembali.
-2. Jika masih terkunci, lakukan reset password.
-3. Jika gagal, hubungi Admin KOJE24 untuk verifikasi manual.
-`
+- Gunakan password yang kuat dan tidak mudah ditebak.
+- Jangan bagikan OTP atau link login kepada siapapun.
+- Logout setelah menggunakan device umum.
+- Jika merasa akun disusupi, segera ganti password.`
+      },
+      {
+        slug: "hapus-akun",
+        title: "Menghapus Akun KOJE24",
+        summary: "Cara menghapus atau menonaktifkan akun.",
+        content: `
+## Cara Menghapus Akun KOJE24
+
+Jika ingin menghapus akun:
+
+1. Hubungi Admin KOJE24 melalui chat.
+2. Berikan email yang digunakan di KOJE24.
+3. Admin akan memproses permintaan penghapusan.
+
+**Catatan:** Data yang telah dihapus tidak bisa dikembalikan.`
       },
       {
         slug: "verifikasi-email",
         title: "Verifikasi Email",
-        summary: "Belum dapat email verifikasi? Ikuti langkah berikut.",
+        summary: "Cara verifikasi email agar pesanan aman.",
         content: `
-## Solusi Email Verifikasi Tidak Masuk
-1. Cek folder **Spam / Junk / Promotions**.
-2. Klik "Kirim Ulang Email Verifikasi".
-3. Pastikan email kamu aktif.
-4. Jika tidak muncul juga, hubungi Admin KOJE24.
+## Cara Verifikasi Email KOJE24
 
-`
-      },
-      {
-        slug: "hapus-akun",
-        title: "Hapus Akun Permanen",
-        summary: "Cara menghapus akun KOJE24 secara permanen.",
-        content: `
-## Cara Hapus Akun
-1. Kirim permintaan penghapusan akun melalui Admin.
-2. Data pesanan & histori akan dihapus permanen.
-3. Proses 1×24 jam.
+1. Buka kotak masuk email.
+2. Cari pesan dari KOJE24.
+3. Klik tombol **Verifikasi Email**.
 
-Catatan: Aksi ini tidak dapat dibatalkan.
-`
-      },
-    ],
+Jika tidak ada email, gunakan fitur **Kirim Ulang Verifikasi** di halaman profil.`
+      }
+    ]
   },
 
   pesanan: {
     title: "Pesanan",
     items: [
       {
-        slug: "cek-status",
+        slug: "cek-status-pesanan",
         title: "Cara Cek Status Pesanan",
-        summary: "Lihat apakah pesananmu sedang diproses, dikirim, atau selesai.",
+        summary: "Lihat status pesanan mulai dari diproses hingga selesai.",
         content: `
 ## Cara Cek Status Pesanan
-1. Buka halaman keranjang atau menu Riwayat Pesanan.
-2. Temukan pesanan yang ingin kamu cek.
-3. Status yang muncul:
-   - Diproses
-   - Siap Dikirim
-   - Dalam Pengiriman
-   - Selesai
 
-Jika status tidak berubah, hubungi Admin KOJE24.
-`
+1. Masuk ke halaman **Pesanan Saya**.
+2. Pilih pesanan yang ingin dilihat.
+3. Status pesanan akan muncul, mulai dari:
+   - Menunggu Diproses
+   - Produksi
+   - Pickup Kurir
+   - Dalam Perjalanan
+   - Selesai`
       },
       {
-        slug: "ubah-alamat",
-        title: "Ubah Alamat Setelah Checkout",
-        summary: "Bisa ubah alamat? Bisa, tapi ada syaratnya.",
+        slug: "ubah-pesanan",
+        title: "Mengubah Pesanan",
+        summary: "Apakah pesanan bisa diubah setelah checkout?",
         content: `
-## Cara Mengubah Alamat Setelah Checkout
-1. Jika pesanan **belum diproses**, masih bisa diubah.
-2. Chat Admin KOJE24 secepat mungkin.
-3. Jika pesanan sudah dikirim, alamat **tidak bisa diubah**.
+## Mengubah Pesanan KOJE24
 
-Saran: Pastikan alamat lengkap & nomor HP aktif.
-`
+- Pesanan **bisa diubah** selama belum masuk proses produksi.
+- Hubungi Admin KOJE24 secepatnya setelah checkout.
+
+Setelah jus diproduksi, pesanan **tidak bisa diubah**.`
       },
       {
-        slug: "double-order",
-        title: "Pesanan Terkirim Dua Kali",
-        summary: "Kamu checkout dua kali tanpa sengaja? Begini solusinya.",
+        slug: "batal-pesanan",
+        title: "Membatalkan Pesanan",
+        summary: "Pembatalan pesanan dan kebijakan refund.",
         content: `
-## Solusi Pesanan Tergandakan
-1. Jangan panik — ini bisa dibatalkan.
-2. Chat Admin KOJE24 dengan menyebutkan nomor pesanan.
-3. Pilih:
-   - Refund penuh
-   - Tukar ke varian lain
-   - Jadwalkan untuk hari berikutnya
+## Cara Membatalkan Pesanan
 
-`
+1. Buka menu **Pesanan Saya**.
+2. Klik **Batalkan Pesanan** (jika masih ada).
+3. Jika tombol tidak tersedia → pesanan sudah diproduksi.
+
+Refund mengikuti kebijakan pengembalian dana KOJE24.`
       },
       {
         slug: "pesanan-tidak-masuk",
-        title: "Pesanan Tidak Muncul di Sistem",
+        title: "Pesanan Tidak Masuk",
         summary: "Sudah bayar tapi pesanan tidak muncul?",
         content: `
-## Jika Pesanan Tidak Muncul
-1. Screenshot bukti pembayaran.
-2. Chat Admin KOJE24.
-3. Pesanan akan dibuatkan manual sesuai data pembayaran.
+## Cara Mengatasi Pesanan Tidak Masuk
 
-`
+1. Pastikan pembayaran berhasil.
+2. Tunggu 1–3 menit sinkronisasi.
+3. Jika tetap tidak muncul:
+   - Kirim bukti pembayaran ke Admin KOJE24.
+   - Sertakan nomor WhatsApp dan email.`
       },
       {
-        slug: "ubah-jadwal-kirim",
-        title: "Ubah Jadwal Kirim",
-        summary: "Mau geser jadwal kirim? Bisa!",
+        slug: "pesanan-ganda",
+        title: "Pesanan Terkirim Dua Kali",
+        summary: "Cara menangani pesanan double.",
         content: `
-## Cara Mengubah Jadwal Kirim
-1. Chat Admin KOJE24 sebelum jam 22.00.
-2. Jadwal bisa dipindah ke hari berikutnya.
-3. Untuk pesanan langganan, bisa dijadwalkan mingguan.
+## Pesanan Ganda (Double Order)
 
-`
-      },
-    ],
+Jika pesanan muncul dua kali:
+
+- Jangan panik.
+- Screenshot dua-duanya.
+- Kirim ke Admin KOJE24.
+
+Admin akan bantu membatalkan salah satu pesanan.`
+      }
+    ]
   },
 
   pembayaran: {
@@ -154,333 +156,324 @@ Saran: Pastikan alamat lengkap & nomor HP aktif.
     items: [
       {
         slug: "metode-pembayaran",
-        title: "Metode Pembayaran KOJE24",
-        summary: "Transfer bank, e-wallet, dan pembayaran otomatis.",
+        title: "Metode Pembayaran",
+        summary: "Daftar metode pembayaran yang tersedia.",
         content: `
-## Metode Pembayaran Tersedia
-- BCA
-- Mandiri
-- OVO
-- Dana
-- QRIS
+## Metode Pembayaran KOJE24
 
-Admin akan verifikasi otomatis dalam 1–5 menit.
-`
+- Transfer Bank (BCA, Mandiri)
+- QRIS
+- E-Wallet (OVO, Dana, GoPay)
+
+Pastikan nama pengirim sesuai agar verifikasi cepat.`
       },
       {
         slug: "pembayaran-gagal",
         title: "Pembayaran Gagal",
-        summary: "Uang kepotong tapi pesanan tidak masuk?",
+        summary: "Cara penyelesaian jika pembayaran gagal.",
         content: `
-## Mengatasi Pembayaran Gagal
-1. Screenshot bukti pembayaran.
-2. Chat Admin KOJE24.
-3. Jika dana masuk ke KOJE24, pesanan akan dibuat manual.
-4. Jika dana tidak masuk, refund akan diproses.
+## Pembayaran Gagal
 
-`
+Jika pembayaran ditolak:
+
+1. Cek saldo / limit e-wallet.
+2. Coba ulang dalam 1 menit.
+3. Jika sudah terdebet → kirim bukti transfer ke Admin.
+
+Admin akan verifikasi maksimal 10 menit.`
       },
       {
-        slug: "refund-pembayaran",
-        title: "Refund Pembayaran",
-        summary: "Cara mengajukan refund pembayaran.",
+        slug: "tagihan-tidak-muncul",
+        title: "Tagihan Tidak Muncul",
+        summary: "Invoice tidak keluar saat checkout?",
         content: `
-## Cara Refund
-1. Siapkan bukti transfer & nomor pesanan.
-2. Admin akan cek transaksi.
-3. Dana dikembalikan dalam 1–3 hari kerja.
+## Tagihan Tidak Muncul
 
-`
+1. Refresh halaman.
+2. Pastikan koneksi stabil.
+3. Coba checkout ulang.
+4. Jika tetap gagal → kirim screenshot ke Admin.`
       },
       {
-        slug: "promo-tidak-masuk",
-        title: "Kode Promo Tidak Berfungsi",
-        summary: "Promo error? Ini solusinya.",
+        slug: "double-payment",
+        title: "Pembayaran DoBel",
+        summary: "Ketika uang terpotong dua kali.",
         content: `
-## Mengatasi Promo Tidak Berfungsi
-1. Pastikan promo masih berlaku.
-2. Pastikan varian sesuai syarat promo.
-3. Chat admin jika promo tidak masuk otomatis.
+## Pembayaran DoBel
 
-`
+Jika uang terdebet 2 kali:
+
+- Kirim dua bukti transaksi.
+- Admin akan cek keuangan KOJE24.
+- Refund akan diproses maksimal 1×24 jam.`
       },
       {
         slug: "konfirmasi-manual",
         title: "Konfirmasi Pembayaran Manual",
-        summary: "Jika transfer tapi tidak terdeteksi sistem.",
+        summary: "Cara mempercepat verifikasi pembayaran.",
         content: `
 ## Konfirmasi Manual
-1. Kirim bukti pembayaran.
-2. Admin input secara manual.
-3. Pesanan langsung diproses.
 
-`
-      },
-    ],
+Jika pembayaran tidak terdeteksi:
+
+- Kirim foto bukti transfer.
+- Sertakan nama pengirim & jumlah pembayaran.
+- Admin akan input manual dalam 3–5 menit.`
+      }
+    ]
   },
 
   pengiriman: {
     title: "Pengiriman",
     items: [
       {
-        slug: "jadwal-kirim",
-        title: "Jadwal Pengiriman",
-        summary: "Kapan pesanan kamu dikirim?",
-        content: `
-## Jadwal Pengiriman KOJE24
-- Senin – Sabtu
-- Pengiriman mulai jam 08.00 – 13.00
-- Minggu LIBUR
-
-Kurir akan menghubungi jika sudah dekat lokasi.
-`
-      },
-      {
         slug: "cek-resi",
-        title: "Cek Resi",
-        summary: "Cara melacak status pengiriman.",
+        title: "Cara Cek Resi",
+        summary: "Lacak perjalanan kurir.",
         content: `
 ## Cara Cek Resi
-1. Buka menu pesanan.
-2. Klik nomor resi.
-3. Lacak lokasi paket realtime.
 
-Jika resi belum muncul, pesanan masih diproses.
-`
+1. Buka Pesanan Saya.
+2. Klik Detail Pengiriman.
+3. Nomor resi dan status perjalanan akan tampil lengkap.
+
+Biasanya update 5–15 menit setelah pickup.`
       },
       {
-        slug: "alamat-tidak-ditemukan",
-        title: "Kurir Tidak Menemukan Alamat",
-        summary: "Kurir KOJE24 tidak bisa menemukan rumahmu?",
+        slug: "jadwal-kirim",
+        title: "Jadwal Pengiriman",
+        summary: "Jam dan aturan pengiriman KOJE24.",
         content: `
-## Cara Mengatasi Kurir Tidak Menemukan Alamat
-1. Pastikan nomor HP aktif.
-2. Berikan patokan lokasi (gerbang, gang, warna pagar).
-3. Jika perlu, share location lewat WA.
+## Jadwal Pengiriman KOJE24
 
-`
+- Pengiriman dilakukan setiap hari.
+- Waktu pengiriman: **09.00 – 17.00**.
+- Untuk pemesanan malam → dikirim besok pagi.`
       },
       {
-        slug: "kirim-ulang",
-        title: "Kirim Ulang Pesanan",
-        summary: "Kurir gagal antar? Bisa kirim ulang.",
+        slug: "ganti-alamat",
+        title: "Ganti Alamat Pengiriman",
+        summary: "Cara ubah alamat setelah checkout.",
         content: `
-## Kirim Ulang Pesanan
-1. Kurir akan coba 1×.
-2. Jika gagal, pesanan bisa dijadwalkan ulang.
-3. Admin akan hubungi kamu sebelum kirim ulang.
+## Mengganti Alamat Pengiriman
 
-`
+Alamat bisa diganti sebelum pesanan dipickup kurir.
+
+Jika pesanan sudah dalam perjalanan → tidak bisa diganti.`
       },
       {
-        slug: "ubah-lokasi",
-        title: "Ubah Lokasi Pengiriman",
-        summary: "Mau kirim ke alamat berbeda?",
+        slug: "pengiriman-terlambat",
+        title: "Pengiriman Terlambat",
+        summary: "Apa yang harus dilakukan jika pesanan lama datang?",
         content: `
-## Ubah Lokasi
-1. Bisa diubah jika pesanan belum dikirim.
-2. Chat admin untuk update alamat.
-3. Jika sudah dikirim, tidak bisa diubah.
+## Pengiriman Terlambat
 
-`
+- Cek status resi.
+- Jika lebih dari 2 jam dari estimasi → hubungi Admin KOJE24.
+- Admin akan cek ke kurir dan tindak lanjut.`
       },
-    ],
+      {
+        slug: "kurir-tidak-ditemukan",
+        title: "Kurir Tidak Ditemukan",
+        summary: "Kurir tiba-tiba hilang atau berhenti update.",
+        content: `
+## Kurir Tidak Ditemukan
+
+- Kadang aplikasi kurir error.
+- Pastikan sinyal kurir stabil.
+- Jika 30 menit tanpa update → Koje24 akan hubungi kurir.`
+      }
+    ]
   },
 
   refund: {
     title: "Pengembalian Dana",
     items: [
       {
+        slug: "cara-refund",
+        title: "Cara Mengajukan Refund",
+        summary: "Langkah-langkah refund pesanan.",
+        content: `
+## Cara Mengajukan Refund
+
+1. Screenshot pesanan.
+2. Jelaskan kendala.
+3. Kirim ke Admin.
+
+Refund diproses maksimal **1×24 jam**.`
+      },
+      {
         slug: "syarat-refund",
         title: "Syarat Refund",
-        summary: "Berbagai kondisi yang memungkinkan refund.",
+        summary: "Ketentuan pesanan yang bisa direfund.",
         content: `
-## Syarat Refund
-- Kesalahan produksi
-- Pesanan salah
-- Kualitas tidak layak
-- Sistem error
+## Syarat Refund KOJE24
 
+- Produk rusak saat diterima.
+- Kurir salah tujuan.
+- Pesanan tidak diproduksi.
+
+Tidak berlaku untuk pembatalan sepihak setelah produksi.`
+      },
+      {
+        slug: "refund-belum-masuk",
+        title: "Refund Belum Masuk",
+        summary: "Uang refund belum diterima setelah diproses.",
+        content: `
+## Refund Belum Masuk
+
+- Cek mutasi bank / e-wallet.
+- Screenshot mutasi kosong.
+- KOJE24 akan follow up bank terkait.`
+      },
+      {
+        slug: "jenis-refund",
+        title: "Jenis Pengembalian Dana",
+        summary: "Pengembalian bisa berupa uang atau voucher.",
+        content: `
+## Jenis Refund
+
+- **Kembali ke rekening** (utama)
+- **Voucher belanja** (opsional)
 `
       },
       {
-        slug: "produk-rusak",
-        title: "Produk Rusak",
-        summary: "Jus bocor atau rusak? Begini solusinya.",
-        content: `
-## Produk Rusak Saat Diterima
-1. Foto produk dan kemasan.
-2. Kirim ke Admin KOJE24.
-3. Kamu bisa pilih: Kirim ulang atau refund.
-
-`
-      },
-      {
-        slug: "pesanan-salah",
-        title: "Pesanan Salah",
-        summary: "Pesanan tidak sesuai? Tukar gratis.",
-        content: `
-## Pesanan Salah
-1. Foto pesanan yang salah.
-2. Admin akan cek.
-3. Kurir akan kirim varian yang benar GRATIS.
-
-`
-      },
-      {
-        slug: "harga-berbeda",
-        title: "Harga Berbeda",
-        summary: "Harga tidak sesuai invoice?",
-        content: `
-## Harga Tidak Sesuai
-Jika ada perbedaan harga:
-1. Screenshot harga & invoice.
-2. Admin cek sistem.
-3. Selisih akan direfund.
-
-`
-      },
-      {
-        slug: "refund-proses",
-        title: "Berapa Lama Refund?",
-        summary: "Informasi timeline refund.",
+        slug: "lama-proses",
+        title: "Lama Proses Refund",
+        summary: "Estimasi durasi penyelesaian refund.",
         content: `
 ## Lama Proses Refund
-1–3 hari kerja setelah verifikasi.
 
-`
-      },
-    ],
+- Bank: 1–24 jam  
+- E-wallet: 1–5 menit  
+- Manual: maksimal 24 jam`
+      }
+    ]
   },
 
   komplain: {
     title: "Komplain Pesanan",
     items: [
       {
-        slug: "kurang-produk",
-        title: "Produk Kurang",
-        summary: "Botol kurang? Ateni cuy, ini cara klaim.",
+        slug: "pesanan-rusak",
+        title: "Pesanan Rusak",
+        summary: "Botol bocor, pecah, atau tumpah.",
         content: `
-## Mengatasi Produk Kurang
-1. Foto seluruh botol.
-2. Admin cek bukti packing.
-3. Botol kurang akan dikirim ulang GRATIS.
+## Pesanan Rusak
 
-`
+1. Foto kondisi produk.
+2. Foto kemasan luar.
+3. Kirim ke Admin KOJE24.
+
+Komplain akan diganti sesuai ketentuan.`
       },
       {
-        slug: "rasa-aneh",
-        title: "Rasa Tidak Sesuai",
-        summary: "Rasa aneh atau berubah? Solusinya begini.",
+        slug: "pesanan-kurang",
+        title: "Pesanan Kurang",
+        summary: "Jumlah botol tidak sesuai invoice.",
         content: `
-## Jika Rasa Tidak Sesuai
-1. Foto botol & batch code.
-2. Admin cek produksi.
-3. Kamu bisa pilih: Tukar atau refund.
+## Pesanan Kurang
 
-`
+1. Foto seluruh produk.
+2. Sertakan invoice.
+3. Admin akan kirim kekurangan.`
       },
       {
-        slug: "segel-rusak",
-        title: "Segel Rusak",
-        summary: "Botol bocor atau segel rusak?",
+        slug: "pesanan-salah",
+        title: "Varian Salah",
+        summary: "Varian yang diterima berbeda.",
         content: `
-## Jika Segel Rusak
-1. Foto segel & botol.
-2. Admin cek.
-3. Kirim ulang GRATIS.
+## Varian Salah
 
-`
+1. Foto varian yang diterima.
+2. Foto label botol.
+3. Admin akan kirim varian yang benar.`
       },
       {
-        slug: "pesanan-telat",
-        title: "Pengiriman Telat",
-        summary: "Pengiriman lewat dari jadwal?",
+        slug: "pesanan-tidak-sesuai",
+        title: "Pesanan Tidak Sesuai",
+        summary: "Detail pesanan tidak cocok.",
         content: `
-## Jika Pengiriman Telat
-1. Cek status resi.
-2. Jika jauh dari estimasi, admin akan bantu cek kurir.
-3. Jika telat lebih dari 3 jam → kompensasi voucher.
+## Pesanan Tidak Sesuai
 
-`
+1. Foto semua botol.
+2. Sertakan invoice.
+3. Admin akan perbaiki atau kirim ulang.`
       },
       {
-        slug: "komplain-lain",
-        title: "Komplain Lainnya",
-        summary: "Tidak ada di daftar? Tenang, ada solusinya.",
+        slug: "keluhan-rasa",
+        title: "Keluhan Rasa",
+        summary: "Rasa jus berbeda atau berubah.",
         content: `
-## Komplain Lainnya
-Chat admin KOJE24 dan jelaskan kendalamu.
+## Keluhan Rasa
 
-`
-      },
-    ],
+- Cold-pressed harus disimpan 0–4°C.
+- Jika rasa berubah → botol mungkin tidak dingin saat pengiriman.
+
+Admin akan investigasi dan ganti jika valid.`
+      }
+    ]
   },
 
   promo: {
     title: "Promosi",
     items: [
       {
-        slug: "cara-pakai-promo",
-        title: "Cara Pakai Kode Promo",
-        summary: "Masukkan kode promo saat checkout.",
+        slug: "kode-promo",
+        title: "Cara Menggunakan Kode Promo",
+        summary: "Gunakan kode promo dengan benar.",
         content: `
-## Cara Menggunakan Promo
-1. Masukkan kode pada kolom promo.
-2. Pastikan promo masih berlaku.
-3. Harga akan otomatis terpotong.
+## Cara Memakai Kode Promo
 
-`
+1. Masukkan kode promo di kolom promo.
+2. Klik Terapkan.
+3. Jika valid, potongan langsung muncul.`
       },
       {
-        slug: "promo-tidak-masuk",
-        title: "Promo Tidak Masuk",
-        summary: "Sudah masukkan promo tapi gagal?",
+        slug: "promo-tidak-bisa",
+        title: "Kode Promo Tidak Bisa Dipakai",
+        summary: "Kenapa promo ditolak?",
         content: `
-## Promo Tidak Masuk
-1. Pastikan varian memenuhi syarat promo.
-2. Pastikan tidak expired.
-3. Jika error, hubungi admin.
+## Kenapa Promo Tidak Bisa Dipakai?
 
-`
+- Masa berlaku habis.
+- Minimum order belum tercapai.
+- Hanya untuk varian tertentu.
+- Sudah pernah digunakan sebelumnya.`
       },
       {
-        slug: "langganan-diskon",
-        title: "Diskon Langganan",
-        summary: "Langganan mingguan lebih murah, ini caranya.",
+        slug: "voucher-langganan",
+        title: "Voucher Langganan",
+        summary: "Diskon khusus member rutin.",
         content: `
-## Cara Mendapat Diskon Langganan
-1. Pilih paket langganan.
-2. Diskon otomatis muncul.
-3. Nikmati hemat sampai 25%.
+## Voucher Langganan
 
-`
+- Berlaku untuk pelanggan setia.
+- Potongan otomatis setiap pembelian tertentu.`
       },
       {
-        slug: "voucher",
-        title: "Voucher Store",
-        summary: "Cara pakai voucher yang kamu punya.",
+        slug: "syarat-ketentuan",
+        title: "Syarat & Ketentuan Promo",
+        summary: "Detail syarat promo KOJE24.",
         content: `
-## Cara Menggunakan Voucher
-1. Klik voucher yang tersedia.
-2. Pastikan sesuai syarat.
-3. Voucher otomatis aktif.
+## S&K Promo KOJE24
 
-`
+- Satu promo per transaksi.
+- Tidak dapat dikombinasikan.
+- Promo tertentu hanya untuk varian tertentu.`
       },
       {
-        slug: "promo-khusus",
-        title: "Promo Khusus Member",
-        summary: "Promo spesial untuk member KOJE24.",
+        slug: "promo-bermasalah",
+        title: "Promo Bermasalah",
+        summary: "Promo muncul tapi tidak memotong harga.",
         content: `
-## Promo Khusus Member
-- Diskon eksklusif
-- Bonus botol
-- Early access produk
+## Promo Bermasalah
 
-`
-      },
-    ],
+- Refresh halaman.
+- Coba ulang.
+- Jika tetap gagal → kirim screenshot ke Admin.`
+      }
+    ]
   },
 
   lainnya: {
@@ -488,58 +481,56 @@ Chat admin KOJE24 dan jelaskan kendalamu.
     items: [
       {
         slug: "tentang-koje24",
-        title: "Apa Itu KOJE24?",
-        summary: "Tentang brand KOJE24 secara lengkap.",
+        title: "Tentang KOJE24",
+        summary: "Informasi brand KOJE24.",
         content: `
-## Apa Itu KOJE24?
-KOJE24 adalah brand cold-pressed juice natural dari bahan segar tanpa gula tambahan dan tanpa pengawet.
-`
+## Tentang KOJE24
+
+KOJE24 adalah brand cold-pressed juice premium yang dibuat harian menggunakan bahan alami tanpa gula tambahan, tanpa pengawet, dan tanpa pewarna.
+
+Kami percaya wellness harus dimulai dari pilihan kecil yang baik setiap hari.`
       },
       {
-        slug: "cara-simpan",
-        title: "Cara Penyimpanan Jus",
-        summary: "Biar rasa & nutrisi tetap maksimal.",
+        slug: "jaminan-fresh",
+        title: "Jaminan Kesegaran",
+        summary: "Standar kesegaran produk KOJE24.",
+        content: `
+## Jaminan Kesegaran KOJE24
+
+- Cold-pressed harian.
+- Disimpan 0–4°C.
+- Tanpa bahan kimia.`
+      },
+      {
+        slug: "penyimpanan",
+        title: "Panduan Penyimpanan",
+        summary: "Cara menyimpan jus agar tetap segar.",
         content: `
 ## Cara Menyimpan Jus KOJE24
-1. Simpan di chiller 0–4°C.
-2. Jangan dibiarkan di suhu ruang.
-3. Konsumsi 2–3 hari setelah produksi.
 
-`
+- Simpan di chiller (0–4°C).
+- Jangan taruh di freezer.
+- Kocok sebelum diminum.`
       },
       {
-        slug: "manfaat",
-        title: "Manfaat Jus KOJE24",
-        summary: "Untuk detox, imun, stamina, dan kesehatan pencernaan.",
+        slug: "kedaluwarsa",
+        title: "Tanggal Kedaluwarsa",
+        summary: "Berapa lama jus bertahan?",
         content: `
-## Manfaat KOJE24
-- Detox
-- Imunitas
-- Pencernaan
-- Energi harian
-`
-      },
-      {
-        slug: "kontak-admin",
-        title: "Kontak Admin",
-        summary: "Hubungi KOJE24 langsung.",
-        content: `
-## Cara Hubungi Admin
-WA Admin: 0822-1313-9580
-`
-      },
-      {
-        slug: "cara-minum",
-        title: "Cara Minum Jus KOJE24",
-        summary: "Biar manfaatnya maksimal.",
-        content: `
-## Cara Minum
-1. Kocok ringan sebelum diminum.
-2. Minum pagi sebelum makan.
-3. Bisa campur dengan es.
+## Kedaluwarsa KOJE24
 
-`
+- Ideal dikonsumsi 2–3 hari.
+- Tergantung kondisi penyimpanan.`
       },
-    ],
-  },
+      {
+        slug: "pertanyaan-lain",
+        title: "Pertanyaan Lainnya",
+        summary: "Pertanyaan umum seputar produk.",
+        content: `
+## Pertanyaan Lainnya
+
+Silakan chat KOJE24 untuk pertanyaan lain yang belum tercantum.`
+      }
+    ]
+  }
 }
