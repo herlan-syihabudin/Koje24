@@ -115,28 +115,29 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
 
       {/* =============================== */}
       {show && (
-        <div
-          onClick={() => setShow(false)}
-          className="
-            fixed inset-0 
-            bg-black/60 backdrop-blur-sm
-            flex items-center justify-center 
-            z-[1000000]
-            overflow-y-auto
-            py-10 px-4
-            testimoni-modal
-          "
-        >
+  <div
+    onClick={() => setShow(false)}
+    className="
+      fixed inset-0 
+      bg-black/60 backdrop-blur-sm
+      z-[999999]
+      overflow-hidden
+      flex
+      items-center
+      justify-center
+    "
+  >
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="
-              relative w-full max-w-md
-              bg-white rounded-3xl shadow-xl
-              p-6
-              z-[1000001]
-            "
-            style={{ maxHeight: '90vh', overflowY: 'auto' }}
-          >
+  onClick={(e) => e.stopPropagation()}
+  className="
+    relative w-full max-w-md
+    bg-white rounded-3xl shadow-xl
+    p-6
+    z-[1000000]
+    max-h-[90vh]
+    overflow-y-auto
+  "
+>
             {/* CLOSE BUTTON */}
             <button
               type="button"
