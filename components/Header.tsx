@@ -51,7 +51,6 @@ export default function Header() {
 
   /* ===========================
      OPEN MENU FIX
-     (Anti Delay, Anti Half-open)
   ============================ */
   const openMenu = () => {
     setMenuOpen(true);
@@ -66,7 +65,6 @@ export default function Header() {
 
   /* ===========================
      CLOSE MENU FIX
-     (Smooth & Safe)
   ============================ */
   const closeMenu = () => {
     setMenuAnimate(false);
@@ -78,19 +76,12 @@ export default function Header() {
   };
 
   /* ===========================
-     SCROLL TO SECTION
+     SCROLL TO SECTION + FIX CLOSE MODAL TESTIMONI
   ============================ */
-  const scrollToSection = (href: string) => {
-    const target = document.querySelector(href);
-    if (!target) return;
-
-    const offset = shrink ? 65 : 110;
-    const y = target.getBoundingClientRect().top + window.scrollY - offset;
-
-    window.scrollTo({ top: y, behavior: "smooth" });
-  };
-
   const navClick = (href: string) => {
+    // 👇 FIX UTAMA
+    window.dispatchEvent(new CustomEvent("close-testimoni-modal"));
+
     closeMenu();
 
     if (href.startsWith("/")) {
@@ -101,9 +92,17 @@ export default function Header() {
     setTimeout(() => scrollToSection(href), 240);
   };
 
-  /* ===========================
-     NAV ITEMS
-  ============================ */
+  const scrollToSection = (href: string) => {
+    const target = document.querySelector(href);
+    if (!target) return;
+
+    const offset = shrink ? 65 : 110;
+    const y = target.getBoundingClientRect().top + window.scrollY - offset;
+
+    window.scrollTo({ top: y, behavior: "smooth" });
+  };
+
+  /* NAV ITEMS */
   const navItems = [
     { label: "Produk", href: "#produk" },
     { label: "Tentang KOJE24", href: "#about" },
@@ -112,9 +111,6 @@ export default function Header() {
     { label: "Bantuan", href: "/pusat-bantuan" },
   ];
 
-  /* ===========================
-     RENDER
-  ============================ */
   return (
     <header
       className={`
@@ -144,6 +140,7 @@ export default function Header() {
           href="/"
           onClick={(e) => {
             e.preventDefault();
+            window.dispatchEvent(new CustomEvent("close-testimoni-modal"));
             closeMenu();
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
@@ -196,7 +193,6 @@ export default function Header() {
             </button>
           ))}
 
-          {/* CART */}
           <button
             onClick={() => window.dispatchEvent(new CustomEvent("open-cart"))}
             className="relative"
@@ -219,7 +215,6 @@ export default function Header() {
             )}
           </button>
 
-          {/* WA BUTTON */}
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
@@ -256,7 +251,7 @@ export default function Header() {
         </button>
       </div>
 
-      {/* MOBILE MENU OVERLAY */}
+      {/* MOBILE MENU */}
       {menuOpen && (
         <div
           className={`
