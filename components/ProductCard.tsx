@@ -1,6 +1,6 @@
 "use client";
 
-import { useBestSellerRanking } from "@/lib/bestSeller";
+import { getBestSellerList } from "@/lib/bestSeller";
 
 export default function ProductCard({
   id,
@@ -14,7 +14,7 @@ export default function ProductCard({
   img: string;
 }) {
   // Ambil data bestseller realtime
-  const ranking = useBestSellerRanking();
+  const ranking = getBestSellerList();
   const isBest = ranking[id]?.isBestSeller === true;
 
   return (
