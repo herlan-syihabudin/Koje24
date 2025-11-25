@@ -27,7 +27,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     showOnHome: false,
   })
 
-  /* BODY LOCK */
+  /* BODY LOCK FIX */
   useEffect(() => {
     if (show) document.body.classList.add("body-lock")
     else document.body.classList.remove("body-lock")
@@ -105,7 +105,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
         + Tulis Testimoni
       </button>
 
-      {/* MODAL */}
+      {/* === MODAL === */}
       {show && (
         <div
           onClick={() => setShow(false)}
@@ -115,10 +115,11 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
             z-[999999]
             overflow-y-auto
             flex 
-            items-start md:items-center   /* HP = atas, Desktop = center */
+            items-start md:items-center         /* HP = atas, Desktop = center */
             justify-center
-            pt-20 md:pt-0                /* HP kasih jarak, desktop reset */
+            pt-20 md:pt-0                       /* HP ada jarak, Desktop nol */
             pb-10
+            koje-modal-overlay
           "
         >
           <div
@@ -131,6 +132,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               z-[1000000]
               max-h-[85vh]
               overflow-y-auto
+              koje-modal-box
             "
           >
             {/* CLOSE */}
@@ -211,7 +213,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               <div>
                 <label className="text-xs font-medium text-gray-600">Rating Kepuasan</label>
                 <div className="flex gap-1 mt-1">
-                  {[1,2,3,4,5].map((star)=>(
+                  {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
                       type="button"
