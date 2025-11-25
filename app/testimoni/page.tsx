@@ -29,25 +29,35 @@ export default function SemuaTestimoni() {
   }, [])
 
   return (
-    <section className="py-16 md:py-20 bg-[#f6fbfb] min-h-screen">
+    <section className="py-20 bg-[#f6fbfb] min-h-screen">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-10">
-          <p className="text-xs uppercase tracking-[0.25em] text-[#0FA3A8] mb-2">
+
+        {/* HEADER PREMIUM */}
+        <div className="text-center mb-14">
+          <div className="text-[#0FA3A8] text-xs tracking-[0.3em] font-semibold mb-3">
             SEMUA ULASAN
-          </p>
-          <h1 className="text-3xl md:text-4xl font-bold text-[#0B4B50]">
+          </div>
+
+          <h1 className="text-3xl md:text-4xl font-playfair font-bold text-[#0B4B50]">
             Semua Testimoni <span className="text-[#0FA3A8]">KOJE24</span>
           </h1>
-          <p className="text-gray-500 text-sm max-w-xl mx-auto mt-2">
-            Terima kasih untuk semua pelanggan yang sudah berbagi pengalaman
-            setelah minum KOJE24. 💚
+
+          <p className="text-gray-500 text-sm max-w-xl mx-auto mt-3">
+            Terima kasih kepada seluruh pelanggan yang telah berbagi pengalaman
+            setelah menikmati KOJE24. 💚
           </p>
+
+          <div className="w-28 h-[2px] bg-gradient-to-r from-[#0FA3A8] via-[#E8C46B] to-[#0FA3A8] mx-auto mt-6 rounded-full" />
         </div>
 
-        <div className="flex justify-center mb-10">
-          <TulisTestimoniForm onSuccess={() => window.location.reload()} />
+        {/* BUTTON TULIS TESTIMONI */}
+        <div className="flex justify-center mb-12">
+          <div className="scale-[1.05] hover:scale-[1.08] transition-all">
+            <TulisTestimoniForm onSuccess={() => window.location.reload()} />
+          </div>
         </div>
 
+        {/* CONTENT */}
         {loading ? (
           <p className="text-center text-gray-500">Memuat testimoni...</p>
         ) : data.length === 0 ? (
@@ -55,7 +65,7 @@ export default function SemuaTestimoni() {
             Belum ada testimoni yang aktif. 😇
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {data.map((t, i) => {
               const safeRating = Math.min(5, Math.max(1, Number(t.rating)))
               const initials =
@@ -68,30 +78,39 @@ export default function SemuaTestimoni() {
               return (
                 <article
                   key={i}
-                  className="bg-white border border-[#e6eeee]/70 rounded-3xl p-6 shadow-[0_14px_40px_rgba(11,75,80,0.10)] hover:shadow-[0_18px_55px_rgba(11,75,80,0.17)] transition-all"
+                  className="
+                    bg-white/95 
+                    backdrop-blur-sm 
+                    border border-[#E5EFEF] 
+                    rounded-3xl 
+                    p-6 
+                    shadow-[0_12px_40px_rgba(15,163,168,0.08)]
+                    hover:shadow-[0_20px_55px_rgba(15,163,168,0.15)]
+                    transition-all duration-300
+                  "
                 >
-                  {/* header */}
-                  <div className="flex items-center gap-3 mb-3">
+                  {/* HEADER */}
+                  <div className="flex items-center gap-3 mb-4">
                     {t.img ? (
                       <img
                         src={t.img}
                         alt={t.nama}
-                        className="w-10 h-10 rounded-full object-cover border border-[#e6eeee]"
+                        className="w-12 h-12 rounded-full object-cover shadow-md border border-white"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-[#0FA3A8]/10 flex items-center justify-center text-xs font-semibold text-[#0B4B50]">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#0FA3A8] to-[#0B4B50] text-white flex items-center justify-center font-semibold shadow-md uppercase">
                         {initials}
                       </div>
                     )}
 
                     <div className="flex-1">
-                      <h3 className="font-playfair text-lg font-semibold text-[#0B4B50]">
+                      <h3 className="font-playfair text-lg font-bold text-[#0B4B50] leading-none">
                         {t.nama}
                       </h3>
                       <p className="text-sm text-gray-500">{t.kota}</p>
                     </div>
 
-                    <div className="text-right text-yellow-500 text-sm leading-none">
+                    <div className="text-right text-[#F4B400] text-sm leading-none">
                       {"★".repeat(safeRating)}
                       <span className="text-gray-300">
                         {"★".repeat(5 - safeRating)}
@@ -99,12 +118,13 @@ export default function SemuaTestimoni() {
                     </div>
                   </div>
 
-                  {/* body */}
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-[#0FA3A8] mb-1">
+                  {/* BADGE VARIAN */}
+                  <span className="inline-block mb-2 px-3 py-[3px] text-[11px] font-semibold uppercase tracking-wide bg-[#0FA3A8]/10 text-[#0B4B50] rounded-full">
                     {t.varian}
-                  </p>
+                  </span>
 
-                  <p className="italic text-gray-700 leading-relaxed">
+                  {/* BODY */}
+                  <p className="italic text-gray-700 leading-relaxed text-sm">
                     “{t.pesan}”
                   </p>
                 </article>
