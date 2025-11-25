@@ -5,7 +5,6 @@ const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? ""
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? ""
 const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
 
-// Bersihkan private key
 const PRIVATE_KEY = PRIVATE_KEY_RAW
   .replace(/\\n/g, "\n")
   .replace(/\\\\n/g, "\n")
@@ -16,20 +15,27 @@ export async function POST(req: NextRequest) {
       throw new Error("Environment Google Sheet belum lengkap")
     }
 
-    const body = await req.json()
+    let body: any = {}
+    try {
+      body = await req.json()
+    } catch {
+      throw new Error("Body JSON tidak valid")
+    }
 
     const {
       nama,
       hp,
       alamat,
+      note,
       catatan,
-      mapsUrl,
+      payment,
       cart,
-      subtotal,
+      mapsUrl,
+      distanceKm,
+      shippingCost,
       ongkir,
       grandTotal,
-      zone,
-      distanceKm,
+      subtotal,
     } = body
 
     if (!nama || !hp || !alamat) {
@@ -40,26 +46,52 @@ export async function POST(req: NextRequest) {
       throw new Error("Cart kosong!")
     }
 
-    // Buat list produk & hitung qty/subtotal dari server (lebih aman)
-    const produkList = cart
-      .map((x: any) => `${x.name} (${x.qty}x)`)
-      .join(", ")
-
+    // ============================
+    // PRODUK & SUBTOTAL
+    // ============================
+    const produkList = cart.map((x: any) => `${x.name} (${x.qty}x)`).join(", ")
     const qtyTotal = cart.reduce(
-      (a: number, x: any) => a + (Number(x.qty) || 0),
+      (a: number, x: any) => a + Number(x.qty || 0),
       0
     )
 
-    const subtotalSafe = cart.reduce(
-      (a: number, x: any) =>
-        a + (Number(x.price) * Number(x.qty) || 0),
-      0
-    )
+    const subtotalCalc =
+      typeof subtotal === "number"
+        ? subtotal
+        : cart.reduce(
+            (a: number, x: any) =>
+              a + Number(x.price || 0) * Number(x.qty || 0),
+            0
+          )
 
+    // ============================
+    // ONGKIR & GRAND TOTAL
+    // ============================
+    const effectiveOngkir =
+      typeof ongkir === "number"
+        ? ongkir
+        : typeof shippingCost === "number"
+        ? shippingCost
+        : 15000 // fallback kalau gak ada ongkir, pakai 15k
+
+    const effectiveGrandTotal =
+      typeof grandTotal === "number"
+        ? grandTotal
+        : subtotalCalc + effectiveOngkir
+
+    // ============================
+    // METODE PEMBAYARAN
+    // ============================
+    let paymentLabel = "Transfer"
+    if (payment === "qris") paymentLabel = "QRIS"
+    else if (payment === "cod") paymentLabel = "COD"
+
+    // ============================
+    // BUAT INVOICE ID + URL
+    // ============================
     const invoiceId =
       "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase()
 
-    // BASE URL
     const host = req.nextUrl.host
     const protocol = req.nextUrl.protocol
     const baseUrl = `${protocol}//${host}`
@@ -67,27 +99,7 @@ export async function POST(req: NextRequest) {
     const invoiceUrl = `${baseUrl}/invoice/${invoiceId}`
 
     // ============================
-    // COMBINE INFO ONGKIR + LOKASI DI KOLOM CATATAN
-    // ============================
-    const parts: string[] = []
-
-    if (catatan) parts.push(`Catatan: ${catatan}`)
-    if (mapsUrl) parts.push(`Maps: ${mapsUrl}`)
-    if (typeof distanceKm === "number")
-      parts.push(`Jarak: ~${distanceKm.toFixed(1)} km`)
-    if (zone) parts.push(`Zona: ${zone}`)
-    if (typeof ongkir === "number")
-      parts.push(`Ongkir: Rp${Number(ongkir).toLocaleString("id-ID")}`)
-    if (typeof grandTotal === "number")
-      parts.push(
-        `Total+Ongkir: Rp${Number(grandTotal).toLocaleString("id-ID")}`
-      )
-
-    const noteCell = parts.length > 0 ? parts.join(" | ") : "-"
-
-    // ============================
     // GOOGLE SHEET
-    // Struktur lama dipertahankan: A–L
     // ============================
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
@@ -97,25 +109,40 @@ export async function POST(req: NextRequest) {
 
     const sheets = google.sheets({ version: "v4", auth })
 
+    // Struktur kolom:
+    // A: Timestamp
+    // B: Invoice ID
+    // C: Nama
+    // D: HP
+    // E: Alamat
+    // F: Produk
+    // G: Qty Total
+    // H: Subtotal
+    // I: Status
+    // J: Metode Bayar
+    // K: Ongkir
+    // L: Grand Total
+    // M: Invoice URL
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: "Sheet1!A:L",
+      range: "Sheet1!A:M",
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
           [
-            new Date().toLocaleString("id-ID"), // A timestamp
-            invoiceId,                          // B invoice
-            nama,                               // C nama
-            hp,                                 // D hp
-            alamat,                             // E alamat
-            produkList,                         // F produk
-            qtyTotal,                           // G total qty
-            subtotalSafe,                       // H subtotal produk
-            "Pending",                          // I status
-            "Manual",                           // J pembayaran (sementara "Manual")
-            noteCell,                           // K berisi info ongkir + map + catatan
-            invoiceUrl,                         // L link invoice
+            new Date().toLocaleString("id-ID"), // A
+            invoiceId, // B
+            nama, // C
+            hp, // D
+            alamat, // E
+            produkList, // F
+            qtyTotal, // G
+            subtotalCalc, // H
+            "Pending", // I
+            paymentLabel, // J
+            effectiveOngkir, // K
+            effectiveGrandTotal, // L
+            invoiceUrl, // M
           ],
         ],
       },
