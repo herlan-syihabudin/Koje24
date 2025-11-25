@@ -1,102 +1,79 @@
 "use client"
-import { useEffect, useState } from "react"
-import { useCartStore } from "@/stores/cartStore"
 
-// 🔹 Interface Score Rank
-interface RankData {
-  score: number
-  orders: number
+export interface RankData {
   rating: number
   reviews: number
+  score: number
   isBestSeller: boolean
 }
 
-// 🔹 Key for LocalStorage (backup tracking)
-const STORAGE_KEY = "koje24-product-stats"
+const STORAGE_KEY = "koje24-best-seller-data"
 
-function getStatsFromStorage(): Record<number, RankData> {
+// Ambil data history dari localStorage
+function getStats(): Record<number, RankData> {
+  if (typeof window === "undefined") return {}
   try {
-    const val = localStorage.getItem(STORAGE_KEY)
-    return val ? JSON.parse(val) : {}
+    const d = localStorage.getItem(STORAGE_KEY)
+    return d ? JSON.parse(d) : {}
   } catch {
     return {}
   }
 }
 
-function saveStats(stats: Record<number, RankData>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(stats))
+function saveStats(data: Record<number, RankData>) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
 }
 
-// 🔥 Main Logic
-export function useBestSellerRanking() {
-  const { items } = useCartStore()
-  const [stats, setStats] = useState<Record<number, RankData>>({})
+/* ======================================================
+   🔥 DIPANGGIL SAAT USER KIRIM TESTIMONI
+   updateRating(productId, ratingBaru)
+====================================================== */
+export function updateRating(productId: number, newRating: number) {
+  const stats = getStats()
 
-  // Hitung score dari order (cart)
-  const orderScores: Record<number, number> = {}
-  items.forEach((item) => {
-    const id = Number(item.id)
-    orderScores[id] = (orderScores[id] || 0) + item.qty
-  })
-
-  useEffect(() => {
-    const current = getStatsFromStorage()
-
-    Object.keys(orderScores).forEach((idStr) => {
-      const id = Number(idStr)
-      const qty = orderScores[id] || 0
-
-      if (!current[id]) {
-        current[id] = {
-          score: 0,
-          orders: 0,
-          rating: 0,
-          reviews: 0,
-          isBestSeller: false,
-        }
-      }
-
-      current[id].orders = qty
-      current[id].score = qty * 10 + current[id].rating * 2
-    })
-
-    const sorted = Object.values(current)
-      .sort((a, b) => b.score - a.score)
-
-    const best = sorted.slice(0, 3) // 🔥 Top 3 masuk best seller
-
-    Object.keys(current).forEach((k) => {
-      current[Number(k)].isBestSeller =
-        best.includes(current[Number(k)])
-    })
-
-    saveStats(current)
-    setStats(current)
-  }, [items])
-
-  return stats
-}
-
-// 🔹 Function Update Rating — panggil saat user isi testimoni ⭐
-export function updateProductRating(productId: number, rating: number) {
-  const current = getStatsFromStorage()
-
-  if (!current[productId]) {
-    current[productId] = {
+  if (!stats[productId]) {
+    stats[productId] = {
+      rating: newRating,
+      reviews: 1,
       score: 0,
-      orders: 0,
-      rating: 0,
-      reviews: 0,
-      isBestSeller: false,
+      isBestSeller: false
     }
+  } else {
+    const prev = stats[productId]
+
+    // Update rating rata-rata
+    prev.rating =
+      (prev.rating * prev.reviews + newRating) / (prev.reviews + 1)
+
+    prev.reviews += 1
   }
 
-  current[productId].reviews += 1
-  current[productId].rating =
-    (current[productId].rating + rating) / 2
+  // Hitung skor final
+  const s = stats[productId]
+  s.score = s.rating * 5 + s.reviews * 3 // 🔥 formula paling umum di marketplace
 
-  current[productId].score =
-    current[productId].orders * 10 + current[productId].rating * 2
+  saveStats(stats)
+}
 
-  saveStats(current)
+/* ======================================================
+   🔥 AMBIL RANKING BEST SELLER
+====================================================== */
+export function getBestSellerList() {
+  const stats = getStats()
+
+  const sorted = Object.entries(stats)
+    .sort((a, b) => b[1].score - a[1].score)
+    .slice(0, 3) // top 3 best seller
+
+  // Reset semua
+  Object.values(stats).forEach((s) => (s.isBestSeller = false))
+
+  // Tandai best seller
+  sorted.forEach(([id]) => {
+    stats[Number(id)].isBestSeller = true
+  })
+
+  saveStats(stats)
+
+  return stats
 }
