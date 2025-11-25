@@ -12,13 +12,24 @@ export interface RankData {
 const STORAGE_KEY = "koje24-best-seller-data"
 
 /* ======================================================
+   📌 SAFE GET (cek window)
+====================================================== */
+function safeGetItem(key: string) {
+  if (typeof window === "undefined") return null
+  return localStorage.getItem(key)
+}
+
+function safeSetItem(key: string, val: string) {
+  if (typeof window === "undefined") return
+  localStorage.setItem(key, val)
+}
+
+/* ======================================================
    📌 Ambil data history dari localStorage
 ====================================================== */
 function getStats(): Record<number, RankData> {
-  if (typeof window === "undefined") return {}
-
   try {
-    const d = localStorage.getItem(STORAGE_KEY)
+    const d = safeGetItem(STORAGE_KEY)
     return d ? JSON.parse(d) : {}
   } catch {
     return {}
@@ -26,14 +37,15 @@ function getStats(): Record<number, RankData> {
 }
 
 function saveStats(data: Record<number, RankData>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  safeSetItem(STORAGE_KEY, JSON.stringify(data))
 }
 
 /* ======================================================
    🔥 DIPANGGIL SAAT USER KIRIM TESTIMONI
-   updateRating(productId, ratingBaru)
 ====================================================== */
 export function updateRating(productId: number, newRating: number) {
+  if (typeof window === "undefined") return // ⛔ AMAN SSR
+
   const stats = getStats()
 
   if (!stats[productId]) {
@@ -45,15 +57,11 @@ export function updateRating(productId: number, newRating: number) {
     }
   } else {
     const prev = stats[productId]
-
-    // Update rating rata-rata
     prev.rating =
       (prev.rating * prev.reviews + newRating) / (prev.reviews + 1)
-
     prev.reviews += 1
   }
 
-  // Hitung skor final (formula marketplace umum)
   const s = stats[productId]
   s.score = s.rating * 5 + s.reviews * 3
 
@@ -64,38 +72,35 @@ export function updateRating(productId: number, newRating: number) {
    🔥 HITUNG & AMBIL RANKING BEST SELLER
 ====================================================== */
 export function getBestSellerList() {
+  if (typeof window === "undefined") return {} // ⛔ AMAN SSR
+
   const stats = getStats()
 
-  // Urutkan score terbesar → kecil
   const sorted = Object.entries(stats)
     .sort((a, b) => b[1].score - a[1].score)
-    .slice(0, 3) // Top 3 best seller
+    .slice(0, 3)
 
-  // Reset semua flag
   Object.values(stats).forEach((s) => (s.isBestSeller = false))
-
-  // Tandai best seller
   sorted.forEach(([id]) => {
     stats[Number(id)].isBestSeller = true
   })
 
   saveStats(stats)
-
   return stats
 }
 
 /* ======================================================
-   🔥 HOOK: Ambil ranking secara realtime (dipakai ProductGrid)
+   🔥 HOOK CLIENT
 ====================================================== */
 export function useBestSellerRanking() {
   const [stats, setStats] = useState<Record<number, RankData>>({})
 
   useEffect(() => {
-    // Ambil ranking awal
+    if (typeof window === "undefined") return
+
     const s = getBestSellerList()
     setStats({ ...s })
 
-    // Listener untuk perubahan localStorage (rating baru)
     const handler = () => {
       const s2 = getBestSellerList()
       setStats({ ...s2 })
