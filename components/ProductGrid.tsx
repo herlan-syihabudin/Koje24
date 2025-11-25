@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { useState } from "react"
 import { useCartStore } from "@/stores/cartStore"
-import { useBestSellerRanking } from "@/lib/bestseller"   // 🔥 FIXED
+import { useBestSellerRanking } from "@/lib/bestSeller"   // 🔥 FIXED
 import { products } from "@/lib/products"   
 
 const toNumber = (p: number | string): number =>
