@@ -1,36 +1,41 @@
 "use client"
-import { ShoppingCart } from "lucide-react"
+
 import { useCartStore } from "@/stores/cartStore"
+import { ShoppingCart } from "lucide-react"
 
 export default function StickyCartBar() {
+  const items = useCartStore((state) => state.items)
   const totalQty = useCartStore((state) => state.totalQty)
+  const totalPrice = useCartStore((state) => state.totalPrice)
 
-  if (!totalQty || totalQty === 0) return null
+  // kalau keranjang kosong → jangan tampil
+  if (!items || items.length === 0 || totalQty === 0) return null
 
   return (
-    <div className="fixed bottom-5 right-5 z-50">
+    <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center px-4">
       <button
+        onClick={() => window.dispatchEvent(new Event("open-cart"))}
         className="
-          relative bg-[#0FA3A8] hover:bg-[#0DC1C7] 
-          text-white p-4 rounded-full shadow-xl 
-          backdrop-blur-md transition-all active:scale-95"
-        onClick={() => {
-          window.dispatchEvent(new Event("open-cart"))
-        }}
+          w-full max-w-sm
+          flex items-center justify-between
+          bg-[#E8C46B] text-[#0B4B50]
+          px-5 py-3
+          rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.15)]
+          active:scale-[0.97] transition-all
+        "
       >
-        <ShoppingCart className="w-6 h-6" />
+        {/* KIRI */}
+        <div className="flex items-center gap-2">
+          <ShoppingCart size={20} />
+          <span className="font-semibold">
+            Checkout ({totalQty})
+          </span>
+        </div>
 
-        {/* BADGE TOTAL QTY */}
-        <span
-          className="
-            absolute -top-2 -right-2
-            bg-[#E8C46B] text-[#0B4B50]
-            text-xs font-bold rounded-full
-            w-5 h-5 flex items-center justify-center
-          "
-        >
-          {totalQty}
-        </span>
+        {/* KANAN: TOTAL HARGA */}
+        <div className="bg-[#0B4B50] text-white px-3 py-1 rounded-full text-sm font-semibold">
+          Rp{totalPrice.toLocaleString("id-ID")}
+        </div>
       </button>
     </div>
   )
