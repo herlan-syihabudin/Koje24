@@ -22,12 +22,10 @@ export default function CheckoutPage() {
   const [hp, setHp] = useState("")
   const [alamat, setAlamat] = useState("")
   const [catatan, setCatatan] = useState("")
+  const [payment, setPayment] = useState("transfer") // 🆕 PAYMENT
   const [status, setStatus] = useState<CheckoutState>("idle")
   const [errorMsg, setErrorMsg] = useState("")
 
-  // ============================
-  // PERBAIKAN TS REDUCE + TYPE
-  // ============================
   const subtotal = items.reduce(
     (acc: number, item: CartItemType) => acc + item.price * item.qty,
     0
@@ -36,12 +34,10 @@ export default function CheckoutPage() {
   const ongkir = 15000
   const total = subtotal + (items.length > 0 ? ongkir : 0)
 
-  // Scroll to top
   useEffect(() => {
     window.scrollTo({ top: 0 })
   }, [])
 
-  // Redirect kalau keranjang kosong
   useEffect(() => {
     if (items.length === 0) {
       const t = setTimeout(() => {
@@ -51,9 +47,6 @@ export default function CheckoutPage() {
     }
   }, [items, router])
 
-  // ============================
-  // HANDLE SUBMIT
-  // ============================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!items.length) return
@@ -67,9 +60,6 @@ export default function CheckoutPage() {
       setStatus("submitting")
       setErrorMsg("")
 
-      // ============================
-      // FIX map ITEM → TANPA ERROR
-      // ============================
       const cartMapped = items.map((it: CartItemType) => ({
         id: it.id,
         name: it.name,
@@ -85,6 +75,7 @@ export default function CheckoutPage() {
           hp,
           alamat,
           note: catatan,
+          payment,        // 🆕 SEND PAYMENT
           cart: cartMapped,
         }),
       })
@@ -100,9 +91,7 @@ export default function CheckoutPage() {
     } catch (err: any) {
       console.error("Checkout error:", err)
       setStatus("error")
-      setErrorMsg(
-        "Maaf, sedang ada kendala saat membuat invoice. Coba lagi sebentar lagi ya."
-      )
+      setErrorMsg("Maaf, sedang ada kendala saat membuat invoice.")
     } finally {
       setStatus((prev) => (prev === "submitting" ? "idle" : prev))
     }
@@ -113,7 +102,6 @@ export default function CheckoutPage() {
   return (
     <main className="min-h-screen bg-[#F4FAFA] text-[#0B4B50] flex items-start justify-center py-10 px-4 md:px-6">
       <div className="w-full max-w-5xl">
-        {/* Title */}
         <div className="mb-8">
           <p className="text-xs tracking-[0.25em] uppercase text-[#0FA3A8] mb-2">
             KOJE24 • Premium Checkout
@@ -122,20 +110,18 @@ export default function CheckoutPage() {
             Selesaikan Pesanan Kamu
           </h1>
           <p className="font-inter text-sm md:text-base text-gray-600 mt-2 max-w-2xl">
-            Isi data pengiriman dengan teliti. Setelah ini, sistem akan membuat invoice
-            otomatis dan kamu bisa langsung konfirmasi via WhatsApp.
+            Isi data pengiriman dengan teliti. Setelah ini, sistem akan membuat invoice.
           </p>
         </div>
 
         {items.length === 0 ? (
           <div className="mt-10 bg-white/70 border border-[#e6eeee] rounded-2xl p-6 text-center shadow-sm">
             <p className="font-inter text-sm md:text-base text-gray-600">
-              Keranjang kamu masih kosong. Mengarahkan kembali ke halaman produk...
+              Keranjang kamu kosong. Mengarahkan kembali ke halaman produk...
             </p>
           </div>
         ) : (
           <div className="grid gap-6 md:gap-8 md:grid-cols-[1.1fr_0.9fr]">
-            {/* LEFT: FORM */}
             <section className="bg-white/90 border border-[#e6eeee] rounded-3xl shadow-[0_10px_35px_rgba(11,75,80,0.07)] p-6 md:p-7">
               <h2 className="font-playfair text-xl md:text-2xl mb-4">
                 Detail Pengiriman
@@ -149,6 +135,7 @@ export default function CheckoutPage() {
                   onChange={(e) => setNama(e.target.value)}
                   className="w-full border rounded-lg px-3 py-2"
                 />
+
                 <input
                   type="text"
                   placeholder="Nomor WhatsApp"
@@ -156,6 +143,7 @@ export default function CheckoutPage() {
                   onChange={(e) => setHp(e.target.value)}
                   className="w-full border rounded-lg px-3 py-2"
                 />
+
                 <input
                   type="text"
                   placeholder="Alamat lengkap"
@@ -163,12 +151,53 @@ export default function CheckoutPage() {
                   onChange={(e) => setAlamat(e.target.value)}
                   className="w-full border rounded-lg px-3 py-2"
                 />
+
                 <textarea
                   placeholder="Catatan tambahan (opsional)…"
                   value={catatan}
                   onChange={(e) => setCatatan(e.target.value)}
                   className="w-full border rounded-lg px-3 py-2 h-16 resize-none"
                 />
+
+                {/* 🟩 PAYMENT METHODS */}
+                <h2 className="font-playfair text-xl md:text-2xl mt-6 mb-2">
+                  Metode Pembayaran
+                </h2>
+
+                <div className="space-y-3 bg-[#f8fcfc] border border-[#e6eeee] rounded-2xl p-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="transfer"
+                      checked={payment === "transfer"}
+                      onChange={() => setPayment("transfer")}
+                    />
+                    <span>Transfer Bank (Gratis)</span>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="qris"
+                      checked={payment === "qris"}
+                      onChange={() => setPayment("qris")}
+                    />
+                    <span>QRIS (MDR 0.7%)</span>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="cod"
+                      checked={payment === "cod"}
+                      onChange={() => setPayment("cod")}
+                    />
+                    <span>COD (Cash on Delivery)</span>
+                  </label>
+                </div>
 
                 {errorMsg && (
                   <p className="text-red-500 text-sm">{errorMsg}</p>
@@ -185,7 +214,7 @@ export default function CheckoutPage() {
               </form>
             </section>
 
-            {/* RIGHT: ORDER SUMMARY */}
+            {/* RIGHT SUMMARY */}
             <aside className="bg-white/95 border border-[#e1eeee] rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.04)] p-5 md:p-6 flex flex-col gap-4">
               <h2 className="font-playfair text-lg md:text-xl mb-1">
                 Ringkasan Pesanan
@@ -193,19 +222,14 @@ export default function CheckoutPage() {
 
               <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
                 {items.map((item: CartItemType) => (
-                  <div
-                    key={item.id}
-                    className="flex items-start justify-between gap-3 border-b border-[#edf5f5] pb-2.5"
-                  >
+                  <div key={item.id} className="flex items-start justify-between gap-3 border-b pb-2">
                     <div>
-                      <p className="font-inter text-[14px] font-semibold">
-                        {item.name}
-                      </p>
-                      <p className="text-[12px] text-gray-500">
+                      <p className="font-semibold">{item.name}</p>
+                      <p className="text-xs text-gray-500">
                         {item.qty} x Rp{item.price.toLocaleString("id-ID")}
                       </p>
                     </div>
-                    <p className="font-semibold text-[14px]">
+                    <p className="font-semibold">
                       Rp{(item.qty * item.price).toLocaleString("id-ID")}
                     </p>
                   </div>
@@ -232,7 +256,7 @@ export default function CheckoutPage() {
               <button
                 type="button"
                 onClick={() => router.push("/#produk")}
-                className="mt-auto text-xs text-gray-500 hover:text-[#0FA3A8] underline-offset-2 hover:underline"
+                className="mt-auto text-xs text-gray-500 hover:text-[#0FA3A8] hover:underline"
               >
                 ← Kembali belanja dulu
               </button>
