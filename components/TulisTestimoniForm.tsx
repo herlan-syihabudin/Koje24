@@ -1,8 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { updateRating } from "@/lib/bestseller";
 
 type Props = { onSuccess?: () => void };
+
+// VARIAN → PRODUCT ID MAPPING (untuk rating bestseller)
+const VARIAN_ID_MAP: Record<string, number> = {
+  "Golden Detox": 1,
+  "Yellow Immunity": 2,
+  "Green Revive": 3,
+  "Sunrise Boost": 4,
+  "Lemongrass Fresh": 5,
+  "Red Vitality": 6,
+};
 
 export default function TulisTestimoniForm({ onSuccess }: Props) {
   const [show, setShow] = useState(false);
@@ -84,6 +95,12 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
         img: imageUrl,
       };
 
+      // 🔥 AUTO BEST SELLER UPDATE
+      const productId = VARIAN_ID_MAP[form.varian] || 0;
+      if (productId > 0) {
+        updateRating(productId, form.rating);
+      }
+
       await fetch("/api/testimonial", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -147,6 +164,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-3 pb-3">
+              {/* --- INPUT FIELDS --- */}
               <div>
                 <label className="text-xs text-gray-600">Nama Lengkap</label>
                 <input
@@ -163,9 +181,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               </div>
 
               <div>
-                <label className="text-xs text-gray-600">
-                  Kota / Domisili
-                </label>
+                <label className="text-xs text-gray-600">Kota / Domisili</label>
                 <input
                   value={form.kota}
                   onChange={(e) =>
@@ -198,9 +214,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               </div>
 
               <div>
-                <label className="text-xs text-gray-600">
-                  Varian Favorit
-                </label>
+                <label className="text-xs text-gray-600">Varian Favorit</label>
                 <select
                   value={form.varian}
                   onChange={(e) =>
@@ -211,10 +225,10 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                   <option value="">Pilih Varian</option>
                   <option>Golden Detox</option>
                   <option>Yellow Immunity</option>
-                  <option>Green revive</option>
+                  <option>Green Revive</option>
                   <option>Sunrise Boost</option>
                   <option>Lemongrass Fresh</option>
-                  <option>Red Vitakity</option>
+                  <option>Red Vitality</option>
                 </select>
                 {errors.varian && (
                   <p className="text-[11px] text-red-500">{errors.varian}</p>
