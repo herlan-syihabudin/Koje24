@@ -209,12 +209,12 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                   className="mt-1 border p-2 rounded-lg w-full text-sm"
                 >
                   <option value="">Pilih Varian</option>
-                  <option>Green Detox</option>
+                  <option>Golden Detox</option>
                   <option>Yellow Immunity</option>
-                  <option>Beetroot</option>
-                  <option>Sunrise</option>
-                  <option>Carrot Boost</option>
-                  <option>Ginger Shot</option>
+                  <option>Green revive</option>
+                  <option>Sunrise Boost</option>
+                  <option>Lemongrass Fresh</option>
+                  <option>Red Vitakity</option>
                 </select>
                 {errors.varian && (
                   <p className="text-[11px] text-red-500">{errors.varian}</p>
