@@ -1,10 +1,12 @@
 "use client"
+
 import { useEffect, useState } from "react"
 import { X } from "lucide-react"
+import { useCartStore } from "@/stores/cartStore"   // ⬅️ pakai keranjang yang sudah ada
 
 type PackageData = { name: string; price: number }
-type Form = { nama: string; alamat: string; catatan: string }
 
+// varian yang bisa dipilih dalam paket
 const VARIANTS = [
   "Green Detox",
   "Yellow Immunity",
@@ -17,15 +19,13 @@ const VARIANTS = [
 export default function PackagePopup() {
   const [open, setOpen] = useState(false)
   const [pkg, setPkg] = useState<PackageData | null>(null)
-  const [form, setForm] = useState<Form>({
-    nama: "",
-    alamat: "",
-    catatan: "",
-  })
   const [qty, setQty] = useState<Record<string, number>>({})
 
+  // ambil fungsi addItem dari cart store
+  const addItem = useCartStore((state) => state.addItem)
+
   /* =========================================
-     BODY LOCK (tidak diubah)
+     BODY LOCK (tetap sama)
   ========================================= */
   const lockBody = () => {
     document.body.classList.add("overflow-hidden")
@@ -37,11 +37,11 @@ export default function PackagePopup() {
   }
 
   /* =========================================
-     LISTENER (tidak diubah)
+     LISTENER (tetap sama, cuma simpan data paket)
   ========================================= */
   useEffect(() => {
     const onOpen = (e: any) => {
-      setPkg(e.detail)
+      setPkg(e.detail)   // detail = { name, price } dari PackagesSection / ProductGrid
       setQty({})
       setOpen(true)
       lockBody()
@@ -59,13 +59,11 @@ export default function PackagePopup() {
   }
 
   /* =========================================
-     FORM & VARIANT LOGIC (tidak diubah)
+     VARIANT LOGIC (tetap, cuma kita pakai buat ke keranjang)
   ========================================= */
-  const onChange = (key: keyof Form) => (e: any) =>
-    setForm((f) => ({ ...f, [key]: e.target.value }))
-
   const getMaxQty = () => {
     if (!pkg) return 6
+    // coba baca angka dari nama paket, contoh: "7 Hari Detox Plan" → 7 botol
     const m = pkg.name.match(/\d+/)
     return m ? parseInt(m[0]) : 6
   }
@@ -96,30 +94,51 @@ export default function PackagePopup() {
     setQty((p) => ({ ...p, [v]: 1 }))
   }
 
-  const handleCheckout = () => {
+  /* =========================================
+     ⬇️ STEP PENTING: MASUKKAN PAKET KE KERANJANG
+  ========================================= */
+  const handleAddToCart = () => {
     if (!pkg) return
+
     if (totalQty !== maxQty) {
       alert(`Isi paket harus pas ${maxQty} botol, bro!`)
       return
     }
 
-    const selected = Object.entries(qty)
-      .map(([v, q]) => `🥤 ${v} × ${q}`)
-      .join("\n")
+    // rangkum komposisi varian untuk ditampilkan di keranjang / invoice
+    const detailText = Object.entries(qty)
+      .map(([v, q]) => `${v} x${q}`)
+      .join(", ")
 
-    const msg = encodeURIComponent(
-      `🧃 *Paket KOJE24*\n\n📦 ${pkg.name}\n💰 Rp${pkg.price.toLocaleString(
-        "id-ID"
-      )}\n\n${selected}\n\n👤 *Nama:* ${form.nama}\n🏡 *Alamat:* ${
-        form.alamat
-      }\n📝 *Catatan:* ${form.catatan}`
-    )
+    // kita buat nama item paket yang sudah include komposisi
+    const itemName = `${pkg.name} — [${detailText}]`
 
-    window.open(`https://wa.me/6282213139580?text=${msg}`, "_blank")
+    // id paket cukup di-generate dari nama supaya konsisten
+    const itemId = `PKG-${pkg.name}`
+
+    // masukkan sebagai 1 line item di keranjang
+    addItem({
+      id: itemId,
+      name: itemName,
+      price: pkg.price,
+      // img optional, kalau store lu support img silakan ganti ke thumbnail khusus paket
+      // @ts-ignore
+      img: undefined,
+    })
+
+    // setelah masuk keranjang, kita tutup popup
+    close()
+
+    // dan buka popup keranjang / sticky bar (kalau ada listener "open-cart")
+    try {
+      window.dispatchEvent(new Event("open-cart"))
+    } catch {
+      // kalau belum ada listener, diabaikan saja
+    }
   }
 
   /* =========================================
-     PREMIUM UI — versi internasional
+     PREMIUM UI — versi paket → keranjang
   ========================================= */
   return (
     <>
@@ -176,11 +195,18 @@ export default function PackagePopup() {
 
           {pkg && (
             <p className="text-[#0B4B50] mb-6 leading-relaxed">
-              <span className="font-semibold">{pkg.name}</span> —{" "}
-              <b className="text-[#0FA3A8]">Rp{pkg.price.toLocaleString("id-ID")}</b>
+              <span className="font-semibold">{pkg.name}</span>{" "}
+              <b className="text-[#0FA3A8]">
+                — Rp{pkg.price.toLocaleString("id-ID")}
+              </b>
               <br />
               <span className="text-sm text-gray-500">
                 Total botol harus <b>{maxQty}</b> (dipilih {totalQty})
+              </span>
+              <br />
+              <span className="text-[11px] text-gray-500">
+                Setelah kamu pilih komposisi, paket akan dimasukkan ke
+                keranjang. Data nama & alamat diisi nanti di halaman checkout.
               </span>
             </p>
           )}
@@ -244,52 +270,16 @@ export default function PackagePopup() {
             ))}
           </div>
 
-          {/* FORM */}
-          <input
-            type="text"
-            placeholder="Nama lengkap"
-            value={form.nama}
-            onChange={onChange("nama")}
-            className="
-              w-full border border-gray-300 rounded-2xl px-4 py-3 mb-3 text-sm
-              focus:ring-2 focus:ring-[#0FA3A8]/40 outline-none
-              shadow-sm
-            "
-          />
-
-          <input
-            type="text"
-            placeholder="Alamat pengiriman"
-            value={form.alamat}
-            onChange={onChange("alamat")}
-            className="
-              w-full border border-gray-300 rounded-2xl px-4 py-3 mb-3 text-sm
-              focus:ring-2 focus:ring-[#0FA3A8]/40 outline-none
-              shadow-sm
-            "
-          />
-
-          <textarea
-            placeholder="Catatan (opsional)"
-            value={form.catatan}
-            onChange={onChange("catatan")}
-            className="
-              w-full border border-gray-300 rounded-2xl px-4 py-3 mb-4 text-sm h-20 resize-none
-              focus:ring-2 focus:ring-[#0FA3A8]/40 outline-none
-              shadow-sm
-            "
-          />
-
-          {/* BUTTON */}
+          {/* BUTTON → MASUK KERANJANG */}
           <button
-            onClick={handleCheckout}
+            onClick={handleAddToCart}
             className="
               w-full py-3 bg-[#0FA3A8] hover:bg-[#0DC1C7]
               text-white font-semibold rounded-full
               shadow-lg transition-all active:scale-[0.97]
             "
           >
-            Checkout via WhatsApp
+            Tambahkan Paket ke Keranjang
           </button>
         </div>
       </div>
