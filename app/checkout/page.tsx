@@ -184,6 +184,24 @@ export default function CheckoutPage() {
         throw new Error(data?.message || "Gagal membuat invoice")
       }
 
+      // 🚀 Kirim ke WhatsApp (async, tidak menghambat redirect)
+fetch("/api/whatsapp", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    name: nama,
+    phone: hp,
+    address: alamat,
+    note: catatan,
+    order: items.map((x) => ({
+      name: x.name,
+      qty: x.qty,
+      price: x.price,
+    })),
+    total: total,
+  }),
+}).catch((err) => console.error("WA send failed:", err))
+
       clearCart()
       router.push(data.invoiceUrl || "/")
     } catch (err: any) {
