@@ -1,13 +1,6 @@
-"use client"
-
+// stores/statsStore.ts
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
-
-const memoryStorage = {
-  getItem: () => null,
-  setItem: () => {},
-  removeItem: () => {},
-}
 
 type StatsState = {
   orders: Record<string, number>
@@ -18,7 +11,6 @@ export const useStatsStore = create<StatsState>()(
   persist(
     (set) => ({
       orders: {},
-
       addOrder: (id, qty) =>
         set((state) => ({
           orders: {
@@ -29,8 +21,7 @@ export const useStatsStore = create<StatsState>()(
     }),
     {
       name: "koje-stats",
-
-      // 🔥 FIX PALING AMAN — jika SSR, jangan pakai storage
+      // ✅ sama pattern dengan cart, aman untuk SSR
       storage:
         typeof window !== "undefined"
           ? createJSONStorage(() => localStorage)
