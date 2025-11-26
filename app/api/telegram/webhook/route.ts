@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     if (action === "cod") status = "COD"
 
     // panggil API update status ke Google Sheet
-    await fetch(`${BASE_URL}/api/invoice/status`, {
+    await fetch("/api/invoice/status", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ invoiceId, status }),
