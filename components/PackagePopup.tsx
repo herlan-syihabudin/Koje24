@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { X } from "lucide-react"
-import { useCartStore } from "@/stores/cartStore"   // ⬅️ pakai keranjang yang sudah ada
+import { useCartStore } from "@/stores/cartStore"   // keranjang existing
 
 type PackageData = { name: string; price: number }
 
-// varian yang bisa dipilih dalam paket
+// daftar varian yang bisa dipilih
 const VARIANTS = [
   "Green Detox",
   "Yellow Immunity",
@@ -21,12 +21,9 @@ export default function PackagePopup() {
   const [pkg, setPkg] = useState<PackageData | null>(null)
   const [qty, setQty] = useState<Record<string, number>>({})
 
-  // ambil fungsi addItem dari cart store
   const addItem = useCartStore((state) => state.addItem)
 
-  /* =========================================
-     BODY LOCK (tetap sama)
-  ========================================= */
+  /* BODY LOCK */
   const lockBody = () => {
     document.body.classList.add("overflow-hidden")
     document.documentElement.classList.add("overflow-hidden")
@@ -36,12 +33,10 @@ export default function PackagePopup() {
     document.documentElement.classList.remove("overflow-hidden")
   }
 
-  /* =========================================
-     LISTENER (tetap sama, cuma simpan data paket)
-  ========================================= */
+  /* LISTENER */
   useEffect(() => {
     const onOpen = (e: any) => {
-      setPkg(e.detail)   // detail = { name, price } dari PackagesSection / ProductGrid
+      setPkg(e.detail)    // { name, price }
       setQty({})
       setOpen(true)
       lockBody()
@@ -50,20 +45,14 @@ export default function PackagePopup() {
     return () => window.removeEventListener("open-package", onOpen)
   }, [])
 
-  /* =========================================
-     CLOSE
-  ========================================= */
   const close = () => {
     setOpen(false)
     setTimeout(() => unlockBody(), 300)
   }
 
-  /* =========================================
-     VARIANT LOGIC (tetap, cuma kita pakai buat ke keranjang)
-  ========================================= */
+  /* VARIANT LOGIC */
   const getMaxQty = () => {
     if (!pkg) return 6
-    // coba baca angka dari nama paket, contoh: "7 Hari Detox Plan" → 7 botol
     const m = pkg.name.match(/\d+/)
     return m ? parseInt(m[0]) : 6
   }
@@ -94,9 +83,7 @@ export default function PackagePopup() {
     setQty((p) => ({ ...p, [v]: 1 }))
   }
 
-  /* =========================================
-     ⬇️ STEP PENTING: MASUKKAN PAKET KE KERANJANG
-  ========================================= */
+  /* MASUK KE KERANJANG */
   const handleAddToCart = () => {
     if (!pkg) return
 
@@ -105,41 +92,32 @@ export default function PackagePopup() {
       return
     }
 
-    // rangkum komposisi varian untuk ditampilkan di keranjang / invoice
     const detailText = Object.entries(qty)
       .map(([v, q]) => `${v} x${q}`)
       .join(", ")
 
-    // kita buat nama item paket yang sudah include komposisi
-    const itemName = `${pkg.name} — [${detailText}]`
+    // ⬅ nama item di keranjang tetap clean
+    const itemName = pkg.name
 
-    // id paket cukup di-generate dari nama supaya konsisten
-    const itemId = `PKG-${pkg.name}`
-
-    // masukkan sebagai 1 line item di keranjang
     addItem({
-      id: itemId,
+      id: `PKG-${pkg.name}-${Date.now()}`,   // ID unik kalau user pesan paket yg sama 2x
       name: itemName,
       price: pkg.price,
-      // img optional, kalau store lu support img silakan ganti ke thumbnail khusus paket
-      // @ts-ignore
-      img: undefined,
+      details: detailText,                  // ⬅ komposisi paket
+      type: "package",
+      qty: 1,
     })
 
-    // setelah masuk keranjang, kita tutup popup
+    // tutup popup otomatis
     close()
 
-    // dan buka popup keranjang / sticky bar (kalau ada listener "open-cart")
+    // buka popup keranjang kalau ada event listener
     try {
       window.dispatchEvent(new Event("open-cart"))
-    } catch {
-      // kalau belum ada listener, diabaikan saja
-    }
+    } catch {}
   }
 
-  /* =========================================
-     PREMIUM UI — versi paket → keranjang
-  ========================================= */
+  /* UI */
   return (
     <>
       {/* OVERLAY */}
@@ -156,9 +134,8 @@ export default function PackagePopup() {
       {/* WRAPPER */}
       <div
         className={`
-          fixed inset-0 z-[120]
-          flex items-center justify-center
-          px-4 transition-all duration-300
+          fixed inset-0 z-[120] flex items-center justify-center px-4
+          transition-all duration-300
           ${open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}
         `}
       >
@@ -167,8 +144,7 @@ export default function PackagePopup() {
           className="
             w-full max-w-lg bg-white rounded-[30px]
             shadow-[0_20px_50px_rgba(0,0,0,0.15)]
-            ring-1 ring-[#0FA3A8]/15
-            p-7 relative overflow-hidden
+            ring-1 ring-[#0FA3A8]/15 p-7 relative overflow-hidden
             max-h-[90vh] overflow-y-auto overscroll-contain
             animate-[fadeInUp_0.45s_cubic-bezier(.16,.72,.43,1)]
             backdrop-blur-xl
@@ -179,10 +155,8 @@ export default function PackagePopup() {
           <button
             onClick={close}
             className="
-              absolute top-5 right-5 p-2 rounded-full
-              bg-white shadow-lg
-              ring-1 ring-black/5
-              hover:bg-gray-100 transition-all
+              absolute top-5 right-5 p-2 rounded-full bg-white shadow-lg
+              ring-1 ring-black/5 hover:bg-gray-100 transition-all
             "
           >
             <X size={22} className="text-gray-500" />
@@ -202,11 +176,6 @@ export default function PackagePopup() {
               <br />
               <span className="text-sm text-gray-500">
                 Total botol harus <b>{maxQty}</b> (dipilih {totalQty})
-              </span>
-              <br />
-              <span className="text-[11px] text-gray-500">
-                Setelah kamu pilih komposisi, paket akan dimasukkan ke
-                keranjang. Data nama & alamat diisi nanti di halaman checkout.
               </span>
             </p>
           )}
@@ -270,7 +239,7 @@ export default function PackagePopup() {
             ))}
           </div>
 
-          {/* BUTTON → MASUK KERANJANG */}
+          {/* CTA */}
           <button
             onClick={handleAddToCart}
             className="
