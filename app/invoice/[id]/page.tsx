@@ -75,6 +75,8 @@ function getStatusColor(status: string) {
     case "paid":
     case "lunas":
       return "bg-emerald-50 text-emerald-700 border border-emerald-300"
+    case "cod":
+      return "bg-blue-50 text-blue-700 border border-blue-300"
     default:
       return "bg-gray-50 text-gray-700 border border-gray-300"
   }
@@ -87,17 +89,10 @@ export default async function InvoicePage({ params }: any) {
   const id = params?.id || ""
   const clean = normalize(id)
 
-  if (!clean) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-50">
-        <h2 className="text-xl text-red-600 font-semibold">
-          Invoice ID tidak valid 🚫
-        </h2>
-      </main>
-    )
-  }
+  // 🟢 FIX paling penting — hilangkan karakter dari Telegram / URL encoded
+  const safeId = clean.replace(/(%0A|[\n\r\t\s]|\?.*)/g, "")
 
-  const data = await getOrder(clean)
+  const data = await getOrder(safeId)
 
   if (!data) {
     return (
@@ -121,6 +116,7 @@ export default async function InvoicePage({ params }: any) {
   return (
     <main className="min-h-screen bg-[#F4FAFA] flex justify-center py-6 px-3 print:bg-white">
       <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl border border-slate-200 overflow-hidden print:shadow-none print:rounded-none print:border-none">
+        
         {/* HEADER */}
         <div className="flex justify-between items-start border-b border-slate-200 px-6 py-4">
           <div>
@@ -164,7 +160,6 @@ export default async function InvoicePage({ params }: any) {
             <p className="text-lg font-extrabold tracking-wide text-[#0B4B50]">
               {data.invoiceId}
             </p>
-
             <p
               className={`inline-block mt-2 px-2 py-1 rounded-md text-[10px] font-bold ${statusClasses}`}
             >
@@ -184,7 +179,6 @@ export default async function InvoicePage({ params }: any) {
                 <th className="p-2 text-right w-[25%]">Subtotal</th>
               </tr>
             </thead>
-
             <tbody>
               <tr className="border-t">
                 <td className="p-3 font-medium text-slate-800">
@@ -235,8 +229,7 @@ export default async function InvoicePage({ params }: any) {
 
             <p className="font-semibold">{data.paymentMethod}</p>
             <p>
-              No.Rek:{" "}
-              <strong className="text-red-600">{data.bankAccount}</strong>
+              No.Rek: <strong className="text-red-600">{data.bankAccount}</strong>
             </p>
             <p>
               a/n <strong className="text-slate-800">{data.accountName}</strong>
