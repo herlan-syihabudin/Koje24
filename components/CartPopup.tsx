@@ -13,13 +13,6 @@ type FormState = {
 
 type ChangeEvt = ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 
-type CartItemType = {
-  id: string
-  name: string
-  price: number
-  qty: number
-}
-
 type ShippingInfo = {
   distanceKm: number
   zone: "A" | "B" | "C" | "D"
@@ -27,44 +20,30 @@ type ShippingInfo = {
   ongkir: number | null
 }
 
-// 📍 KOORDINAT BASE KOJE24
 const ORIGIN_LAT = -6.3180335
 const ORIGIN_LNG = 107.0426622
 
-// 👉 hitung jarak haversine
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371
   const toRad = (deg: number) => (deg * Math.PI) / 180
-
   const dLat = toRad(lat2 - lat1)
   const dLon = toRad(lon2 - lon1)
-
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(toRad(lat1)) *
       Math.cos(toRad(lat2)) *
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2)
-
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-
   return R * c
 }
 
-// 👉 mapping jarak → ongkir
 function getShippingInfo(distanceKm: number): ShippingInfo {
   const d = Math.round(distanceKm * 10) / 10
-
   if (d <= 5) return { distanceKm: d, zone: "A", zoneLabel: "Zona A (0–5 km)", ongkir: 15000 }
   if (d <= 10) return { distanceKm: d, zone: "B", zoneLabel: "Zona B (5–10 km)", ongkir: 20000 }
   if (d <= 15) return { distanceKm: d, zone: "C", zoneLabel: "Zona C (10–15 km)", ongkir: 30000 }
-
-  return {
-    distanceKm: d,
-    zone: "D",
-    zoneLabel: "Zona D (>15 km – luar jangkauan utama)",
-    ongkir: null,
-  }
+  return { distanceKm: d, zone: "D", zoneLabel: "Zona D (>15 km – luar jangkauan utama)", ongkir: null }
 }
 
 export default function CartPopup() {
@@ -84,7 +63,9 @@ export default function CartPopup() {
   const [shipping, setShipping] = useState<ShippingInfo | null>(null)
   const [gpsError, setGpsError] = useState<string | null>(null)
 
-  // buka popup dari sticky cart
+  /* =========================
+     OPEN CART LISTENER
+  ========================== */
   useEffect(() => {
     const handler = () => setOpen(true)
     window.addEventListener("open-cart", handler)
@@ -97,7 +78,6 @@ export default function CartPopup() {
     setGpsError(null)
   }
 
-  // lock scroll
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : ""
   }, [open])
@@ -107,7 +87,7 @@ export default function CartPopup() {
     (e: ChangeEvt) =>
       setForm((prev) => ({ ...prev, [key]: e.target.value }))
 
-  // ⭐ AMBIL LOKASI OTOMATIS
+  /* ⭐ AMBIL LOKASI GPS */
   const handleGetGps = () => {
     setGpsError(null)
     setGpsLoading(true)
@@ -122,8 +102,6 @@ export default function CartPopup() {
       async (pos) => {
         const lat = pos.coords.latitude
         const lng = pos.coords.longitude
-
-        // simpan url maps otomatis
         const autoUrl = `https://www.google.com/maps?q=${lat},${lng}`
         setForm((prev) => ({ ...prev, mapsUrl: autoUrl }))
 
@@ -142,6 +120,7 @@ export default function CartPopup() {
     )
   }
 
+  /* ⭐ CHECKOUT */
   const handleCheckout = async () => {
     if (!form.nama || !form.hp || !form.alamat) {
       alert("Isi Nama, HP dan Alamat ya 🙏")
@@ -164,14 +143,6 @@ export default function CartPopup() {
     const ongkir = shipping?.ongkir ?? 0
     const totalBayar = subtotalProduk + ongkir
 
-    const cartMapped = items.map((i) => ({
-      id: i.id,
-      name: i.name,
-      qty: i.qty,
-      price: i.price,
-    }))
-
-    // TEKS WHATSAPP
     const text = `
 🍹 *Pesanan KOJE24*
 ------------------------
@@ -205,6 +176,21 @@ Terima kasih sudah order KOJE24 🍹✨
     setLoading(false)
   }
 
+  /* 🔥 BUG FIX — AUTO RESET FORM KETIKA CART KOSONG 🔥 */
+  useEffect(() => {
+    if (items.length === 0) {
+      setForm({
+        nama: "",
+        hp: "",
+        alamat: "",
+        catatan: "",
+        mapsUrl: "",
+      })
+      setShipping(null)
+      setGpsError(null)
+    }
+  }, [items.length])
+
   if (!open) return null
 
   return (
@@ -227,7 +213,6 @@ Terima kasih sudah order KOJE24 🍹✨
             Keranjang Kamu
           </h3>
 
-          {/* PRODUK LIST */}
           <div className="max-h-64 overflow-y-auto border-y py-3 mb-4 space-y-3">
             {items.map((item) => (
               <div key={item.id} className="flex items-center justify-between text-sm text-[#0B4B50]">
@@ -264,7 +249,6 @@ Terima kasih sudah order KOJE24 🍹✨
             Subtotal: Rp{totalPrice.toLocaleString("id-ID")}
           </div>
 
-          {/* FORM */}
           <div className="space-y-3 mb-4">
             <input
               type="text"
@@ -285,12 +269,11 @@ Terima kasih sudah order KOJE24 🍹✨
             <input
               type="text"
               placeholder="Alamat lengkap"
-              value={form.alamat}
+              value={form.alalamat}
               onChange={onChange("alamat")}
               className="w-full border rounded-lg px-3 py-2 text-sm"
             />
 
-            {/* 🔥 GPS BUTTON */}
             <button
               onClick={handleGetGps}
               type="button"
