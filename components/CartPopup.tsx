@@ -122,27 +122,45 @@ export default function CartPopup() {
 
   /* ⭐ CHECKOUT */
   const handleCheckout = async () => {
-    if (!form.nama || !form.hp || !form.alamat) {
-      alert("Isi Nama, HP dan Alamat ya 🙏")
-      return
-    }
+  if (!form.nama || !form.hp || !form.alamat) {
+    alert("Isi Nama, HP dan Alamat ya 🙏")
+    return
+  }
 
-    if (!form.mapsUrl.trim()) {
-      alert("Ambil lokasi otomatis dulu ya 🙏")
-      return
-    }
+  if (!form.mapsUrl.trim()) {
+    alert("Ambil lokasi otomatis dulu ya 🙏")
+    return
+  }
 
-    if (items.length === 0) {
-      alert("Keranjang masih kosong 😅")
-      return
-    }
+  if (items.length === 0) {
+    alert("Keranjang masih kosong 😅")
+    return
+  }
 
-    setLoading(true)
+  setLoading(true)
 
-    const subtotalProduk = totalPrice
-    const ongkir = shipping?.ongkir ?? 0
-    const totalBayar = subtotalProduk + ongkir
+  try {
+    // ⬇️ SIMPAN ORDER KE DATABASE (GOOGLE SHEET)
+    const res = await fetch("/api/order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nama: form.nama,
+        hp: form.hp,
+        alamat: form.alamat,
+        cart: items,
+        mapsUrl: form.mapsUrl,
+        subtotal: totalPrice,
+        ongkir: shipping?.ongkir ?? 0,
+        grandTotal: totalPrice + (shipping?.ongkir ?? 0),
+        distanceKm: shipping?.distanceKm ?? null,
+      }),
+    })
 
+    const data = await res.json()
+    const invoiceUrl = data?.invoiceUrl
+
+    // 🔥 WHATSAPP TEXT (ditambah invoice)
     const text = `
 🍹 *Pesanan KOJE24*
 ------------------------
@@ -152,19 +170,19 @@ ${items.map((i) => `• ${i.name} × ${i.qty}`).join("\n")}
 👤 *Nama:* ${form.nama}
 📍 *Alamat:* ${form.alamat}
 
+🔗 *Invoice:* ${invoiceUrl}
+
 📏 *Jarak:* ~${shipping?.distanceKm} km
 🗺 *Zona:* ${shipping?.zoneLabel}
 🚚 *Ongkir:* ${
       shipping?.ongkir ? "Rp" + shipping.ongkir.toLocaleString("id-ID") : "Hubungi admin"
     }
 
-💰 *Subtotal:* Rp${subtotalProduk.toLocaleString("id-ID")}
-💰 *Total Bayar:* Rp${totalBayar.toLocaleString("id-ID")}
-
-🔗 *Lokasi Anda:* ${form.mapsUrl}
+💰 *Subtotal:* Rp${totalPrice.toLocaleString("id-ID")}
+💰 *Total Bayar:* Rp${(totalPrice + (shipping?.ongkir ?? 0)).toLocaleString("id-ID")}
 
 Terima kasih sudah order KOJE24 🍹✨
-    `.trim()
+`.trim()
 
     window.open(
       `https://wa.me/6282213139580?text=${encodeURIComponent(text)}`,
@@ -173,8 +191,13 @@ Terima kasih sudah order KOJE24 🍹✨
 
     clearCart()
     close()
-    setLoading(false)
+  } catch (err) {
+    alert("Gagal checkout, coba lagi ya 🙏")
+    console.error(err)
   }
+
+  setLoading(false)
+}
 
   /* 🔥 BUG FIX — AUTO RESET FORM KETIKA CART KOSONG 🔥 */
   useEffect(() => {
