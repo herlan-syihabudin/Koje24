@@ -15,42 +15,57 @@ export async function POST(req: NextRequest) {
 
     if (!invoiceId || !status) throw new Error("invoiceId & status wajib")
 
+    const NEW_STATUS = String(status).toUpperCase() // konsisten
+
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     })
+
     const sheets = google.sheets({ version: "v4", auth })
 
-    // Ambil data sheet semua baris
+    // Ambil semua data dulu (termasuk header)
     const sheetData = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: "Sheet1!A:M",
     })
 
     const rows = sheetData.data.values || []
-    let targetRowIndex = -1
+    let rowNumber: number | null = null
 
-    rows.forEach((row, idx) => {
-      if (row[1] === invoiceId) targetRowIndex = idx
-    })
+    // Mulai loop dari index 1 (lewati header)
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i]
 
-    if (targetRowIndex === -1) throw new Error("Invoice tidak ditemukan")
+      if (!row) continue
 
-    const rowNumber = targetRowIndex + 1
-    const columnStatus = "I" // kolom status
+      const idColB = String(row[1] || "").trim()
+      const urlColM = String(row[12] || "").trim()
 
+      if (idColB === invoiceId || urlColM.includes(invoiceId)) {
+        rowNumber = i + 1 // rumus Google Sheet row index
+        break
+      }
+    }
+
+    if (!rowNumber) throw new Error("Invoice tidak ditemukan")
+
+    // Kolom I adalah STATUS
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `Sheet1!${columnStatus}${rowNumber}`,
+      range: `Sheet1!I${rowNumber}`,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[status]] },
+      requestBody: { values: [[NEW_STATUS]] },
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({
+      success: true,
+      message: `Status invoice ${invoiceId} diupdate menjadi ${NEW_STATUS}`,
+    })
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: err.message },
+      { success: false, message: err.message || String(err) },
       { status: 500 }
     )
   }
