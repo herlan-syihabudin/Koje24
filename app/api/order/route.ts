@@ -114,10 +114,10 @@ export async function POST(req: NextRequest) {
     })
 
     // ==============================
-    // 🔔 NOTIF TELEGRAM ADMIN
-    // ==============================
-    if (BOT_TOKEN && CHAT_ID) {
-      const message = `
+// 🔔 NOTIF TELEGRAM ADMIN + ACTION BUTTON
+// ==============================
+if (BOT_TOKEN && CHAT_ID) {
+  const message = `
 🛒 *ORDER BARU KOJE24*
 #${invoiceId}
 
@@ -131,16 +131,27 @@ export async function POST(req: NextRequest) {
 🔗 ${invoiceUrl}
 `.trim()
 
-      fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: CHAT_ID,
-          text: message,
-          parse_mode: "Markdown",
-        }),
-      }).catch((err) => console.error("Telegram error:", err))
-    }
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: "✅ Mark as PAID", callback_data: `paid_${invoiceId}` },
+        { text: "🚚 Mark as COD", callback_data: `cod_${invoiceId}` },
+      ],
+      [{ text: "⏳ Set Pending", callback_data: `pending_${invoiceId}` }],
+    ],
+  }
+
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: CHAT_ID,
+      text: message,
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    }),
+  }).catch((err) => console.error("Telegram error:", err))
+}
 
     console.log(`🟢 ORDER TERSIMPAN: ${invoiceId}`)
     console.log(`🔗 INVOICE URL: ${invoiceUrl}`)
