@@ -10,14 +10,11 @@ const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
 
 const KONTAK_CS = "6282213139580"
 
-// helper
-function normalize(v: any) {
-  return String(v || "").trim()
-}
+const normalize = (v: any) => String(v || "").trim()
 
-/* ============================================================
-   FETCH DATA INVOICE DARI GOOGLE SHEET
-============================================================ */
+/* =====================================================================================
+   🔥 GET ORDER FROM GOOGLE SHEET — FULL SUPPORT MULTI PRODUK, MULTI QTY, MULTI SUBTOTAL
+===================================================================================== */
 async function getOrder(invoiceId: string) {
   const clean = normalize(invoiceId)
   if (!clean) return null
@@ -31,43 +28,56 @@ async function getOrder(invoiceId: string) {
   const sheets = google.sheets({ version: "v4", auth })
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: "Sheet1!A2:M999",
+    range: "Sheet1!A2:M2000",
   })
 
   const rows = res.data.values || []
 
-  // cari berdasarkan kolom B (invoiceId) atau kolom M (invoiceUrl)
-  const row =
-    rows.find((r) => String(r[1]).trim() === clean) ||
-    rows.find((r) => String(r[12] || "").trim().includes(clean))
+  // 🟢 Ambil SEMUA baris dengan invoiceId yg sama
+  const sameInvoice = rows.filter(
+    (r) =>
+      normalize(r[1]) === clean || normalize(r[12]).includes(clean)
+  )
 
-  if (!row) return null
+  if (sameInvoice.length === 0) return null
 
-  const subtotal = Number(row[7]) || 0
-  const ongkir = Number(row[10]) || 0
-  const grandTotal = Number(row[11]) || subtotal + ongkir
+  // baris pertama = info customer
+  const first = sameInvoice[0]
+
+  // kumpulkan semua produk
+  const produkList = sameInvoice.map((r) => {
+    const qty = Number(r[6] || 0)
+    const subtotal = Number(r[7] || 0)
+    return {
+      nama: r[5] || "",
+      qty,
+      subtotal,
+    }
+  })
+
+  const qtyTotal = produkList.reduce((s, p) => s + p.qty, 0)
+  const subtotal = produkList.reduce((s, p) => s + p.subtotal, 0)
+  const ongkir = Number(first[10] || 0)
+  const grandTotal = subtotal + ongkir
 
   return {
-    timestamp: row[0] ?? "",
-    invoiceId: row[1] ?? "",
-    nama: row[2] ?? "",
-    hp: row[3] ?? "",
-    alamat: row[4] ?? "",
-    produk: row[5] ?? "",
-    qty: Number(row[6]) || 0,
+    timestamp: first[0] ?? "",
+    invoiceId: first[1] ?? "",
+    nama: first[2] ?? "",
+    hp: first[3] ?? "",
+    alamat: first[4] ?? "",
+    produkList,
+    qtyTotal,
     subtotal,
-    status: row[8] ?? "Pending",
-    paymentMethod: row[9] || "Transfer Bank Mandiri",
     ongkir,
     grandTotal,
+    status: first[8] || "Pending",
+    paymentMethod: first[9] || "Transfer Bank Mandiri",
     bankAccount: "9918282983939",
     accountName: "KOJE24",
   }
 }
 
-/* ============================================================
-   STATUS BADGE COLOR
-============================================================ */
 function getStatusColor(status: string) {
   switch (status.toLowerCase()) {
     case "pending":
@@ -82,15 +92,12 @@ function getStatusColor(status: string) {
   }
 }
 
-/* ============================================================
-   MAIN PAGE
-============================================================ */
+/* =====================================================================================
+   🔥 PAGE
+===================================================================================== */
 export default async function InvoicePage({ params }: any) {
-  const id = params?.id || ""
-  const clean = normalize(id)
-
-  // 🟢 FIX paling penting — hilangkan karakter dari Telegram / URL encoded
-  const safeId = clean.replace(/(%0A|[\n\r\t\s]|\?.*)/g, "")
+  const id = normalize(params?.id || "")
+  const safeId = id.replace(/(%0A|[\n\r\t\s]|\?.*)/g, "")
 
   const data = await getOrder(safeId)
 
@@ -103,13 +110,6 @@ export default async function InvoicePage({ params }: any) {
       </main>
     )
   }
-
-  const safeSubtotal = data.subtotal || 0
-  const safeOngkir = data.ongkir || 0
-  const safeGrandTotal = data.grandTotal || safeSubtotal + safeOngkir
-
-  const pricePerItem =
-    data.qty > 0 ? Math.round(safeSubtotal / data.qty) : safeSubtotal
 
   const statusClasses = getStatusColor(data.status)
 
@@ -180,20 +180,20 @@ export default async function InvoicePage({ params }: any) {
               </tr>
             </thead>
             <tbody>
-              <tr className="border-t">
-                <td className="p-3 font-medium text-slate-800">
-                  {data.produk}
-                </td>
-                <td className="p-3 text-right">
-                  Rp{pricePerItem.toLocaleString("id-ID")}
-                </td>
-                <td className="p-3 text-right text-slate-800">
-                  {data.qty}x
-                </td>
-                <td className="p-3 text-right font-bold text-[#0B4B50]">
-                  Rp{safeSubtotal.toLocaleString("id-ID")}
-                </td>
-              </tr>
+              {data.produkList.map((p: any, i: number) => (
+                <tr key={i} className="border-t">
+                  <td className="p-3 font-medium text-slate-800">{p.nama}</td>
+                  <td className="p-3 text-right">
+                    Rp{Math.round(p.subtotal / p.qty).toLocaleString("id-ID")}
+                  </td>
+                  <td className="p-3 text-right text-slate-800">
+                    {p.qty}x
+                  </td>
+                  <td className="p-3 text-right font-bold text-[#0B4B50]">
+                    Rp{p.subtotal.toLocaleString("id-ID")}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -204,18 +204,18 @@ export default async function InvoicePage({ params }: any) {
             <div className="flex justify-between">
               <span>Subtotal</span>
               <span className="font-semibold">
-                Rp{safeSubtotal.toLocaleString("id-ID")}
+                Rp{data.subtotal.toLocaleString("id-ID")}
               </span>
             </div>
             <div className="flex justify-between">
               <span>Ongkir</span>
               <span className="font-semibold">
-                Rp{safeOngkir.toLocaleString("id-ID")}
+                Rp{data.ongkir.toLocaleString("id-ID")}
               </span>
             </div>
             <div className="border-t pt-3 flex justify-between text-lg font-bold text-[#0B4B50]">
               <span>TOTAL AKHIR</span>
-              <span>Rp{safeGrandTotal.toLocaleString("id-ID")}</span>
+              <span>Rp{data.grandTotal.toLocaleString("id-ID")}</span>
             </div>
           </div>
         </div>
