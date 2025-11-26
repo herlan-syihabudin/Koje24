@@ -269,7 +269,7 @@ Terima kasih sudah order KOJE24 🍹✨
             <input
               type="text"
               placeholder="Alamat lengkap"
-              value={form.alalamat}
+              value={form.alamat}
               onChange={onChange("alamat")}
               className="w-full border rounded-lg px-3 py-2 text-sm"
             />
