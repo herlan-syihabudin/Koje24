@@ -1,3 +1,4 @@
+// stores/cartStore.ts
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
 
@@ -46,8 +47,12 @@ export const useCartStore = create<CartState>()(
         const exist = items.find((i) => i.id === id)
 
         if (!exist) return
-        if (exist.qty > 1) exist.qty -= 1
-        else items = items.filter((i) => i.id !== id)
+
+        if (exist.qty > 1) {
+          exist.qty -= 1
+        } else {
+          items = items.filter((i) => i.id !== id)
+        }
 
         const totalQty = items.reduce((s, i) => s + i.qty, 0)
         const totalPrice = items.reduce((s, i) => s + i.qty * i.price, 0)
@@ -59,8 +64,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "koje24-cart",
-
-      // 🔥 FIX PALING PENTING — AMAN UNTUK SSR
+      // ✅ SSR-safe: di server storage = undefined, di client pakai localStorage
       storage:
         typeof window !== "undefined"
           ? createJSONStorage(() => localStorage)
