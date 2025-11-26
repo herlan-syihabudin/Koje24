@@ -1,23 +1,32 @@
+// app/invoice/[id]/page.tsx
 import { google } from "googleapis"
 
 export const viewport = {
   themeColor: "#0FA3A8",
 }
 
+// 🔐 ENV
 const SHEET_ID = process.env.GOOGLE_SHEET_ID!
 const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
 
+// Nomor CS buat di footer & tombol WA
 const KONTAK_CS = "6282213139580"
 
+// Helper trimming
 const normalize = (v: any) => String(v || "").trim()
 
 /* =====================================================================================
-   🔥 GET ORDER FROM GOOGLE SHEET — FULL SUPPORT MULTI PRODUK, MULTI QTY, MULTI SUBTOTAL
+   🔥 GET ORDER FROM GOOGLE SHEET — FULL SUPPORT MULTI PRODUK / MULTI ROW
 ===================================================================================== */
 async function getOrder(invoiceId: string) {
   const clean = normalize(invoiceId)
   if (!clean) return null
+
+  if (!SHEET_ID || !PRIVATE_KEY || !CLIENT_EMAIL) {
+    console.error("ENV GOOGLE SHEET belum lengkap")
+    return null
+  }
 
   const auth = new google.auth.JWT({
     email: CLIENT_EMAIL,
@@ -33,18 +42,21 @@ async function getOrder(invoiceId: string) {
 
   const rows = res.data.values || []
 
-  // 🟢 Ambil SEMUA baris dengan invoiceId yg sama
+  // 🟢 Ambil SEMUA baris yang punya invoiceId sama
   const sameInvoice = rows.filter(
     (r) =>
       normalize(r[1]) === clean || normalize(r[12]).includes(clean)
   )
 
-  if (sameInvoice.length === 0) return null
+  if (sameInvoice.length === 0) {
+    console.warn("Invoice tidak ditemukan di sheet:", clean)
+    return null
+  }
 
-  // baris pertama = info customer
+  // Baris pertama dipakai sebagai sumber data customer / header
   const first = sameInvoice[0]
 
-  // kumpulkan semua produk
+  // Kumpulkan semua produk (kalau suatu saat 1 invoice = banyak baris)
   const produkList = sameInvoice.map((r) => {
     const qty = Number(r[6] || 0)
     const subtotal = Number(r[7] || 0)
@@ -78,6 +90,9 @@ async function getOrder(invoiceId: string) {
   }
 }
 
+/* =====================================================================================
+   STATUS BADGE COLOR
+===================================================================================== */
 function getStatusColor(status: string) {
   switch (status.toLowerCase()) {
     case "pending":
@@ -95,8 +110,11 @@ function getStatusColor(status: string) {
 /* =====================================================================================
    🔥 PAGE
 ===================================================================================== */
-export default async function InvoicePage({ params }: any) {
-  const id = normalize(params?.id || "")
+export default async function InvoicePage({ params }: { params: { id: string } }) {
+  const rawId = params?.id || ""
+  const id = normalize(rawId)
+
+  // 🧹 Bersihkan kemungkinan karakter aneh dari Telegram / URL
   const safeId = id.replace(/(%0A|[\n\r\t\s]|\?.*)/g, "")
 
   const data = await getOrder(safeId)
@@ -116,7 +134,6 @@ export default async function InvoicePage({ params }: any) {
   return (
     <main className="min-h-screen bg-[#F4FAFA] flex justify-center py-6 px-3 print:bg-white">
       <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl border border-slate-200 overflow-hidden print:shadow-none print:rounded-none print:border-none">
-        
         {/* HEADER */}
         <div className="flex justify-between items-start border-b border-slate-200 px-6 py-4">
           <div>
@@ -184,7 +201,10 @@ export default async function InvoicePage({ params }: any) {
                 <tr key={i} className="border-t">
                   <td className="p-3 font-medium text-slate-800">{p.nama}</td>
                   <td className="p-3 text-right">
-                    Rp{Math.round(p.subtotal / p.qty).toLocaleString("id-ID")}
+                    Rp{(p.qty > 0
+                      ? Math.round(p.subtotal / p.qty)
+                      : p.subtotal
+                    ).toLocaleString("id-ID")}
                   </td>
                   <td className="p-3 text-right text-slate-800">
                     {p.qty}x
@@ -229,10 +249,12 @@ export default async function InvoicePage({ params }: any) {
 
             <p className="font-semibold">{data.paymentMethod}</p>
             <p>
-              No.Rek: <strong className="text-red-600">{data.bankAccount}</strong>
+              No.Rek:{" "}
+              <strong className="text-red-600">{data.bankAccount}</strong>
             </p>
             <p>
-              a/n <strong className="text-slate-800">{data.accountName}</strong>
+              a/n{" "}
+              <strong className="text-slate-800">{data.accountName}</strong>
             </p>
 
             <a
