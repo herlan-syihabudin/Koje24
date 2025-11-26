@@ -15,12 +15,8 @@ export default function StickyCartBar() {
           initial={{ opacity: 0, x: 60, y: 20, scale: 0.7 }}
           animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
           exit={{ opacity: 0, x: 60, y: 20, scale: 0.7 }}
-          transition={{
-            type: "spring",
-            stiffness: 300,
-            damping: 20,
-          }}
-          className="fixed bottom-5 right-5 z-50"
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          className="fixed bottom-6 right-4 md:bottom-5 md:right-5 z-50"
         >
           <button
             onClick={() => window.dispatchEvent(new Event("open-cart"))}
@@ -34,7 +30,7 @@ export default function StickyCartBar() {
 
             {/* BADGE */}
             <motion.span
-              key={totalQty}
+              layout
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 300, damping: 15 }}
@@ -42,7 +38,7 @@ export default function StickyCartBar() {
                 absolute -top-2 -right-2
                 bg-[#E8C46B] text-[#0B4B50]
                 text-xs font-bold rounded-full
-                w-5 h-5 flex items-center justify-center
+                min-w-[20px] h-[20px] flex items-center justify-center
               "
             >
               {totalQty}
