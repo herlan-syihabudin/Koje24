@@ -4,6 +4,8 @@ import { google } from "googleapis"
 const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? ""
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? ""
 const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ""
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? ""
 
 const PRIVATE_KEY = PRIVATE_KEY_RAW
   .replace(/\\n/g, "\n")
@@ -38,22 +40,12 @@ export async function POST(req: NextRequest) {
       subtotal,
     } = body
 
-    if (!nama || !hp || !alamat) {
-      throw new Error("Data customer belum lengkap")
-    }
+    if (!nama || !hp || !alamat) throw new Error("Data customer belum lengkap")
+    if (!Array.isArray(cart) || cart.length === 0) throw new Error("Cart kosong!")
 
-    if (!Array.isArray(cart) || cart.length === 0) {
-      throw new Error("Cart kosong!")
-    }
-
-    // ============================
-    // PRODUK & SUBTOTAL
-    // ============================
+    // PRODUK
     const produkList = cart.map((x: any) => `${x.name} (${x.qty}x)`).join(", ")
-    const qtyTotal = cart.reduce(
-      (a: number, x: any) => a + Number(x.qty || 0),
-      0
-    )
+    const qtyTotal = cart.reduce((a: number, x: any) => a + Number(x.qty || 0), 0)
 
     const subtotalCalc =
       typeof subtotal === "number"
@@ -64,65 +56,38 @@ export async function POST(req: NextRequest) {
             0
           )
 
-    // ============================
-    // ONGKIR & GRAND TOTAL
-    // ============================
     const effectiveOngkir =
       typeof ongkir === "number"
         ? ongkir
         : typeof shippingCost === "number"
         ? shippingCost
-        : 15000 // fallback kalau gak ada ongkir, pakai 15k
+        : 15000
 
     const effectiveGrandTotal =
       typeof grandTotal === "number"
         ? grandTotal
         : subtotalCalc + effectiveOngkir
 
-    // ============================
-    // METODE PEMBAYARAN
-    // ============================
     let paymentLabel = "Transfer"
     if (payment === "qris") paymentLabel = "QRIS"
     else if (payment === "cod") paymentLabel = "COD"
 
-    // ============================
-    // BUAT INVOICE ID + URL
-    // ============================
+    // INVOICE ID + URL
     const invoiceId =
       "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase()
-
     const host = req.nextUrl.host
     const protocol = req.nextUrl.protocol
     const baseUrl = `${protocol}//${host}`
-
     const invoiceUrl = `${baseUrl}/invoice/${invoiceId}`
 
-    // ============================
     // GOOGLE SHEET
-    // ============================
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     })
-
     const sheets = google.sheets({ version: "v4", auth })
 
-    // Struktur kolom:
-    // A: Timestamp
-    // B: Invoice ID
-    // C: Nama
-    // D: HP
-    // E: Alamat
-    // F: Produk
-    // G: Qty Total
-    // H: Subtotal
-    // I: Status
-    // J: Metode Bayar
-    // K: Ongkir
-    // L: Grand Total
-    // M: Invoice URL
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: "Sheet1!A:M",
@@ -130,23 +95,52 @@ export async function POST(req: NextRequest) {
       requestBody: {
         values: [
           [
-            new Date().toLocaleString("id-ID"), // A
-            invoiceId, // B
-            nama, // C
-            hp, // D
-            alamat, // E
-            produkList, // F
-            qtyTotal, // G
-            subtotalCalc, // H
-            "Pending", // I
-            paymentLabel, // J
-            effectiveOngkir, // K
-            effectiveGrandTotal, // L
-            invoiceUrl, // M
+            new Date().toLocaleString("id-ID"),
+            invoiceId,
+            nama,
+            hp,
+            alamat,
+            produkList,
+            qtyTotal,
+            subtotalCalc,
+            "Pending",
+            paymentLabel,
+            effectiveOngkir,
+            effectiveGrandTotal,
+            invoiceUrl,
           ],
         ],
       },
     })
+
+    // ==============================
+    // 🔔 NOTIF TELEGRAM ADMIN
+    // ==============================
+    if (BOT_TOKEN && CHAT_ID) {
+      const message = `
+🛒 *ORDER BARU KOJE24*
+#${invoiceId}
+
+👤 *${nama}*
+📍 ${alamat}
+
+🍹 *Pesanan:* ${produkList}
+💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}
+💳 *Metode:* ${paymentLabel}
+
+🔗 ${invoiceUrl}
+`.trim()
+
+      fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text: message,
+          parse_mode: "Markdown",
+        }),
+      }).catch((err) => console.error("Telegram error:", err))
+    }
 
     console.log(`🟢 ORDER TERSIMPAN: ${invoiceId}`)
     console.log(`🔗 INVOICE URL: ${invoiceUrl}`)
