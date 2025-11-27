@@ -122,7 +122,7 @@ export default function CartPopup() {
             <button
               onClick={() => {
                 setOpen(false);
-                window.dispatchEvent(new CustomEvent("open-checkout"));
+                window.location.href = "/checkout";
               }}
               className="w-full py-3 bg-[#0FA3A8] text-white rounded-xl font-semibold mt-1 hover:bg-[#0B4B50] transition-all"
             >
