@@ -17,6 +17,10 @@ export interface CartState {
   addItem: (item: Omit<CartItem, "qty">) => void
   removeItem: (id: string) => void
   clearCart: () => void
+
+  // 🔥 Optional utility (tidak mengubah logic & UI)
+  getQty: (id: string) => number
+  getTotalForItem: (id: string) => number
 }
 
 export const useCartStore = create<CartState>()(
@@ -45,7 +49,6 @@ export const useCartStore = create<CartState>()(
       removeItem: (id) => {
         let items = [...get().items]
         const exist = items.find((i) => i.id === id)
-
         if (!exist) return
 
         if (exist.qty > 1) {
@@ -61,10 +64,20 @@ export const useCartStore = create<CartState>()(
       },
 
       clearCart: () => set({ items: [], totalQty: 0, totalPrice: 0 }),
+
+      // 🔥 Utility (aman, tanpa pengaruh logic)
+      getQty: (id) => {
+        const item = get().items.find((i) => i.id === id)
+        return item?.qty || 0
+      },
+
+      getTotalForItem: (id) => {
+        const item = get().items.find((i) => i.id === id)
+        return item ? item.qty * item.price : 0
+      },
     }),
     {
       name: "koje24-cart",
-      // ✅ SSR-safe: di server storage = undefined, di client pakai localStorage
       storage:
         typeof window !== "undefined"
           ? createJSONStorage(() => localStorage)
