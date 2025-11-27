@@ -16,53 +16,37 @@ export type CartItemType = {
   qty: number
 }
 
-// Koordinat base KOJE24 (Grand Wisata Bekasi)
 const BASE_LAT = -6.2903238
 const BASE_LNG = 107.087373
 
-// Haversine distance (km) antara 2 titik
-function haversineDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
-  const R = 6371 // km
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371
   const dLat = ((lat2 - lat1) * Math.PI) / 180
   const dLon = ((lon2 - lon1) * Math.PI) / 180
   const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
       Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2)
+      Math.sin(dLon / 2) ** 2
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  const d = R * c
-  return d
+  return R * c
 }
 
-// Rumus ongkir KOJE24 (bisa lu ubah)
 function calcOngkir(distanceKm: number | null): number {
-  if (!distanceKm || distanceKm <= 0) {
-    // fallback default kalau jarak belum ke-detect
-    return 15000
-  }
-
-  const base = 8000 // ongkir minimum
+  if (!distanceKm || distanceKm <= 0) return 15000
+  const base = 8000
   const perKm = 3000
   const minPay = 10000
-
   const raw = base + distanceKm * perKm
-  const rounded = Math.round(raw / 100) * 100 // bulatkan ke ratusan
-
+  const rounded = Math.round(raw / 100) * 100
   return Math.max(minPay, rounded)
 }
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const items = useCartStore((state) => state.items)
-  const clearCart = useCartStore((state) => state.clearCart)
+  const items = useCartStore((s) => s.items)
+  const clearCart = useCartStore((s) => s.clearCart)
 
   const [nama, setNama] = useState("")
   const [hp, setHp] = useState("")
@@ -74,74 +58,46 @@ export default function CheckoutPage() {
 
   const [distanceKm, setDistanceKm] = useState<number | null>(null)
   const [ongkir, setOngkir] = useState<number>(15000)
-
   const alamatRef = useRef<HTMLInputElement | null>(null)
 
-  const subtotal = items.reduce(
-    (acc: number, item: CartItemType) => acc + item.price * item.qty,
-    0
-  )
-
+  const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0)
   const total = subtotal + (items.length > 0 ? ongkir : 0)
 
-  // Scroll to top
   useEffect(() => {
-    if (typeof window === "undefined") return
     window.scrollTo({ top: 0 })
   }, [])
 
-  // Redirect kalau keranjang kosong
   useEffect(() => {
-    if (items.length === 0) {
-      const t = setTimeout(() => {
-        router.push("/#produk")
-      }, 1800)
-      return () => clearTimeout(t)
+    if (!items.length) {
+      setTimeout(() => router.push("/#produk"), 1600)
     }
   }, [items, router])
 
-  // Inisialisasi Google Places Autocomplete
   useEffect(() => {
-    if (typeof window === "undefined") return
     if (!alamatRef.current) return
-
     const w = window as any
-    if (!w.google || !w.google.maps || !w.google.maps.places) {
-      // Kalau script Maps belum ready, biarkan dulu
-      return
-    }
-
+    if (!w.google || !w.google.maps || !w.google.maps.places) return
     try {
-      const autocomplete = new google.maps.places.Autocomplete(
-        alamatRef.current,
-        {
-          componentRestrictions: { country: "id" },
-          fields: ["formatted_address", "geometry"],
-        }
-      )
-
+      const autocomplete = new google.maps.places.Autocomplete(alamatRef.current, {
+        componentRestrictions: { country: "id" },
+        fields: ["formatted_address", "geometry"],
+      })
       autocomplete.addListener("place_changed", () => {
         const place = autocomplete.getPlace()
-        if (!place || !place.geometry || !place.geometry.location) return
-
-        const destLat = place.geometry.location.lat()
-        const destLng = place.geometry.location.lng()
-
-        const dKm = haversineDistance(BASE_LAT, BASE_LNG, destLat, destLng)
-        const ship = calcOngkir(dKm)
-
+        if (!place?.geometry?.location) return
+        const dKm = haversineDistance(
+          BASE_LAT,
+          BASE_LNG,
+          place.geometry.location.lat(),
+          place.geometry.location.lng()
+        )
         setDistanceKm(dKm)
-        setOngkir(ship)
-        setAlamat(place.formatted_address || alamatRef.current?.value || "")
+        setOngkir(calcOngkir(dKm))
+        setAlamat(place.formatted_address ?? alamat)
       })
-    } catch (e) {
-      console.error("Error init Google Autocomplete:", e)
-    }
+    } catch {}
   }, [])
 
-  // ============================
-  // HANDLE SUBMIT
-  // ============================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!items.length) return
@@ -155,13 +111,6 @@ export default function CheckoutPage() {
       setStatus("submitting")
       setErrorMsg("")
 
-      const cartMapped = items.map((it: CartItemType) => ({
-        id: it.id,
-        name: it.name,
-        qty: it.qty,
-        price: it.price,
-      }))
-
       const res = await fetch("/api/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -171,7 +120,7 @@ export default function CheckoutPage() {
           alamat,
           note: catatan,
           payment,
-          cart: cartMapped,
+          cart: items,
           distanceKm,
           shippingCost: ongkir,
           grandTotal: total,
@@ -179,39 +128,28 @@ export default function CheckoutPage() {
       })
 
       const data = await res.json()
+      if (!res.ok || !data?.success) throw new Error()
 
-      if (!res.ok || !data?.success) {
-        throw new Error(data?.message || "Gagal membuat invoice")
-      }
-
-      // 🚀 Kirim ke WhatsApp (async, tidak menghambat redirect)
-fetch("/api/whatsapp", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    name: nama,
-    phone: hp,
-    address: alamat,
-    note: catatan,
-    order: items.map((x) => ({
-      name: x.name,
-      qty: x.qty,
-      price: x.price,
-    })),
-    total: total,
-  }),
-}).catch((err) => console.error("WA send failed:", err))
+      fetch("/api/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: nama,
+          phone: hp,
+          address: alamat,
+          note: catatan,
+          order: items,
+          total,
+        }),
+      }).catch(() => {})
 
       clearCart()
       router.push(data.invoiceUrl || "/")
-    } catch (err: any) {
-      console.error("Checkout error:", err)
+    } catch {
       setStatus("error")
-      setErrorMsg(
-        "Maaf, sedang ada kendala saat membuat invoice. Coba lagi sebentar lagi ya."
-      )
+      setErrorMsg("Ada kendala saat membuat invoice. Coba lagi sebentar ya 🙏")
     } finally {
-      setStatus((prev) => (prev === "submitting" ? "idle" : prev))
+      setStatus((p) => (p === "submitting" ? "idle" : p))
     }
   }
 
@@ -219,198 +157,81 @@ fetch("/api/whatsapp", {
 
   return (
     <>
-      {/* LOAD GOOGLE MAPS JS + PLACES */}
       <Script
         src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
         strategy="lazyOnload"
       />
 
-      <main className="min-h-screen bg-[#F4FAFA] text-[#0B4B50] flex items-start justify-center py-10 px-4 md:px-6">
+      <main className="min-h-screen bg-[#F4FAFA] text-[#0B4B50] py-10 px-4 flex justify-center">
         <div className="w-full max-w-5xl">
-          {/* Title */}
           <div className="mb-8">
-            <p className="text-xs tracking-[0.25em] uppercase text-[#0FA3A8] mb-2">
-              KOJE24 • Premium Checkout
-            </p>
-            <h1 className="font-playfair text-3xl md:text-4xl font-semibold">
-              Selesaikan Pesanan Kamu
-            </h1>
-            <p className="font-inter text-sm md:text-base text-gray-600 mt-2 max-w-2xl">
-              Isi data pengiriman dengan teliti. Ongkir akan dihitung otomatis
-              berdasarkan jarak dari base KOJE24.
+            <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24 • PREMIUM CHECKOUT</p>
+            <h1 className="text-3xl md:text-4xl font-playfair font-semibold">Selesaikan Pesanan Kamu</h1>
+            <p className="text-sm text-gray-600 mt-2 max-w-xl">
+              Isi alamat dengan teliti. Ongkir dihitung otomatis berdasarkan jarak.
             </p>
           </div>
 
           {items.length === 0 ? (
-            <div className="mt-10 bg-white/70 border border-[#e6eeee] rounded-2xl p-6 text-center shadow-sm">
-              <p className="font-inter text-sm md:text-base text-gray-600">
-                Keranjang kamu masih kosong. Mengarahkan kembali ke halaman
-                produk...
-              </p>
-            </div>
+            <p className="text-center text-gray-500">Keranjang kosong. Mengarahkan kembali…</p>
           ) : (
-            <div className="grid gap-6 md:gap-8 md:grid-cols-[1.1fr_0.9fr]">
-              {/* LEFT: FORM */}
-              <section className="bg-white/90 border border-[#e6eeee] rounded-3xl shadow-[0_10px_35px_rgba(11,75,80,0.07)] p-6 md:p-7">
-                <h2 className="font-playfair text-xl md:text-2xl mb-4">
-                  Detail Pengiriman
-                </h2>
-
+            <div className="grid gap-8 md:grid-cols-[1.15fr_0.85fr]">
+              {/* FORM */}
+              <section className="bg-white border rounded-3xl shadow p-6 md:p-7">
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Nama lengkap"
-                    value={nama}
-                    onChange={(e) => setNama(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2"
-                  />
+                  <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nama lengkap"
+                    value={nama} onChange={(e) => setNama(e.target.value)} />
+                  <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nomor WhatsApp"
+                    value={hp} onChange={(e) => setHp(e.target.value)} />
 
-                  <input
-                    type="text"
-                    placeholder="Nomor WhatsApp"
-                    value={hp}
-                    onChange={(e) => setHp(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2"
-                  />
-
-                  {/* ALAMAT + AUTOCOMPLETE */}
-                  <div className="space-y-1">
-                    <input
-                      type="text"
-                      placeholder="Alamat lengkap (bisa pilih dari saran Google)"
-                      value={alamat}
-                      ref={alamatRef}
-                      onChange={(e) => setAlamat(e.target.value)}
-                      className="w-full border rounded-lg px-3 py-2"
-                    />
-                    {distanceKm && (
-                      <p className="text-[11px] text-gray-500">
-                        Perkiraan jarak:{" "}
-                        <span className="font-semibold">
-                          {distanceKm.toFixed(1)} km
-                        </span>{" "}
-                        • Ongkir:{" "}
-                        <span className="font-semibold">
-                          Rp{ongkir.toLocaleString("id-ID")}
-                        </span>
-                      </p>
-                    )}
-                  </div>
-
-                  <textarea
-                    placeholder="Catatan tambahan (opsional)… misal: patokan rumah, blok, warna pagar"
-                    value={catatan}
-                    onChange={(e) => setCatatan(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2 h-16 resize-none"
-                  />
-
-                  {/* METODE PEMBAYARAN */}
-                  <h2 className="font-playfair text-xl md:text-2xl mt-6 mb-2">
-                    Metode Pembayaran
-                  </h2>
-
-                  <div className="space-y-3 bg-[#f8fcfc] border border-[#e6eeee] rounded-2xl p-4">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="payment"
-                        value="transfer"
-                        checked={payment === "transfer"}
-                        onChange={() => setPayment("transfer")}
-                      />
-                      <span>Transfer Bank (disarankan)</span>
-                    </label>
-
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="payment"
-                        value="qris"
-                        checked={payment === "qris"}
-                        onChange={() => setPayment("qris")}
-                      />
-                      <span>QRIS</span>
-                    </label>
-
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="payment"
-                        value="cod"
-                        checked={payment === "cod"}
-                        onChange={() => setPayment("cod")}
-                      />
-                      <span>COD (Cash on Delivery)</span>
-                    </label>
-                  </div>
-
-                  {errorMsg && (
-                    <p className="text-red-500 text-sm">{errorMsg}</p>
+                  <input ref={alamatRef} className="border rounded-lg px-3 py-2 w-full"
+                    placeholder="Alamat lengkap (bisa pilih dari Google)" value={alamat}
+                    onChange={(e) => setAlamat(e.target.value)} />
+                  {distanceKm && (
+                    <p className="text-[12px] text-gray-500">
+                      Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}
+                    </p>
                   )}
 
-                  <button
-                    disabled={disabled}
-                    className="w-full bg-[#0FA3A8] text-white rounded-full py-3 font-semibold disabled:opacity-50"
-                  >
-                    {status === "submitting"
-                      ? "Memproses..."
-                      : "Buat Invoice & Lanjut WhatsApp"}
+                  <textarea className="border rounded-lg px-3 py-2 w-full h-16 resize-none"
+                    placeholder="Catatan (opsional)" value={catatan}
+                    onChange={(e) => setCatatan(e.target.value)} />
+
+                  {/* PAYMENT */}
+                  <h2 className="font-playfair text-xl mt-5 mb-1">Metode Pembayaran</h2>
+                  <div className="rounded-xl bg-[#f7fbfb] border p-4 space-y-3">
+                    {["transfer", "qris", "cod"].map((p) => (
+                      <label key={p} className="flex items-center gap-3 cursor-pointer">
+                        <input type="radio" name="payment" checked={payment === p} onChange={() => setPayment(p)} />
+                        <span className="capitalize">{p}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {errorMsg && <p className="text-red-500 text-sm">{errorMsg}</p>}
+
+                  <button disabled={disabled} className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold">
+                    {status === "submitting" ? "Memproses..." : "Buat Invoice & Lanjut WhatsApp"}
                   </button>
                 </form>
               </section>
 
-              {/* RIGHT: ORDER SUMMARY */}
-              <aside className="bg-white/95 border border-[#e1eeee] rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.04)] p-5 md:p-6 flex flex-col gap-4">
-                <h2 className="font-playfair text-lg md:text-xl mb-1">
-                  Ringkasan Pesanan
-                </h2>
-
-                <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
-                  {items.map((item: CartItemType) => (
-                    <div
-                      key={item.id}
-                      className="flex items-start justify-between gap-3 border-b border-[#edf5f5] pb-2.5"
-                    >
-                      <div>
-                        <p className="font-inter text-[14px] font-semibold">
-                          {item.name}
-                        </p>
-                        <p className="text-[12px] text-gray-500">
-                          {item.qty} x Rp
-                          {item.price.toLocaleString("id-ID")}
-                        </p>
-                      </div>
-                      <p className="font-semibold text-[14px]">
-                        Rp{(item.qty * item.price).toLocaleString("id-ID")}
-                      </p>
+              {/* RINGKASAN */}
+              <aside className="bg-white border rounded-3xl shadow p-6 flex flex-col gap-4">
+                <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
+                <div className="max-h-[260px] overflow-y-auto space-y-3 pr-1">
+                  {items.map((it) => (
+                    <div key={it.id} className="flex justify-between border-b pb-2 text-sm">
+                      <div>{it.name} — {it.qty}x</div>
+                      <div className="font-semibold">Rp{(it.qty * it.price).toLocaleString("id-ID")}</div>
                     </div>
                   ))}
                 </div>
-
-                <div className="mt-2 space-y-1 text-sm border-t border-[#e6eeee] pt-3">
-                  <div className="flex justify-between text-gray-600">
-                    <span>Subtotal</span>
-                    <span>Rp{subtotal.toLocaleString("id-ID")}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Ongkir (otomatis)</span>
-                    <span>Rp{ongkir.toLocaleString("id-ID")}</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-[#e6eeee] mt-2">
-                    <span className="font-semibold text-sm">Total Akhir</span>
-                    <span className="font-bold text-lg text-[#0B4B50]">
-                      Rp{total.toLocaleString("id-ID")}
-                    </span>
-                  </div>
+                <div className="border-t pt-3 space-y-1 text-sm">
+                  <div className="flex justify-between"><span>Subtotal</span><span>Rp{subtotal.toLocaleString("id-ID")}</span></div>
+                  <div className="flex justify-between"><span>Ongkir</span><span>Rp{ongkir.toLocaleString("id-ID")}</span></div>
+                  <div className="flex justify-between font-semibold text-lg pt-1"><span>Total</span><span>Rp{total.toLocaleString("id-ID")}</span></div>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => router.push("/#produk")}
-                  className="mt-auto text-xs text-gray-500 hover:text-[#0FA3A8] underline-offset-2 hover:underline"
-                >
-                  ← Kembali belanja dulu
-                </button>
               </aside>
             </div>
           )}
