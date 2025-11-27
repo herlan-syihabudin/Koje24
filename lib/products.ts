@@ -65,7 +65,7 @@ export const products: Product[] = [
     id: "red-vitality",
     name: "Red Vitality",
     price: 18000,
-    img: "/images/products/red-vitality.png",
+    img: "/public/product/Red-Vitality.jpg",
     color: "#C9253E",
     slogan: "Natural Strength from Within.",
     ingredients: ["Bit", "Nanas", "Apel"],
