@@ -173,7 +173,7 @@ footer > * {
   align-items: center !important;
   justify-content: center !important;
 
-  padding: 0 !important; /* FIX utama */
+  padding: 0 !important;
   pointer-events: auto !important;
 }
 
@@ -210,4 +210,37 @@ footer > * {
   .koje-modal-box {
     max-height: 80vh !important;
   }
+}
+
+/* ===========================================================
+   🔥 OPTIMASI RESPONSIVE + HILANGIN GARIS SCROLL ABU-ABU
+=========================================================== */
+
+/* Wajib: biar layout nggak sempit dan nggak overscroll ke samping */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Hilangin scrollbar tapi tetap bisa scroll */
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+body::-webkit-scrollbar-track,
+body::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+body {
+  scrollbar-width: none; /* Firefox hide */
+}
+
+/* Prevent objek bikin overflow di HP */
+img,
+video,
+iframe {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
