@@ -23,43 +23,29 @@ export default function Header() {
 
     const handleScroll = () => {
       const y = window.scrollY;
-
       setIsScrolled(y > 20);
       setShrink(y > 80);
     };
 
+    handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [menuOpen]);
 
   /* ===========================
      BODY LOCK FIX (IOS SAFE)
+     — tidak ganggu popup lainnya
   ============================ */
-  const lockBody = () => {
-    document.documentElement.style.overflow = "hidden";
-    document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.width = "100%";
-  };
-
-  const unlockBody = () => {
-    document.documentElement.style.overflow = "";
-    document.body.style.overflow = "";
-    document.body.style.position = "";
-    document.body.style.width = "";
-  };
+  const lockBody = () => document.body.classList.add("body-menu-lock");
+  const unlockBody = () => document.body.classList.remove("body-menu-lock");
 
   /* ===========================
      OPEN MENU FIX
   ============================ */
   const openMenu = () => {
     setMenuOpen(true);
-
-    requestAnimationFrame(() => {
-      setMenuAnimate(true);
-    });
-
-    window.scrollTo({ top: 0, behavior: "instant" });
+    requestAnimationFrame(() => setMenuAnimate(true));
+    window.scrollTo({ top: 0 });
     lockBody();
   };
 
@@ -69,40 +55,32 @@ export default function Header() {
   const closeMenu = () => {
     setMenuAnimate(false);
     unlockBody();
-
-    setTimeout(() => {
-      setMenuOpen(false);
-    }, 200);
+    setTimeout(() => setMenuOpen(false), 180);
   };
 
   /* ===========================
-     SCROLL TO SECTION + FIX CLOSE MODAL TESTIMONI
+     SCROLL TO SECTION
   ============================ */
-  const navClick = (href: string) => {
-    // 👇 FIX UTAMA
-    window.dispatchEvent(new CustomEvent("close-testimoni-modal"));
-
-    closeMenu();
-
-    if (href.startsWith("/")) {
-      router.push(href);
-      return;
-    }
-
-    setTimeout(() => scrollToSection(href), 240);
-  };
-
   const scrollToSection = (href: string) => {
     const target = document.querySelector(href);
     if (!target) return;
-
     const offset = shrink ? 65 : 110;
     const y = target.getBoundingClientRect().top + window.scrollY - offset;
-
     window.scrollTo({ top: y, behavior: "smooth" });
   };
 
-  /* NAV ITEMS */
+  const navClick = (href: string) => {
+    window.dispatchEvent(new CustomEvent("close-testimoni-modal"));
+    closeMenu();
+
+    if (href.startsWith("#")) {
+      setTimeout(() => scrollToSection(href), 240);
+      return;
+    }
+
+    router.push(href);
+  };
+
   const navItems = [
     { label: "Produk", href: "#produk" },
     { label: "Tentang KOJE24", href: "#about" },
@@ -194,7 +172,9 @@ export default function Header() {
           ))}
 
           <button
-            onClick={() => window.dispatchEvent(new CustomEvent("open-cart"))}
+            onClick={() =>
+              window.dispatchEvent(new CustomEvent("open-cart"))
+            }
             className="relative"
           >
             <ShoppingCart
@@ -207,7 +187,6 @@ export default function Header() {
                   : "text-white"
               }
             />
-
             {totalQty > 0 && (
               <span className="absolute -top-2 -right-2 bg-[#E8C46B] text-[#0B4B50] text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
                 {totalQty}
@@ -218,6 +197,7 @@ export default function Header() {
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
+            rel="noopener noreferrer"
             className={`
               ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm shadow-md transition-all
               ${
@@ -257,7 +237,11 @@ export default function Header() {
           className={`
             fixed inset-0 z-[300] flex flex-col items-center justify-center gap-8
             bg-white/95 backdrop-blur-xl transition-all duration-300
-            ${menuAnimate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
+            ${
+              menuAnimate
+                ? "opacity-100 translate-y-0 pointer-events-auto"
+                : "opacity-0 translate-y-4 pointer-events-none"
+            }
           `}
         >
           <button
@@ -280,6 +264,7 @@ export default function Header() {
           <a
             href="https://wa.me/6282213139580"
             target="_blank"
+            rel="noopener noreferrer"
             className="mt-10 flex items-center justify-center gap-3 px-10 py-3 bg-[#0FA3A8] text-white rounded-full text-xl hover:bg-[#0B4B50] transition-all shadow-xl"
           >
             <MessageCircle size={28} /> Chat Sekarang
