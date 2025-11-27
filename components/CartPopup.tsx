@@ -34,12 +34,16 @@ export default function CartPopup() {
 
   return (
     <div
-      className="koje-modal-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Keranjang Belanja"
-      onClick={() => setOpen(false)}
-    >
+      <div
+  className="koje-modal-overlay"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Keranjang Belanja"
+  onMouseDown={(e) => {
+    // hanya close jika klik di luar box
+    if (e.target === e.currentTarget) setOpen(false);
+  }}
+>
       <div
         className="
           koje-modal-box
