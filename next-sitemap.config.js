@@ -1,34 +1,20 @@
+// @ts-nocheck
 /** @type {import('next-sitemap').IConfig} */
-module.exports = {
-  siteUrl: "https://webkoje-cacs.vercel.app", // nanti update ke domain utama kalau sudah custom
+export default {
+  siteUrl: "https://webkoje-cacs.vercel.app", // ganti ke domain KOJE24 nanti
   generateRobotsTxt: true,
   sitemapSize: 5000,
-
-  // biar Google lebih cepat index
-  changefreq: "daily",
-  priority: 0.8,
-
-  // halaman yang tidak boleh masuk sitemap (keamanan + UX)
+  changefreq: "weekly",
+  priority: 0.7,
   exclude: [
-    "/checkout",
     "/invoice/*",
+    "/checkout",
     "/api/*",
-    "/pusat-bantuan/*", // dynamic content agar tidak spam index
   ],
-
-  // konfigurasi tambahan robots.txt
   robotsTxtOptions: {
     policies: [
-      {
-        userAgent: "*",
-        allow: "/",
-        disallow: ["/checkout", "/invoice", "/api"],
-      },
+      { userAgent: "*", allow: "/" },
+      { userAgent: "*", disallow: ["/invoice/", "/checkout", "/api/"] },
     ],
   },
-
-  // opsional — include gambar di sitemap (SEO booster)
-  additionalSitemaps: [
-    "https://webkoje-cacs.vercel.app/sitemap.xml",
-  ],
 };
