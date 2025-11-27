@@ -5,12 +5,16 @@ import { persist, createJSONStorage } from "zustand/middleware"
 type StatsState = {
   orders: Record<string, number>
   addOrder: (id: string, qty: number) => void
+
+  // 🔥 Utility opsional — tidak ubah logic
+  getOrderCount: (id: string) => number
 }
 
 export const useStatsStore = create<StatsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       orders: {},
+
       addOrder: (id, qty) =>
         set((state) => ({
           orders: {
@@ -18,10 +22,12 @@ export const useStatsStore = create<StatsState>()(
             [id]: (state.orders[id] || 0) + qty,
           },
         })),
+
+      // 🔥 Utility aman
+      getOrderCount: (id) => get().orders[id] || 0,
     }),
     {
       name: "koje-stats",
-      // ✅ sama pattern dengan cart, aman untuk SSR
       storage:
         typeof window !== "undefined"
           ? createJSONStorage(() => localStorage)
