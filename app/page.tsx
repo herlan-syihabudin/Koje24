@@ -8,7 +8,6 @@ import SubscriptionSection from "@/components/SubscriptionSection"
 import TestimoniCarousel from "@/components/TestimoniCarousel"
 import FaqSection from "@/components/FaqSection"
 import Footer from "@/components/Footer"
-import StickyCartBar from "@/components/StickyCartBar"
 import CartPopup from "@/components/CartPopup"
 import PackagePopup from "@/components/PackagePopup"
 import PackagesSection from "@/components/PackagesSection"
@@ -16,7 +15,7 @@ import RatingPopup from "@/components/RatingPopup"
 
 export default function HomePage() {
   return (
-    <main>
+    <main role="main" aria-label="KOJE24 - Natural Cold-Pressed Juice">
 
       <Header />
       <Hero />
@@ -57,8 +56,6 @@ export default function HomePage() {
       <CartPopup />
       <PackagePopup />
       <RatingPopup />
-
-      <StickyCartBar />
 
     </main>
   )
