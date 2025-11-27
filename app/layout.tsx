@@ -42,6 +42,8 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+
+  // 🔥 Open Graph — buat share WhatsApp/FB/IG keren
   openGraph: {
     title: "KOJE24 • Natural Cold-Pressed Juice",
     description:
@@ -60,7 +62,7 @@ export const metadata: Metadata = {
   },
 };
 
-// === THEME COLOR via viewport
+// === THEME COLOR via viewport (tanpa warning Next 16)
 export const viewport: Viewport = {
   themeColor: "#0FA3A8",
 };
@@ -73,6 +75,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <head>
+        {/* ⚡ Percepat loading font */}
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
       </head>
@@ -82,9 +85,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {children}
         </CartProvider>
 
+        {/* Speed Insights */}
         <SpeedInsights />
+
+        {/* Sticky Cart Bar */}
         <StickyCartBar />
 
+        {/* Smooth scroll fallback */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -93,6 +100,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         />
 
+        {/* 🔥 JSON-LD Structured Data (SEO PREMIUM - no effect UI) */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
