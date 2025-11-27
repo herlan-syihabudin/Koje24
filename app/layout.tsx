@@ -68,6 +68,15 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  // 🔥 Listener tombol Checkout dari CartPopup
+useEffect(() => {
+  const goCheckout = () => {
+    window.location.href = "/checkout"; // menuju halaman checkout
+  };
+  window.addEventListener("open-checkout", goCheckout);
+  return () => window.removeEventListener("open-checkout", goCheckout);
+}, []);
+
   return (
     <html
       lang="id"
