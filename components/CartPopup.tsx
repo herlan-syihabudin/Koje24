@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 
@@ -8,29 +8,26 @@ export default function CartPopup() {
   const { items, totalQty, totalPrice, addItem, removeItem, clearCart } =
     useCartStore();
 
+  const [open, setOpen] = useState(false);
+
   // === EVENT BUKA / TUTUP POPUP ===
   useEffect(() => {
-    const open = () => setOpen(true);
-    const close = () => setOpen(false);
+    const openEvent = () => setOpen(true);
+    const closeEvent = () => setOpen(false);
 
-    window.addEventListener("open-cart", open);
-    window.addEventListener("close-cart", close);
+    window.addEventListener("open-cart", openEvent);
+    window.addEventListener("close-cart", closeEvent);
 
     return () => {
-      window.removeEventListener("open-cart", open);
-      window.removeEventListener("close-cart", close);
+      window.removeEventListener("open-cart", openEvent);
+      window.removeEventListener("close-cart", closeEvent);
     };
   }, []);
 
-  const [open, setOpen] = useState(false);
-
-  // Body lock SAFE (tidak ganggu cart scroll)
+  // Body lock SAFE (tidak ganggu scroll cart)
   useEffect(() => {
-    if (open) {
-      document.body.classList.add("body-cart-lock");
-    } else {
-      document.body.classList.remove("body-cart-lock");
-    }
+    if (open) document.body.classList.add("body-cart-lock");
+    else document.body.classList.remove("body-cart-lock");
   }, [open]);
 
   if (!open) return null;
@@ -45,21 +42,16 @@ export default function CartPopup() {
     >
       <div
         className="
-          koje-modal-box hide-scroll
+          koje-modal-box
           max-h-[85vh] w-[92%] sm:w-[420px]
-          overflow-y-auto
+          overflow-y-auto smooth-scroll
         "
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
         <div className="flex justify-between items-center p-5 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-[#0B4B50]">
-            Keranjang Belanja
-          </h2>
-          <button
-            aria-label="Tutup keranjang"
-            onClick={() => setOpen(false)}
-          >
+          <h2 className="text-xl font-semibold text-[#0B4B50]">Keranjang Belanja</h2>
+          <button aria-label="Tutup keranjang" onClick={() => setOpen(false)}>
             <X className="text-[#0B4B50]" size={26} />
           </button>
         </div>
@@ -67,9 +59,7 @@ export default function CartPopup() {
         {/* LIST PRODUK */}
         <div className="divide-y divide-gray-200 px-5">
           {items.length === 0 && (
-            <p className="py-10 text-center text-gray-500">
-              Keranjang kosong
-            </p>
+            <p className="py-10 text-center text-gray-500">Keranjang kosong</p>
           )}
 
           {items.map((item) => (
@@ -80,6 +70,7 @@ export default function CartPopup() {
                 loading="lazy"
                 className="w-16 h-16 rounded-md object-cover"
               />
+
               <div className="flex-1">
                 <p className="font-medium text-[#0B4B50]">{item.name}</p>
                 <p className="text-sm text-gray-500">
@@ -95,9 +86,11 @@ export default function CartPopup() {
                   >
                     -
                   </button>
+
                   <span className="min-w-[26px] text-center font-semibold">
                     {item.qty}
                   </span>
+
                   <button
                     aria-label="Tambah jumlah"
                     onClick={() =>
