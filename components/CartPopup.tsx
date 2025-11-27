@@ -22,7 +22,7 @@ export default function CartPopup() {
     };
   }, []);
 
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
 
   // Body lock SAFE (tidak ganggu cart scroll)
   useEffect(() => {
