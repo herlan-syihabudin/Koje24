@@ -15,7 +15,7 @@ export const products: Product[] = [
     id: "golden-detox",
     name: "Golden Detox",
     price: 18000,
-    img: "/image/product/Golden-detox.JPG",
+    img: "/product/Golden-detox.JPG",
     color: "#F4B940",
     slogan: "Clean Your Body, Boost Your Day.",
     ingredients: ["Kunyit", "Wortel", "Jahe", "Jeruk", "Lemon"],
