@@ -34,7 +34,6 @@ export default function CartPopup() {
 
   return (
     <div
-      <div
   className="koje-modal-overlay"
   role="dialog"
   aria-modal="true"
