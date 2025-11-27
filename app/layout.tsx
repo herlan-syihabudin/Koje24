@@ -5,6 +5,8 @@ import { Inter, Playfair_Display } from "next/font/google";
 import { CartProvider } from "@/components/CartContext";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import StickyCartBar from "@/components/StickyCartBar";
+import { useEffect } from "react";
+
 
 // === FONTS ===
 const inter = Inter({
