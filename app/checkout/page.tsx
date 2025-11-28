@@ -61,13 +61,18 @@ export default function CheckoutPage() {
   const [hp, setHp] = useState("");
   const [alamat, setAlamat] = useState("");
   const [catatan, setCatatan] = useState("");
-  const [payment, setPayment] = useState("transfer");
+  const [payment, setPayment] = useState<"transfer" | "qris" | "cod">(
+    "transfer"
+  );
   const [status, setStatus] = useState<CheckoutState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [ongkir, setOngkir] = useState<number>(15000);
   const alamatRef = useRef<HTMLInputElement | null>(null);
+
+  // 🧾 Bukti pembayaran (baru ditambah)
+  const [buktiBayarFile, setBuktiBayarFile] = useState<File | null>(null);
 
   const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0);
   const total = subtotal + (items.length > 0 ? ongkir : 0);
@@ -135,6 +140,14 @@ export default function CheckoutPage() {
       return;
     }
 
+    // 💡 VALIDASI WAJIB: bukti bayar untuk transfer / qris
+    if (["transfer", "qris"].includes(payment) && !buktiBayarFile) {
+      setErrorMsg(
+        "Upload Bukti Pembayaran (Transfer / QRIS) dulu ya sebelum submit 🙏"
+      );
+      return;
+    }
+
     try {
       setStatus("submitting");
       setErrorMsg("");
@@ -146,6 +159,10 @@ export default function CheckoutPage() {
         price: x.price,
       }));
 
+      // ⚠️ STEP SEKARANG: buktiBayarFile BELUM DIUPLOAD ke server
+      // Nanti di step berikutnya kita buat /api/upload-bukti
+      // dan di sini kita kirim file tersebut, lalu dapatkan URL-nya.
+
       const res = await fetch("/api/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -155,6 +172,7 @@ export default function CheckoutPage() {
           alamat,
           note: catatan,
           payment,
+          // buktiPembayaran: buktiUrl, // ⬅️ ini nanti diisi setelah API upload siap
           cart: cartMapped,
           distanceKm,
           shippingCost: ongkir,
@@ -166,7 +184,7 @@ export default function CheckoutPage() {
       if (!res.ok || !data?.success)
         throw new Error(data?.message || "Gagal membuat invoice");
 
-      // kirim WA async (tidak menghambat redirect)
+      // kirim WA async (tidak menghambat redirect) — FUNGSI LAMA TETAP JALAN
       fetch("/api/whatsapp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -229,13 +247,13 @@ export default function CheckoutPage() {
               <section className="bg-white border rounded-3xl shadow p-6 md:p-7">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <input
-                    className="border rounded-lg px-3 py-2 w-full"
+                    className="border rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]/60"
                     placeholder="Nama lengkap"
                     value={nama}
                     onChange={(e) => setNama(e.target.value)}
                   />
                   <input
-                    className="border rounded-lg px-3 py-2 w-full"
+                    className="border rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]/60"
                     placeholder="Nomor WhatsApp"
                     value={hp}
                     onChange={(e) => setHp(e.target.value)}
@@ -243,7 +261,7 @@ export default function CheckoutPage() {
 
                   <input
                     ref={alamatRef}
-                    className="border rounded-lg px-3 py-2 w-full"
+                    className="border rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]/60"
                     placeholder="Alamat lengkap (bisa pilih dari Google)"
                     value={alamat}
                     onChange={(e) => setAlamat(e.target.value)}
@@ -256,7 +274,7 @@ export default function CheckoutPage() {
                   )}
 
                   <textarea
-                    className="border rounded-lg px-3 py-2 w-full h-16 resize-none"
+                    className="border rounded-lg px-3 py-2 w-full h-16 resize-none focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]/60"
                     placeholder="Catatan (opsional)"
                     value={catatan}
                     onChange={(e) => setCatatan(e.target.value)}
@@ -267,33 +285,68 @@ export default function CheckoutPage() {
                     Metode Pembayaran
                   </h2>
                   <div className="rounded-xl bg-[#f7fbfb] border p-4 space-y-3">
-                    {["transfer", "qris", "cod"].map((p) => (
+                    {(["transfer", "qris", "cod"] as const).map((p) => (
                       <label
                         key={p}
-                        className="flex items-center gap-3 cursor-pointer"
+                        className={`flex items-center justify-between gap-3 cursor-pointer rounded-lg px-3 py-2 ${
+                          payment === p
+                            ? "bg-white border border-[#0FA3A8]"
+                            : "border border-transparent"
+                        }`}
                       >
-                        <input
-                          type="radio"
-                          name="payment"
-                          checked={payment === p}
-                          onChange={() => setPayment(p)}
-                        />
-                        <span className="capitalize">{p}</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="payment"
+                            checked={payment === p}
+                            onChange={() => {
+                              setPayment(p);
+                              setBuktiBayarFile(null); // reset bukti saat ganti metode
+                            }}
+                          />
+                          <span className="capitalize">
+                            {p === "cod" ? "COD (Bayar di tempat)" : p}
+                          </span>
+                        </div>
                       </label>
                     ))}
+
+                    {/* UPLOAD BUKTI BAYAR → WAJIB untuk transfer / qris */}
+                    {["transfer", "qris"].includes(payment) && (
+                      <div className="mt-3">
+                        <label className="block text-sm font-medium text-[#0B4B50] mb-1">
+                          Upload Bukti Pembayaran (Transfer / QRIS)
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) =>
+                            setBuktiBayarFile(
+                              e.target.files?.[0] ? e.target.files[0] : null
+                            )
+                          }
+                          className="border rounded-lg px-3 py-2 w-full text-sm cursor-pointer bg-white"
+                        />
+                        {buktiBayarFile && (
+                          <p className="text-[11px] mt-1 text-gray-500">
+                            File: {buktiBayarFile.name}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {errorMsg && (
-                    <p className="text-red-500 text-sm">{errorMsg}</p>
+                    <p className="text-red-500 text-sm pt-1">{errorMsg}</p>
                   )}
 
                   <button
-                    disabled={disabled}
-                    className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold disabled:opacity-50"
+                    disabled= {disabled}
+                    className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                   >
                     {status === "submitting"
-                      ? "Memproses..."
-                      : "Buat Invoice & Lanjut WhatsApp"}
+                      ? "Memproses pesanan..."
+                      : "Buat Pesanan"}
                   </button>
                 </form>
               </section>
@@ -305,12 +358,18 @@ export default function CheckoutPage() {
                   {items.map((it) => (
                     <div
                       key={it.id}
-                      className="flex justify-between border-b pb-2 text-sm"
+                      className="flex justify-between items-start border-b pb-2 text-sm gap-3"
                     >
-                      <div>
-                        {it.name} — {it.qty}x
+                      <div className="flex-1">
+                        <p className="font-medium text-[#0B4B50]">
+                          {it.name}
+                        </p>
+                        <p className="text-[12px] text-gray-500">
+                          {it.qty}x • Rp
+                          {it.price.toLocaleString("id-ID")} / pcs
+                        </p>
                       </div>
-                      <div className="font-semibold">
+                      <div className="font-semibold whitespace-nowrap">
                         Rp{(it.qty * it.price).toLocaleString("id-ID")}
                       </div>
                     </div>
@@ -327,9 +386,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between font-semibold text-lg pt-1">
                     <span>Total</span>
-                    <span>
-                      Rp{total.toLocaleString("id-ID")}
-                    </span>
+                    <span>Rp{total.toLocaleString("id-ID")}</span>
                   </div>
                 </div>
               </aside>
