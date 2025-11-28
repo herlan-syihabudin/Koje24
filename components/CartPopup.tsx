@@ -89,13 +89,14 @@ export default function CartPopup() {
 
               {/* INFO PRODUK */}
               <div className="flex-1 flex flex-col">
-                <div className="flex justify-between items-start">
-                  <p className="font-semibold text-[#0B4B50]">{item.name}</p>
-                  <p className="font-semibold text-[#0B4B50]">
-                    Rp {(item.price * item.qty).toLocaleString("id-ID")}
-                  </p>
-                </div>
-
+                <div className="flex items-start justify-between gap-2">
+  <p className="font-semibold text-[#0B4B50] max-w-[65%] leading-snug">
+    {item.name}
+  </p>
+  <p className="font-semibold text-[#0B4B50] whitespace-nowrap">
+    Rp {(item.price * item.qty).toLocaleString("id-ID")}
+  </p>
+</div>
                 <div className="flex justify-between items-center mt-1">
                   <p className="text-sm text-gray-500">
                     Rp {item.price.toLocaleString("id-ID")} / pcs
