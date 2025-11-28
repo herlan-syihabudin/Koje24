@@ -39,6 +39,16 @@ export default function CartPopup() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // 💡 Format nama paket detox
+  const formatName = (name: string) => {
+    const match = name.match(/^(.*?) — \[(.*)\]$/);
+    if (!match) return { title: name, detail: null };
+
+    const title = match[1];
+    const items = match[2].replace(/, /g, " • ");
+    return { title, detail: items };
+  };
+
   // JIKA POPUP TERTUTUP → JANGAN RENDER
   if (!open) return null;
 
@@ -77,62 +87,75 @@ export default function CartPopup() {
             <p className="py-10 text-center text-gray-500">Keranjang kosong</p>
           )}
 
-          {items.map((item) => (
-            <div key={item.id} className="flex gap-3 py-4 items-center">
-              {/* FOTO */}
-              <img
-                src={item.img}
-                alt={item.name}
-                loading="lazy"
-                className="w-14 h-14 rounded-md object-cover"
-              />
+          {items.map((item) => {
+            const { title, detail } = formatName(item.name);
 
-              {/* INFO PRODUK */}
-              <div className="flex-1 flex flex-col">
-                <div className="flex items-start justify-between gap-2">
-  <p className="font-semibold text-[#0B4B50] max-w-[65%] leading-snug">
-    {item.name}
-  </p>
-  <p className="font-semibold text-[#0B4B50] whitespace-nowrap">
-    Rp {(item.price * item.qty).toLocaleString("id-ID")}
-  </p>
-</div>
-                <div className="flex justify-between items-center mt-1">
-                  <p className="text-sm text-gray-500">
-                    Rp {item.price.toLocaleString("id-ID")} / pcs
-                  </p>
+            return (
+              <div key={item.id} className="flex gap-3 py-4 items-center">
+                {/* FOTO */}
+                <img
+                  src={item.img || "/images/no-image.jpg"}
+                  alt={item.name}
+                  loading="lazy"
+                  className="w-14 h-14 rounded-md object-cover"
+                />
 
-                  {/* QTY BUTTON */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => removeItem(item.id)}
-                      className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-400 text-gray-600"
-                    >
-                      -
-                    </button>
+                {/* INFO PRODUK */}
+                <div className="flex-1 flex flex-col">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="max-w-[65%]">
+                      <p className="font-semibold text-[#0B4B50] leading-snug">
+                        {title}
+                      </p>
+                      {detail && (
+                        <p className="text-xs text-gray-500 leading-tight mt-0.5">
+                          {detail}
+                        </p>
+                      )}
+                    </div>
 
-                    <span className="min-w-[24px] text-center font-semibold">
-                      {item.qty}
-                    </span>
+                    <p className="font-semibold text-[#0B4B50] whitespace-nowrap">
+                      Rp {(item.price * item.qty).toLocaleString("id-ID")}
+                    </p>
+                  </div>
 
-                    <button
-                      onClick={() =>
-                        addItem({
-                          id: item.id,
-                          name: item.name,
-                          price: item.price,
-                          img: item.img,
-                        })
-                      }
-                      className="w-7 h-7 flex items-center justify-center rounded-full bg-[#0FA3A8] text-white"
-                    >
-                      +
-                    </button>
+                  <div className="flex justify-between items-center mt-1">
+                    <p className="text-sm text-gray-500">
+                      Rp {item.price.toLocaleString("id-ID")} / pcs
+                    </p>
+
+                    {/* QTY BUTTON */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-400 text-gray-600"
+                      >
+                        -
+                      </button>
+
+                      <span className="min-w-[24px] text-center font-semibold">
+                        {item.qty}
+                      </span>
+
+                      <button
+                        onClick={() =>
+                          addItem({
+                            id: item.id,
+                            name: item.name,
+                            price: item.price,
+                            img: item.img,
+                          })
+                        }
+                        className="w-7 h-7 flex items-center justify-center rounded-full bg-[#0FA3A8] text-white"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* FOOTER */}
