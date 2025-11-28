@@ -66,52 +66,60 @@ export default function CartPopup() {
           )}
 
           {items.map((item) => (
-            <div key={item.id} className="flex items-center gap-3 py-4">
-              <img
-                src={item.img}
-                alt={item.name}
-                loading="lazy"
-                className="w-16 h-16 rounded-md object-cover"
-              />
+  <div key={item.id} className="flex gap-3 py-4 items-center">
+    {/* FOTO */}
+    <img
+      src={item.img}
+      alt={item.name}
+      loading="lazy"
+      className="w-14 h-14 rounded-md object-cover"
+    />
 
-              <div className="flex-1">
-                <p className="font-medium text-[#0B4B50]">{item.name}</p>
-                <p className="text-sm text-gray-500">
-                  Rp {item.price.toLocaleString("id-ID")}
-                </p>
+    {/* INFO PRODUK */}
+    <div className="flex-1 flex flex-col">
+      <div className="flex justify-between items-start">
+        <p className="font-semibold text-[#0B4B50]">{item.name}</p>
+        <p className="font-semibold text-[#0B4B50]">
+          Rp {(item.price * item.qty).toLocaleString("id-ID")}
+        </p>
+      </div>
 
-                {/* QTY */}
-                <div className="flex items-center gap-2 mt-2">
-                  <button
-                    aria-label="Kurangi jumlah"
-                    onClick={() => removeItem(item.id)}
-                    className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-400 text-gray-600"
-                  >
-                    -
-                  </button>
+      <div className="flex justify-between items-center mt-1">
+        <p className="text-sm text-gray-500">
+          Rp {item.price.toLocaleString("id-ID")} / pcs
+        </p>
 
-                  <span className="min-w-[26px] text-center font-semibold">
-                    {item.qty}
-                  </span>
+        {/* QTY BUTTON */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => removeItem(item.id)}
+            className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-400 text-gray-600"
+          >
+            -
+          </button>
 
-                  <button
-                    aria-label="Tambah jumlah"
-                    onClick={() =>
-                      addItem({
-                        id: item.id,
-                        name: item.name,
-                        price: item.price,
-                        img: item.img,
-                      })
-                    }
-                    className="w-7 h-7 flex items-center justify-center rounded-full bg-[#0FA3A8] text-white"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+          <span className="min-w-[24px] text-center font-semibold">
+            {item.qty}
+          </span>
+
+          <button
+            onClick={() =>
+              addItem({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                img: item.img,
+              })
+            }
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-[#0FA3A8] text-white"
+          >
+            +
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+))}
         </div>
 
         {/* FOOTER */}
