@@ -100,35 +100,43 @@ export default function CheckoutPage() {
     }
   }, [items.length, hydrated, router]);
 
-  // Google autocomplete
-  useEffect(() => {
-    if (!alamatRef.current) return;
-    const w = window as any;
-    if (!w.google?.maps?.places) return;
+  // Google autocomplete — versi stabil
+useEffect(() => {
+  if (!alamatRef.current) return;
 
-    try {
-      const auto = new google.maps.places.Autocomplete(alamatRef.current, {
-        componentRestrictions: { country: "id" },
-        fields: ["formatted_address", "geometry"],
-      });
+  const w = window as any;
+  if (!w.google?.maps?.places) return;
 
-      auto.addListener("place_changed", () => {
-        const place = auto.getPlace();
-        if (!place?.geometry?.location) return;
+  try {
+    const auto = new google.maps.places.Autocomplete(alamatRef.current, {
+      componentRestrictions: { country: "id" },
+    });
 
-        const destLat = place.geometry.location.lat();
-        const destLng = place.geometry.location.lng();
-        const dKm = haversineDistance(BASE_LAT, BASE_LNG, destLat, destLng);
-        const ship = calcOngkir(dKm);
+    // pastikan formatted_address + geometry terbaca
+    auto.setFields(["formatted_address", "geometry"]);
 
-        setDistanceKm(dKm);
-        setOngkir(ship);
-        setAlamat(place.formatted_address || alamatRef.current?.value || "");
-      });
-    } catch (e) {
-      console.error("Error init Google Autocomplete:", e);
-    }
-  }, []);
+    auto.addListener("place_changed", () => {
+      const place = auto.getPlace();
+      if (!place || !place.geometry?.location) return;
+
+      const destLat = place.geometry.location.lat();
+      const destLng = place.geometry.location.lng();
+
+      const dKm = haversineDistance(BASE_LAT, BASE_LNG, destLat, destLng);
+      const ship = calcOngkir(dKm);
+
+      setDistanceKm(dKm);
+      setOngkir(ship);
+
+      // ambil alamat dari Google, bukan dari input
+      if (place.formatted_address) {
+        setAlamat(place.formatted_address);
+      }
+    });
+  } catch (err) {
+    console.error("Autocomplete init error:", err);
+  }
+}, []);
 
   // SUBMIT
   const handleSubmit = async (e: React.FormEvent) => {
