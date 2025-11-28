@@ -24,36 +24,48 @@ export default function CartPopup() {
     };
   }, []);
 
-  // Body lock SAFE (tidak ganggu scroll cart)
+  // === LOCK SCROLL BODY SAAT POPUP ===
   useEffect(() => {
     if (open) document.body.classList.add("body-cart-lock");
     else document.body.classList.remove("body-cart-lock");
   }, [open]);
 
+  // === CLOSE VIA ESC BUTTON ===
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // JIKA POPUP TERTUTUP → JANGAN RENDER
   if (!open) return null;
 
   return (
     <div
-  className="koje-modal-overlay"
-  role="dialog"
-  aria-modal="true"
-  aria-label="Keranjang Belanja"
-  onMouseDown={(e) => {
-    // hanya close jika klik di luar box
-    if (e.target === e.currentTarget) setOpen(false);
-  }}
->
+      className="koje-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Keranjang Belanja"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) setOpen(false);
+      }}
+    >
       <div
         className="
           koje-modal-box
-          max-h-[85vh] w-[92%] sm:w-[420px]
+          w-[92%] sm:w-[420px] max-w-[480px]
+          max-h-[85vh]
           overflow-y-auto smooth-scroll
         "
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
         <div className="flex justify-between items-center p-5 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-[#0B4B50]">Keranjang Belanja</h2>
+          <h2 className="text-xl font-semibold text-[#0B4B50]">
+            Keranjang Belanja
+          </h2>
           <button aria-label="Tutup keranjang" onClick={() => setOpen(false)}>
             <X className="text-[#0B4B50]" size={26} />
           </button>
@@ -66,60 +78,60 @@ export default function CartPopup() {
           )}
 
           {items.map((item) => (
-  <div key={item.id} className="flex gap-3 py-4 items-center">
-    {/* FOTO */}
-    <img
-      src={item.img}
-      alt={item.name}
-      loading="lazy"
-      className="w-14 h-14 rounded-md object-cover"
-    />
+            <div key={item.id} className="flex gap-3 py-4 items-center">
+              {/* FOTO */}
+              <img
+                src={item.img}
+                alt={item.name}
+                loading="lazy"
+                className="w-14 h-14 rounded-md object-cover"
+              />
 
-    {/* INFO PRODUK */}
-    <div className="flex-1 flex flex-col">
-      <div className="flex justify-between items-start">
-        <p className="font-semibold text-[#0B4B50]">{item.name}</p>
-        <p className="font-semibold text-[#0B4B50]">
-          Rp {(item.price * item.qty).toLocaleString("id-ID")}
-        </p>
-      </div>
+              {/* INFO PRODUK */}
+              <div className="flex-1 flex flex-col">
+                <div className="flex justify-between items-start">
+                  <p className="font-semibold text-[#0B4B50]">{item.name}</p>
+                  <p className="font-semibold text-[#0B4B50]">
+                    Rp {(item.price * item.qty).toLocaleString("id-ID")}
+                  </p>
+                </div>
 
-      <div className="flex justify-between items-center mt-1">
-        <p className="text-sm text-gray-500">
-          Rp {item.price.toLocaleString("id-ID")} / pcs
-        </p>
+                <div className="flex justify-between items-center mt-1">
+                  <p className="text-sm text-gray-500">
+                    Rp {item.price.toLocaleString("id-ID")} / pcs
+                  </p>
 
-        {/* QTY BUTTON */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => removeItem(item.id)}
-            className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-400 text-gray-600"
-          >
-            -
-          </button>
+                  {/* QTY BUTTON */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => removeItem(item.id)}
+                      className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-400 text-gray-600"
+                    >
+                      -
+                    </button>
 
-          <span className="min-w-[24px] text-center font-semibold">
-            {item.qty}
-          </span>
+                    <span className="min-w-[24px] text-center font-semibold">
+                      {item.qty}
+                    </span>
 
-          <button
-            onClick={() =>
-              addItem({
-                id: item.id,
-                name: item.name,
-                price: item.price,
-                img: item.img,
-              })
-            }
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-[#0FA3A8] text-white"
-          >
-            +
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-))}
+                    <button
+                      onClick={() =>
+                        addItem({
+                          id: item.id,
+                          name: item.name,
+                          price: item.price,
+                          img: item.img,
+                        })
+                      }
+                      className="w-7 h-7 flex items-center justify-center rounded-full bg-[#0FA3A8] text-white"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* FOOTER */}
