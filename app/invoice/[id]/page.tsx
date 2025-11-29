@@ -5,6 +5,7 @@ export const viewport = {
   themeColor: "#0FA3A8",
 }
 
+// 🔐 ENV
 const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? ""
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? ""
 const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
@@ -13,100 +14,79 @@ const PRIVATE_KEY = PRIVATE_KEY_RAW
   .replace(/\\n/g, "\n")
   .replace(/\\\\n/g, "\n")
 
+// CS & Footer
 const KONTAK_CS = "6282213139580"
+
+// helper normalize
 const normalize = (v: any) => String(v || "").trim()
 
-/* =====================================================================
-   🔍 DEBUG MODE — supaya kelihatan dimana error
-===================================================================== */
-const DEBUG = true
+// 🟣 LOG DEBUG (aman di production, tidak crash)
 function logDebug(...args: any[]) {
-  if (DEBUG) console.log("🟢 [INVOICE DEBUG]", ...args)
-}
-function logError(...args: any[]) {
-  console.error("🔴 [INVOICE ERROR]", ...args)
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[INVOICE]", ...args)
+  }
 }
 
-/* =====================================================================
-   🔥 GET ORDER
-===================================================================== */
+/* ==============================================================================
+   🔥 GET ORDER FROM GOOGLE SHEET — FULL SUPPORT MULTI ROW & URL SAFE
+============================================================================== */
 async function getOrder(invoiceId: string) {
-  logDebug("Menerima invoiceId:", invoiceId)
+  const clean = normalize(invoiceId)
+  if (!clean) return null
 
   if (!SHEET_ID || !PRIVATE_KEY || !CLIENT_EMAIL) {
-    logError("ENV tidak lengkap", {
-      SHEET_ID_EXISTS: !!SHEET_ID,
-      CLIENT_EMAIL_EXISTS: !!CLIENT_EMAIL,
-      PRIVATE_KEY_EXISTS: !!PRIVATE_KEY,
-    })
+    console.error("❌ ENV Google Sheet belum lengkap")
     return null
   }
 
-  let auth
-  try {
-    auth = new google.auth.JWT({
-      email: CLIENT_EMAIL,
-      key: PRIVATE_KEY,
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    })
-  } catch (e) {
-    logError("Gagal inisialisasi auth:", e)
-    return null
-  }
+  const auth = new google.auth.JWT({
+    email: CLIENT_EMAIL,
+    key: PRIVATE_KEY,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  })
 
   const sheets = google.sheets({ version: "v4", auth })
-
-  let res: any
-  try {
-    res = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: "Sheet1!A:M",
-    })
-    logDebug("Berhasil fetch sheet")
-  } catch (e) {
-    logError("Gagal fetch sheet:", e)
-    return null
-  }
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: "Sheet1!A:M",
+  })
 
   const allRows = res.data.values || []
-  logDebug("Jumlah total rows:", allRows.length)
+  const rows = allRows.slice(1) // skip header
 
-  if (allRows.length <= 1) {
-    logError("Sheet kosong atau tidak terbaca")
-    return null
-  }
+  logDebug("Total row ditemukan:", rows.length)
+  logDebug("Mencari invoice:", clean)
 
-  const rows = allRows.slice(1)
-  logDebug("Mencari invoice yang cocok:", invoiceId)
-
-  const sameInvoice = rows.filter((r) => {
+  // ⛳ FIX TypeScript + Matching URL/ID
+  const sameInvoice = rows.filter((r: string[]) => {
     const colInvoice = normalize(r[1])
     const colUrl = normalize(r[12])
     return (
-      colInvoice === invoiceId ||
-      colUrl.endsWith(invoiceId) ||
-      colUrl.includes(`/invoice/${invoiceId}`) ||
-      colUrl.includes(invoiceId)
+      colInvoice === clean ||
+      colUrl.endsWith(clean) ||
+      colUrl.includes(`/invoice/${clean}`) ||
+      colUrl.includes(clean)
     )
   })
 
-  logDebug("Jumlah baris match:", sameInvoice.length)
+  logDebug("Baris match:", sameInvoice.length)
 
-  if (sameInvoice.length === 0) {
-    logError("Invoice tidak ditemukan:", invoiceId)
-    return null
-  }
+  if (sameInvoice.length === 0) return null
 
   const first = sameInvoice[0]
 
-  const produkList = sameInvoice.map((r) => ({
-    nama: r[5] || "",
-    qty: Number(r[6] || 0),
-    subtotal: Number(r[7] || 0),
-  }))
+  const produkList = sameInvoice.map((r: string[]) => {
+    const qty = Number(r[6] || 0)
+    const subtotal = Number(r[7] || 0)
+    return {
+      nama: r[5] || "",
+      qty,
+      subtotal,
+    }
+  })
 
-  const subtotal = produkList.reduce((s, p) => s + p.subtotal, 0)
   const qtyTotal = produkList.reduce((s, p) => s + p.qty, 0)
+  const subtotal = produkList.reduce((s, p) => s + p.subtotal, 0)
   const ongkir = Number(first[10] || 0)
   const grandTotal = subtotal + ongkir
 
@@ -128,16 +108,32 @@ async function getOrder(invoiceId: string) {
   }
 }
 
-/* =====================================================================
-   UI
-===================================================================== */
+/* ==============================================================================
+   💠 STATUS BADGE COLOR
+============================================================================== */
+function getStatusColor(status: string) {
+  switch (status.toLowerCase()) {
+    case "pending":
+      return "bg-amber-50 text-amber-700 border border-amber-300"
+    case "paid":
+    case "lunas":
+      return "bg-emerald-50 text-emerald-700 border border-emerald-300"
+    case "cod":
+      return "bg-blue-50 text-blue-700 border border-blue-300"
+    default:
+      return "bg-gray-50 text-gray-700 border border-gray-300"
+  }
+}
+
+/* ==============================================================================
+   🔥 PAGE UI
+============================================================================== */
 export default async function InvoicePage({ params }: { params: { id: string } }) {
   const rawId = params?.id || ""
-  const id = normalize(rawId).replace(/(%0A|[\n\r\t\s]|\?.*)/g, "")
+  const id = normalize(rawId)
+  const safeId = id.replace(/(%0A|[\n\r\t\s]|\?.*)/g, "")
 
-  logDebug("Processing page for:", id)
-
-  const data = await getOrder(id)
+  const data = await getOrder(safeId)
 
   if (!data) {
     return (
@@ -149,19 +145,11 @@ export default async function InvoicePage({ params }: { params: { id: string } }
     )
   }
 
-  const badgeColor = {
-    pending: "bg-amber-50 text-amber-700 border border-amber-300",
-    paid: "bg-emerald-50 text-emerald-700 border border-emerald-300",
-    lunas: "bg-emerald-50 text-emerald-700 border border-emerald-300",
-    cod: "bg-blue-50 text-blue-700 border border-blue-300",
-  }
-
-  const badge = badgeColor[data.status.toLowerCase()] ?? "bg-gray-50 text-gray-700 border border-gray-300"
+  const statusClasses = getStatusColor(data.status)
 
   return (
     <main className="min-h-screen bg-[#F4FAFA] flex justify-center py-6 px-3 print:bg-white">
       <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl border border-slate-200 overflow-hidden print:shadow-none print:rounded-none print:border-none">
-
         {/* HEADER */}
         <div className="flex justify-between items-start border-b border-slate-200 px-6 py-4">
           <div>
@@ -205,7 +193,9 @@ export default async function InvoicePage({ params }: { params: { id: string } }
             <p className="text-lg font-extrabold tracking-wide text-[#0B4B50]">
               {data.invoiceId}
             </p>
-            <p className={`inline-block mt-2 px-2 py-1 rounded-md text-[10px] font-bold ${badge}`}>
+            <p
+              className={`inline-block mt-2 px-2 py-1 rounded-md text-[10px] font-bold ${statusClasses}`}
+            >
               {data.status.toUpperCase()}
             </p>
           </div>
@@ -223,13 +213,18 @@ export default async function InvoicePage({ params }: { params: { id: string } }
               </tr>
             </thead>
             <tbody>
-              {data.produkList.map((p, i) => (
+              {data.produkList.map((p: any, i: number) => (
                 <tr key={i} className="border-t">
                   <td className="p-3 font-medium text-slate-800">{p.nama}</td>
                   <td className="p-3 text-right">
-                    Rp{(p.subtotal / (p.qty || 1)).toLocaleString("id-ID")}
+                    Rp{(p.qty > 0
+                      ? Math.round(p.subtotal / p.qty)
+                      : p.subtotal
+                    ).toLocaleString("id-ID")}
                   </td>
-                  <td className="p-3 text-right text-slate-800">{p.qty}x</td>
+                  <td className="p-3 text-right text-slate-800">
+                    {p.qty}x
+                  </td>
                   <td className="p-3 text-right font-bold text-[#0B4B50]">
                     Rp{p.subtotal.toLocaleString("id-ID")}
                   </td>
@@ -269,8 +264,14 @@ export default async function InvoicePage({ params }: { params: { id: string } }
             </p>
 
             <p className="font-semibold">{data.paymentMethod}</p>
-            <p>No.Rek: <strong className="text-red-600">{data.bankAccount}</strong></p>
-            <p>a/n <strong className="text-slate-800">{data.accountName}</strong></p>
+            <p>
+              No.Rek:{" "}
+              <strong className="text-red-600">{data.bankAccount}</strong>
+            </p>
+            <p>
+              a/n{" "}
+              <strong className="text-slate-800">{data.accountName}</strong>
+            </p>
 
             <a
               href={`https://wa.me/${KONTAK_CS}?text=Saya%20sudah%20bayar%20Invoice%20${data.invoiceId}`}
