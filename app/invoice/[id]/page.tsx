@@ -22,6 +22,7 @@ const normalize = (v: any) => String(v || "").trim()
 
 /* =====================================================================================
    🔥 GET ORDER FROM GOOGLE SHEET — FULL SUPPORT MULTI PRODUK / MULTI ROW
+   AUTO DETECT URL DI KOLOM MANA SAJA (ANTI STRUKTUR BERUBAH)
 ===================================================================================== */
 async function getOrder(invoiceId: string) {
   const clean = normalize(invoiceId)
@@ -41,17 +42,17 @@ async function getOrder(invoiceId: string) {
   const sheets = google.sheets({ version: "v4", auth })
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: "Sheet1!A:M", // 🔁 full range
+    range: "Sheet1!A:M", // ambil banyak kolom — aman
   })
 
   const allRows = res.data.values || []
   const rows = allRows.slice(1) // skip header
 
-  // 👉 versi super fleksibel / tahan perubahan kolom
+  // cari semua row yg match invoice
   const sameInvoice = rows.filter((r) => {
-    const colInvoice = normalize(r[1]) // kolom invoiceId tetap cek
+    const colInvoice = normalize(r[1]) // B: invoiceId
 
-    // cari link invoice di semua kolom baris
+    // 🔥 cari URL invoice di SELURUH cell row
     const colUrl =
       r.find((c: any) =>
         String(c || "").includes("invoice/") ||
@@ -71,9 +72,9 @@ async function getOrder(invoiceId: string) {
     return null
   }
 
-  // gunakan baris terbaru kalau ada duplikasi
-  const first = sameInvoice[sameInvoice.length - 1]
+  const first = sameInvoice[0]
 
+  // kumpulkan produk multi-baris
   const produkList = sameInvoice.map((r) => {
     const qty = Number(r[6] || 0)
     const subtotal = Number(r[7] || 0)
@@ -128,10 +129,7 @@ function getStatusColor(status: string) {
    🔥 PAGE
 ===================================================================================== */
 export default async function InvoicePage({ params }: { params: { id: string } }) {
-  const rawId = params?.id || ""
-  const id = normalize(rawId)
-  const safeId = id.replace(/(%0A|[\n\r\t\s]|\?.*)/g, "") // bersihkan karakter WA / Telegram
-
+  const safeId = normalize(params?.id || "").replace(/(%0A|[\n\r\t\s]|\?.*)/g, "")
   const data = await getOrder(safeId)
 
   if (!data) {
@@ -149,6 +147,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
   return (
     <main className="min-h-screen bg-[#F4FAFA] flex justify-center py-6 px-3 print:bg-white">
       <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl border border-slate-200 overflow-hidden print:shadow-none print:rounded-none print:border-none">
+        
         {/* HEADER */}
         <div className="flex justify-between items-start border-b border-slate-200 px-6 py-4">
           <div>
@@ -277,7 +276,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
               target="_blank"
               className="mt-4 inline-block bg-green-600 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition"
             >
-              ✔ Konfirmasi Pembayaran
+              ✅ Konfirmasi Pembayaran
             </a>
           </div>
 
