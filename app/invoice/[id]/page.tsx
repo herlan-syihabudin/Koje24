@@ -60,7 +60,7 @@ async function getOrder(invoiceId: string) {
   // ⛳ FIX TypeScript + Matching URL/ID
   const sameInvoice = rows.filter((r: string[]) => {
     const colInvoice = normalize(r[1])
-    const colUrl = normalize(r[12])
+    const colUrl = normalize(r[r.length - 1])
     return (
       colInvoice === clean ||
       colUrl.endsWith(clean) ||
