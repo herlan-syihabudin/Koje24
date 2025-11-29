@@ -40,36 +40,40 @@ async function getOrder(invoiceId: string) {
 
   const sheets = google.sheets({ version: "v4", auth })
   const res = await sheets.spreadsheets.values.get({
-  spreadsheetId: SHEET_ID,
-  range: "Sheet1!A:M",   // 🔁 full range, biar nggak kepotong row
-})
+    spreadsheetId: SHEET_ID,
+    range: "Sheet1!A:M", // 🔁 full range
+  })
 
-const allRows = res.data.values || []
+  const allRows = res.data.values || []
+  const rows = allRows.slice(1) // skip header
 
-// row[0] = header → kita skip
-const rows = allRows.slice(1)
+  // 👉 versi super fleksibel / tahan perubahan kolom
+  const sameInvoice = rows.filter((r) => {
+    const colInvoice = normalize(r[1]) // kolom invoiceId tetap cek
 
-// cari semua baris dengan invoiceId / URL yang match
-const sameInvoice = rows.filter((r) => {
-  const colInvoice = normalize(r[1])      // B: invoiceId
-  const colUrl = normalize(r[12])         // M: invoiceUrl
-  return (
-  colInvoice === clean ||
-  colUrl.endsWith(clean) ||                      // URL valid
-  colUrl.includes(`/invoice/${clean}`) ||        // URL embed
-  colUrl.includes(clean)                         // fallback
-)
-})
+    // cari link invoice di semua kolom baris
+    const colUrl =
+      r.find((c: any) =>
+        String(c || "").includes("invoice/") ||
+        String(c || "").includes("INV-")
+      ) || ""
+
+    return (
+      colInvoice === clean ||
+      String(colUrl).endsWith(clean) ||
+      String(colUrl).includes(`/invoice/${clean}`) ||
+      String(colUrl).includes(clean)
+    )
+  })
 
   if (sameInvoice.length === 0) {
     console.warn("Invoice tidak ditemukan di sheet:", clean)
     return null
   }
 
-  // Baris pertama dipakai sebagai sumber data customer / header
-  const first = sameInvoice[0]
+  // gunakan baris terbaru kalau ada duplikasi
+  const first = sameInvoice[sameInvoice.length - 1]
 
-  // Kumpulkan semua produk (kalau suatu saat 1 invoice = banyak baris)
   const produkList = sameInvoice.map((r) => {
     const qty = Number(r[6] || 0)
     const subtotal = Number(r[7] || 0)
@@ -126,9 +130,7 @@ function getStatusColor(status: string) {
 export default async function InvoicePage({ params }: { params: { id: string } }) {
   const rawId = params?.id || ""
   const id = normalize(rawId)
-
-  // 🧹 Bersihkan kemungkinan karakter aneh dari Telegram / URL
-  const safeId = id.replace(/(%0A|[\n\r\t\s]|\?.*)/g, "")
+  const safeId = id.replace(/(%0A|[\n\r\t\s]|\?.*)/g, "") // bersihkan karakter WA / Telegram
 
   const data = await getOrder(safeId)
 
@@ -275,7 +277,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
               target="_blank"
               className="mt-4 inline-block bg-green-600 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition"
             >
-              ✅ Konfirmasi Pembayaran
+              ✔ Konfirmasi Pembayaran
             </a>
           </div>
 
