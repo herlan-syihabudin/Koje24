@@ -53,7 +53,12 @@ const rows = allRows.slice(1)
 const sameInvoice = rows.filter((r) => {
   const colInvoice = normalize(r[1])      // B: invoiceId
   const colUrl = normalize(r[12])         // M: invoiceUrl
-  return colInvoice === clean || colUrl.includes(clean)
+  return (
+  colInvoice === clean ||
+  colUrl.endsWith(clean) ||                      // URL valid
+  colUrl.includes(`/invoice/${clean}`) ||        // URL embed
+  colUrl.includes(clean)                         // fallback
+)
 })
 
   if (sameInvoice.length === 0) {
