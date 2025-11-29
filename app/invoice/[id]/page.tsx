@@ -6,9 +6,13 @@ export const viewport = {
 }
 
 // 🔐 ENV
-const SHEET_ID = process.env.GOOGLE_SHEET_ID!
-const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
-const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
+const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? ""
+const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? ""
+const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
+
+const PRIVATE_KEY = PRIVATE_KEY_RAW
+  .replace(/\\n/g, "\n")
+  .replace(/\\\\n/g, "\n")
 
 // Nomor CS buat di footer & tombol WA
 const KONTAK_CS = "6282213139580"
@@ -36,17 +40,21 @@ async function getOrder(invoiceId: string) {
 
   const sheets = google.sheets({ version: "v4", auth })
   const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: "Sheet1!A2:M2000",
-  })
+  spreadsheetId: SHEET_ID,
+  range: "Sheet1!A:M",   // 🔁 full range, biar nggak kepotong row
+})
 
-  const rows = res.data.values || []
+const allRows = res.data.values || []
 
-  // 🟢 Ambil SEMUA baris yang punya invoiceId sama
-  const sameInvoice = rows.filter(
-    (r) =>
-      normalize(r[1]) === clean || normalize(r[12]).includes(clean)
-  )
+// row[0] = header → kita skip
+const rows = allRows.slice(1)
+
+// cari semua baris dengan invoiceId / URL yang match
+const sameInvoice = rows.filter((r) => {
+  const colInvoice = normalize(r[1])      // B: invoiceId
+  const colUrl = normalize(r[12])         // M: invoiceUrl
+  return colInvoice === clean || colUrl.includes(clean)
+})
 
   if (sameInvoice.length === 0) {
     console.warn("Invoice tidak ditemukan di sheet:", clean)
