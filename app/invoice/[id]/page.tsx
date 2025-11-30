@@ -76,7 +76,9 @@ async function getOrder(invoiceId: string) {
   })
 
   const rows = (res.data.values || []).slice(1)
-  const match = rows.find((r) => normalize(r[1]) === clean)
+  const match = rows.find((r) =>
+  normalize(r[1]).toLowerCase() === clean.toLowerCase()
+)
   if (!match) return null
 
   const produkStr = match[5] || ""
