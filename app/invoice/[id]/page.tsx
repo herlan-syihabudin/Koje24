@@ -1,10 +1,9 @@
+// app/invoice/[id]/page.tsx
 import { google } from "googleapis"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
-export const viewport = {
-  themeColor: "#0FA3A8",
-}
+export const viewport = { themeColor: "#0FA3A8" }
 
 // 🔐 ENV
 const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? ""
@@ -12,314 +11,275 @@ const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? ""
 const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
 
 const PRIVATE_KEY = PRIVATE_KEY_RAW
-  .replace(/\\n/g, "\n")
-  .replace(/\\\\n/g, "\n")
+  .replace(/\\n/g, "\n")
+  .replace(/\\\\n/g, "\n")
 
-// CS & Footer
 const KONTAK_CS = "6282213139580"
 
-// helper normalize
+// Trim helper
 const normalize = (v: any) => String(v || "").trim()
 
-// 🟣 LOG DEBUG 
-function logDebug(...args: any[]) {
-  if (process.env.NODE_ENV !== "production") {
-    console.log("[INVOICE]", ...args)
-  }
+/* ============================================================
+      🧠 PARSER PRODUK (1 baris → banyak row tabel)
+============================================================ */
+function processInvoiceData(row: string[]) {
+  const [
+    timestamp,
+    invoiceId,
+    nama,
+    hp,
+    alamat,
+    produkRaw,
+    qtyTotal,
+    subtotalProduk,
+    status,
+    paymentMethod,
+    ongkir,
+    grandTotal,
+    invoiceUrl
+  ] = row
+
+  // Pecah "Sunrise Boost (2x), Green Revive (1x), ..."
+  const produkList = String(produkRaw)
+    .split(",")
+    .map(p => p.trim())
+    .filter(Boolean)
+    .map(p => {
+      const match = p.match(/(.+)\((\d+)x\)/)
+      const namaProduk = match ? match[1].trim() : p
+      const qty = match ? Number(match[2]) : 1
+
+      const hargaSatuan = Number(subtotalProduk) / Number(qtyTotal || 1)
+      return {
+        nama: namaProduk,
+        qty,
+        subtotal: Math.round(hargaSatuan * qty)
+      }
+    })
+
+  return {
+    timestamp,
+    invoiceId,
+    nama,
+    hp,
+    alamat,
+    produkList,
+    qtyTotal: Number(qtyTotal),
+    subtotal: Number(subtotalProduk),
+    ongkir: Number(ongkir),
+    grandTotal: Number(grandTotal),
+    status,
+    paymentMethod,
+    bankAccount: "9918282983939",
+    accountName: "KOJE24",
+  }
 }
 
-// Helper function untuk memproses data invoice yang ditemukan (Keep as is)
-function processInvoiceData(sameInvoice: string[][]) {
-  const first = sameInvoice[0]
-
-  const produkList = sameInvoice.map((r: string[]) => {
-    const qty = Number(r[6] || 0)
-    const subtotal = Number(r[7] || 0)
-    return {
-      nama: r[5] || "",
-      qty,
-      subtotal,
-    }
-  })
-
-  const qtyTotal = produkList.reduce((s, p) => s + p.qty, 0)
-  const subtotal = produkList.reduce((s, p) => s + p.subtotal, 0)
-  const ongkir = Number(first[10] || 0)
-  const grandTotal = subtotal + ongkir
-
-  return {
-    timestamp: first[0] ?? "",
-    invoiceId: first[1] ?? "",
-    nama: first[2] ?? "",
-    hp: first[3] ?? "",
-    alamat: first[4] ?? "",
-    produkList,
-    qtyTotal,
-    subtotal,
-    ongkir,
-    grandTotal,
-    status: first[8] || "Pending",
-    paymentMethod: first[9] || "Transfer Bank Mandiri",
-    bankAccount: "9918282983939",
-    accountName: "KOJE24",
-  }
-}
-
-
-/* ==============================================================================
-   🔥 GET ORDER FROM GOOGLE SHEET — FIX: MENGGABUNGKAN RETRY & CASE-INSENSITIVE SCAN
-============================================================================== */
+/* ============================================================
+      🔥 FETCH INVOICE DARI GOOGLE SHEET
+============================================================ */
 async function getOrder(invoiceId: string) {
-  const clean = normalize(invoiceId)
-  if (!clean) return null
+  const clean = normalize(invoiceId)
+  if (!clean) return null
+  if (!SHEET_ID || !PRIVATE_KEY || !CLIENT_EMAIL) return null
 
-  if (!SHEET_ID || !PRIVATE_KEY || !CLIENT_EMAIL) {
-    console.error("❌ ENV Google Sheet belum lengkap")
-    return null
-  }
+  const auth = new google.auth.JWT({
+    email: CLIENT_EMAIL,
+    key: PRIVATE_KEY,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  })
 
-  // 🔑 Kunci utama: Case-Insensitive & Bersih
-  const lowerClean = clean.toLowerCase() 
-  const cleanUrl = `/invoice/${lowerClean}`
+  const sheets = google.sheets({ version: "v4", auth })
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: "Sheet1!A:Z",
+  })
 
-  const auth = new google.auth.JWT({
-    email: CLIENT_EMAIL,
-    key: PRIVATE_KEY,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  })
+  const allRows = res.data.values || []
+  const rows = allRows.slice(1)
 
-  const sheets = google.sheets({ version: "v4", auth })
+  const idLower = clean.toLowerCase()
 
-  // --- 🚀 Logic Retry DIKEMBALIKAN ---
-  const MAX_RETRIES = 3 
-  const DELAY_MS = 1000 
+  // Scan semua kolom case-insensitive
+  const found = rows.find(r =>
+    r.some(col => String(col).toLowerCase().includes(idLower))
+  )
 
-  logDebug(`Mulai pencarian invoice ${clean} (cari: ${lowerClean}) dengan ${MAX_RETRIES} percobaan...`)
-
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const res = await sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        // Pastikan nama sheet sudah benar (asumsi: Sheet1)
-        range: "Sheet1!A:Z", 
-      })
-
-      const allRows = res.data.values || []
-      const rows = allRows.slice(1) // skip header
-
-      logDebug(`Percobaan ke-${attempt}: Total baris ditemukan: ${rows.length}`)
-
-      // 🔑 FIX: Menggabungkan Case-Insensitive & Scan Luas (user logic)
-      const sameInvoice = rows.filter((r: string[]) => 
-        // Cek apakah ADA SATU kolom pun di baris ini yang cocok dengan ID
-        r.some(col => {
-          // Normalize dan ubah ke lowercase untuk perbandingan
-          const v = normalize(col).toLowerCase() 
-
-          return (
-            v === lowerClean || // Match mutlak (e.g., "inv-001" === "inv-001")
-            v.endsWith(lowerClean) || // Berakhir dengan (e.g., "123inv-001")
-            v.includes(cleanUrl) || // Mengandung path URL lengkap (e.g., ".../invoice/inv-001")
-            v.includes(lowerClean) // Pencarian luas
-          )
-        })
-      )
-
-      if (sameInvoice.length > 0) {
-        logDebug(`✅ Ditemukan pada percobaan ke-${attempt}. Baris match: ${sameInvoice.length}`)
-        return processInvoiceData(sameInvoice)
-      }
-
-      logDebug(`Percobaan ke-${attempt}: Gagal menemukan invoice ${lowerClean}.`)
-
-      if (attempt < MAX_RETRIES) {
-        await new Promise(resolve => setTimeout(resolve, DELAY_MS))
-      }
-    } catch (error) {
-      console.error(`❌ Gagal fetch Google Sheet pada percobaan ke-${attempt}:`, error)
-      if (attempt < MAX_RETRIES) {
-        await new Promise(resolve => setTimeout(resolve, DELAY_MS))
-      }
-    }
-  }
-
-  logDebug(`❌ Gagal menemukan invoice ${clean} setelah ${MAX_RETRIES} percobaan.`)
-  return null
+  if (!found) return null
+  return processInvoiceData(found)
 }
 
-/* ==============================================================================
-   💠 STATUS BADGE COLOR
-============================================================================== */
+/* ============================================================
+      🎨 WARNA STATUS
+============================================================ */
 function getStatusColor(status: string) {
-  switch (status.toLowerCase()) {
-    case "pending":
-      return "bg-amber-50 text-amber-700 border border-amber-300"
-    case "paid":
-    case "lunas":
-      return "bg-emerald-50 text-emerald-700 border border-emerald-300"
-    case "cod":
-      return "bg-blue-50 text-blue-700 border border-blue-300"
-    default:
-      return "bg-gray-50 text-gray-700 border border-gray-300"
-  }
+  switch (status.toLowerCase()) {
+    case "pending":
+      return "bg-amber-50 text-amber-700 border border-amber-300"
+    case "paid":
+    case "lunas":
+      return "bg-emerald-50 text-emerald-700 border border-emerald-300"
+    case "cod":
+      return "bg-blue-50 text-blue-700 border border-blue-300"
+    default:
+      return "bg-gray-50 text-gray-700 border border-gray-300"
+  }
 }
 
-/* ==============================================================================
-   🔥 PAGE UI
-============================================================================== */
+/* ============================================================
+      🖨️ UI INVOICE
+============================================================ */
 export default async function InvoicePage({ params }: { params: { id: string } }) {
-  const raw = params?.id || ""
-  const clean = raw.replace(/(%0A|[\n\r\t\s]|\?.*)/g, "") // id aman
-  const data = await getOrder(clean)
+  const raw = params?.id || ""
+  const clean = raw.replace(/(%0A|[\n\r\t\s]|\?.*)/g, "")
+  const data = await getOrder(clean)
 
-  if (!data) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-50">
-        <h2 className="text-xl text-red-600 font-semibold">
-          Invoice tidak ditemukan 🚫
-        </h2>
-      </main>
-    )
-  }
+  if (!data) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-slate-50">
+        <h2 className="text-xl text-red-600 font-semibold">
+          Invoice tidak ditemukan 🚫
+        </h2>
+      </main>
+    )
+  }
 
-  const statusClasses = getStatusColor(data.status)
+  const statusClasses = getStatusColor(data.status)
 
-  return (
-    <main className="min-h-screen bg-[#F4FAFA] flex justify-center py-6 px-3 print:bg-white">
-      <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl border border-slate-200 overflow-hidden print:shadow-none print:rounded-none print:border-none">
+  return (
+    <main className="min-h-screen bg-[#F4FAFA] flex justify-center py-6 px-3 print:bg-white">
+      <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl border border-slate-200 overflow-hidden print:shadow-none print:rounded-none print:border-none">
 
-        {/* HEADER */}
-        <div className="flex justify-between items-start border-b border-slate-200 px-6 py-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-[0.15em] text-slate-900">INVOICE</h1>
-            <p className="mt-2 font-semibold text-sm">KOJE24 Official</p>
-            <p className="text-xs text-slate-500 leading-tight">
-              Jl. Jenderal Sudirman No. 24, Jakarta Selatan
-              <br />
-              Tel: {KONTAK_CS} • order@koje24.com
-            </p>
-            
-          </div>
-          <img src="/logo-koje24.png" alt="KOJE24" className="h-12 w-auto" />
-        </div>
+        {/* HEADER */}
+        <div className="flex justify-between items-start border-b border-slate-200 px-6 py-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-[0.15em] text-slate-900">INVOICE</h1>
+            <p className="mt-2 font-semibold text-sm">KOJE24 Official</p>
+            <p className="text-xs text-slate-500 leading-tight">
+              Jl. Jenderal Sudirman No. 24, Jakarta Selatan
+              <br />
+              Tel: {KONTAK_CS} • order@koje24.com
+            </p>
+          </div>
+          <img src="/logo-koje24.png" alt="KOJE24" className="h-12 w-auto" />
+        </div>
 
-        {/* CUSTOMER INFO */}
-        <div className="grid grid-cols-3 px-6 py-4 gap-4 text-[13px] border-b border-slate-100">
-          <div>
-            <p className="text-xs font-bold uppercase text-slate-700 mb-1">Dikirim Kepada:</p>
-            <p className="font-semibold text-slate-900">{data.nama}</p>
-            <p className="text-slate-600">{data.hp}</p>
-            <p className="text-slate-600 leading-snug max-w-[90%]">{data.alamat}</p>
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase text-slate-700 mb-1">Tanggal Pesanan:</p>
-            <p className="text-slate-700">{data.timestamp}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-bold uppercase text-slate-700 mb-1">No. Invoice:</p>
-            <p className="text-lg font-extrabold tracking-wide text-[#0B4B50]">{data.invoiceId}</p>
-            <p className={`inline-block mt-2 px-2 py-1 rounded-md text-[10px] font-bold ${statusClasses}`}>
-              {data.status.toUpperCase()}
-            </p>
-          </div>
-        </div>
+        {/* CUSTOMER */}
+        <div className="grid grid-cols-3 px-6 py-4 gap-4 text-[13px] border-b border-slate-100">
+          <div>
+            <p className="text-xs font-bold uppercase text-slate-700 mb-1">Dikirim Kepada:</p>
+            <p className="font-semibold text-slate-900">{data.nama}</p>
+            <p className="text-slate-600">{data.hp}</p>
+            <p className="text-slate-600 leading-snug">{data.alamat}</p>
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase text-slate-700 mb-1">Tanggal Pesanan:</p>
+            <p className="text-slate-700">{data.timestamp}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-bold uppercase text-slate-700 mb-1">No. Invoice:</p>
+            <p className="text-lg font-extrabold tracking-wide text-[#0B4B50]">{data.invoiceId}</p>
+            <p className={`inline-block mt-2 px-2 py-1 rounded-md text-[10px] font-bold ${statusClasses}`}>
+              {data.status.toUpperCase()}
+            </p>
+          </div>
+        </div>
 
-        {/* TABLE */}
-        <div className="px-6 py-4">
-          <table className="w-full border border-slate-300 text-sm">
-            <thead className="bg-slate-100 text-slate-600 uppercase text-[11px]">
-              <tr>
-                <th className="p-2 text-left w-[50%]">Produk</th>
-                <th className="p-2 text-right w-[15%]">Harga</th>
-                <th className="p-2 text-right w-[10%]">Qty</th>
-                <th className="p-2 text-right w-[25%]">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.produkList.map((p: any, i: number) => (
-                <tr key={i} className="border-t">
-                  <td className="p-3 font-medium text-slate-800">{p.nama}</td>
-                  <td className="p-3 text-right">
-                    Rp{(p.qty > 0 ? Math.round(p.subtotal / p.qty) : p.subtotal).toLocaleString("id-ID")}
-                  </td>
-                  <td className="p-3 text-right text-slate-800">{p.qty}x</td>
-                  <td className="p-3 text-right font-bold text-[#0B4B50]">
-                    Rp{p.subtotal.toLocaleString("id-ID")}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* TABEL PRODUK */}
+        <div className="px-6 py-4">
+          <table className="w-full border border-slate-300 text-sm">
+            <thead className="bg-slate-100 text-slate-600 uppercase text-[11px]">
+              <tr>
+                <th className="p-2 text-left">Produk</th>
+                <th className="p-2 text-right">Harga</th>
+                <th className="p-2 text-right">Qty</th>
+                <th className="p-2 text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.produkList.map((p, i) => (
+                <tr key={i} className="border-t">
+                  <td className="p-3 font-medium text-slate-800">{p.nama}</td>
+                  <td className="p-3 text-right">
+                    Rp{Math.round(p.subtotal / p.qty).toLocaleString("id-ID")}
+                  </td>
+                  <td className="p-3 text-right text-slate-800">{p.qty}x</td>
+                  <td className="p-3 text-right font-bold text-[#0B4B50]">
+                    Rp{p.subtotal.toLocaleString("id-ID")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-        {/* TOTAL */}
-        <div className="px-6 py-4 flex justify-end text-sm border-b">
-          <div className="w-full max-w-xs space-y-2">
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span className="font-semibold">Rp{data.subtotal.toLocaleString("id-ID")}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Ongkir</span>
-              <span className="font-semibold">Rp{data.ongkir.toLocaleString("id-ID")}</span>
-            </div>
-            <div className="border-t pt-3 flex justify-between text-lg font-bold text-[#0B4B50]">
-              <span>TOTAL AKHIR</span>
-              <span>Rp{data.grandTotal.toLocaleString("id-ID")}</span>
-            </div>
-          </div>
-        </div>
+        {/* TOTAL */}
+        <div className="px-6 py-4 flex justify-end text-sm border-b">
+          <div className="w-full max-w-xs space-y-2">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span className="font-semibold">Rp{data.subtotal.toLocaleString("id-ID")}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Ongkir</span>
+              <span className="font-semibold">Rp{data.ongkir.toLocaleString("id-ID")}</span>
+            </div>
+            <div className="border-t pt-3 flex justify-between text-lg font-bold text-[#0B4B50]">
+              <span>TOTAL AKHIR</span>
+              <span>Rp{data.grandTotal.toLocaleString("id-ID")}</span>
+            </div>
+          </div>
+        </div>
 
-        {/* PAYMENT + ACTION BUTTONS */}
-        <div className="px-6 py-4 flex justify-between text-sm items-start">
-          <div>
-            <p className="text-xs font-bold uppercase text-slate-700 mb-2">Rincian Pembayaran:</p>
-            <p className="font-semibold">{data.paymentMethod}</p>
-            <p>No.Rek: <strong className="text-red-600">{data.bankAccount}</strong></p>
-            <p>a/n <strong className="text-slate-800">{data.accountName}</strong></p>
+        {/* PAYMENT + ACTION BUTTON */}
+        <div className="px-6 py-4 flex justify-between text-sm items-start">
+          <div>
+            <p className="text-xs font-bold uppercase text-slate-700 mb-2">Rincian Pembayaran:</p>
+            <p className="font-semibold">{data.paymentMethod}</p>
+            <p>No.Rek: <strong className="text-red-600">{data.bankAccount}</strong></p>
+            <p>a/n <strong className="text-slate-800">{data.accountName}</strong></p>
 
-            {/* WA CONFIRMATION */}
-            <a
-              href={`https://wa.me/${KONTAK_CS}?text=Saya%20sudah%20bayar%20Invoice%20${data.invoiceId}`}
-              target="_blank"
-              className="mt-4 inline-block bg-green-600 text-white font-bold text-xs px-4 py-2 rounded-lg shadow hover:bg-green-700 transition"
-            >
-              ✅ Konfirmasi Pembayaran
-            </a>
+            {/* Konfirmasi WA */}
+            <a
+              href={`https://wa.me/${KONTAK_CS}?text=Saya%20sudah%20bayar%20Invoice%20${data.invoiceId}`}
+              target="_blank"
+              className="mt-4 inline-block bg-green-600 text-white font-bold text-xs px-4 py-2 rounded-lg shadow hover:bg-green-700 transition"
+            >
+              ✅ Konfirmasi Pembayaran
+            </a>
 
-            {/* DOWNLOAD PDF */}
-            <button
-              onClick={() => window.print()}
-              className="mt-2 inline-block bg-slate-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow hover:bg-slate-800 transition"
-            >
-              ⬇️ Download Invoice (PDF)
-            </button>
+            {/* Download PDF */}
+            <button
+              onClick={() => window.print()}
+              className="mt-2 inline-block bg-slate-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow hover:bg-slate-800 transition"
+            >
+              ⬇️ Download Invoice (PDF)
+            </button>
 
-            {/* SHARE INVOICE */}
-            <a
-              href={`https://wa.me/${KONTAK_CS}?text=Halo%2C%20berikut%20invoice%20saya%3A%20${encodeURIComponent(
-                typeof window !== "undefined" ? window.location.href : ""
-              )}`}
-              target="_blank"
-              className="mt-2 inline-block bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded-lg shadow hover:bg-emerald-700 transition"
-            >
-              📤 Share via WhatsApp
-            </a>
-          </div>
+            {/* Share pesan WA */}
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(window.location.href)}`}
+              target="_blank"
+              className="mt-2 inline-block bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded-lg shadow hover:bg-emerald-700 transition"
+            >
+              📤 Share via WhatsApp
+            </a>
+          </div>
 
-          <div className="text-right mt-4">
-            <p className="font-semibold text-slate-800">Hormat Kami,</p>
-            <p className="font-bold text-[#0B4B50] mt-8">Admin KOJE24</p>
-          </div>
-        </div>
+          <div className="text-right mt-4">
+            <p className="font-semibold text-slate-800">Hormat Kami,</p>
+            <p className="font-bold text-[#0B4B50] mt-8">Admin KOJE24</p>
+          </div>
+        </div>
 
-        {/* FOOTER */}
-        <div className="py-3 text-center text-[11px] border-t bg-slate-50">
-          <strong className="text-slate-700">TERIMA KASIH TELAH MEMERCAYAI KOJE24 🙏</strong>
-          <br />
-          <span className="text-slate-400 text-[10px]">Invoice ini adalah bukti pembelian yang sah</span>
-        </div>
-      </div>
-    </main>
-  )
+        {/* FOOTER */}
+        <div className="py-3 text-center text-[11px] border-t bg-slate-50">
+          <strong className="text-slate-700">TERIMA KASIH TELAH MEMERCAYAI KOJE24 🙏</strong>
+          <br />
+          <span className="text-slate-400 text-[10px]">Invoice ini adalah bukti pembelian yang sah</span>
+        </div>
+
+      </div>
+    </main>
+  )
 }
