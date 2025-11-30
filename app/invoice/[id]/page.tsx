@@ -12,11 +12,10 @@ const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
 const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n")
 
 const KONTAK_CS = "6282213139580"
-
 const normalize = (v: any) => String(v || "").trim()
 
 // =========================================================
-// 🧠 Fungsi untuk proses row key menjadi object invoice
+// 🧠 Fungsi proses row → object invoice
 // =========================================================
 function processInvoiceData(row: string[]) {
   return {
@@ -35,12 +34,9 @@ function processInvoiceData(row: string[]) {
       const list = text.split(",").map((p) => p.trim())
       return list.map((p) => {
         const match = p.match(/(.+)\s\((\d+)x\)/)
-        if (!match) return { nama: p, qty: 1, subtotal: 0 }
-
-        const nama = match[1]
-        const qty = Number(match[2])
-        const harga = Number(row[10] || 0) // tidak dipakai
-        return { nama, qty, subtotal: 0 }
+        return match
+          ? { nama: match[1], qty: Number(match[2]), subtotal: 0 }
+          : { nama: p, qty: 1, subtotal: 0 }
       })
     })(),
 
@@ -60,7 +56,7 @@ function processInvoiceData(row: string[]) {
 }
 
 // =========================================================
-// 🔥 Core Get Order — bekerja 100% presisi
+// 🔥 Ambil order dari Google Sheets
 // =========================================================
 async function getOrder(invoiceId: string) {
   const clean = normalize(invoiceId)
@@ -80,8 +76,6 @@ async function getOrder(invoiceId: string) {
   })
 
   const rows = (res.data.values || []).slice(1)
-
-  // langsung cocokkan kolom B (invoice ID)
   const match = rows.find((r) => normalize(r[1]) === clean)
   if (!match) return null
 
@@ -93,7 +87,12 @@ async function getOrder(invoiceId: string) {
       : { nama: p.trim(), qty: 1, subtotal: 0 }
   })
 
-  const qtyTotal = produkList.reduce((sum, p) => sum + p.qty, 0)
+  // 🔥 FIX DEPLOY (TYPE ERROR)
+  const qtyTotal = produkList.reduce(
+    (sum: number, p: { qty: number }) => sum + p.qty,
+    0
+  )
+
   const grandTotal = Number(match[11] || 0)
   const ongkir = Number(match[10] || 0)
   const subtotal = grandTotal - ongkir
@@ -117,7 +116,7 @@ async function getOrder(invoiceId: string) {
 }
 
 // =========================================================
-// 🎨 Warna Status
+// 🎨 Status Color
 // =========================================================
 function getStatusColor(status: string) {
   switch (status.toLowerCase()) {
@@ -206,7 +205,9 @@ export default async function InvoicePage({ params }: { params: { id: string } }
                 <tr key={i} className="border-t">
                   <td className="p-2 font-medium text-slate-800">{p.nama}</td>
                   <td className="p-2 text-right">{p.qty}x</td>
-                  <td className="p-2 text-right font-semibold">Rp{(data.subtotal / data.qtyTotal).toLocaleString("id-ID")}</td>
+                  <td className="p-2 text-right font-semibold">
+                    Rp{(data.subtotal / data.qtyTotal).toLocaleString("id-ID")}
+                  </td>
                 </tr>
               ))}
             </tbody>
