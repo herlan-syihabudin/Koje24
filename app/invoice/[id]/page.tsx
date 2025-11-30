@@ -1,6 +1,8 @@
 // app/invoice/[id]/page.tsx
 import { google } from "googleapis"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 export const viewport = {
   themeColor: "#0FA3A8",
 }
