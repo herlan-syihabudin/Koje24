@@ -86,7 +86,7 @@ async function getOrder(invoiceId: string) {
   if (!match) return null
 
   const produkStr = match[5] || ""
-  const produkList = produkStr.split(",").map((p) => {
+  const produkList = produkStr.split(",").map((p: string) => {
     const m = p.match(/(.+)\s\((\d+)x\)/)
     return m
       ? { nama: m[1].trim(), qty: Number(m[2]), subtotal: 0 }
