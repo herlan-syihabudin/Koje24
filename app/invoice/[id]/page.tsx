@@ -14,11 +14,11 @@ const PRIVATE_KEY = PRIVATE_KEY_RAW
   .replace(/\\n/g, "\n")
   .replace(/\\\\n/g, "\n")
 
-const KONTAK_CS = "6282213139580"
-
 // helper
+const KONTAK_CS = "6282213139580"
 const normalize = (v: any) => String(v || "").trim()
 
+// 🔥 GET ORDER
 async function getOrder(invoiceId: string) {
   const clean = normalize(invoiceId)
   if (!clean) return null
@@ -40,16 +40,18 @@ async function getOrder(invoiceId: string) {
   const allRows = res.data.values || []
   const rows = allRows.slice(1) // skip header
 
-  const sameInvoice = rows.filter((r: string[]) => {
-    const colInvoice = normalize(r[1])
-    const colUrl = normalize(r.at(-1))   // 👈 ambil kolom paling akhir otomatis
-    return (
-      colInvoice === clean ||
-      colUrl.endsWith(clean) ||
-      colUrl.includes(`/invoice/${clean}`) ||
-      colUrl.includes(clean)
-    )
-  })
+  // 🔥 FIX UTAMA — scan seluruh kolom, bukan 1 kolom
+  const sameInvoice = rows.filter((r: string[]) =>
+    r.some(col => {
+      const v = normalize(col)
+      return (
+        v === clean ||
+        v.endsWith(clean) ||
+        v.includes(`/invoice/${clean}`) ||
+        v.includes(clean)
+      )
+    })
+  )
 
   if (sameInvoice.length === 0) return null
 
@@ -102,9 +104,10 @@ function getStatusColor(status: string) {
   }
 }
 
+// 🔥 PAGE UI
 export default async function InvoicePage({ params }: { params: { id: string } }) {
   const raw = params?.id || ""
-  const clean = raw.replace(/(%0A|[\n\r\t\s]|\?.*)/g, "") // id aman meski ada encoding
+  const clean = raw.replace(/(%0A|[\n\r\t\s]|\?.*)/g, "") // id aman
   const data = await getOrder(clean)
 
   if (!data) {
@@ -121,7 +124,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
 
   return (
     <main className="min-h-screen bg-[#F4FAFA] flex justify-center py-6 px-3 print:bg-white">
-      <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl border border-slate-200 overflow-hidden print:shadow-none print:rounded-none print:border-none">
+      <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl border border-slate-200 overflow-hidden">
 
         {/* HEADER */}
         <div className="flex justify-between items-start border-b border-slate-200 px-6 py-4">
@@ -177,7 +180,9 @@ export default async function InvoicePage({ params }: { params: { id: string } }
                     Rp{(p.qty > 0 ? Math.round(p.subtotal / p.qty) : p.subtotal).toLocaleString("id-ID")}
                   </td>
                   <td className="p-3 text-right text-slate-800">{p.qty}x</td>
-                  <td className="p-3 text-right font-bold text-[#0B4B50]">Rp{p.subtotal.toLocaleString("id-ID")}</td>
+                  <td className="p-3 text-right font-bold text-[#0B4B50]">
+                    Rp{p.subtotal.toLocaleString("id-ID")}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -202,7 +207,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
           </div>
         </div>
 
-        {/* PAYMENT */}
+        {/* PAYMENT + ACTION BUTTONS */}
         <div className="px-6 py-4 flex justify-between text-sm items-start">
           <div>
             <p className="text-xs font-bold uppercase text-slate-700 mb-2">Rincian Pembayaran:</p>
@@ -210,12 +215,32 @@ export default async function InvoicePage({ params }: { params: { id: string } }
             <p>No.Rek: <strong className="text-red-600">{data.bankAccount}</strong></p>
             <p>a/n <strong className="text-slate-800">{data.accountName}</strong></p>
 
+            {/* WA CONFIRMATION */}
             <a
               href={`https://wa.me/${KONTAK_CS}?text=Saya%20sudah%20bayar%20Invoice%20${data.invoiceId}`}
               target="_blank"
-              className="mt-4 inline-block bg-green-600 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition"
+              className="mt-4 inline-block bg-green-600 text-white font-bold text-xs px-4 py-2 rounded-lg shadow hover:bg-green-700 transition"
             >
               ✅ Konfirmasi Pembayaran
+            </a>
+
+            {/* DOWNLOAD PDF */}
+            <button
+              onClick={() => window.print()}
+              className="mt-2 inline-block bg-slate-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow hover:bg-slate-800 transition"
+            >
+              ⬇️ Download Invoice (PDF)
+            </button>
+
+            {/* SHARE INVOICE */}
+            <a
+              href={`https://wa.me/${KONTAK_CS}?text=Halo%2C%20berikut%20invoice%20saya%3A%20${encodeURIComponent(
+                typeof window !== "undefined" ? window.location.href : ""
+              )}`}
+              target="_blank"
+              className="mt-2 inline-block bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded-lg shadow hover:bg-emerald-700 transition"
+            >
+              📤 Share via WhatsApp
             </a>
           </div>
 
