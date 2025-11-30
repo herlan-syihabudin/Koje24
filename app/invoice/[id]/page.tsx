@@ -1,278 +1,255 @@
-// app/invoice/[id]/page.tsx
-import { google } from "googleapis"
+'use client';
 
-export const dynamic = "force-dynamic"
-export const revalidate = 0
-export const viewport = { themeColor: "#0FA3A8" }
+import React, { useState, useEffect } from 'react';
 
-// 🔐 ENV
-const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? ""
-const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? ""
-const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
-const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n")
-
-const KONTAK_CS = "6282213139580"
-const normalize = (v: any) => String(v || "").trim()
-
-// =========================================================
-// 🧠 Fungsi proses row → object invoice
-// =========================================================
-function processInvoiceData(row: string[]) {
-  return {
-    timestamp: row[0] ?? "",
-    invoiceId: row[1] ?? "",
-    nama: row[2] ?? "",
-    hp: row[3] ?? "",
-    alamat: row[4] ?? "",
-    status: row[8] || "Pending",
-    paymentMethod: row[9] || "Transfer Bank Mandiri",
-    ongkir: Number(row[10] || 0),
-    grandTotal: Number(row[11] || 0),
-
-    produkList: (() => {
-      const text = row[5] || ""
-      const list = text.split(",").map((p) => p.trim())
-      return list.map((p) => {
-        const match = p.match(/(.+)\s\((\d+)x\)/)
-        return match
-          ? { nama: match[1], qty: Number(match[2]), subtotal: 0 }
-          : { nama: p, qty: 1, subtotal: 0 }
-      })
-    })(),
-
-    subtotal: Number(row[11] || 0) - Number(row[10] || 0),
-    qtyTotal: (() => {
-      const text = row[5] || ""
-      const list = text.split(",").map((p) => p.trim())
-      return list.reduce((sum, p) => {
-        const m = p.match(/\((\d+)x\)/)
-        return sum + (m ? Number(m[1]) : 1)
-      }, 0)
-    })(),
-
-    bankAccount: "9918282983939",
-    accountName: "KOJE24",
-  }
+// Definisikan tipe data invoice (sesuai output API Fetcher)
+interface InvoiceData {
+  invoiceId: string;
+  timestamp: string;
+  nama: string;
+  hp: string;
+  alamat: string;
+  produkList: string; // Detail produk (masih berupa string gabungan)
+  qtyTotal: number;
+  subtotalCalc: number;
+  status: string; // Status: Pending, Paid, COD
+  paymentLabel: string;
+  effectiveOngkir: number;
+  effectiveGrandTotal: number;
+  invoiceUrl: string;
 }
 
-// =========================================================
-// 🔥 Ambil order dari Google Sheets
-// =========================================================
-async function getOrder(invoiceId: string) {
-  const clean = normalize(invoiceId)
-  if (!clean) return null
-  if (!SHEET_ID || !PRIVATE_KEY || !CLIENT_EMAIL) return null
+// Data Dummy Informasi Penjual
+const SELLER_INFO = {
+    name: "KOJE24 Official",
+    address: "Jl. Kopi Kenangan No. 24, Jakarta Selatan",
+    hp: "0811-2233-4455",
+};
 
-  const auth = new google.auth.JWT({
-    email: CLIENT_EMAIL,
-    key: PRIVATE_KEY,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  })
+// Fungsi utilitas untuk format mata uang Rupiah
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+  }).format(amount);
+};
 
-  const sheets = google.sheets({ version: "v4", auth })
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: "Sheet1!A:M",
-  })
+// Komponen Halaman Invoice
+export default function InvoicePage({ params }: { params: { id: string } }) {
+  const { id: invoiceId } = params;
+  const [invoice, setInvoice] = useState<InvoiceData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const rows = (res.data.values || []).slice(1)
-  const match = rows.find((r) =>
-  normalize(r[1]).toLowerCase() === clean.toLowerCase()
-)
-  if (!match) return null
+  useEffect(() => {
+    // Fungsi untuk mengambil data invoice dari API backend
+    const fetchInvoice = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  const produkStr = match[5] || ""
-  const produkList = produkStr.split(",").map((p: string) => {
-    const m = p.match(/(.+)\s\((\d+)x\)/)
-    return m
-      ? { nama: m[1].trim(), qty: Number(m[2]), subtotal: 0 }
-      : { nama: p.trim(), qty: 1, subtotal: 0 }
-  })
+        // Panggil API Route untuk mengambil data invoice (app/api/invoice/[id]/route.ts)
+        const response = await fetch(`/api/invoice/${invoiceId}`);
+        const result = await response.json();
 
-  // 🔥 FIX DEPLOY (TYPE ERROR)
-  const qtyTotal = produkList.reduce(
-    (sum: number, p: { qty: number }) => sum + p.qty,
-    0
-  )
+        if (response.ok && result.success) {
+          setInvoice(result.data);
+        } else {
+          setError(result.message || "Gagal memuat data invoice.");
+        }
+      } catch (err) {
+        console.error("Fetch Error:", err);
+        setError("Terjadi kesalahan koneksi saat memuat data.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const grandTotal = Number(match[11] || 0)
-  const ongkir = Number(match[10] || 0)
-  const subtotal = grandTotal - ongkir
+    if (invoiceId) {
+      fetchInvoice();
+    }
+  }, [invoiceId]);
 
-  return {
-    timestamp: match[0] ?? "",
-    invoiceId: match[1] ?? "",
-    nama: match[2] ?? "",
-    hp: match[3] ?? "",
-    alamat: match[4] ?? "",
-    produkList,
-    qtyTotal,
-    subtotal,
-    ongkir,
-    grandTotal,
-    status: match[8] || "Pending",
-    paymentMethod: match[9] || "Transfer Bank Mandiri",
-    bankAccount: "9918282983939",
-    accountName: "KOJE24",
-  }
-}
-
-// =========================================================
-// 🎨 Status Color
-// =========================================================
-function getStatusColor(status: string) {
-  switch (status.toLowerCase()) {
-    case "pending":
-      return "bg-amber-50 text-amber-700 border border-amber-300"
-    case "paid":
-    case "lunas":
-      return "bg-emerald-50 text-emerald-700 border-emerald-300 border"
-    case "cod":
-      return "bg-blue-50 text-blue-700 border-blue-300 border"
-    default:
-      return "bg-gray-50 text-gray-700 border-gray-300 border"
-  }
-}
-
-// =========================================================
-// 📄 UI HALAMAN INVOICE
-// =========================================================
-export default async function InvoicePage({ params }: { params: { id: string } }) {
-  const raw = params.id || ""
-  const clean = raw.replace(/(%0A|[\n\r\t\s]|\?.*)/g, "")
-  const data = await getOrder(clean)
-
-  if (!data) {
+  // Handle Loading State
+  if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-50">
-        <h2 className="text-xl text-red-600 font-semibold">
-          Invoice tidak ditemukan 🚫
-        </h2>
-      </main>
-    )
-  }
-
-  const statusClasses = getStatusColor(data.status)
-
-  return (
-    <main className="min-h-screen bg-[#F4FAFA] flex justify-center py-6 px-3 print:bg-white">
-      <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl border border-slate-200 overflow-hidden print:shadow-none">
-
-        {/* HEADER */}
-        <div className="flex justify-between items-start border-b border-slate-200 px-6 py-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-[0.15em] text-slate-900">INVOICE</h1>
-            <p className="mt-2 font-semibold text-sm">KOJE24 Official</p>
-            <p className="text-xs text-slate-500 leading-tight">
-              Jl. Jenderal Sudirman No. 24, Jakarta Selatan
-              <br /> Tel: {KONTAK_CS} • order@koje24.com
-            </p>
-          </div>
-          <img src="/logo-koje24.png" alt="KOJE24" className="h-12 w-auto" />
-        </div>
-
-        {/* CUSTOMER INFO */}
-        <div className="grid grid-cols-3 px-6 py-4 gap-4 text-[13px] border-b border-slate-100">
-          <div>
-            <p className="text-xs font-bold uppercase text-slate-700 mb-1">Dikirim Kepada:</p>
-            <p className="font-semibold text-slate-900">{data.nama}</p>
-            <p className="text-slate-600">{data.hp}</p>
-            <p className="text-slate-600 max-w-[90%]">{data.alamat}</p>
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase text-slate-700 mb-1">Tanggal Pesanan:</p>
-            <p className="text-slate-700">{data.timestamp}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-bold uppercase text-slate-700 mb-1">Nomor Invoice:</p>
-            <p className="text-lg font-extrabold tracking-wide text-[#0B4B50]">{data.invoiceId}</p>
-            <p className={`inline-block mt-2 px-2 py-1 rounded-md text-[10px] font-bold ${statusClasses}`}>
-              {data.status.toUpperCase()}
-            </p>
-          </div>
-        </div>
-
-        {/* PRODUK TABLE */}
-        <div className="px-6 py-4">
-          <table className="w-full border border-slate-300 text-sm">
-            <thead className="bg-slate-100 uppercase text-[11px]">
-              <tr>
-                <th className="p-2 text-left w-[50%]">Produk</th>
-                <th className="p-2 text-right w-[15%]">Qty</th>
-                <th className="p-2 text-right w-[25%]">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.produkList.map((p: any, i: number) => (
-                <tr key={i} className="border-t">
-                  <td className="p-2 font-medium text-slate-800">{p.nama}</td>
-                  <td className="p-2 text-right">{p.qty}x</td>
-                  <td className="p-2 text-right font-semibold">
-                    Rp{(data.subtotal / data.qtyTotal).toLocaleString("id-ID")}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* TOTAL */}
-        <div className="px-6 py-4 flex justify-end text-sm border-b">
-          <div className="w-full max-w-xs space-y-2">
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span className="font-semibold">Rp{data.subtotal.toLocaleString("id-ID")}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Ongkir</span>
-              <span className="font-semibold">Rp{data.ongkir.toLocaleString("id-ID")}</span>
-            </div>
-            <div className="border-t pt-3 flex justify-between text-lg font-bold text-[#0B4B50]">
-              <span>Total Akhir</span>
-              <span>Rp{data.grandTotal.toLocaleString("id-ID")}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* PAYMENT */}
-        <div className="px-6 py-6 flex justify-between text-sm items-start">
-          <div>
-            <p className="text-xs font-bold uppercase text-slate-700 mb-2">Rincian Pembayaran:</p>
-            <p className="font-semibold">{data.paymentMethod}</p>
-            <p>No.Rek: <strong className="text-red-600">{data.bankAccount}</strong></p>
-            <p>a/n <strong className="text-slate-800">{data.accountName}</strong></p>
-
-            <a
-              href={`https://wa.me/${KONTAK_CS}?text=Halo%20KOJE24,%20saya%20sudah%20melakukan%20pembayaran%20untuk%20Invoice%20${data.invoiceId}%20total%20${encodeURIComponent(
-                "Rp " + data.grandTotal.toLocaleString("id-ID")
-              )}`}
-              target="_blank"
-              className="mt-4 inline-block bg-green-600 text-white font-bold text-xs px-4 py-2 rounded-lg shadow hover:bg-green-700 transition"
-            >
-              ✅ Konfirmasi Pembayaran via WhatsApp
-            </a>
-          </div>
-
-          <div className="text-right mt-4">
-            <p className="font-semibold text-slate-800">Hormat Kami,</p>
-            <p className="font-bold text-[#0B4B50] mt-8">Admin KOJE24</p>
-          </div>
-        </div>
-
-        {/* FOOTER */}
-        <div className="py-3 text-center text-[11px] border-t bg-slate-50">
-          <strong className="text-slate-700">TERIMA KASIH TELAH MEMERCAYAI KOJE24 🙏</strong>
-          <br />
-          <span className="text-slate-400 text-[10px]">Invoice ini adalah bukti pembelian yang sah</span>
-          <br />
-          <button
-            onClick={() => typeof window !== "undefined" && window.print()}
-            className="mt-2 text-[#0B4B50] underline font-semibold hover:text-black"
-          >
-            🖨️ Download / Print Invoice
-          </button>
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 p-8">
+        <div className="animate-pulse text-xl text-gray-600">
+            Memuat Invoice #{invoiceId}...
         </div>
       </div>
-    </main>
-  )
+    );
+  }
+
+  // Handle Error State
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 p-8">
+        <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full border-t-4 border-red-500">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Kesalahan Pemuatan Invoice</h2>
+          <p className="text-gray-700">Invoice ID: <span className="font-mono text-sm bg-gray-100 p-1 rounded">#{invoiceId}</span></p>
+          <p className="text-gray-600 mt-3">Pesan: {error}</p>
+          <p className="text-xs text-gray-400 mt-4">Pastikan Invoice ID benar dan Google Sheet API berfungsi.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Jika invoice null setelah loading (walaupun sudah di-handle oleh error di atas)
+  if (!invoice) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 p-8">
+        <p className="text-xl text-gray-700">Invoice tidak ditemukan.</p>
+      </div>
+    );
+  }
+
+  // --- Fungsi untuk menentukan warna status ---
+  const getStatusStyle = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'paid':
+        return 'text-green-700 bg-green-100 border-green-300';
+      case 'cod':
+        return 'text-blue-700 bg-blue-100 border-blue-300';
+      case 'pending':
+      default:
+        return 'text-red-700 bg-red-100 border-red-300';
+    }
+  };
+
+  // --- RENDER INVOICE ---
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
+      <style jsx global>{`
+        /* Styling Global untuk print */
+        @media print {
+            body { background: #fff !important; }
+            .invoice-box { box-shadow: none !important; border: none !important; padding: 0 !important; max-width: none !important; }
+            .print\\:hidden { display: none !important; }
+        }
+        .invoice-box {
+            font-family: 'Inter', sans-serif;
+            max-width: 900px;
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #eee;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            font-size: 14px;
+            line-height: 24px;
+            color: #555;
+            background: #fff;
+            border-radius: 12px;
+        }
+        .item-table th, .item-table td {
+            border: 1px solid #e5e7eb; /* border gray-200 */
+            padding: 12px;
+        }
+        .item-table th {
+            background-color: #f3f4f6; /* bg gray-100 */
+            color: #1f2937; /* text gray-800 */
+            font-weight: 600;
+        }
+      `}</style>
+
+      <div className="invoice-box">
+        {/* Header dan Detail Invoice */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4 border-b border-gray-200">
+            <div>
+                <span className="text-4xl font-extrabold text-[#007bff]">KOJE24</span>
+                <h1 className="text-2xl font-semibold text-gray-800 mt-2">Faktur Penjualan (Invoice)</h1>
+            </div>
+            <div className="text-right mt-4 sm:mt-0">
+                <strong className="text-2xl text-gray-900 block mb-1">#{invoice.invoiceId}</strong>
+                <p className="text-sm">Tanggal Order: {new Date(invoice.timestamp).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p className={`font-bold text-base mt-2 px-4 py-1 rounded-full inline-block border ${getStatusStyle(invoice.status)}`}>
+                    Status: {invoice.status.toUpperCase()}
+                </p>
+            </div>
+        </div>
+
+        {/* Informasi Penjual dan Pembeli */}
+        <div className="flex flex-col md:flex-row justify-between mb-10 text-sm">
+            <div className="w-full md:w-1/2 mb-6 md:mb-0">
+                <h3 className="text-base font-semibold text-gray-700 mb-2">Dari (Penjual)</h3>
+                <p className="font-medium text-gray-800">{SELLER_INFO.name}</p>
+                <p className="text-gray-600">{SELLER_INFO.address}</p>
+                <p className="text-gray-600">Telp: {SELLER_INFO.hp}</p>
+            </div>
+            <div className="w-full md:w-1/2 md:pl-8">
+                <h3 className="text-base font-semibold text-gray-700 mb-2">Untuk (Pembeli)</h3>
+                <p className="font-medium text-gray-800">{invoice.nama}</p>
+                <p className="text-gray-600">{invoice.alamat}</p>
+                <p className="text-gray-600">Telp: {invoice.hp}</p>
+            </div>
+        </div>
+
+        {/* Tabel Detail Produk */}
+        <h3 className="text-lg font-semibold text-gray-700 mb-3">Rincian Pesanan</h3>
+        <table className="item-table w-full mb-8 rounded-lg overflow-hidden">
+            <thead>
+                <tr>
+                    <th className="w-[5%] text-center">No</th>
+                    <th>Deskripsi Produk</th>
+                    <th className="w-[10%] text-center">Qty Total</th>
+                    <th className="w-[20%] text-right">Subtotal Produk</th>
+                </tr>
+            </thead>
+            <tbody>
+                {/* Produk digabung menjadi satu baris karena data Google Sheet hanya menyimpan 'produkList' sebagai string gabungan */}
+                <tr className="hover:bg-gray-50 transition duration-100">
+                    <td className="text-center">1</td>
+                    <td className="font-medium text-gray-800">{invoice.produkList}</td>
+                    <td className="text-center font-medium">{invoice.qtyTotal}</td>
+                    <td className="text-right font-semibold text-gray-800">{formatCurrency(invoice.subtotalCalc)}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        {/* Bagian Total */}
+        <div className="flex justify-end">
+            <div className="w-full sm:w-[55%] md:w-[45%] lg:w-[40%]">
+                <table className="w-full text-gray-700 text-sm">
+                    <tbody>
+                        <tr>
+                            <td className="p-2">Subtotal Produk:</td>
+                            <td className="text-right p-2 font-medium">{formatCurrency(invoice.subtotalCalc)}</td>
+                        </tr>
+                        <tr>
+                            <td className="p-2 border-b border-gray-200">Biaya Pengiriman (Ongkir):</td>
+                            <td className="text-right p-2 border-b border-gray-200 font-medium">{formatCurrency(invoice.effectiveOngkir)}</td>
+                        </tr>
+                        <tr className="bg-blue-50/50">
+                            <td className="p-3 font-bold text-lg text-gray-800">TOTAL DIBAYARKAN:</td>
+                            <td className="text-right p-3 font-bold text-xl text-red-600">
+                                {formatCurrency(invoice.effectiveGrandTotal)}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {/* Catatan dan Metode Pembayaran */}
+        <div className="mt-12 pt-6 border-t border-dashed border-gray-300">
+            <h3 className="text-lg font-semibold text-gray-700 mb-3">Metode Pembayaran</h3>
+            <div className="text-sm text-gray-600 p-4 border rounded-lg bg-yellow-50/50">
+                <p className="mb-2">Silakan transfer sesuai total di atas.</p>
+                <p className="font-bold text-gray-800">Metode: <span className="text-blue-600">{invoice.paymentLabel.toUpperCase()}</span></p>
+                <p className="mt-1">
+                    Catatan: Pembayaran via **{invoice.paymentLabel.toUpperCase()}** akan diproses setelah konfirmasi.
+                </p>
+            </div>
+            
+            {/* Tombol Print */}
+            <button
+                onClick={() => window.print()}
+                className="mt-6 px-6 py-2 bg-[#007bff] text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-150 print:hidden"
+            >
+                Cetak & Unduh Invoice
+            </button>
+        </div>
+      </div>
+    </div>
+  );
 }
