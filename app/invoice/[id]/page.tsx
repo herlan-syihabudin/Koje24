@@ -65,7 +65,7 @@ function processInvoiceData(row: string[]) {
 async function getOrder(invoiceId: string) {
   const clean = normalize(invoiceId)
   if (!clean) return null
-  if (!SHEET_ID || !CLIENT_EMAIL || !PRIVATE_KEY) return null
+  if (!SHEET_ID || !PRIVATE_KEY || !CLIENT_EMAIL) return null
 
   const auth = new google.auth.JWT({
     email: CLIENT_EMAIL,
@@ -81,18 +81,39 @@ async function getOrder(invoiceId: string) {
 
   const rows = (res.data.values || []).slice(1)
 
-  // 1️⃣ cari di kolom invoice ID (kolom B)
-  const exact = rows.find((r) => normalize(r[1]) === clean)
-  if (exact) return processInvoiceData(exact)
+  // langsung cocokkan kolom B (invoice ID)
+  const match = rows.find((r) => normalize(r[1]) === clean)
+  if (!match) return null
 
-  // 2️⃣ backup cari invoice link (kolom paling akhir)
-  const matchUrl = rows.find((r) => {
-    const last = normalize(r.at(-1) || "")
-    return last.endsWith(`/invoice/${clean}`)
+  const produkStr = match[5] || ""
+  const produkList = produkStr.split(",").map((p) => {
+    const m = p.match(/(.+)\s\((\d+)x\)/)
+    return m
+      ? { nama: m[1].trim(), qty: Number(m[2]), subtotal: 0 }
+      : { nama: p.trim(), qty: 1, subtotal: 0 }
   })
-  if (matchUrl) return processInvoiceData(matchUrl)
 
-  return null
+  const qtyTotal = produkList.reduce((sum, p) => sum + p.qty, 0)
+  const grandTotal = Number(match[11] || 0)
+  const ongkir = Number(match[10] || 0)
+  const subtotal = grandTotal - ongkir
+
+  return {
+    timestamp: match[0] ?? "",
+    invoiceId: match[1] ?? "",
+    nama: match[2] ?? "",
+    hp: match[3] ?? "",
+    alamat: match[4] ?? "",
+    produkList,
+    qtyTotal,
+    subtotal,
+    ongkir,
+    grandTotal,
+    status: match[8] || "Pending",
+    paymentMethod: match[9] || "Transfer Bank Mandiri",
+    bankAccount: "9918282983939",
+    accountName: "KOJE24",
+  }
 }
 
 // =========================================================
