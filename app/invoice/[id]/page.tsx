@@ -9,79 +9,63 @@ export const viewport = { themeColor: "#0FA3A8" }
 const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? ""
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? ""
 const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
-
-const PRIVATE_KEY = PRIVATE_KEY_RAW
-  .replace(/\\n/g, "\n")
-  .replace(/\\\\n/g, "\n")
+const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n")
 
 const KONTAK_CS = "6282213139580"
 
-// Trim helper
 const normalize = (v: any) => String(v || "").trim()
 
-/* ============================================================
-      🧠 PARSER PRODUK (1 baris → banyak row tabel)
-============================================================ */
+// =========================================================
+// 🧠 Fungsi untuk proses row key menjadi object invoice
+// =========================================================
 function processInvoiceData(row: string[]) {
-  const [
-    timestamp,
-    invoiceId,
-    nama,
-    hp,
-    alamat,
-    produkRaw,
-    qtyTotal,
-    subtotalProduk,
-    status,
-    paymentMethod,
-    ongkir,
-    grandTotal,
-    invoiceUrl
-  ] = row
-
-  // Pecah "Sunrise Boost (2x), Green Revive (1x), ..."
-  const produkList = String(produkRaw)
-    .split(",")
-    .map(p => p.trim())
-    .filter(Boolean)
-    .map(p => {
-      const match = p.match(/(.+)\((\d+)x\)/)
-      const namaProduk = match ? match[1].trim() : p
-      const qty = match ? Number(match[2]) : 1
-
-      const hargaSatuan = Number(subtotalProduk) / Number(qtyTotal || 1)
-      return {
-        nama: namaProduk,
-        qty,
-        subtotal: Math.round(hargaSatuan * qty)
-      }
-    })
-
   return {
-    timestamp,
-    invoiceId,
-    nama,
-    hp,
-    alamat,
-    produkList,
-    qtyTotal: Number(qtyTotal),
-    subtotal: Number(subtotalProduk),
-    ongkir: Number(ongkir),
-    grandTotal: Number(grandTotal),
-    status,
-    paymentMethod,
+    timestamp: row[0] ?? "",
+    invoiceId: row[1] ?? "",
+    nama: row[2] ?? "",
+    hp: row[3] ?? "",
+    alamat: row[4] ?? "",
+    status: row[8] || "Pending",
+    paymentMethod: row[9] || "Transfer Bank Mandiri",
+    ongkir: Number(row[10] || 0),
+    grandTotal: Number(row[11] || 0),
+
+    produkList: (() => {
+      const text = row[5] || ""
+      const list = text.split(",").map((p) => p.trim())
+      return list.map((p) => {
+        const match = p.match(/(.+)\s\((\d+)x\)/)
+        if (!match) return { nama: p, qty: 1, subtotal: 0 }
+
+        const nama = match[1]
+        const qty = Number(match[2])
+        const harga = Number(row[10] || 0) // tidak dipakai
+        return { nama, qty, subtotal: 0 }
+      })
+    })(),
+
+    subtotal: Number(row[11] || 0) - Number(row[10] || 0),
+    qtyTotal: (() => {
+      const text = row[5] || ""
+      const list = text.split(",").map((p) => p.trim())
+      return list.reduce((sum, p) => {
+        const m = p.match(/\((\d+)x\)/)
+        return sum + (m ? Number(m[1]) : 1)
+      }, 0)
+    })(),
+
     bankAccount: "9918282983939",
     accountName: "KOJE24",
   }
 }
 
-/* ============================================================
-      🔥 FETCH INVOICE DARI GOOGLE SHEET
-============================================================ */
+// =========================================================
+// 🔥 Core Get Order — bekerja 100% presisi
+// =========================================================
 async function getOrder(invoiceId: string) {
   const clean = normalize(invoiceId)
   if (!clean) return null
-  if (!SHEET_ID || !PRIVATE_KEY || !CLIENT_EMAIL) return null
+  if (!SHEET_ID || !CLIENT_EMAIL || !PRIVATE_KEY) return null
 
   const auth = new google.auth.JWT({
     email: CLIENT_EMAIL,
@@ -92,45 +76,47 @@ async function getOrder(invoiceId: string) {
   const sheets = google.sheets({ version: "v4", auth })
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: "Sheet1!A:Z",
+    range: "Sheet1!A:M",
   })
 
-  const allRows = res.data.values || []
-  const rows = allRows.slice(1)
+  const rows = (res.data.values || []).slice(1)
 
-  const idLower = clean.toLowerCase()
+  // 1️⃣ cari di kolom invoice ID (kolom B)
+  const exact = rows.find((r) => normalize(r[1]) === clean)
+  if (exact) return processInvoiceData(exact)
 
-  // Scan semua kolom case-insensitive
-  const found = rows.find(r =>
-    r.some(col => String(col).toLowerCase().includes(idLower))
-  )
+  // 2️⃣ backup cari invoice link (kolom paling akhir)
+  const matchUrl = rows.find((r) => {
+    const last = normalize(r.at(-1) || "")
+    return last.endsWith(`/invoice/${clean}`)
+  })
+  if (matchUrl) return processInvoiceData(matchUrl)
 
-  if (!found) return null
-  return processInvoiceData(found)
+  return null
 }
 
-/* ============================================================
-      🎨 WARNA STATUS
-============================================================ */
+// =========================================================
+// 🎨 Warna Status
+// =========================================================
 function getStatusColor(status: string) {
   switch (status.toLowerCase()) {
     case "pending":
       return "bg-amber-50 text-amber-700 border border-amber-300"
     case "paid":
     case "lunas":
-      return "bg-emerald-50 text-emerald-700 border border-emerald-300"
+      return "bg-emerald-50 text-emerald-700 border-emerald-300 border"
     case "cod":
-      return "bg-blue-50 text-blue-700 border border-blue-300"
+      return "bg-blue-50 text-blue-700 border-blue-300 border"
     default:
-      return "bg-gray-50 text-gray-700 border border-gray-300"
+      return "bg-gray-50 text-gray-700 border-gray-300 border"
   }
 }
 
-/* ============================================================
-      🖨️ UI INVOICE
-============================================================ */
+// =========================================================
+// 📄 UI HALAMAN INVOICE
+// =========================================================
 export default async function InvoicePage({ params }: { params: { id: string } }) {
-  const raw = params?.id || ""
+  const raw = params.id || ""
   const clean = raw.replace(/(%0A|[\n\r\t\s]|\?.*)/g, "")
   const data = await getOrder(clean)
 
@@ -148,7 +134,7 @@ export default async function InvoicePage({ params }: { params: { id: string } }
 
   return (
     <main className="min-h-screen bg-[#F4FAFA] flex justify-center py-6 px-3 print:bg-white">
-      <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl border border-slate-200 overflow-hidden print:shadow-none print:rounded-none print:border-none">
+      <div className="w-full max-w-3xl bg-white shadow-lg rounded-xl border border-slate-200 overflow-hidden print:shadow-none">
 
         {/* HEADER */}
         <div className="flex justify-between items-start border-b border-slate-200 px-6 py-4">
@@ -157,27 +143,26 @@ export default async function InvoicePage({ params }: { params: { id: string } }
             <p className="mt-2 font-semibold text-sm">KOJE24 Official</p>
             <p className="text-xs text-slate-500 leading-tight">
               Jl. Jenderal Sudirman No. 24, Jakarta Selatan
-              <br />
-              Tel: {KONTAK_CS} • order@koje24.com
+              <br /> Tel: {KONTAK_CS} • order@koje24.com
             </p>
           </div>
           <img src="/logo-koje24.png" alt="KOJE24" className="h-12 w-auto" />
         </div>
 
-        {/* CUSTOMER */}
+        {/* CUSTOMER INFO */}
         <div className="grid grid-cols-3 px-6 py-4 gap-4 text-[13px] border-b border-slate-100">
           <div>
             <p className="text-xs font-bold uppercase text-slate-700 mb-1">Dikirim Kepada:</p>
             <p className="font-semibold text-slate-900">{data.nama}</p>
             <p className="text-slate-600">{data.hp}</p>
-            <p className="text-slate-600 leading-snug">{data.alamat}</p>
+            <p className="text-slate-600 max-w-[90%]">{data.alamat}</p>
           </div>
           <div>
             <p className="text-xs font-bold uppercase text-slate-700 mb-1">Tanggal Pesanan:</p>
             <p className="text-slate-700">{data.timestamp}</p>
           </div>
           <div className="text-right">
-            <p className="text-xs font-bold uppercase text-slate-700 mb-1">No. Invoice:</p>
+            <p className="text-xs font-bold uppercase text-slate-700 mb-1">Nomor Invoice:</p>
             <p className="text-lg font-extrabold tracking-wide text-[#0B4B50]">{data.invoiceId}</p>
             <p className={`inline-block mt-2 px-2 py-1 rounded-md text-[10px] font-bold ${statusClasses}`}>
               {data.status.toUpperCase()}
@@ -185,28 +170,22 @@ export default async function InvoicePage({ params }: { params: { id: string } }
           </div>
         </div>
 
-        {/* TABEL PRODUK */}
+        {/* PRODUK TABLE */}
         <div className="px-6 py-4">
           <table className="w-full border border-slate-300 text-sm">
-            <thead className="bg-slate-100 text-slate-600 uppercase text-[11px]">
+            <thead className="bg-slate-100 uppercase text-[11px]">
               <tr>
-                <th className="p-2 text-left">Produk</th>
-                <th className="p-2 text-right">Harga</th>
-                <th className="p-2 text-right">Qty</th>
-                <th className="p-2 text-right">Subtotal</th>
+                <th className="p-2 text-left w-[50%]">Produk</th>
+                <th className="p-2 text-right w-[15%]">Qty</th>
+                <th className="p-2 text-right w-[25%]">Subtotal</th>
               </tr>
             </thead>
             <tbody>
-              {data.produkList.map((p, i) => (
+              {data.produkList.map((p: any, i: number) => (
                 <tr key={i} className="border-t">
-                  <td className="p-3 font-medium text-slate-800">{p.nama}</td>
-                  <td className="p-3 text-right">
-                    Rp{Math.round(p.subtotal / p.qty).toLocaleString("id-ID")}
-                  </td>
-                  <td className="p-3 text-right text-slate-800">{p.qty}x</td>
-                  <td className="p-3 text-right font-bold text-[#0B4B50]">
-                    Rp{p.subtotal.toLocaleString("id-ID")}
-                  </td>
+                  <td className="p-2 font-medium text-slate-800">{p.nama}</td>
+                  <td className="p-2 text-right">{p.qty}x</td>
+                  <td className="p-2 text-right font-semibold">Rp{(data.subtotal / data.qtyTotal).toLocaleString("id-ID")}</td>
                 </tr>
               ))}
             </tbody>
@@ -225,44 +204,28 @@ export default async function InvoicePage({ params }: { params: { id: string } }
               <span className="font-semibold">Rp{data.ongkir.toLocaleString("id-ID")}</span>
             </div>
             <div className="border-t pt-3 flex justify-between text-lg font-bold text-[#0B4B50]">
-              <span>TOTAL AKHIR</span>
+              <span>Total Akhir</span>
               <span>Rp{data.grandTotal.toLocaleString("id-ID")}</span>
             </div>
           </div>
         </div>
 
-        {/* PAYMENT + ACTION BUTTON */}
-        <div className="px-6 py-4 flex justify-between text-sm items-start">
+        {/* PAYMENT */}
+        <div className="px-6 py-6 flex justify-between text-sm items-start">
           <div>
             <p className="text-xs font-bold uppercase text-slate-700 mb-2">Rincian Pembayaran:</p>
             <p className="font-semibold">{data.paymentMethod}</p>
             <p>No.Rek: <strong className="text-red-600">{data.bankAccount}</strong></p>
             <p>a/n <strong className="text-slate-800">{data.accountName}</strong></p>
 
-            {/* Konfirmasi WA */}
             <a
-              href={`https://wa.me/${KONTAK_CS}?text=Saya%20sudah%20bayar%20Invoice%20${data.invoiceId}`}
+              href={`https://wa.me/${KONTAK_CS}?text=Halo%20KOJE24,%20saya%20sudah%20melakukan%20pembayaran%20untuk%20Invoice%20${data.invoiceId}%20total%20${encodeURIComponent(
+                "Rp " + data.grandTotal.toLocaleString("id-ID")
+              )}`}
               target="_blank"
               className="mt-4 inline-block bg-green-600 text-white font-bold text-xs px-4 py-2 rounded-lg shadow hover:bg-green-700 transition"
             >
-              ✅ Konfirmasi Pembayaran
-            </a>
-
-            {/* Download PDF */}
-            <button
-              onClick={() => window.print()}
-              className="mt-2 inline-block bg-slate-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow hover:bg-slate-800 transition"
-            >
-              ⬇️ Download Invoice (PDF)
-            </button>
-
-            {/* Share pesan WA */}
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(window.location.href)}`}
-              target="_blank"
-              className="mt-2 inline-block bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded-lg shadow hover:bg-emerald-700 transition"
-            >
-              📤 Share via WhatsApp
+              ✅ Konfirmasi Pembayaran via WhatsApp
             </a>
           </div>
 
@@ -277,8 +240,14 @@ export default async function InvoicePage({ params }: { params: { id: string } }
           <strong className="text-slate-700">TERIMA KASIH TELAH MEMERCAYAI KOJE24 🙏</strong>
           <br />
           <span className="text-slate-400 text-[10px]">Invoice ini adalah bukti pembelian yang sah</span>
+          <br />
+          <button
+            onClick={() => typeof window !== "undefined" && window.print()}
+            className="mt-2 text-[#0B4B50] underline font-semibold hover:text-black"
+          >
+            🖨️ Download / Print Invoice
+          </button>
         </div>
-
       </div>
     </main>
   )
