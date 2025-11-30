@@ -1,39 +1,33 @@
-import { NextResponse } from "next/server";
-import { google } from "googleapis";
+import { NextResponse } from "next/server"
+import { google } from "googleapis"
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
-const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? "";
-const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? "";
-const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
-const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n");
+const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? ""
+const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? ""
+const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
+const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n")
 
-export async function GET(
-  req: Request,
-  context: { params: { id: string } }
-) {
+export async function GET(req: Request, context: { params: { id: string } }) {
   try {
-    const invoiceId = context.params.id?.trim();
-    if (!invoiceId) {
-      return NextResponse.json({ success: false, message: "Invoice ID kosong" });
-    }
+    const invoiceId = context.params.id?.trim()
+    if (!invoiceId) return NextResponse.json({ success: false, message: "Invoice ID kosong" })
 
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    });
+    })
 
-    const sheets = google.sheets({ version: "v4", auth });
+    const sheets = google.sheets({ version: "v4", auth })
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: "Sheet1!A:M",
-    });
+    })
 
-    const rows = res.data.values?.slice(1) || [];
-    const match = rows.find((r) => (r[1] || "").trim() === invoiceId);
-    if (!match)
-      return NextResponse.json({ success: false, message: "Invoice tidak ditemukan" });
+    const rows = res.data.values?.slice(1) || []
+    const match = rows.find((r) => (r[1] || "").trim() === invoiceId)
+    if (!match) return NextResponse.json({ success: false, message: "Invoice tidak ditemukan" })
 
     return NextResponse.json({
       success: true,
@@ -52,11 +46,11 @@ export async function GET(
         effectiveGrandTotal: Number(match[11] ?? 0),
         invoiceUrl: match[12] ?? "",
       },
-    });
+    })
   } catch (err: any) {
     return NextResponse.json(
       { success: false, message: err.message || "Server error" },
       { status: 500 }
-    );
+    )
   }
 }
