@@ -48,7 +48,7 @@ async function getOrder(invoiceId: string) {
   const sheets = google.sheets({ version: "v4", auth })
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: "Sheet1!A:M",
+    range: "Sheet1!A:Z",
   })
 
   const allRows = res.data.values || []
@@ -60,7 +60,7 @@ async function getOrder(invoiceId: string) {
   // ⛳ FIX TypeScript + Matching URL/ID
   const sameInvoice = rows.filter((r: string[]) => {
     const colInvoice = normalize(r[1])
-    const colUrl = normalize(r[r.length - 1])
+    const colUrl = normalize(r[12])   // kolom M index = 12
     return (
       colInvoice === clean ||
       colUrl.endsWith(clean) ||
