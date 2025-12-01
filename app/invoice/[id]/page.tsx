@@ -79,32 +79,45 @@ export default function InvoicePage() {
         }
       `}</style>
 
-      <div className="invoice-container bg-white max-w-4xl mx-auto rounded-lg shadow-xl p-10 border border-gray-200">
+      <div className="invoice-container bg-white max-w-4xl mx-auto rounded-lg shadow-xl p-10 border border-gray-200 relative">
         
-        {/* === STAMP PAID === */}
-        {invoice.status.toLowerCase() === "paid" && (
-          <div className="absolute opacity-10 rotate-[-25deg] top-[40%] left-[17%] text-[120px] font-extrabold text-green-700 pointer-events-none select-none">
-            PAID
-          </div>
-        )}
+  {/* === WATERMARK PAID DI TENGAH === */}
+  {invoice.status.toLowerCase() === "paid" && (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+      <span className="font-extrabold text-[130px] text-green-600 opacity-15 rotate-[-25deg] tracking-wider">
+        PAID
+      </span>
+    </div>
+  )}
 
-        {/* === HEADER === */}
-        <div className="flex justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-extrabold text-[#007bff]">KOJE24</h1>
-            <p className="text-sm text-gray-600 mt-2">{SELLER_INFO.address}</p>
-            <p className="text-sm text-gray-600">Telp: {SELLER_INFO.hp}</p>
-          </div>
+  {/* === HEADER === */}
+  <div className="flex justify-between mb-8 items-start">
+    <div>
+      {/* LOGO KOJE 24 */}
+      <img
+        src="/image/logo-koje24.png"       // simpan file ke /public/logo-koje24.png
+        alt="KOJE24"
+        className="h-14 w-auto mb-2"
+      />
 
-          <div className="text-right">
-            <p className="text-3xl font-semibold tracking-wide">INVOICE</p>
-            <p className="text-xl font-bold mt-1">#{invoice.invoiceId}</p>
-            <p className="text-sm mt-1">Tanggal: {new Date(invoice.timestamp).toLocaleDateString("id-ID")}</p>
-            <span className={`mt-3 inline-block px-4 py-1 border rounded-full text-sm font-semibold ${getStatusStyle(invoice.status)}`}>
-              {invoice.status.toUpperCase()}
-            </span>
-          </div>
-        </div>
+      <p className="text-sm text-gray-600 mt-1">
+        Jl. Kopi Kenangan No. 24, Jakarta Selatan<br />
+        Telp: 0811-2233-4455
+      </p>
+    </div>
+
+    <div className="text-right">
+      <p className="text-3xl font-semibold tracking-wide text-[#0B4B50]">INVOICE</p>
+      <p className="text-xl font-bold mt-1">#{invoice.invoiceId}</p>
+      <p className="text-sm mt-1">Tanggal: {new Date(invoice.timestamp).toLocaleDateString("id-ID")}</p>
+
+      <span
+        className={`mt-3 inline-block px-4 py-1 border rounded-full text-sm font-semibold ${getStatusStyle(invoice.status)}`}
+      >
+        {invoice.status.toUpperCase()}
+      </span>
+    </div>
+  </div>
 
         {/* === BILL TO === */}
         <div className="mb-6">
