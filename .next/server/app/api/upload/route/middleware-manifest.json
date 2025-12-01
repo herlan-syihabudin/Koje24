@@ -1,0 +1,38 @@
+{
+  "sorted_middleware": [
+    "/api/upload/route"
+  ],
+  "middleware": {},
+  "instrumentation": null,
+  "functions": {
+    "/api/upload/route": {
+      "files": [
+        "server/middleware-build-manifest.js",
+        "server/interception-route-rewrite-manifest.js",
+        "server/server-reference-manifest.js",
+        "server/app/api/upload/route_client-reference-manifest.js",
+        "server/edge/chunks/_next-internal_server_app_api_upload_route_actions_25ce3511.js",
+        "server/edge/chunks/_ee97b5f7._.js",
+        "server/edge/chunks/[root-of-the-server]__aa9cc9e6._.js",
+        "server/edge/chunks/turbopack-edge-wrapper_eb4f15ff.js"
+      ],
+      "name": "app/api/upload/route",
+      "page": "/api/upload/route",
+      "matchers": [
+        {
+          "regexp": "^/api/upload(?:/)?$",
+          "originalSource": "/api/upload"
+        }
+      ],
+      "wasm": [],
+      "assets": [],
+      "env": {
+        "__NEXT_BUILD_ID": "V-QPvJTlqv4sYiT8doCui",
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "45sm81waW3/6Xjvq6EO3ux5LALINbfWj1aQWdK/VHCQ=",
+        "__NEXT_PREVIEW_MODE_ID": "15cfacf2c7df31f5a2d92d19914d7acb",
+        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "4c6a0873ecd2249d8d11e96c416904ba1eecf77e1a50f87be3b842ba8685726d",
+        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "33aff1a6234480884332bcac4ccc9730fd41d0dd7cfc658bb9b85d385f42ecaf"
+      }
+    }
+  }
+}
