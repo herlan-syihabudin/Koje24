@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import QRCode from "react-qr-code";
-import { Barcode } from "react-barcode";
 
 interface InvoiceData {
   invoiceId: string;
