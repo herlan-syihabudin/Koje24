@@ -1,107 +1,44 @@
 import { NextResponse } from "next/server";
-import { fetchInvoiceById } from "@/lib/invoice-db";
-import { Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer";
+import { pdf, Document, Page, Text, StyleSheet } from "@react-pdf/renderer";
+import invoices from "@/data/invoices.json"; // kalau API fetch, samakan seperti yang di invoice page
 
-// FONT DEFAULT
-Font.register({
-  family: "Inter",
-  fonts: [{ src: "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrKky2JgR3lOQ.ttf" }],
-});
-
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   const invoiceId = params.id;
-  const data = await fetchInvoiceById(invoiceId);
+  const data = invoices.find((i) => i.invoiceId === invoiceId);
 
-  if (!data)
-    return NextResponse.json({
-      success: false,
-      message: "Invoice tidak ditemukan",
-    });
+  if (!data) {
+    return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+  }
 
   const styles = StyleSheet.create({
-    page: {
-      padding: 32,
-      fontFamily: "Inter",
-      fontSize: 11,
-    },
-    title: {
-      fontSize: 22,
-      marginBottom: 16,
-      textAlign: "right",
-      fontWeight: 700,
-    },
-    section: {
-      marginBottom: 14,
-    },
-    row: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginBottom: 4,
-    },
-    label: { fontSize: 12, fontWeight: 600, marginBottom: 2 },
+    page: { padding: 40 },
+    title: { fontSize: 22, marginBottom: 20 },
+    label: { fontSize: 12, marginBottom: 4 },
   });
 
-  const Pdf = (
+  // 🔥 JSX didefinisikan dulu dalam const
+  const PdfDocument = (
     <Document>
       <Page size="A4" style={styles.page}>
         <Text style={styles.title}>INVOICE #{data.invoiceId}</Text>
-
-        {/* Pembeli */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Pembeli</Text>
-          <Text>{data.nama}</Text>
-          <Text>{data.alamat}</Text>
-          <Text>{data.hp}</Text>
-        </View>
-
-        {/* Produk */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Rincian Pesanan</Text>
-          <Text>{data.produkList}</Text>
-        </View>
-
-        {/* Total */}
-        <View style={styles.section}>
-          <View style={styles.row}>
-            <Text>Subtotal Produk</Text>
-            <Text>{data.subtotalCalc.toLocaleString("id-ID")}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text>Ongkir</Text>
-            <Text>{data.effectiveOngkir.toLocaleString("id-ID")}</Text>
-          </View>
-          <View style={[styles.row, { marginTop: 8 }]}>
-            <Text style={{ fontSize: 14, fontWeight: 700 }}>TOTAL</Text>
-            <Text style={{ fontSize: 14, fontWeight: 700 }}>
-              {data.effectiveGrandTotal.toLocaleString("id-ID")}
-            </Text>
-          </View>
-        </View>
-
-        <Text
-          style={{
-            textAlign: "center",
-            marginTop: 32,
-            fontSize: 11,
-          }}
-        >
-          Terima kasih telah berbelanja di KOJE24 💛 Semoga sehat &
-          berenergi setiap hari!
+        <Text style={styles.label}>Nama: {data.nama}</Text>
+        <Text style={styles.label}>HP: {data.hp}</Text>
+        <Text style={styles.label}>Alamat: {data.alamat}</Text>
+        <Text style={[styles.label, { marginTop: 12 }]}>
+          Total: Rp {data.effectiveGrandTotal.toLocaleString("id-ID")}
         </Text>
       </Page>
     </Document>
   );
 
-  const pdfBuffer = await Pdf.render();
+  // 🔥 Baru di-render ke PDF buffer
+  const pdfFile = await pdf(PdfDocument).toBuffer();
 
-  return new Response(Buffer.from(pdfBuffer), {
+  return new NextResponse(pdfFile, {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="KOJE24-${data.invoiceId}.pdf"`,
+      "Content-Disposition": `attachment; filename=KOJE24-${invoiceId}.pdf`,
     },
   });
 }
