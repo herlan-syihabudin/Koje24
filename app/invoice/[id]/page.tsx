@@ -1,165 +1,185 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import QRCode from "react-qr-code";
-import Image from "next/image";
-import "./print.css";
+import React, { useState, useEffect } from 'react';
+import { useParams } from "next/navigation";
+import QRCode from "react-qr-code"; // ⬅️ npm install react-qr-code
 
 interface InvoiceData {
   invoiceId: string;
   timestamp: string;
   nama: string;
-  alamat: string;
   hp: string;
+  alamat: string;
   produkList: string;
   qtyTotal: number;
   subtotalCalc: number;
+  status: string;
+  paymentLabel: string;
   effectiveOngkir: number;
   effectiveGrandTotal: number;
-  status: string;
   invoiceUrl: string;
 }
 
-export default function InvoicePage({ params }: { params: { id: string } }) {
-  const invoiceId = params.id;
-  const [data, setData] = useState<InvoiceData | null>(null);
+const SELLER_INFO = {
+  name: "KOJE24 Official",
+  address: "Jl. Kopi Kenangan No. 24, Jakarta Selatan",
+  hp: "0811-2233-4455",
+};
+
+const formatCurrency = (amount: number): string =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(amount);
+
+export default function InvoicePage() {
+  const { id } = useParams();
+  const invoiceId = String(id);
+
+  const [invoice, setInvoice] = useState<InvoiceData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchInvoice() {
-      const res = await fetch(`/api/invoice/${invoiceId}`, { cache: "no-store" });
-      const json = await res.json();
-      setData(json.data);
-    }
+    if (!invoiceId) return;
+    const fetchInvoice = async () => {
+      try {
+        const res = await fetch(`/api/invoice/${invoiceId}`, { cache: "no-store" });
+        const result = await res.json();
+        if (res.ok && result.success) setInvoice(result.data);
+        else setError(result.message);
+      } catch {
+        setError("Terjadi kesalahan koneksi.");
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchInvoice();
   }, [invoiceId]);
 
-  if (!data) return <p className="text-center p-10">Loading invoice...</p>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen text-lg">Memuat Invoice #{invoiceId}...</div>;
+  if (error) return <div className="flex items-center justify-center min-h-screen text-lg text-red-600">{error}</div>;
+  if (!invoice) return <div className="flex items-center justify-center min-h-screen text-lg">Invoice tidak ditemukan.</div>;
 
-  const tanggal = new Date(data.timestamp).toLocaleDateString("id-ID", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const getStatusStyle = (s: string) => {
+    const x = s.toLowerCase();
+    if (x === "paid") return "bg-green-100 text-green-700 border-green-300";
+    if (x === "cod") return "bg-blue-100 text-blue-700 border-blue-300";
+    return "bg-yellow-100 text-yellow-700 border-yellow-300";
+  };
 
   return (
-    <div className="flex justify-center bg-[#f7fafa] p-4 print:bg-white">
-      <div
-        id="invoice"
-        className="w-[900px] bg-white shadow-xl rounded-xl p-10 print:shadow-none print:w-full print:p-6 relative"
-      >
-        {/* WATERMARK PAID */}
-        {data.status.toLowerCase() === "paid" && (
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -rotate-30 text-[140px] font-bold text-[#0FA3A833] select-none print:text-[#0FA3A822]">
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-8 print:p-0">
+      <style jsx global>{`
+        @media print {
+          body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+          .invoice-container { box-shadow: none !important; border: none !important; margin: 0 !important; width: 100% !important; }
+          .no-print { display: none !important; }
+        }
+      `}</style>
+
+      <div className="invoice-container bg-white max-w-4xl mx-auto rounded-lg shadow-xl p-10 border border-gray-200">
+        
+        {/* === STAMP PAID === */}
+        {invoice.status.toLowerCase() === "paid" && (
+          <div className="absolute opacity-10 rotate-[-25deg] top-[40%] left-[17%] text-[120px] font-extrabold text-green-700 pointer-events-none select-none">
             PAID
           </div>
         )}
 
-        {/* HEADER */}
-        <div className="grid grid-cols-2 items-start">
-          <div className="space-y-2">
-            <Image
-              src="/image/logo-koje24.png"
-              alt="KOJE24"
-              width={200}
-              height={80}
-              priority
-            />
-            <p className="text-sm text-gray-600 leading-tight">
-              Natural Cold-Pressed Juice <br />
-              Jl. Kopi Kenangan No. 24, Jakarta Selatan <br />
-              Telp: 0811-2233-4455
-            </p>
+        {/* === HEADER === */}
+        <div className="flex justify-between mb-8">
+          <div>
+            <h1 className="text-4xl font-extrabold text-[#007bff]">KOJE24</h1>
+            <p className="text-sm text-gray-600 mt-2">{SELLER_INFO.address}</p>
+            <p className="text-sm text-gray-600">Telp: {SELLER_INFO.hp}</p>
           </div>
 
-          <div className="text-right space-y-1">
-            <p className="text-2xl font-bold tracking-wide text-[#0B4B50]">INVOICE</p>
-            <p className="text-gray-700 font-medium">#{data.invoiceId}</p>
-            <p className="text-sm text-gray-500">Tanggal: {tanggal}</p>
-            <span
-              className={`inline-block px-4 py-1 text-sm rounded-full font-semibold ${
-                data.status === "Paid"
-                  ? "bg-green-100 text-green-700"
-                  : data.status === "COD"
-                  ? "bg-orange-100 text-orange-700"
-                  : "bg-gray-200 text-gray-600"
-              }`}
-            >
-              {data.status}
+          <div className="text-right">
+            <p className="text-3xl font-semibold tracking-wide">INVOICE</p>
+            <p className="text-xl font-bold mt-1">#{invoice.invoiceId}</p>
+            <p className="text-sm mt-1">Tanggal: {new Date(invoice.timestamp).toLocaleDateString("id-ID")}</p>
+            <span className={`mt-3 inline-block px-4 py-1 border rounded-full text-sm font-semibold ${getStatusStyle(invoice.status)}`}>
+              {invoice.status.toUpperCase()}
             </span>
           </div>
         </div>
 
-        {/* PEMBELI */}
-        <div className="mt-10">
-          <p className="font-semibold text-gray-700">Pembeli</p>
-          <p className="capitalize">{data.nama}</p>
-          <p className="capitalize">{data.alamat}</p>
-          <p>Telp: {data.hp}</p>
+        {/* === BILL TO === */}
+        <div className="mb-6">
+          <h3 className="text-sm font-bold text-gray-700 mb-1">Pembeli</h3>
+          <p className="text-gray-800 font-medium">{invoice.nama}</p>
+          <p className="text-gray-600">{invoice.alamat}</p>
+          <p className="text-gray-600">Telp: {invoice.hp}</p>
         </div>
 
-        {/* TABEL */}
-        <div className="mt-8 border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-[#0B4B50] text-white">
-              <tr>
-                <th className="text-left p-3">Deskripsi</th>
-                <th className="text-center p-3 w-20">Qty</th>
-                <th className="text-right p-3 w-32">Subtotal</th>
-              </tr>
-            </thead>
+        {/* === TABLE === */}
+        <table className="w-full text-sm border border-gray-300 mb-6">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-300 py-2 text-left px-3">Deskripsi</th>
+              <th className="border border-gray-300 py-2 w-24 text-center">Qty</th>
+              <th className="border border-gray-300 py-2 w-40 text-right px-3">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="border border-gray-200 py-2 px-3">{invoice.produkList}</td>
+              <td className="border border-gray-200 text-center">{invoice.qtyTotal}</td>
+              <td className="border border-gray-200 text-right px-3">{formatCurrency(invoice.subtotalCalc)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* === TOTAL SECTION === */}
+        <div className="flex justify-end mb-8">
+          <table className="text-sm">
             <tbody>
-              <tr className="border-b">
-                <td className="p-3">{data.produkList}</td>
-                <td className="p-3 text-center">{data.qtyTotal}</td>
-                <td className="p-3 text-right">
-                  Rp{data.subtotalCalc.toLocaleString("id-ID")}
-                </td>
+              <tr>
+                <td className="py-1 px-4">Subtotal Produk:</td>
+                <td className="text-right font-medium py-1 px-4">{formatCurrency(invoice.subtotalCalc)}</td>
+              </tr>
+              <tr>
+                <td className="py-1 px-4">Ongkir:</td>
+                <td className="text-right font-medium py-1 px-4">{formatCurrency(invoice.effectiveOngkir)}</td>
+              </tr>
+              <tr className="text-lg font-bold bg-gray-50">
+                <td className="py-2 px-4">TOTAL DIBAYARKAN:</td>
+                <td className="text-right text-red-600 py-2 px-4">{formatCurrency(invoice.effectiveGrandTotal)}</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        {/* SUMMARY */}
-        <div className="flex justify-end mt-8">
-          <div className="space-y-1 text-sm w-64">
-            <div className="flex justify-between">
-              <span>Subtotal Produk:</span>
-              <span>Rp{data.subtotalCalc.toLocaleString("id-ID")}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Ongkir:</span>
-              <span>Rp{data.effectiveOngkir.toLocaleString("id-ID")}</span>
-            </div>
-            <div className="flex justify-between text-lg font-bold text-red-600 border-t pt-2">
-              <span>TOTAL DIBAYARKAN:</span>
-              <span>Rp{data.effectiveGrandTotal.toLocaleString("id-ID")}</span>
-            </div>
+        {/* === QR & BARCODE === */}
+        <div className="flex justify-between items-center mt-6 mb-10">
+          <div className="text-sm text-gray-700">
+            Scan untuk membuka invoice online:
+            <QRCode value={invoice.invoiceUrl} size={90} className="mt-2" />
           </div>
+          <img
+            src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
+            alt="barcode"
+            className="h-16"
+          />
         </div>
 
-        {/* QR + BARCODE */}
-        <div className="grid grid-cols-2 gap-4 mt-12 items-end">
-          <div>
-            <p className="text-sm mb-2 text-gray-600">Scan untuk membuka invoice online:</p>
-            <div className="bg-white p-2 border rounded-md inline-block">
-              <QRCode value={data.invoiceUrl} size={110} />
-            </div>
-          </div>
-
-          <div className="text-right">
-            <img
-              src={`https://barcodeapi.org/api/128/${data.invoiceId}`}
-              alt="barcode"
-              className="h-16 ml-auto"
-            />
-          </div>
-        </div>
-
-        {/* FOOTER */}
-        <p className="mt-10 text-center text-sm text-gray-600 border-t pt-4">
-          Terima kasih telah berbelanja di <span className="font-bold text-[#0B4B50]">KOJE24</span> 💛
-          Semoga sehat & berten energi setiap hari!
+        {/* === FOOTER === */}
+        <p className="text-center text-gray-600 text-sm border-t pt-4">
+          Terima kasih telah berbelanja di <strong>KOJE24</strong> 💛  
+          Semoga sehat & berenergi setiap hari!
         </p>
+      </div>
+
+      {/* PRINT BUTTON */}
+      <div className="text-center mt-6 no-print">
+        <button
+          onClick={() => window.print()}
+          className="px-6 py-2 bg-[#007bff] text-white rounded-lg shadow-md hover:bg-blue-700 transition"
+        >
+          Cetak & Unduh Invoice
+        </button>
       </div>
     </div>
   );
