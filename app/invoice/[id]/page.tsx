@@ -201,11 +201,13 @@ export default function InvoicePage() {
       {/* PRINT BUTTON */}
       <div className="text-center mt-6 no-print">
         <button
-          onClick={() => window.print()}
-          className="px-6 py-2 bg-[#007bff] text-white rounded-lg shadow-md hover:bg-blue-700 transition"
-        >
-          Cetak & Unduh Invoice
-        </button>
+  onClick={() =>
+    window.location.href = `/api/invoice-pdf/${invoice.invoiceId}`
+  }
+  className="px-6 py-2 bg-[#C62828] text-white rounded-full shadow-md hover:bg-[#b12121] transition mt-3 text-sm sm:text-base"
+>
+  📄 Download PDF Resmi (A4)
+</button>
       </div>
     </div>
   );
