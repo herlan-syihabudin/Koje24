@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "react-qr-code";
 import Image from "next/image";
+import "./print.css";
 
 interface InvoiceData {
   invoiceId: string;
