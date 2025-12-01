@@ -16,31 +16,30 @@ interface InvoiceData {
   subtotalCalc: number;
   effectiveOngkir: number;
   effectiveGrandTotal: number;
-  status: string; // Paid / COD / Pending
+  status: string;
   invoiceUrl: string;
 }
 
-export default function InvoicePage({ params }: { params: { invoiceId: string } }) {
+export default function InvoicePage({ params }: { params: { id: string } }) {
+  const invoiceId = params.id;
   const [data, setData] = useState<InvoiceData | null>(null);
 
   useEffect(() => {
-    async function fetchData() {
-      const res = await fetch(`/api/invoice/${params.invoiceId}`, { cache: "no-store" });
+    async function fetchInvoice() {
+      const res = await fetch(`/api/invoice/${invoiceId}`, { cache: "no-store" });
       const json = await res.json();
       setData(json.data);
     }
-    fetchData();
-  }, [params.invoiceId]);
+    fetchInvoice();
+  }, [invoiceId]);
 
   if (!data) return <p className="text-center p-10">Loading invoice...</p>;
 
-  const tanggal = data.timestamp
-    ? new Date(data.timestamp).toLocaleDateString("id-ID", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "-";
+  const tanggal = new Date(data.timestamp).toLocaleDateString("id-ID", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
     <div className="flex justify-center bg-[#f7fafa] p-4 print:bg-white">
@@ -49,7 +48,7 @@ export default function InvoicePage({ params }: { params: { invoiceId: string } 
         className="w-[900px] bg-white shadow-xl rounded-xl p-10 print:shadow-none print:w-full print:p-6 relative"
       >
         {/* WATERMARK PAID */}
-        {data.status === "Paid" && (
+        {data.status.toLowerCase() === "paid" && (
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -rotate-30 text-[140px] font-bold text-[#0FA3A833] select-none print:text-[#0FA3A822]">
             PAID
           </div>
@@ -59,7 +58,7 @@ export default function InvoicePage({ params }: { params: { invoiceId: string } 
         <div className="grid grid-cols-2 items-start">
           <div className="space-y-2">
             <Image
-              src="/image/logo-koje24.png" // simpan file logo ini ke public/logo-koje-hijau.png
+              src="/image/logo-koje24.png"
               alt="KOJE24"
               width={200}
               height={80}
@@ -148,15 +147,11 @@ export default function InvoicePage({ params }: { params: { invoiceId: string } 
           </div>
 
           <div className="text-right">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              jsbarcode-format="CODE128"
-              jsbarcode-value={data.invoiceId}
-              jsbarcode-textmargin="0"
-              jsbarcode-fontoptions="bold"
-              className="w-full h-12"
-            ></svg>
-            <p className="text-xs mt-1">{data.invoiceId}</p>
+            <img
+              src={`https://barcodeapi.org/api/128/${data.invoiceId}`}
+              alt="barcode"
+              className="h-16 ml-auto"
+            />
           </div>
         </div>
 
