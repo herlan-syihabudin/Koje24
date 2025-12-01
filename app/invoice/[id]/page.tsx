@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from "next/navigation";
-import QRCode from "react-qr-code"; // ⬅️ npm install react-qr-code
+import QRCode from "react-qr-code";
 
 interface InvoiceData {
   invoiceId: string;
@@ -20,18 +20,23 @@ interface InvoiceData {
   invoiceUrl: string;
 }
 
-const SELLER_INFO = {
-  name: "KOJE24 Official",
-  address: "Jl. Kopi Kenangan No. 24, Jakarta Selatan",
-  hp: "0811-2233-4455",
-};
-
 const formatCurrency = (amount: number): string =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     minimumFractionDigits: 0,
   }).format(amount);
+
+// 🔥 FIX timestamp format "30/11/2025, 14.00.54"
+const parseTimestamp = (ts: string) => {
+  if (!ts) return null;
+  const [tanggal, waktu] = ts.split(", ");
+  const [dd, mm, yyyy] = tanggal.split("/");
+  const waktuFix = waktu.replace(/\./g, ":");
+  const iso = `${yyyy}-${mm}-${dd}T${waktuFix}`;
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? null : d;
+};
 
 export default function InvoicePage() {
   const { id } = useParams();
@@ -62,6 +67,17 @@ export default function InvoicePage() {
   if (error) return <div className="flex items-center justify-center min-h-screen text-lg text-red-600">{error}</div>;
   if (!invoice) return <div className="flex items-center justify-center min-h-screen text-lg">Invoice tidak ditemukan.</div>;
 
+  const parsedDate = parseTimestamp(invoice.timestamp);
+  const tanggal = parsedDate
+    ? parsedDate.toLocaleString("id-ID", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+    : invoice.timestamp;
+
   const getStatusStyle = (s: string) => {
     const x = s.toLowerCase();
     if (x === "paid") return "bg-green-100 text-green-700 border-green-300";
@@ -81,43 +97,40 @@ export default function InvoicePage() {
 
       <div className="invoice-container bg-white max-w-4xl mx-auto rounded-lg shadow-xl p-10 border border-gray-200 relative">
         
-  {/* === WATERMARK PAID DI TENGAH === */}
-  {invoice.status.toLowerCase() === "paid" && (
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-      <span className="font-extrabold text-[130px] text-green-600 opacity-15 rotate-[-25deg] tracking-wider">
-        PAID
-      </span>
-    </div>
-  )}
+        {/* === WATERMARK PAID TENGAH === */}
+        {invoice.status.toLowerCase() === "paid" && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+            <span className="font-extrabold text-[130px] text-green-600 opacity-15 rotate-[-25deg] tracking-wider">
+              PAID
+            </span>
+          </div>
+        )}
 
-  {/* === HEADER === */}
-  <div className="flex justify-between mb-8 items-start">
-    <div>
-      {/* LOGO KOJE 24 */}
-      <img
-        src="/image/logo-koje24.png"       // simpan file ke /public/logo-koje24.png
-        alt="KOJE24"
-        className="h-14 w-auto mb-2"
-      />
+        {/* === HEADER === */}
+        <div className="flex justify-between mb-8 items-start">
+          <div>
+            <img
+              src="/image/logo-koje24.png"
+              alt="KOJE24"
+              className="h-14 w-auto mb-2"
+            />
+            <p className="text-sm text-gray-600 mt-1">
+              Jl. Kopi Kenangan No. 24, Jakarta Selatan<br />
+              Telp: 0811-2233-4455
+            </p>
+          </div>
 
-      <p className="text-sm text-gray-600 mt-1">
-        Jl. Kopi Kenangan No. 24, Jakarta Selatan<br />
-        Telp: 0811-2233-4455
-      </p>
-    </div>
-
-    <div className="text-right">
-      <p className="text-3xl font-semibold tracking-wide text-[#0B4B50]">INVOICE</p>
-      <p className="text-xl font-bold mt-1">#{invoice.invoiceId}</p>
-      <p className="text-sm mt-1">Tanggal: {new Date(invoice.timestamp).toLocaleDateString("id-ID")}</p>
-
-      <span
-        className={`mt-3 inline-block px-4 py-1 border rounded-full text-sm font-semibold ${getStatusStyle(invoice.status)}`}
-      >
-        {invoice.status.toUpperCase()}
-      </span>
-    </div>
-  </div>
+          <div className="text-right">
+            <p className="text-3xl font-semibold tracking-wide text-[#0B4B50]">INVOICE</p>
+            <p className="text-xl font-bold mt-1">#{invoice.invoiceId}</p>
+            <p className="text-sm mt-1">Tanggal: {tanggal}</p>
+            <span
+              className={`mt-3 inline-block px-4 py-1 border rounded-full text-sm font-semibold ${getStatusStyle(invoice.status)}`}
+            >
+              {invoice.status.toUpperCase()}
+            </span>
+          </div>
+        </div>
 
         {/* === BILL TO === */}
         <div className="mb-6">
