@@ -25,7 +25,7 @@ export default function InvoicePage({ params }: { params: { invoiceId: string } 
 
   useEffect(() => {
     async function fetchData() {
-      const res = await fetch(`/api/invoice?invoiceId=${params.invoiceId}`);
+      const res = await fetch(`/api/invoice/${params.invoiceId}`, { cache: "no-store" });
       const json = await res.json();
       setData(json.data);
     }
