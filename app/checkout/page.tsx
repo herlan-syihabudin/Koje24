@@ -11,7 +11,7 @@ interface InvoiceData {
   nama: string;
   hp: string;
   alamat: string;
-  produkList: string; // masih string gabungan
+  produkList: string;
   qtyTotal: number;
   subtotalCalc: number;
   status: string;
@@ -46,9 +46,7 @@ export default function InvoicePage() {
         const res = await fetch(`/api/invoice?id=${invoiceId}`);
         const json = await res.json();
         if (json?.success) setData(json.data);
-      } catch (e) {
-        console.error(e);
-      }
+      } catch {}
       setLoading(false);
     };
     load();
@@ -68,7 +66,6 @@ export default function InvoicePage() {
       </div>
     );
 
-  // === PARSE PRODUK PER ITEM ===
   const produkArray = data.produkList
     .split(",")
     .map((s) => s.trim())
@@ -76,11 +73,20 @@ export default function InvoicePage() {
 
   return (
     <main className="min-h-screen bg-[#F4FAFA] flex justify-center py-10 px-4">
-      <div className="w-full max-w-4xl bg-white shadow-xl border rounded-3xl p-6 md:p-10">
+      {/* === CONTAINER A4 FIX ALL DEVICES === */}
+      <div
+        className="bg-white border rounded-3xl shadow-xl p-10"
+        style={{
+          width: "210mm",
+          minHeight: "297mm",
+          maxWidth: "100%",
+          boxSizing: "border-box",
+        }}
+      >
         {/* HEADER */}
         <div className="flex justify-between flex-wrap gap-3">
           <div>
-            <Image src="/logo.png" alt="KOJE24" width={120} height={46} />
+            <Image src="/logo.png" alt="KOJE24" width={130} height={50} />
             <p className="text-sm mt-2 font-medium">Jl. Kopi Kenangan No. 24, Jakarta Selatan</p>
             <p className="text-sm">Telp: 0811-2233-4455</p>
           </div>
@@ -104,14 +110,14 @@ export default function InvoicePage() {
         </div>
 
         {/* PEMBELI */}
-        <div className="mt-8">
+        <div className="mt-10">
           <h2 className="font-semibold text-[#0B4B50]">Pembeli</h2>
           <p className="mt-1 capitalize">{data.nama}</p>
           <p className="text-gray-700">{data.alamat}</p>
           <p className="text-gray-700">Telp: {data.hp}</p>
         </div>
 
-        {/* PRODUK TABLE */}
+        {/* TABEL PRODUK */}
         <div className="mt-10 border rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-[#F4FAFA] text-[#0B4B50]">
@@ -123,7 +129,6 @@ export default function InvoicePage() {
             </thead>
             <tbody>
               {produkArray.map((item, i) => {
-                // ambil qty & harga dari teks
                 const qtyMatch = item.match(/\((\d+)x\)/);
                 const qty = qtyMatch ? parseInt(qtyMatch[1]) : 1;
 
@@ -143,7 +148,7 @@ export default function InvoicePage() {
         </div>
 
         {/* TOTAL */}
-        <div className="mt-8 flex justify-end">
+        <div className="mt-10 flex justify-end">
           <div className="text-sm space-y-1">
             <div className="flex justify-between gap-10">
               <span>Subtotal Produk:</span>
@@ -161,19 +166,24 @@ export default function InvoicePage() {
         </div>
 
         {/* QR + BARCODE */}
-        <div className="flex flex-col md:flex-row justify-between items-center mt-12 gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-center mt-12 gap-10">
           <div className="text-center">
             <p className="text-sm mb-2">Scan untuk membuka invoice online:</p>
-            <QRCode value={data.invoiceUrl} size={130} />
+            <QRCode value={data.invoiceUrl} size={140} />
           </div>
 
+          {/* BARCODE AMAN TANPA LIBRARY */}
           <div className="text-center">
-            <Barcode value={data.invoiceId} width={1.8} height={60} fontSize={14} />
+            <img
+              src={`https://barcodeapi.org/api/128/${data.invoiceId}`}
+              alt="barcode"
+              className="h-16 mx-auto"
+            />
             <p className="text-xs mt-1">{data.invoiceId}</p>
           </div>
         </div>
 
-        <p className="mt-12 text-center text-sm text-gray-600">
+        <p className="mt-16 text-center text-sm text-gray-600">
           Terima kasih telah berbelanja di <span className="text-[#0FA3A8] font-semibold">KOJE24</span> 💛
           Semoga sehat & berenergi setiap hari!
         </p>
