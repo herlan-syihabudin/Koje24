@@ -1,288 +1,304 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useCartStore } from "@/stores/cartStore";
-import Script from "next/script";
+import React, { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
+import QRCode from "react-qr-code"; // ⬅️ pastikan sudah: npm install react-qr-code
 
-declare const google: any;
+interface InvoiceData {
+  invoiceId: string;
+  timestamp: string;
+  nama: string;
+  hp: string;
+  alamat: string;
+  produkList: string;
+  qtyTotal: number;
+  subtotalCalc: number;
+  status: string;
+  paymentLabel: string;
+  effectiveOngkir: number;
+  effectiveGrandTotal: number;
+  invoiceUrl: string;
+}
 
-type CheckoutState = "idle" | "submitting" | "error";
-
-export type CartItemType = {
-  id: string;
-  name: string;
-  price: number;
-  qty: number;
+const SELLER_INFO = {
+  name: "KOJE24 Official",
+  address: "Jl. Kopi Kenangan No. 24, Jakarta Selatan",
+  hp: "0811-2233-4455",
 };
 
-// Koordinat base KOJE24
-const BASE_LAT = -6.2903238;
-const BASE_LNG = 107.087373;
+const formatCurrency = (amount: number): string =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(amount);
 
-// Rumus haversine
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+export default function InvoicePage() {
+  const { id } = useParams();
+  const invoiceId = String(id);
 
-// Perhitungan ongkir
-function calcOngkir(distanceKm: number | null): number {
-  if (!distanceKm || distanceKm <= 0) return 15000;
-  const base = 8000;
-  const perKm = 3000;
-  const minPay = 10000;
-  const raw = base + distanceKm * perKm;
-  const rounded = Math.round(raw / 100) * 100;
-  return Math.max(minPay, rounded);
-}
-
-export default function CheckoutPage() {
-  const router = useRouter();
-  const items = useCartStore((s) => s.items);
-  const clearCart = useCartStore((s) => s.clearCart);
-
-  const [hydrated, setHydrated] = useState(false);
-
-  const [nama, setNama] = useState("");
-  const [hp, setHp] = useState("");
-  const [alamat, setAlamat] = useState("");
-  const [catatan, setCatatan] = useState("");
-  const [payment, setPayment] = useState<"transfer" | "qris" | "cod">("transfer");
-  const [status, setStatus] = useState<CheckoutState>("idle");
-  const [errorMsg, setErrorMsg] = useState("");
-
-  const [distanceKm, setDistanceKm] = useState<number | null>(null);
-  const [ongkir, setOngkir] = useState<number>(15000);
-  const alamatRef = useRef<HTMLInputElement | null>(null);
-
-  const [buktiBayarFile, setBuktiBayarFile] = useState<File | null>(null);
-
-  const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0);
-  const total = subtotal + (items.length > 0 ? ongkir : 0);
+  const [invoice, setInvoice] = useState<InvoiceData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.scrollTo({ top: 0 });
-  }, []);
+    if (!invoiceId) return;
 
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
+    const fetchInvoice = async () => {
+      try {
+        const res = await fetch(`/api/invoice/${invoiceId}`, {
+          cache: "no-store",
+        });
+        const result = await res.json();
+        if (res.ok && result.success) {
+          setInvoice(result.data);
+        } else {
+          setError(result.message || "Invoice tidak ditemukan.");
+        }
+      } catch {
+        setError("Terjadi kesalahan koneksi.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  useEffect(() => {
-    if (!hydrated) return;
-    if (items.length === 0) {
-      const t = setTimeout(() => router.push("/#produk"), 1600);
-      return () => clearTimeout(t);
-    }
-  }, [items.length, hydrated, router]);
+    fetchInvoice();
+  }, [invoiceId]);
 
-  // GOOGLE AUTOCOMPLETE (tetap ada, tidak dihapus)
-  useEffect(() => {
-    if (!alamatRef.current) return;
-    const w = window as any;
-    if (!w.google?.maps?.places) return;
-
-    try {
-      const auto = new google.maps.places.Autocomplete(alamatRef.current, {
-        componentRestrictions: { country: "id" },
-        fields: ["formatted_address", "geometry"]
-      });
-
-      auto.addListener("place_changed", () => {
-        const place = auto.getPlace();
-        if (!place?.geometry?.location) return;
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        const dKm = haversineDistance(BASE_LAT, BASE_LNG, lat, lng);
-        setDistanceKm(dKm);
-        setOngkir(calcOngkir(dKm));
-        if (place.formatted_address) setAlamat(place.formatted_address);
-      });
-    } catch {}
-  }, []);
-
-  // 🚀 Fitur Profesional — Deteksi Lokasi Otomatis
-  const handleDetectLocation = () => {
-    if (!navigator.geolocation)
-      return alert("Perangkat tidak mendukung GPS lokasi.");
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const dKm = haversineDistance(BASE_LAT, BASE_LNG, latitude, longitude);
-        setDistanceKm(dKm);
-        setOngkir(calcOngkir(dKm));
-        setAlamat(`Koordinat: ${latitude}, ${longitude}`); // tetap tersimpan
-      },
-      () => alert("Izin GPS ditolak. Aktifkan lokasi ya 🙏"),
-      { enableHighAccuracy: true }
+  if (loading)
+    return (
+      <div className="flex items-center justify-center min-h-screen text-lg">
+        Memuat Invoice #{invoiceId}...
+      </div>
     );
+
+  if (error)
+    return (
+      <div className="flex items-center justify-center min-h-screen text-lg text-red-600">
+        {error}
+      </div>
+    );
+
+  if (!invoice)
+    return (
+      <div className="flex items-center justify-center min-h-screen text-lg">
+        Invoice tidak ditemukan.
+      </div>
+    );
+
+  const getStatusStyle = (s: string) => {
+    const x = s.toLowerCase();
+    if (x === "paid") return "bg-green-100 text-green-700 border-green-300";
+    if (x === "cod") return "bg-blue-100 text-blue-700 border-blue-300";
+    return "bg-yellow-100 text-yellow-700 border-yellow-300";
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!items.length) return;
-    if (!nama.trim() || !hp.trim() || !alamat.trim()) {
-      setErrorMsg("Lengkapi nama, nomor WhatsApp, dan alamat dulu ya 🙏");
-      return;
+  // Format tanggal tetap pakai locale ID
+  const formattedDate = new Date(invoice.timestamp).toLocaleDateString(
+    "id-ID",
+    {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
     }
-    if (["transfer", "qris"].includes(payment) && !buktiBayarFile) {
-      setErrorMsg("Upload bukti pembayaran terlebih dahulu 🙏");
-      return;
-    }
-
-    try {
-      setStatus("submitting");
-      setErrorMsg("");
-
-      const cartMapped = items.map((x) => ({
-        id: x.id,
-        name: x.name,
-        qty: x.qty,
-        price: x.price,
-      }));
-
-      const res = await fetch("/api/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nama,
-          hp,
-          alamat,
-          note: catatan,
-          payment,
-          cart: cartMapped,
-          distanceKm,
-          shippingCost: ongkir,
-          grandTotal: total,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data?.success)
-        throw new Error(data?.message || "Gagal membuat invoice");
-
-      fetch("/api/whatsapp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: nama, phone: hp, address: alamat, note: catatan, order: cartMapped, total }),
-      }).catch(() => null);
-
-      clearCart();
-      router.push(data.invoiceUrl || "/");
-    } catch (e) {
-      setStatus("error");
-      setErrorMsg("Ada kendala saat membuat invoice — coba ulang sebentar ya 🙏");
-    } finally {
-      setStatus("idle");
-    }
-  };
-
-  const disabled = status === "submitting" || !items.length;
+  );
 
   return (
-    <>
-      <Script src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`} strategy="lazyOnload" />
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-8 print:p-0">
+      {/* CSS khusus untuk print */}
+      <style jsx global>{`
+        @media print {
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+          }
+          .invoice-container {
+            box-shadow: none !important;
+            border: none !important;
+            margin: 0 !important;
+            width: 100% !important;
+            border-radius: 0 !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
 
-      <main className="min-h-screen bg-[#F4FAFA] text-[#0B4B50] py-10 px-4 flex justify-center">
-        <div className="w-full max-w-5xl">
-          <div className="mb-8">
-            <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24 • PREMIUM CHECKOUT</p>
-            <h1 className="text-3xl md:text-4xl font-playfair font-semibold">Selesaikan Pesanan Kamu</h1>
-            <p className="text-sm text-gray-600 mt-2 max-w-xl">
-              Isi alamat dengan teliti. Ongkir dihitung otomatis berdasarkan jarak.
+      <div className="invoice-container bg-white w-full max-w-3xl sm:max-w-4xl mx-auto rounded-lg sm:rounded-xl shadow-xl p-6 sm:p-10 border border-gray-200 relative">
+        {/* === WATERMARK PAID DI TENGAH === */}
+        {invoice.status.toLowerCase() === "paid" && (
+          <div className="pointer-events-none select-none absolute inset-0 flex items-center justify-center">
+            <span className="font-extrabold text-[72px] sm:text-[120px] text-green-600 opacity-10 sm:opacity-20 rotate-[-25deg] tracking-[0.2em]">
+              PAID
+            </span>
+          </div>
+        )}
+
+        {/* === HEADER === */}
+        <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-0 mb-8">
+          {/* KIRI: LOGO + ALAMAT */}
+          <div className="flex flex-col gap-2">
+            <img
+              src="/image/logo-koje24.png"
+              alt="KOJE24"
+              className="h-12 sm:h-14 w-auto mb-1"
+            />
+            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+              {SELLER_INFO.address}
+              <br />
+              Telp: {SELLER_INFO.hp}
             </p>
           </div>
 
-          {hydrated && items.length === 0 ? (
-            <p className="text-center text-gray-500">Keranjang kosong. Mengarahkan kembali…</p>
-          ) : (
-            <div className="grid gap-8 md:grid-cols-[1.15fr_0.85fr]">
-              <section className="bg-white border rounded-3xl shadow p-6 md:p-7">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <input className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Nama lengkap" value={nama} onChange={(e) => setNama(e.target.value)} />
-                  <input className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Nomor WhatsApp" value={hp} onChange={(e) => setHp(e.target.value)} />
-
-                  <input ref={alamatRef} className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Alamat lengkap" value={alamat} onChange={(e) => setAlamat(e.target.value)} />
-
-                  {/* tombol deteksi lokasi */}
-                  <button
-                    type="button"
-                    onClick={handleDetectLocation}
-                    className="w-full bg-[#0FA3A8]/90 hover:bg-[#0FA3A8] text-white mt-2 py-2 rounded-lg text-sm font-medium shadow-sm"
-                  >
-                    📍 Deteksi Lokasi Otomatis (Hitung Ongkir)
-                  </button>
-
-                  {distanceKm && (
-                    <p className="text-[12px] text-gray-500">
-                      Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}
-                    </p>
-                  )}
-
-                  <textarea className="border rounded-lg px-3 py-2 w-full h-16 resize-none focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Catatan (opsional)" value={catatan} onChange={(e) => setCatatan(e.target.value)} />
-
-                  <h2 className="font-playfair text-xl">Metode Pembayaran</h2>
-                  <div className="rounded-xl bg-[#f7fbfb] border p-4 space-y-3">
-                    {(["transfer", "qris", "cod"] as const).map((p) => (
-                      <label key={p} className={`flex items-center justify-between cursor-pointer rounded-lg px-3 py-2 ${payment === p ? "bg-white border border-[#0FA3A8]" : ""}`}>
-                        <div className="flex items-center gap-2">
-                          <input type="radio" name="payment" checked={payment === p} onChange={() => { setPayment(p); setBuktiBayarFile(null); }} />
-                          <span className="capitalize">{p === "cod" ? "COD (Bayar di tempat)" : p}</span>
-                        </div>
-                      </label>
-                    ))}
-
-                    {["transfer", "qris"].includes(payment) && (
-                      <div className="mt-3">
-                        <label className="block text-sm font-medium mb-1">Upload Bukti Pembayaran</label>
-                        <input type="file" accept="image/*,.pdf" onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)} className="border rounded-lg px-3 py-2 w-full text-sm bg-white cursor-pointer" />
-                        {buktiBayarFile && <p className="text-[11px] mt-1 text-gray-500">File: {buktiBayarFile.name}</p>}
-                      </div>
-                    )}
-                  </div>
-
-                  {errorMsg && <p className="text-red-500 text-sm pt-1">{errorMsg}</p>}
-
-                  <button disabled={disabled} className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
-                    {status === "submitting" ? "Memproses pesanan..." : "Buat Pesanan"}
-                  </button>
-                </form>
-              </section>
-
-              <aside className="bg-white border rounded-3xl shadow p-6 flex flex-col gap-4">
-                <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
-                <div className="max-h-[260px] overflow-y-auto space-y-3 pr-1">
-                  {items.map((it) => (
-                    <div key={it.id} className="flex justify-between items-start border-b pb-2 text-sm gap-3">
-                      <div className="flex-1">
-                        <p className="font-medium">{it.name}</p>
-                        <p className="text-[12px] text-gray-500">{it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs</p>
-                      </div>
-                      <div className="font-semibold whitespace-nowrap">Rp{(it.qty * it.price).toLocaleString("id-ID")}</div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t pt-3 space-y-1 text-sm">
-                  <div className="flex justify-between"><span>Subtotal</span><span>Rp{subtotal.toLocaleString("id-ID")}</span></div>
-                  <div className="flex justify-between"><span>Ongkir</span><span>Rp{ongkir.toLocaleString("id-ID")}</span></div>
-                  <div className="flex justify-between font-semibold text-lg pt-1"><span>Total</span><span>Rp{total.toLocaleString("id-ID")}</span></div>
-                </div>
-              </aside>
-            </div>
-          )}
+          {/* KANAN: INFO INVOICE */}
+          <div className="text-right space-y-1">
+            <p className="text-2xl sm:text-3xl font-semibold tracking-wide text-[#0B4B50]">
+              INVOICE
+            </p>
+            <p className="text-base sm:text-xl font-bold mt-1">
+              #{invoice.invoiceId}
+            </p>
+            <p className="text-xs sm:text-sm mt-1 text-gray-600">
+              Tanggal: {formattedDate}
+            </p>
+            <span
+              className={`mt-3 inline-block px-3 sm:px-4 py-1 border rounded-full text-xs sm:text-sm font-semibold ${getStatusStyle(
+                invoice.status
+              )}`}
+            >
+              {invoice.status.toUpperCase()}
+            </span>
+          </div>
         </div>
-      </main>
-    </>
+
+        {/* === BILL TO === */}
+        <div className="relative mb-6">
+          <h3 className="text-xs sm:text-sm font-bold text-gray-700 mb-1">
+            Pembeli
+          </h3>
+          <p className="text-sm sm:text-base text-gray-800 font-medium">
+            {invoice.nama}
+          </p>
+          <p className="text-xs sm:text-sm text-gray-600">{invoice.alamat}</p>
+          <p className="text-xs sm:text-sm text-gray-600">
+            Telp: {invoice.hp}
+          </p>
+        </div>
+
+        {/* === TABLE / DETAIL PRODUK === */}
+        <div className="relative mb-6">
+          <div className="hidden sm:block">
+            {/* MODE TABEL utk layar >= sm */}
+            <table className="w-full text-sm border border-gray-300">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-300 py-2 text-left px-3">
+                    Deskripsi
+                  </th>
+                  <th className="border border-gray-300 py-2 w-24 text-center">
+                    Qty
+                  </th>
+                  <th className="border border-gray-300 py-2 w-40 text-right px-3">
+                    Subtotal
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-gray-200 py-2 px-3">
+                    {invoice.produkList}
+                  </td>
+                  <td className="border border-gray-200 text-center">
+                    {invoice.qtyTotal}
+                  </td>
+                  <td className="border border-gray-200 text-right px-3">
+                    {formatCurrency(invoice.subtotalCalc)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* MODE CARD LIST untuk HP */}
+          <div className="sm:hidden border border-gray-200 rounded-lg p-3 space-y-1 text-sm">
+            <p className="text-[11px] font-semibold text-gray-500 mb-1">
+              Rincian Pesanan
+            </p>
+            <p className="font-medium text-gray-800">{invoice.produkList}</p>
+            <div className="flex justify-between text-xs text-gray-600 mt-1">
+              <span>Qty: {invoice.qtyTotal}</span>
+              <span>{formatCurrency(invoice.subtotalCalc)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* === TOTAL SECTION === */}
+        <div className="relative flex justify-end mb-8">
+          <table className="text-sm w-full sm:w-auto sm:text-right">
+            <tbody>
+              <tr>
+                <td className="py-1 px-2 sm:px-4 text-gray-600">
+                  Subtotal Produk:
+                </td>
+                <td className="py-1 px-2 sm:px-4 font-medium text-right">
+                  {formatCurrency(invoice.subtotalCalc)}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-1 px-2 sm:px-4 text-gray-600">Ongkir:</td>
+                <td className="py-1 px-2 sm:px-4 font-medium text-right">
+                  {formatCurrency(invoice.effectiveOngkir)}
+                </td>
+              </tr>
+              <tr className="text-base sm:text-lg font-bold bg-gray-50">
+                <td className="py-2 px-2 sm:px-4">TOTAL DIBAYARKAN:</td>
+                <td className="py-2 px-2 sm:px-4 text-red-600 text-right">
+                  {formatCurrency(invoice.effectiveGrandTotal)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* === QR & BARCODE === */}
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mt-4 mb-8">
+          <div className="text-xs sm:text-sm text-gray-700">
+            <p>Scan untuk membuka invoice online:</p>
+            <div className="mt-2 inline-block bg-white p-2 border rounded-md">
+              <QRCode value={invoice.invoiceUrl} size={90} />
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center sm:items-end">
+            <img
+              src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
+              alt="barcode"
+              className="h-14 sm:h-16"
+            />
+            <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
+              {invoice.invoiceId}
+            </p>
+          </div>
+        </div>
+
+        {/* === FOOTER === */}
+        <p className="relative text-center text-gray-600 text-[11px] sm:text-sm border-t pt-3 sm:pt-4">
+          Terima kasih telah berbelanja di <strong>KOJE24</strong> 💛  
+          Semoga sehat & berenergi setiap hari!
+        </p>
+      </div>
+
+      {/* PRINT BUTTON (TIDAK STICKY, SESUAI PERMINTAAN A) */}
+      <div className="text-center mt-6 no-print">
+        <button
+          onClick={() => window.print()}
+          className="px-6 py-2 bg-[#0FA3A8] text-white rounded-full shadow-md hover:bg-[#0b7f83] transition text-sm sm:text-base"
+        >
+          Cetak & Unduh Invoice
+        </button>
+      </div>
+    </div>
   );
 }
