@@ -50,7 +50,13 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
         setError(null);
 
         // Panggil API Route untuk mengambil data invoice (app/api/invoice/[id]/route.ts)
-        const response = await fetch(`/api/invoice/${invoiceId}`);
+        const baseUrl = typeof window !== "undefined"
+  ? window.location.origin
+  : process.env.NEXT_PUBLIC_BASE_URL || "";
+
+const response = await fetch(`${baseUrl}/api/invoice/${invoiceId}`, {
+  cache: "no-store",
+});
         const result = await response.json();
 
         if (response.ok && result.success) {
