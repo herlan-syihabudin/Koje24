@@ -59,7 +59,7 @@ export default function InvoicePage({ params }: { params: { invoiceId: string } 
         <div className="grid grid-cols-2 items-start">
           <div className="space-y-2">
             <Image
-              src="/public/image/logo-koje24.png" // simpan file logo ini ke public/logo-koje-hijau.png
+              src="/image/logo-koje24.png" // simpan file logo ini ke public/logo-koje-hijau.png
               alt="KOJE24"
               width={200}
               height={80}
