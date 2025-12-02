@@ -202,7 +202,7 @@ const qrImg = await pdfDoc.embedPng(qrBytes);
         font: fontBold,
         color: rgb(0, 0.6, 0.2),
         opacity: 0.1,
-        rotate: { type: "degrees", angle: -25 },
+        rotate: degrees(-25),
       });
     }
 
