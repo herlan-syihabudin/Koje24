@@ -291,3 +291,18 @@ iframe {
 .body-cart-lock {
   overflow: hidden;
 }
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .invoice-container {
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 20px !important;
+  }
+}
