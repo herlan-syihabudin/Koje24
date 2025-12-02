@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { pdf } from "@react-pdf/renderer";
 import React from "react"; // ⬅️ WAJIB
 import InvoicePdf from "@/components/pdf/InvoicePdf";
-import invoices from "@/data/invoices.json";
+import invoices from "../../../../data/invoices.json";
+
 
 export const dynamic = "force-dynamic"; // biar boleh akses runtime server full
 
