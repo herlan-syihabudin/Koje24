@@ -1,48 +1,37 @@
-import { NextRequest } from "next/server";
-import chromium from "@sparticuz/chromium";
-import puppeteer from "puppeteer-core";
+import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "nodejs";
+export const runtime = "edge"; // cepat & stabil
+
+const API_KEY = process.env.HTML2PDF_KEY || "demo";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const invoiceId = params.id;
-  const url = `${req.nextUrl.origin}/invoice/${invoiceId}`;
-
   try {
-    const executablePath =
-      (await chromium.executablePath()) ||
-      "/usr/bin/chromium-browser";
+    // 👇 fix TS — params harus di-await
+    const { id } = await context.params;
 
-    const browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath,
-      headless: chromium.headless,
-    });
+    const invoiceUrl = `${req.nextUrl.origin}/invoice/${id}`;
 
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: "networkidle0" });
+    const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}&url=${encodeURIComponent(
+      invoiceUrl
+    )}&format=A4&printBackground=true&margin=10mm`;
 
-    const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: { top: 10, left: 10, right: 10, bottom: 10 },
-    });
+    const result = await fetch(pdfReqUrl);
 
-    await browser.close();
+    if (!result.ok) throw new Error("Gagal generate PDF");
 
-    return new Response(pdf, {
+    const pdf = await result.arrayBuffer();
+
+    return new NextResponse(pdf, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="invoice-${invoiceId}.pdf"`,
+        "Content-Disposition": `inline; filename="invoice-${id}.pdf"`,
       },
     });
   } catch (err: any) {
-    return Response.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
