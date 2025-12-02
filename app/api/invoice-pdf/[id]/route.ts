@@ -1,42 +1,37 @@
-import { NextRequest, NextResponse } from "next/server"
-import PDFDocument from "pdfkit"
-import { google } from "googleapis"
+import { NextRequest, NextResponse } from "next/server";
+import { google } from "googleapis";
+import { PDFDocument, StandardFonts } from "pdf-lib";
 
-export const dynamic = "force-dynamic"
+export const dynamic = "force-dynamic";
 
-const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? ""
-const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? ""
-const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
-const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n")
+const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? "";
+const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? "";
+const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
+const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n");
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const invoiceId = params.id?.trim()
-    if (!invoiceId) {
-      return new NextResponse("Invoice ID kosong", { status: 400 })
-    }
+    const invoiceId = params.id?.trim();
+    if (!invoiceId) return new NextResponse("Invoice ID kosong", { status: 400 });
 
-    // 🔥 Fetch data invoice dari Google Sheets
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    })
+    });
 
-    const sheets = google.sheets({ version: "v4", auth })
+    const sheets = google.sheets({ version: "v4", auth });
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: "Sheet1!A:M",
-    })
+    });
 
-    const rows = res.data.values?.slice(1) || []
-    const row = rows.find((r) => (r[1] || "").trim() === invoiceId)
-    if (!row) {
-      return new NextResponse("Invoice tidak ditemukan", { status: 404 })
-    }
+    const rows = res.data.values?.slice(1) || [];
+    const row = rows.find((r) => (r[1] || "").trim() === invoiceId);
+    if (!row) return new NextResponse("Invoice tidak ditemukan", { status: 404 });
 
     const data = {
       invoiceId,
@@ -49,44 +44,43 @@ export async function GET(
       subtotalCalc: Number(row[7] ?? 0),
       ongkir: Number(row[10] ?? 0),
       grandTotal: Number(row[11] ?? 0),
-    }
+    };
 
-    // 🔥 Generate PDF
-    const doc = new PDFDocument({ margin: 40 })
-    const chunks: Uint8Array[] = []
-    doc.on("data", (c) => chunks.push(c))
-    doc.on("end", () => {})
+    // === PDF Generation ===
+    const pdfDoc = await PDFDocument.create();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const page = pdfDoc.addPage([600, 750]);
 
-    doc.fontSize(20).text("📄 INVOICE KOJE24", { align: "center" })
-    doc.moveDown()
+    const draw = (text: string, y: number, size = 12) =>
+      page.drawText(text, { x: 40, y, size, font });
 
-    doc.fontSize(12)
-    doc.text(`Tanggal      : ${data.timestamp}`)
-    doc.text(`Invoice ID   : ${data.invoiceId}`)
-    doc.text(`Nama         : ${data.nama}`)
-    doc.text(`HP           : ${data.hp}`)
-    doc.text(`Alamat       : ${data.alamat}`)
-    doc.moveDown()
+    let y = 700;
+    draw("📄 INVOICE KOJE24", y, 22);
+    y -= 50;
+    draw(`Tanggal     : ${data.timestamp}`, y); y -= 20;
+    draw(`Invoice ID  : ${data.invoiceId}`, y); y -= 20;
+    draw(`Nama        : ${data.nama}`, y); y -= 20;
+    draw(`No HP       : ${data.hp}`, y); y -= 20;
+    draw(`Alamat      : ${data.alamat}`, y); y -= 40;
+    draw(`Produk      : ${data.produkList}`, y); y -= 20;
+    draw(`Qty Total   : ${data.qtyTotal}`, y); y -= 20;
+    draw(`Subtotal    : Rp ${data.subtotalCalc.toLocaleString("id-ID")}`, y); y -= 20;
+    draw(`Ongkir      : Rp ${data.ongkir.toLocaleString("id-ID")}`, y); y -= 30;
+    draw(
+      `Grand Total : Rp ${data.grandTotal.toLocaleString("id-ID")}`,
+      y,
+      15
+    );
 
-    doc.text(`Produk       : ${data.produkList}`)
-    doc.text(`Qty Total    : ${data.qtyTotal}`)
-    doc.text(`Subtotal     : Rp ${data.subtotalCalc.toLocaleString("id-ID")}`)
-    doc.text(`Ongkir       : Rp ${data.ongkir.toLocaleString("id-ID")}`)
-    doc.moveDown()
-    doc.fontSize(14).text(`Grand Total  : Rp ${data.grandTotal.toLocaleString("id-ID")}`, { underline: true })
-    doc.end()
+    const pdfBytes = await pdfDoc.save();
 
-    const pdfBuffer = await new Promise<Buffer>((resolve) => {
-      doc.on("end", () => resolve(Buffer.concat(chunks)))
-    })
-
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBytes, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="invoice-${invoiceId}.pdf"`,
       },
-    })
-  } catch (e: any) {
-    return new NextResponse(e.message, { status: 500 })
+    });
+  } catch (err: any) {
+    return new NextResponse(err.message || "Server error", { status: 500 });
   }
 }
