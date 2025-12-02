@@ -4,9 +4,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const id = params.id?.trim();
+  const id = context?.params?.id?.trim();
 
   if (!id) {
     return NextResponse.json(
@@ -15,7 +15,6 @@ export async function GET(
     );
   }
 
-  // Untuk sementara dummy supaya build lolos
   return NextResponse.json(
     { success: true, invoiceId: id },
     { status: 200 }
