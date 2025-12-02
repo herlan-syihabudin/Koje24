@@ -207,7 +207,7 @@ const qrImg = await pdfDoc.embedPng(qrBytes);
     }
 
     const pdfBytes = await pdfDoc.save();
-    return new Response(pdfBytes, {
+    return new Response(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
