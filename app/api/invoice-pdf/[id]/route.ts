@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { pdf } from "@react-pdf/renderer";
 import InvoicePdf from "@/components/pdf/InvoicePdf";
-import invoices from "@/data/invoices.json"; // samakan dengan sumber data kamu
+import invoices from "@/data/invoices.json";
+
+export const dynamic = "force-dynamic"; // ⬅️ biar gak error edge runtime
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   const invoiceId = params.id;
@@ -11,10 +13,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
   }
 
-  // 🔥 generate file PDF dari component JSX
-  const pdfFile = await pdf(InvoicePdf(data)).toBuffer();
+  const pdfBuffer = await pdf(<InvoicePdf data={data} />).toBuffer();
 
-  return new NextResponse(pdfFile, {
+  return new NextResponse(pdfBuffer, {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
