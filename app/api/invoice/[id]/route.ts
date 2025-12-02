@@ -10,12 +10,15 @@ const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n"
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const invoiceId = context.params.id?.trim()
+    const invoiceId = params.id?.trim()
     if (!invoiceId) {
-      return NextResponse.json({ success: false, message: "Invoice ID kosong" })
+      return NextResponse.json(
+        { success: false, message: "Invoice ID kosong" },
+        { status: 400 }
+      )
     }
 
     const auth = new google.auth.JWT({
@@ -33,7 +36,10 @@ export async function GET(
     const rows = res.data.values?.slice(1) || []
     const match = rows.find((r) => (r[1] || "").trim() === invoiceId)
     if (!match) {
-      return NextResponse.json({ success: false, message: "Invoice tidak ditemukan" })
+      return NextResponse.json(
+        { success: false, message: "Invoice tidak ditemukan" },
+        { status: 404 }
+      )
     }
 
     return NextResponse.json({
