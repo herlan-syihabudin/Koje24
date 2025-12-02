@@ -1,12 +1,15 @@
-import { NextResponse } from "next/server";
-import { google } from "googleapis";
+import { NextRequest, NextResponse } from "next/server";
 import { Readable } from "stream";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const invoiceId = params.id;
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params; // ⬅ WAJIB pakai await
+  const invoiceId = id;
 
   try {
-    // 🔥 Ambil data invoice dari API internal
+    // Ambil data invoice dari API internal
     const apiRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/invoice/${invoiceId}`, {
       cache: "no-store",
     });
@@ -19,7 +22,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const invoice = apiData.data;
 
     // =============== PDF CONTENT ===============
-    let pdf = `
+    const pdf = `
       KOJE24 — Invoice Resmi
 
       Invoice #: ${invoice.invoiceId}
