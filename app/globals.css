@@ -259,7 +259,7 @@ iframe {
   height: 100vh !important;
 }
 /* === CART POPUP ANIMASI & OVERLAY === */
-.koje-modal-overlay {
+.cart-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
@@ -271,26 +271,29 @@ iframe {
   animation: fadeIn 0.25s ease;
 }
 
-.koje-modal-box {
+.cart-box {
   background: #fff;
   border-radius: 18px;
   animation: slideUp 0.28s cubic-bezier(0.17, 0.55, 0.32, 1.2);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 /* Lock scroll saat popup aktif */
 .body-cart-lock {
-  overflow: hidden;
+  overflow: hidden !important;
+  height: 100vh !important;
 }
+
+/* Animasi */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* === PRINT FIX — INVOICE A4 TANPA KEKROP === */
 @media print {
   body {
     background: #ffffff !important;
@@ -306,3 +309,9 @@ iframe {
     padding: 20px !important;
   }
 }
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
