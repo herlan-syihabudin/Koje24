@@ -2,7 +2,6 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import QRCode from "qrcode";
 
 export async function GET(
   req: NextRequest,
@@ -169,8 +168,9 @@ export async function GET(
     totalRow("TOTAL DIBAYARKAN:", data.effectiveGrandTotal, true); // HITAM BOLD SESUAI REQUEST
 
     // === QR CODE
-    const qrPng = await QRCode.toBuffer(data.invoiceUrl, { width: 110 });
-    const qrImg = await pdfDoc.embedPng(qrPng);
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.invoiceUrl)}`;
+const qrBytes = await fetch(qrUrl).then((res) => res.arrayBuffer());
+const qrImg = await pdfDoc.embedPng(qrBytes);
     page.drawText("Scan untuk membuka invoice:", {
       x: 50,
       y: 160,
