@@ -27,7 +27,6 @@ const formatCurrency = (amount: number): string =>
     minimumFractionDigits: 0,
   }).format(amount);
 
-// 🔥 FIX timestamp format "30/11/2025, 14.00.54"
 const parseTimestamp = (ts: string) => {
   if (!ts) return null;
   const [tanggal, waktu] = ts.split(", ");
@@ -67,31 +66,16 @@ export default function InvoicePage() {
     };
 
     fetchInvoice();
-    return () => {
-      active = false;
-    };
+    return () => (active = false);
   }, [invoiceId]);
 
   if (loading)
-    return (
-      <div className="flex items-center justify-center min-h-screen text-lg">
-        Memuat Invoice #{invoiceId}...
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-screen text-lg">Memuat Invoice #{invoiceId}...</div>;
 
   if (error)
-    return (
-      <div className="flex items-center justify-center min-h-screen text-lg text-red-600">
-        {error}
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-screen text-lg text-red-600">{error}</div>;
 
-  if (!invoice)
-    return (
-      <div className="flex items-center justify-center min-h-screen text-lg">
-        Invoice tidak ditemukan.
-      </div>
-    );
+  if (!invoice) return null;
 
   const parsedDate = parseTimestamp(invoice.timestamp);
   const tanggal = parsedDate
@@ -135,7 +119,7 @@ export default function InvoicePage() {
       `}</style>
 
       <div className="invoice-container bg-white max-w-4xl mx-auto rounded-lg shadow-xl p-10 border border-gray-200 relative">
-        {/* === WATERMARK PAID === */}
+        {/* WATERMARK PAID */}
         {invoice.status.toLowerCase().includes("paid") && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
             <span className="font-extrabold text-[130px] text-green-600 opacity-15 rotate-[-25deg] tracking-wider">
@@ -144,14 +128,13 @@ export default function InvoicePage() {
           </div>
         )}
 
-        {/* === HEADER === */}
+        {/* HEADER */}
         <div className="flex justify-between mb-8 items-start">
           <div>
             <img src="/image/logo-koje24.png" alt="KOJE24" className="h-14 w-auto mb-2" />
             <p className="text-sm text-gray-600 mt-1">
               Jl. Kopi Kenangan No. 24, Jakarta Selatan
-              <br />
-              Telp: 0811-2233-4455
+              <br /> Telp: 0811-2233-4455
             </p>
           </div>
 
@@ -159,17 +142,13 @@ export default function InvoicePage() {
             <p className="text-3xl font-semibold tracking-wide text-[#0B4B50]">INVOICE</p>
             <p className="text-xl font-bold mt-1">#{invoice.invoiceId}</p>
             <p className="text-sm mt-1">Tanggal: {tanggal}</p>
-            <span
-              className={`mt-3 inline-block px-4 py-1 border rounded-full text-sm font-semibold ${getStatusStyle(
-                invoice.status
-              )}`}
-            >
+            <span className={`mt-3 inline-block px-4 py-1 border rounded-full text-sm font-semibold ${getStatusStyle(invoice.status)}`}>
               {invoice.status.toUpperCase()}
             </span>
           </div>
         </div>
 
-        {/* === BILL TO === */}
+        {/* BILL TO */}
         <div className="mb-6">
           <h3 className="text-sm font-bold text-gray-700 mb-1">Pembeli</h3>
           <p className="text-gray-800 font-medium">{invoice.nama}</p>
@@ -177,7 +156,7 @@ export default function InvoicePage() {
           <p className="text-gray-600">Telp: {invoice.hp}</p>
         </div>
 
-        {/* === TABLE === */}
+        {/* TABLE */}
         <table className="w-full text-sm border border-gray-300 mb-6">
           <thead>
             <tr className="bg-gray-100">
@@ -197,7 +176,7 @@ export default function InvoicePage() {
           </tbody>
         </table>
 
-        {/* === TOTAL SECTION === */}
+        {/* TOTAL */}
         <div className="flex justify-end mb-8">
           <table className="text-sm">
             <tbody>
@@ -223,34 +202,29 @@ export default function InvoicePage() {
           </table>
         </div>
 
-        {/* === QR & BARCODE === */}
+        {/* QR + BARCODE */}
         <div className="flex justify-between items-center mt-6 mb-10">
           <div className="text-sm text-gray-700">
             Scan untuk membuka invoice online:
             <QRCode value={invoice.invoiceUrl} size={90} className="mt-2" />
           </div>
-          <img
-            src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
-            alt="barcode"
-            className="h-16"
-          />
+          <img src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`} alt="barcode" className="h-16" />
         </div>
 
-        {/* === FOOTER === */}
+        {/* FOOTER */}
         <p className="text-center text-gray-600 text-sm border-t pt-4">
-          Terima kasih telah berbelanja di <strong>KOJE24</strong> 💛  
-          Semoga sehat & berenergi setiap hari!
+          Terima kasih telah berbelanja di <strong>KOJE24</strong> 💛 Semoga sehat & berenergi setiap hari!
         </p>
       </div>
 
-      {/* PRINT / DOWNLOAD PDF */}
+      {/* DOWNLOAD PDF */}
       <div className="text-center mt-6 no-print">
         <button
-  onClick={() => (window.location.href = `/api/invoice-pdf/${invoice.invoiceId}`)}
-  className="px-6 py-2 bg-[#C62828] text-white rounded-full shadow-md hover:bg-[#b12121] transition mt-3 text-sm sm:text-base"
->
-  📄 Download PDF Resmi (A4)
-</button>
+          onClick={() => window.open(`/api/invoice-pdf-html/${invoice.invoiceId}`, "_blank")}
+          className="px-6 py-2 bg-[#C62828] text-white rounded-full shadow-md hover:bg-[#b12121] transition mt-3 text-sm sm:text-base"
+        >
+          📄 Download PDF
+        </button>
       </div>
     </div>
   );
