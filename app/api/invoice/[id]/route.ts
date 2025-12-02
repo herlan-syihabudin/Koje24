@@ -10,18 +10,20 @@ const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n"
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = await context.params            // ← WAJIB pakai await
-    const invoiceId = id?.trim()
-    if (!invoiceId) return NextResponse.json({ success: false, message: "Invoice ID kosong" })
+    const invoiceId = context.params.id?.trim()
+    if (!invoiceId) {
+      return NextResponse.json({ success: false, message: "Invoice ID kosong" })
+    }
 
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     })
+
     const sheets = google.sheets({ version: "v4", auth })
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
@@ -30,7 +32,9 @@ export async function GET(
 
     const rows = res.data.values?.slice(1) || []
     const match = rows.find((r) => (r[1] || "").trim() === invoiceId)
-    if (!match) return NextResponse.json({ success: false, message: "Invoice tidak ditemukan" })
+    if (!match) {
+      return NextResponse.json({ success: false, message: "Invoice tidak ditemukan" })
+    }
 
     return NextResponse.json({
       success: true,
