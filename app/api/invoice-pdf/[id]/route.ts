@@ -4,11 +4,12 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const id = context?.params?.id?.trim();
+  const { id } = await context.params;
+  const invoiceId = id?.trim();
 
-  if (!id) {
+  if (!invoiceId) {
     return NextResponse.json(
       { success: false, message: "Missing invoice ID" },
       { status: 400 }
@@ -16,7 +17,7 @@ export async function GET(
   }
 
   return NextResponse.json(
-    { success: true, invoiceId: id },
+    { success: true, invoiceId },
     { status: 200 }
   );
 }
