@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useCartStore } from "@/stores/cartStore"
 import { useBestSellerRanking } from "@/lib/bestSeller"
 import { products } from "@/lib/products"   
@@ -15,11 +15,29 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
   const items = useCartStore((state) => state.items)
   const addToCart = useCartStore((state) => state.addItem)
   const removeFromCart = useCartStore((state) => state.removeItem)
-
   const rankStats = useBestSellerRanking()
 
   const [imgReady, setImgReady] = useState<Record<string, boolean>>({})
   const [added, setAdded] = useState<string | null>(null)
+
+  // 🔥 DATA OTOMATIS DARI GOOGLE SHEET
+  const [sheetData, setSheetData] = useState<Record<string, any>>({})
+  useEffect(() => {
+    fetch("/api/master-produk", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((rows) => {
+        const map: Record<string, any> = {}
+        rows.forEach((x: any) => {
+          map[x.kode] = {
+            harga: Number(x.harga) || 0,
+            promo: Number(x.hargapromo) || 0,
+            img: x.img || null,
+            active: String(x.active).toLowerCase() === "true",
+          }
+        })
+        setSheetData(map)
+      })
+  }, [])
 
   const qtyOf = (id: string) => items.find((c) => c.id === id)?.qty || 0
 
@@ -43,7 +61,6 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
 
     setAdded(p.id)
 
-    // FLY animation tetap
     setTimeout(() => {
       const imgDom = document.querySelector(`[data-id="product-${p.id}"]`) as HTMLElement | null
       const cartBtn = document.querySelector(".fixed.bottom-5.right-5 button") as HTMLElement | null
@@ -103,11 +120,23 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 md:gap-10 xl:gap-12 max-w-[1400px] mx-auto place-items-stretch">
 
         {products.map((p) => {
-          const priceNum = toNumber(p.price)
+          const db = sheetData[p.id]   // DATA DARI GOOGLE SHEET
+
+          // 🔥 BACA HARGA PRIORITAS: PROMO → NORMAL → HARDCODE
+          const priceNum =
+            db?.promo && db.promo > 0 ? db.promo :
+            db?.harga && db.harga > 0 ? db.harga :
+            toNumber(p.price)
+
+          // 🔥 GAMBAR — kalau sheet ada gambar, replace
+          const imgFix = db?.img ? db.img : p.img
+
+          // 🔥 jika sheet aktif = false → sembunyikan
+          if (db && db.active === false) return null
+
           const qty = qtyOf(p.id)
           const isAdded = added === p.id
 
-          // 🔥 BEST SELLER FIX — id dipaksa jadi number agar match
           const stats = (rankStats as any)[Number(p.id)]
           const isBest = stats?.isBestSeller === true
 
@@ -130,7 +159,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
 
                 <Image
                   data-id={`product-${p.id}`}
-                  src={p.img}
+                  src={imgFix}
                   alt={p.name}
                   fill
                   priority
@@ -141,7 +170,6 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
                   onLoadingComplete={() => setImgReady((m) => ({ ...m, [p.id]: true }))}
                 />
 
-                {/* 🔥 BEST SELLER BADGE */}
                 {isBest && (
                   <span className="absolute top-4 left-4 bg-[#E8C46B] text-[#0B4B50] text-[11px] font-bold px-3 py-1 rounded-full shadow">
                     ⭐ Best Seller
@@ -152,31 +180,26 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
               {/* INFO */}
               <div className="p-5 flex flex-col flex-1">
 
-                {/* NAMA */}
                 <h3 className="font-playfair text-xl font-semibold mb-1">{p.name}</h3>
 
-                {/* SLOGAN */}
                 {p.slogan && (
                   <p className="text-sm text-[#0B4B50] font-semibold leading-snug mb-2">
                     “{p.slogan}”
                   </p>
                 )}
 
-                {/* INGREDIENTS */}
                 {p.ingredients && (
                   <p className="text-xs text-gray-500 mb-3">
                     {p.ingredients.join(" • ")}
                   </p>
                 )}
 
-                {/* DESKRIPSI */}
                 {p.desc && (
                   <p className="font-inter text-sm text-gray-700 mb-4 leading-relaxed">
                     {p.desc}
                   </p>
                 )}
 
-                {/* BUTTON */}
                 <div className="flex items-center justify-between mt-auto pt-2 border-t border-[#e6eeee]/60">
                   <span className="font-bold text-[#0B4B50] text-lg">{formatIDR(priceNum)}</span>
 
