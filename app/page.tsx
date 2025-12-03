@@ -5,7 +5,7 @@ import Hero from "@/components/Hero"
 import ProductGrid from "@/components/ProductGrid"
 import AboutSection from "@/components/AboutSection"
 import SubscriptionSection from "@/components/SubscriptionSection"
-import TestimoniCarousel from "@/components/TestimoniCarousel"
+import TestimonialsCarousel from "@/components/TestimonialsCarousel"
 import FaqSection from "@/components/FaqSection"
 import Footer from "@/components/Footer"
 import CartPopup from "@/components/CartPopup"
@@ -42,7 +42,7 @@ export default function HomePage() {
 
       {/* TESTIMONI */}
       <section id="testimoni" className="scroll-mt-24">
-        <TestimoniCarousel />
+        <TestimonialsCarousel />
       </section>
 
       {/* FAQ */}
