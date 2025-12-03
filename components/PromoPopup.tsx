@@ -9,6 +9,7 @@ export default function PromoPopup() {
   const [open, setOpen] = useState(false)
 
   const addPromo = useCartStore((s) => s.addPromo)
+  window.addEventListener("open-promo-popup", () => setOpen(true))
 
   useEffect(() => {
     const load = async () => {
