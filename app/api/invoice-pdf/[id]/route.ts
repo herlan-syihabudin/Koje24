@@ -3,21 +3,18 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
 
-// Remove emoji & karakter non-ANSI (penyebab WinAnsi error)
 function stripEmoji(text: string) {
   if (!text) return "";
-  return text.replace(/[^\x00-\x7F]/g, ""); // hapus semua karakter di luar ANSI
+  return text.replace(/[^\x00-\x7F]/g, "");
 }
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await context.params;
-    const invoiceId = id.trim();
+    const invoiceId = params.id.trim();
 
-    // Ambil data invoice dari API KOJE24
     const api = await fetch(`${req.nextUrl.origin}/api/invoice/${invoiceId}`, {
       cache: "no-store",
     });
@@ -27,14 +24,13 @@ export async function GET(
     const data = json.data;
 
     const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([595, 842]); // A4
+    const page = pdfDoc.addPage([595, 842]);
     const fontNormal = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
     let y = 800;
     const line = (h = 18) => (y -= h);
 
-    // === LOGO KOJE24
     try {
       const logoUrl = `${req.nextUrl.origin}/image/logo-koje24.png`;
       const imgBytes = await fetch(logoUrl).then((res) => res.arrayBuffer());
@@ -42,7 +38,6 @@ export async function GET(
       page.drawImage(logo, { x: 50, y: 740, width: 120, height: 55 });
     } catch {}
 
-    // === HEADER KANAN
     page.drawText("INVOICE", {
       x: 420,
       y: 780,
@@ -65,7 +60,6 @@ export async function GET(
       font: fontNormal,
     });
 
-    // === BADGE STATUS
     const statusText = stripEmoji(data.status.toUpperCase());
     const statusColor = (() => {
       const s = statusText.toLowerCase();
@@ -97,7 +91,6 @@ export async function GET(
       color: rgb(1, 1, 1),
     });
 
-    // === PEMBELI
     y = 675;
     page.drawText("Pembeli:", { x: 50, y, size: 11, font: fontBold });
 
@@ -108,7 +101,6 @@ export async function GET(
     line();
     page.drawText(stripEmoji(`Telp: ${data.hp}`), { x: 50, y });
 
-    // === TABLE PRODUK
     y -= 40;
     page.drawRectangle({
       x: 50,
@@ -135,12 +127,12 @@ export async function GET(
 
     page.drawText(stripEmoji(data.produkList), { x: 60, y: y - 39, size: 10 });
     page.drawText(String(data.qtyTotal), { x: 308, y: y - 39, size: 10 });
-    page.drawText(
-      `Rp ${data.subtotalCalc.toLocaleString("id-ID")}`,
-      { x: 410, y: y - 39, size: 10 }
-    );
+    page.drawText(`Rp ${data.subtotalCalc.toLocaleString("id-ID")}`, {
+      x: 410,
+      y: y - 39,
+      size: 10,
+    });
 
-    // === TOTAL
     y -= 100;
     const totalRow = (label: string, val: number, bold = false) => {
       page.drawText(stripEmoji(label), {
@@ -162,7 +154,6 @@ export async function GET(
     totalRow("Ongkir:", data.effectiveOngkir);
     totalRow("TOTAL DIBAYARKAN:", data.effectiveGrandTotal, true);
 
-    // === QR CODE
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
       data.invoiceUrl
     )}`;
@@ -177,7 +168,6 @@ export async function GET(
     });
     page.drawImage(qrImg, { x: 50, y: 40, width: 110, height: 110 });
 
-    // === BARCODE
     try {
       const bcUrl = `https://barcodeapi.org/api/128/${invoiceId}`;
       const bcBytes = await fetch(bcUrl).then((r) => r.arrayBuffer());
@@ -185,18 +175,19 @@ export async function GET(
       page.drawImage(bcImg, { x: 360, y: 50, width: 175, height: 45 });
     } catch {}
 
-    // === FOOTER (emoji dihapus otomatis oleh stripEmoji)
-    page.drawText(stripEmoji(
-      "Terima kasih telah berbelanja di KOJE24 💛  Semoga sehat & berenergi setiap hari!"
-    ), {
-      x: 65,
-      y: 20,
-      size: 10,
-      font: fontNormal,
-      color: rgb(0.3, 0.3, 0.3),
-    });
+    page.drawText(
+      stripEmoji(
+        "Terima kasih telah berbelanja di KOJE24 💛  Semoga sehat & berenergi setiap hari!"
+      ),
+      {
+        x: 65,
+        y: 20,
+        size: 10,
+        font: fontNormal,
+        color: rgb(0.3, 0.3, 0.3),
+      }
+    );
 
-    // === WATERMARK PAID
     if (statusText.includes("PAID")) {
       page.drawText("PAID", {
         x: 140,
