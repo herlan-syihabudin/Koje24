@@ -38,9 +38,10 @@ const parseTimestamp = (ts: string) => {
 };
 
 export default function InvoicePage() {
-  const isPrintMode =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("print") === "1";
+  const search =
+  typeof window !== "undefined" ? window.location.search : "";
+const isPrintMode =
+  search.includes("print=1") || search.includes("pdf=1");
 
   const params = useParams();
   const invoiceId = params?.id ? String(params.id) : "";
