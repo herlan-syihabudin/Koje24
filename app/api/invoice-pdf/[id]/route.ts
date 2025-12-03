@@ -9,7 +9,6 @@ export async function GET(
   context: { params: { id: string } }
 ) {
   try {
-    // ⛔ jangan await — langsung ambil param
     const { id } = context.params;
 
     const invoiceUrl = `${req.nextUrl.origin}/invoice/${id}`;
