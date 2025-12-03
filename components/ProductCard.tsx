@@ -9,18 +9,18 @@ export default function ProductCard({
   price,
   img,
 }: {
-  id: number
+  id: string
   name: string
   price: number
   img: string
 }) {
   const ranking = useBestSellerRanking()
 
-  // 🔥 FIX TS BUILD (tanpa ubah logic)
-  const isBest = Boolean(ranking?.[String(id)]?.isBestSeller)
+  // 🔥 Aman untuk TypeScript & Runtime
+  const isBest = Boolean(ranking?.[id]?.isBestSeller)
 
-  // Qty agar ada feedback UX (tanpa merubah logic tombol)
-  const qty = useCartStore((s) => s.getQty?.(String(id)) ?? 0)
+  // Qty agar ada feedback UX (tanpa mengubah logic tombol)
+  const qty = useCartStore((s) => s.getQty?.(id) ?? 0)
 
   return (
     <div
@@ -44,7 +44,7 @@ export default function ProductCard({
         </div>
       )}
 
-      {/* 🔥 BADGE QTY (feedback kalau produk sudah dimasukkan) */}
+      {/* 🔥 BADGE QTY */}
       {qty > 0 && (
         <div
           className="
@@ -70,9 +70,7 @@ export default function ProductCard({
       />
 
       <div className="p-4">
-        <h3 className="font-semibold text-[#0B4B50] leading-tight">
-          {name}
-        </h3>
+        <h3 className="font-semibold text-[#0B4B50] leading-tight">{name}</h3>
         <p className="text-sm text-[#557577] mt-1">
           Rp {price.toLocaleString("id-ID")}
         </p>
