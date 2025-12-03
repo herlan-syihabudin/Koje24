@@ -63,8 +63,8 @@ export default function InvoicePage() {
   return (
     <div className="max-w-4xl mx-auto p-10 bg-white text-black invoice-paper">
 
-      {/* DOWNLOAD - hanya web */}
-      <div className="w-full flex justify-end mb-5 no-print">
+      {/* === DOWNLOAD BUTTON (web only) === */}
+      <div className="w-full flex justify-end mb-4 no-pdf">
         <a
           href={`/api/invoice-pdf/${invoice.invoiceId}`}
           className="px-5 py-2 bg-[#C62828] text-white rounded shadow hover:bg-[#a71e1e] transition text-sm font-semibold"
@@ -73,10 +73,10 @@ export default function InvoicePage() {
         </a>
       </div>
 
-      {/* HEADER */}
-      <div className="flex justify-between mb-8">
+      {/* ===== HEADER ===== */}
+      <div className="flex justify-between items-start mb-4">
         <div>
-          <img src="/image/logo-koje24.png" alt="KOJE24" className="h-16 w-auto mb-2" />
+          <img src="/image/logo-koje24.png" alt="KOJE24" className="h-16 w-auto mb-1" />
           <p className="text-sm leading-tight">
             <strong>Healthy Juice for Everyday Energy</strong> <br />
             Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320
@@ -84,35 +84,33 @@ export default function InvoicePage() {
         </div>
 
         <div className="text-right">
-          <p className="text-3xl font-bold mb-1">INVOICE</p>
+          <p className="text-3xl font-bold mb-1 tracking-wide">INVOICE</p>
           <img
             src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
             alt="barcode"
             className="h-14 w-auto mx-auto"
           />
-          <p className="text-xs mt-2">
+          <p className="text-xs mt-1">
             Tanggal: {invoice.timestamp.replace(",", " — ")}
           </p>
         </div>
       </div>
 
-      <div className="border-t border-black my-5"></div>
+      <div className="border-t border-black mb-4"></div>
 
-      {/* PAYMENT STATUS */}
+      {/* ===== PAYMENT STATUS ===== */}
       <div className="flex justify-between text-sm mb-6">
         <p>Pembayaran: <strong>{invoice.paymentLabel}</strong></p>
         <p>Status: <strong>{invoice.status.toUpperCase()}</strong></p>
       </div>
 
-      {/* CUSTOMER */}
+      {/* ===== CUSTOMER ===== */}
       <p className="text-sm font-bold mb-1">Invoice To:</p>
       <p className="text-sm">Nama: {invoice.nama}</p>
       <p className="text-sm">Alamat: {invoice.alamat}</p>
-      <p className="text-sm mb-6">Telp: {invoice.hp}</p>
+      <p className="text-sm mb-4">Telp: {invoice.hp}</p>
 
-      <div className="border-t border-black my-5"></div>
-
-      {/* PRODUK TABLE */}
+      {/* ===== PRODUCT TABLE (tanpa garis horizontal tambahan) ===== */}
       <table className="w-full text-sm border border-black" cellPadding={6}>
         <thead>
           <tr>
@@ -141,8 +139,8 @@ export default function InvoicePage() {
         </tbody>
       </table>
 
-      {/* TOTAL */}
-      <div className="flex justify-end mt-6">
+      {/* ===== TOTAL ===== */}
+      <div className="flex justify-end mt-5">
         <table className="text-sm">
           <tbody>
             <tr>
@@ -161,12 +159,12 @@ export default function InvoicePage() {
         </table>
       </div>
 
-      {/* QR */}
+      {/* ===== QR CODE ===== */}
       <div className="flex justify-center mt-8">
         <QRCode value={invoice.invoiceUrl || window.location.href} size={110} />
       </div>
 
-      {/* SYARAT & KETENTUAN — dipindah ke atas footer */}
+      {/* ===== SYARAT & KETENTUAN ===== */}
       <div className="text-[10px] text-gray-600 mt-6 leading-tight text-left">
         — <strong>Syarat & Ketentuan:</strong><br />
         1. Invoice ini otomatis & sah tanpa tanda tangan atau stempel.<br />
@@ -174,24 +172,21 @@ export default function InvoicePage() {
         3. Barang yang sudah dibeli tidak dapat dikembalikan kecuali terdapat kerusakan.
       </div>
 
-      {/* FOOTER */}
+      {/* ===== FOOTER ===== */}
       <div className="border-t border-black text-center mt-4 pt-3 text-xs leading-tight">
         Terima kasih telah berbelanja di <strong>KOJE24</strong>.
       </div>
 
-      {/* PRINT MODE FIXES */}
+      {/* ===== PRINT MODE ===== */}
       <style jsx global>{`
         @media print {
           .invoice-paper {
-            padding: 0 !important;
             margin: 0 !important;
-            background: #fff !important;
-            width: 100% !important;
-            zoom: 93%; /* supaya 1 halaman */
+            padding: 0 !important;
+            zoom: 93%;
           }
-          a, button, .whatsapp-float, .no-print {
+          a, button, .no-pdf {
             display: none !important;
-            visibility: hidden !important;
           }
         }
       `}</style>
