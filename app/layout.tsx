@@ -6,9 +6,7 @@ import { CartProvider } from "@/components/CartContext";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import StickyCartBar from "@/components/StickyCartBar";
 import PromoPopup from "@/components/PromoPopup";
-import PromoBanner from "@/components/PromoBanner"; // ⬅️ DITAMBAHKAN
 
-// === FONTS ===
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -29,43 +27,11 @@ export const metadata: Metadata = {
   description:
     "KOJE24 — minuman cold-pressed alami premium tanpa gula tambahan dan tanpa pengawet. Cocok untuk detoks harian dan menjaga imunitas.",
   manifest: "/manifest.json",
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/icons/apple-touch-icon.png",
-  },
-  keywords: [
-    "KOJE24",
-    "cold pressed juice",
-    "jus sehat",
-    "juice detox",
-    "minuman sehat bekasi",
-  ],
-  robots: {
-    index: true,
-    follow: true,
-  },
-  openGraph: {
-    title: "KOJE24 • Natural Cold-Pressed Juice",
-    description:
-      "Cold-pressed juice alami tanpa gula tambahan dan tanpa pengawet — premium daily detox.",
-    url: "https://koje24.com",
-    siteName: "KOJE24",
-    images: [
-      {
-        url: "/og-cover.jpg",
-        width: 1200,
-        height: 630,
-        alt: "KOJE24 Natural Cold-Pressed Juice",
-      },
-    ],
-    type: "website",
-  },
+  icons: { icon: "/favicon.ico", apple: "/icons/apple-touch-icon.png" },
 };
 
-// === THEME COLOR via viewport
-export const viewport: Viewport = {
-  themeColor: "#0FA3A8",
-};
+// THEME COLOR
+export const viewport: Viewport = { themeColor: "#0FA3A8" };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -81,39 +47,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
       <body className="antialiased font-inter bg-white text-[#0B4B50] max-w-[100vw] overflow-x-hidden">
         <CartProvider>
-          <PromoBanner />   {/* ⬅️ Muncul di atas konten homepage */}
           {children}
         </CartProvider>
 
-        {/* Sticky Cart Bar */}
         <StickyCartBar />
-
-        {/* Promo Popup (muncul saat pertama kali masuk web) */}
         <PromoPopup />
-
-        {/* Speed Insights */}
         <SpeedInsights />
 
-        {/* Smooth scroll fallback */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `
-              try { document.documentElement.style.scrollBehavior = "smooth"; } catch(e){}
-            `,
-          }}
-        />
-
-        {/* JSON-LD Structured Data */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              name: "KOJE24",
-              url: "https://koje24.com",
-              logo: "/icons/apple-touch-icon.png",
-            }),
+            __html: `try { document.documentElement.style.scrollBehavior = "smooth"; } catch(e){}`
           }}
         />
       </body>
