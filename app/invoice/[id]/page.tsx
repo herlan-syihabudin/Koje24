@@ -67,37 +67,48 @@ export default function InvoicePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-10 bg-white text-black invoice-paper">
-      {/* === SYARAT & KETENTUAN (atas kiri) === */}
-<p className="text-[10px] text-gray-600 mb-4 leading-tight print:block hidden">
-  — <strong>Syarat & Ketentuan:</strong><br />
-  1. Pembayaran dianggap sah setelah dana diterima oleh KOJE24.
-<br />2. Barang yang sudah dibeli tidak dapat dikembalikan kecuali terdapat kerusakan.
-</p>
-      {/* HEADER */}
-      <div className="flex justify-between mb-8">
-        <div>
-          <img src="/image/logo-koje24.png" alt="KOJE24" className="h-16 w-auto mb-2" />
-          <p className="text-sm leading-tight">
-            <strong>Healthy Juice for Everyday Energy</strong> <br />
-            Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320
-          </p>
-        </div>
+  <div className="max-w-4xl mx-auto p-10 bg-white text-black invoice-paper">
 
-        <div className="text-right">
-          <p className="text-3xl font-bold mb-1">INVOICE</p>
+    {/* === DOWNLOAD BUTTON (WEB-ONLY) === */}
+    <div className="w-full flex justify-end mb-5 no-print">
+      <a
+        href={`/api/invoice-pdf/${invoice.invoiceId}`}
+        className="px-5 py-2 bg-[#C62828] text-white rounded shadow hover:bg-[#a71e1e] transition text-sm font-semibold"
+      >
+        ⬇ Download Invoice
+      </a>
+    </div>
 
-          <img
-            src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
-            alt="barcode"
-            className="h-14 w-auto mx-auto"
-          />
+    {/* === SYARAT & KETENTUAN (selalu tampil) === */}
+    <p className="text-[10px] text-gray-600 mb-4 leading-tight">
+      — <strong>Syarat & Ketentuan:</strong><br />
+      1. Invoice ini otomatis dan sah tanpa tanda tangan atau stempel.<br />
+      2. Pembayaran dianggap sah setelah dana diterima oleh KOJE24.<br />
+      3. Barang yang sudah dibeli tidak dapat dikembalikan kecuali terdapat kerusakan.
+    </p>
 
-          <p className="text-xs mt-2">
-            Tanggal: {invoice.timestamp.replace(",", " — ")}
-          </p>
-        </div>
+    {/* === HEADER === */}
+    <div className="flex justify-between mb-8">
+      <div>
+        <img src="/image/logo-koje24.png" alt="KOJE24" className="h-16 w-auto mb-2" />
+        <p className="text-sm leading-tight">
+          <strong>Healthy Juice for Everyday Energy</strong> <br />
+          Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320
+        </p>
       </div>
+
+      <div className="text-right">
+        <p className="text-3xl font-bold mb-1">INVOICE</p>
+        <img
+          src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
+          alt="barcode"
+          className="h-14 w-auto mx-auto"
+        />
+        <p className="text-xs mt-2">
+          Tanggal: {invoice.timestamp.replace(",", " — ")}
+        </p>
+      </div>
+    </div>
 
       <div className="border-t border-black my-5"></div>
 
