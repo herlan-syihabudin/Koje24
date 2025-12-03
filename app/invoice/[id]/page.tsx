@@ -38,6 +38,10 @@ const parseTimestamp = (ts: string) => {
 };
 
 export default function InvoicePage() {
+  const isPrintMode =
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("print") === "1";
+
   const params = useParams();
   const invoiceId = params?.id ? String(params.id) : "";
 
@@ -113,7 +117,11 @@ export default function InvoicePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-8 print:p-0">
+    <div
+  className={`min-h-screen p-4 sm:p-8 print:p-0 ${
+    isPrintMode ? "bg-white" : "bg-gray-100"
+  }`}
+>
       <style jsx global>{`
         @media print {
           body {
