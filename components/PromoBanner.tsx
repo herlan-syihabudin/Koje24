@@ -1,4 +1,5 @@
 "use client"
+
 import { useEffect, useState } from "react"
 import { fetchPromos } from "@/lib/promos"
 
@@ -18,8 +19,9 @@ export default function PromoBanner() {
 
   if (promos.length === 0) return null
 
-  // buka popup promo
   const openPopup = () => {
+    // ⛑️ anti error SSR
+    if (typeof window === "undefined") return
     window.dispatchEvent(new CustomEvent("open-promo-popup"))
   }
 
