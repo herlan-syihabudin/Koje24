@@ -15,12 +15,16 @@ import RatingPopup from "@/components/RatingPopup"
 import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO"
 import PromoBanner from "@/components/PromoBanner"
 
-
 export default function HomePage() {
   return (
     <main role="main" aria-label="KOJE24 - Natural Cold-Pressed Juice">
 
+      {/* HEADER */}
       <Header />
+
+      {/* 🔥 PROMO BANNER DIPINDAH KE SINI — PALING AMAN */}
+      <PromoBanner />
+
       <Hero />
 
       {/* PRODUK */}
@@ -48,9 +52,8 @@ export default function HomePage() {
         <TestimonialsCarousel />
       </section>
 
+      {/* SEO JSON-LD USER TESTIMONI*/}
       <TestimonialSchemaSEO />
-
-      <PromoBanner />
 
       {/* FAQ */}
       <section id="faq" className="scroll-mt-24">
@@ -63,7 +66,6 @@ export default function HomePage() {
       <CartPopup />
       <PackagePopup />
       <RatingPopup />
-
     </main>
   )
 }
