@@ -12,7 +12,7 @@ export interface RankData {
 const STORAGE_KEY = "koje24-best-seller-data"
 
 /* ======================================================
-   📌 SAFE GET (cek window)
+   📌 SAFE localStorage
 ====================================================== */
 function safeGetItem(key: string) {
   if (typeof window === "undefined") return null
@@ -27,7 +27,7 @@ function safeSetItem(key: string, val: string) {
 /* ======================================================
    📌 Ambil data history dari localStorage
 ====================================================== */
-function getStats(): Record<number, RankData> {
+function getStats(): Record<string, RankData> {
   try {
     const d = safeGetItem(STORAGE_KEY)
     return d ? JSON.parse(d) : {}
@@ -36,18 +36,17 @@ function getStats(): Record<number, RankData> {
   }
 }
 
-function saveStats(data: Record<number, RankData>) {
+function saveStats(data: Record<string, RankData>) {
   safeSetItem(STORAGE_KEY, JSON.stringify(data))
 }
 
 /* ======================================================
    🔥 DIPANGGIL SAAT USER KIRIM TESTIMONI
 ====================================================== */
-export function updateRating(productId: number, newRating: number) {
-  if (typeof window === "undefined") return // ⛔ AMAN SSR
+export function updateRating(productId: string, newRating: number) {
+  if (typeof window === "undefined") return
 
   const stats = getStats()
-
   if (!stats[productId]) {
     stats[productId] = {
       rating: newRating,
@@ -69,10 +68,10 @@ export function updateRating(productId: number, newRating: number) {
 }
 
 /* ======================================================
-   🔥 HITUNG & AMBIL RANKING BEST SELLER
+   🔥 HITUNG & AMBIL 3 PRODUK BEST SELLER
 ====================================================== */
 export function getBestSellerList() {
-  if (typeof window === "undefined") return {} // ⛔ AMAN SSR
+  if (typeof window === "undefined") return {}
 
   const stats = getStats()
 
@@ -82,7 +81,7 @@ export function getBestSellerList() {
 
   Object.values(stats).forEach((s) => (s.isBestSeller = false))
   sorted.forEach(([id]) => {
-    stats[Number(id)].isBestSeller = true
+    stats[id].isBestSeller = true
   })
 
   saveStats(stats)
@@ -93,7 +92,7 @@ export function getBestSellerList() {
    🔥 HOOK CLIENT
 ====================================================== */
 export function useBestSellerRanking() {
-  const [stats, setStats] = useState<Record<number, RankData>>({})
+  const [stats, setStats] = useState<Record<string, RankData>>({})
 
   useEffect(() => {
     if (typeof window === "undefined") return
