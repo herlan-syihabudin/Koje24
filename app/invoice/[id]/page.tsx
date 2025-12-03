@@ -250,16 +250,16 @@ export default function InvoicePage() {
       </div>
 
       {/* DOWNLOAD PDF */}
-      <div className="text-center mt-6 no-print">
-        <button
-          onClick={() =>
-            (window.location.href = `/api/invoice-pdf-html/${invoice.invoiceId}`)
-          }
-          className="px-6 py-2 bg-[#C62828] text-white rounded-full shadow-md hover:bg-[#b12121] transition mt-3 text-sm sm:text-base"
-        >
-          📄 Download PDF Resmi (A4)
-        </button>
-      </div>
+<div className="text-center mt-6 no-print">
+  <button
+    onClick={() => {
+      window.location.href = `/api/invoice-pdf/${invoice.invoiceId}`;
+    }}
+    className="px-6 py-2 bg-[#C62828] text-white rounded-full shadow-md hover:bg-[#b12121] transition mt-3 text-sm sm:text-base"
+  >
+    📄 Download PDF Resmi (A4)
+  </button>
+</div>
     </div>
   );
 }

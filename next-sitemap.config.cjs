@@ -1,19 +1,15 @@
-// @ts-check
 /** @type {import('next-sitemap').IConfig} */
-
-module.exports = {
-  siteUrl: "https://webkoje-cacs.vercel.app", // ganti ke domain resmi KOJE24 nanti
+export default {
+  siteUrl: "https://webkoje24.vercel.app",
   generateRobotsTxt: true,
   sitemapSize: 5000,
   changefreq: "weekly",
   priority: 0.7,
-
   exclude: [
     "/invoice/*",
     "/checkout",
-    "/api/*",
+    "/api/*"
   ],
-
   robotsTxtOptions: {
     policies: [
       { userAgent: "*", allow: "/" },

@@ -1,29 +1,23 @@
-import { NextRequest } from "next/server";  // <- NextResponse dihapus
-
-export const runtime = "edge";
-
-const API_KEY = process.env.HTML2PDF_KEY || "demo";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params; // <- WAJIB pakai await di Next 16
+
   try {
-    const { id } = context.params;
-
-    const invoiceUrl = `${req.nextUrl.origin}/invoice/${id}?print=1`;
-
-    const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}&url=${encodeURIComponent(
+    const invoiceUrl = `${req.nextUrl.origin}/invoice/${id}`;
+    const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${process.env.HTML2PDF_KEY}&url=${encodeURIComponent(
       invoiceUrl
-    )}&format=A4&printBackground=true&margin=10mm&delay=2500&waitFor=networkidle`;
+    )}&format=A4&printBackground=true&margin=10mm`;
 
     const result = await fetch(pdfReqUrl);
     if (!result.ok) throw new Error("Gagal generate PDF");
 
     const pdf = await result.arrayBuffer();
 
-    // 🚀 Ganti NextResponse jadi Response agar TypeScript sesuai
-    return new Response(pdf, {
+    return new NextResponse(pdf, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
@@ -31,18 +25,9 @@ export async function GET(
       },
     });
   } catch (err: any) {
-    console.error("PDF error:", err);
-
-    // 🚀 Ganti NextResponse.json juga
-    return new Response(
-      JSON.stringify({
-        error: "Failed to generate PDF",
-        detail: err?.message ?? err,
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+    return NextResponse.json(
+      { error: "Failed to generate PDF", detail: err?.message ?? err },
+      { status: 500 }
     );
   }
 }
