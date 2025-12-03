@@ -48,28 +48,41 @@ export default function InvoicePage() {
 
   return (
     <div className="max-w-4xl mx-auto p-8 bg-white text-black invoice-paper">
+      
       {/* === HEADER === */}
-      <div className="flex justify-between items-start mb-5">
-        <div>
-          <img src="/image/logo-koje24.png" alt="KOJE24" className="h-16 mb-2" />
-          <p className="text-sm leading-tight">
-            <strong>Healthy Juice for Everyday Energy</strong> <br />
-            Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320
-          </p>
-        </div>
+<div className="flex justify-between items-center mb-6">
+  {/* Logo & Info */}
+  <div className="flex flex-col gap-1">
+    <img
+      src="/image/logo-koje24.png"
+      alt="KOJE24"
+      className="h-14 w-auto object-contain"
+      style={{ marginBottom: "-4px" }}
+    />
+    <p className="text-xs leading-tight max-w-xs">
+      <strong>Healthy Juice for Everyday Energy</strong> <br />
+      Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320
+    </p>
+  </div>
 
-        <div className="text-right">
-          <p className="text-3xl font-bold">INVOICE</p>
-          <img
-            src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
-            alt="barcode"
-            className="h-12 mt-1"
-          />
-          <p className="text-sm mt-1">
-            Tanggal: {invoice.timestamp.replace(",", " — ")}
-          </p>
-        </div>
-      </div>
+  {/* Invoice Title & Barcode */}
+  <div className="text-right flex flex-col items-end">
+    <p className="text-3xl font-bold tracking-wide mb-1">INVOICE</p>
+
+    <div className="flex flex-col items-center">
+      <img
+        src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
+        alt="barcode"
+        className="h-12 w-auto object-contain"
+      />
+      <p className="text-[10px] mt-1 tracking-wide">{invoice.invoiceId}</p>
+    </div>
+
+    <p className="text-xs mt-2">
+      Tanggal: {invoice.timestamp.replace(",", " — ")}
+    </p>
+  </div>
+</div>
 
       <div className="border-t border-black my-4"></div>
 
