@@ -67,47 +67,54 @@ export default function SemuaTestimoni() {
 
               return (
                 <article
-                  key={i}
-                  className="bg-white border border-[#e6eeee]/70 rounded-3xl p-6 shadow-[0_14px_40px_rgba(11,75,80,0.10)] hover:shadow-[0_18px_55px_rgba(11,75,80,0.17)] transition-all"
-                >
-                  {/* header */}
-                  <div className="flex items-center gap-3 mb-3">
-                    {t.img ? (
-                      <img
-                        src={t.img}
-                        alt={t.nama}
-                        className="w-10 h-10 rounded-full object-cover border border-[#e6eeee]"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-[#0FA3A8]/10 flex items-center justify-center text-xs font-semibold text-[#0B4B50]">
-                        {initials}
-                      </div>
-                    )}
+  key={i}
+  className="bg-white border border-[#e8f2f2] rounded-3xl p-7
+             shadow-[0_12px_40px_rgba(15,163,168,0.08)]
+             hover:shadow-[0_22px_65px_rgba(15,163,168,0.18)]
+             hover:-translate-y-[3px]
+             transition-all duration-300"
+>
 
-                    <div className="flex-1">
-                      <h3 className="font-playfair text-lg font-semibold text-[#0B4B50]">
-                        {t.nama}
-                      </h3>
-                      <p className="text-sm text-gray-500">{t.kota}</p>
-                    </div>
+  {/* header */}
+  <div className="flex items-center gap-4 mb-4">
+    {t.img ? (
+      <img
+        src={t.img}
+        alt={t.nama}
+        className="w-12 h-12 rounded-full object-cover border-2 border-[#B78F3A]/50 shadow-sm"
+      />
+    ) : (
+      <div className="w-12 h-12 rounded-full bg-[#0FA3A8]/10 flex items-center justify-center text-sm font-semibold text-[#0B4B50] border border-[#B78F3A]/40">
+        {initials}
+      </div>
+    )}
 
-                    <div className="text-right text-yellow-500 text-sm leading-none">
-                      {"★".repeat(safeRating)}
-                      <span className="text-gray-300">
-                        {"★".repeat(5 - safeRating)}
-                      </span>
-                    </div>
-                  </div>
+    <div className="flex-1">
+      <h3 className="font-playfair text-lg font-semibold tracking-wide text-[#0B4B50] leading-none">
+        {t.nama}
+      </h3>
+      <p className="text-[13px] text-gray-500 mt-[2px]">{t.kota}</p>
+    </div>
 
-                  {/* body */}
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-[#0FA3A8] mb-1">
-                    {t.varian}
-                  </p>
+    {/* rating */}
+    <div className="flex gap-[2px] text-[#B78F3A]">
+      {"★".repeat(safeRating)}
+      <span className="text-gray-300">
+        {"★".repeat(5 - safeRating)}
+      </span>
+    </div>
+  </div>
 
-                  <p className="italic text-gray-700 leading-relaxed">
-                    “{t.pesan}”
-                  </p>
-                </article>
+  {/* badge varian */}
+  <span className="inline-block text-[11px] font-semibold tracking-wide uppercase mb-2 px-2.5 py-1 rounded-full bg-[#0FA3A8]/10 text-[#0FA3A8]">
+    {t.varian}
+  </span>
+
+  {/* message */}
+  <p className="italic text-gray-600 leading-relaxed text-sm">
+    “{t.pesan}”
+  </p>
+</article>
               )
             })}
           </div>
