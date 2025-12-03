@@ -1,6 +1,7 @@
 "use client"
 
 import Header from "@/components/Header"
+import PromoBanner from "@/components/PromoBanner"
 import Hero from "@/components/Hero"
 import ProductGrid from "@/components/ProductGrid"
 import AboutSection from "@/components/AboutSection"
@@ -13,18 +14,18 @@ import PackagePopup from "@/components/PackagePopup"
 import PackagesSection from "@/components/PackagesSection"
 import RatingPopup from "@/components/RatingPopup"
 import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO"
-import PromoBanner from "@/components/PromoBanner"
 
 export default function HomePage() {
   return (
     <main role="main" aria-label="KOJE24 - Natural Cold-Pressed Juice">
 
+      {/* 🔥 PROMO BANNER PALING ATAS (WAJIB DI SINI) */}
+      <PromoBanner />
+
       {/* HEADER */}
       <Header />
 
-      {/* 🔥 PROMO BANNER DIPINDAH KE SINI — PALING AMAN */}
-      <PromoBanner />
-
+      {/* HERO */}
       <Hero />
 
       {/* PRODUK */}
@@ -52,7 +53,7 @@ export default function HomePage() {
         <TestimonialsCarousel />
       </section>
 
-      {/* SEO JSON-LD USER TESTIMONI*/}
+      {/* SEO JSON-LD TESTIMONI */}
       <TestimonialSchemaSEO />
 
       {/* FAQ */}
@@ -66,6 +67,7 @@ export default function HomePage() {
       <CartPopup />
       <PackagePopup />
       <RatingPopup />
+
     </main>
   )
 }
