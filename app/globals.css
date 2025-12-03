@@ -314,4 +314,48 @@ iframe {
   size: A4;
   margin: 0;
 }
+/* ==========================
+   🔥 INVOICE FIX (WEB + PDF)
+=========================== */
+
+/* 1️⃣ Hilangkan background abu & bayangan saat PDF */
+@media print {
+  body, html {
+    background: #ffffff !important;
+  }
+  .invoice-paper {
+    background: #ffffff !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* 2️⃣ Sembunyikan tombol download & elemen selain konten invoice */
+@media print {
+  .no-print,
+  .no-pdf,
+  a[href*="invoice-pdf"],
+  button {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}
+
+/* 3️⃣ Biar selalu 1 halaman A4, tidak kepotong jadi 2 */
+@media print {
+  @page {
+    size: A4;
+    margin: 8mm;  /* nyaman & standar industri */
+  }
+  .invoice-paper {
+    zoom: 92%; /* biar muat 1 halaman */
+  }
+}
+.invoice-paper h1,
+.invoice-paper .title {
+  font-weight: 800 !important;
+  letter-spacing: 0.02em;
+}
 
