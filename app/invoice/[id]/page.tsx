@@ -39,8 +39,8 @@ const parseTimestamp = (ts: string) => {
 
 export default function InvoicePage() {
   const isPrintMode =
-  typeof window !== "undefined" &&
-  new URLSearchParams(window.location.search).get("print") === "1";
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("print") === "1";
 
   const params = useParams();
   const invoiceId = params?.id ? String(params.id) : "";
@@ -118,29 +118,22 @@ export default function InvoicePage() {
 
   return (
     <div
-  className={`min-h-screen p-4 sm:p-8 print:p-0 ${
-    isPrintMode ? "bg-white" : "bg-gray-100"
-  }`}
->
-      <style jsx global>{`
-        @media print {
-          body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #fff !important;
-          }
-          .invoice-container {
-            box-shadow: none !important;
-            border: none !important;
-            margin: 0 !important;
-            width: 100% !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
+      className={`min-h-screen p-4 sm:p-8 print:p-0 ${
+        isPrintMode ? "bg-white" : "bg-gray-100"
+      }`}
+    >
+      {/* ⬇ DOWNLOAD BUTTON DI ATAS */}
+      <div className="w-full flex justify-end mb-5 no-print">
+        <a
+          href={`/api/invoice-pdf/${invoice.invoiceId}`}
+          download={`invoice-${invoice.invoiceId}.pdf`}
+          className="px-5 py-2 bg-[#C62828] text-white rounded-full shadow-md hover:bg-[#b12121] transition text-sm sm:text-base font-semibold"
+        >
+          ⬇ Download Invoice (PDF)
+        </a>
+      </div>
 
+      {/* INVOICE BOX */}
       <div className="invoice-container bg-white max-w-4xl mx-auto rounded-lg shadow-xl p-10 border border-gray-200 relative">
         {invoice.status.toLowerCase().includes("paid") && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
@@ -229,8 +222,8 @@ export default function InvoicePage() {
           </table>
         </div>
 
-        {/* QR & BARCODE */}
-        <div className="flex justify-between items-center mt-6 mb-10">
+        {/* QR & BARCODE (disembunyikan dari PDF) */}
+        <div className="flex justify-between items-center mt-6 mb-10 no-print">
           <div className="text-sm text-gray-700">
             Scan untuk membuka invoice online:
             <QRCode value={invoice.invoiceUrl} size={90} className="mt-2" />
@@ -242,23 +235,12 @@ export default function InvoicePage() {
           />
         </div>
 
-        {/* FOOTER */}
-        <p className="text-center text-gray-600 text-sm border-t pt-4">
-          Terima kasih telah berbelanja di <strong>KOJE24</strong> 💛  
+        {/* FOOTER (disembunyikan dari PDF) */}
+        <p className="text-center text-gray-600 text-sm border-t pt-4 no-print">
+          Terima kasih telah berbelanja di <strong>KOJE24</strong> 💛
           Semoga sehat & berenergi setiap hari!
         </p>
       </div>
-
-      {/* DOWNLOAD PDF — POSISI ATAS & LANGSUNG DOWNLOAD */}
-<div className="w-full flex justify-end mb-5 no-print">
-  <a
-    href={`/api/invoice-pdf/${invoice.invoiceId}`}
-    download={`invoice-${invoice.invoiceId}.pdf`}
-    className="px-5 py-2 bg-[#C62828] text-white rounded-full shadow-md hover:bg-[#b12121] transition text-sm sm:text-base font-semibold"
-  >
-    ⬇ Download Invoice (PDF)
-  </a>
-</div>
     </div>
   );
 }
