@@ -10,7 +10,7 @@ interface InvoiceData {
   nama: string;
   hp: string;
   alamat: string;
-  produkList: string; // contoh: "Golden Detox (2x), Yellow Immunity (1x), Paket Hemat (1x), Golden Detox (1x), Yellow Immunity (1x), Red Vitality (1x)"
+  produkList: string;
   qtyTotal: number;
   subtotalCalc: number;
   status: string;
@@ -44,10 +44,7 @@ export default function InvoicePage() {
   if (loading) return <div className="p-10">Memuat invoice...</div>;
   if (!invoice) return <div className="p-10 text-red-600">Invoice tidak ditemukan.</div>;
 
-  // Ubah string produk menjadi array
   const rawItems = invoice.produkList.split(",").map((x) => x.trim());
-
-  // Format array → name + qty
   const items = rawItems.map((line) => {
     const match = line.match(/(.+?)\s*\((\d+)x\)/);
     return match
@@ -55,60 +52,49 @@ export default function InvoicePage() {
       : { name: line.trim(), qty: 1 };
   });
 
-  // Hitung harga per unit berdasarkan subtotal / qtyTotal
   const unitPrice = invoice.subtotalCalc / invoice.qtyTotal;
-
-  // Logika subtotal per item
   const calculateSubtotal = (name: string, qty: number) => {
     const isPaket = name.toLowerCase().includes("paket");
-    if (isPaket && qty === 1) return qty * unitPrice; // subtotal paket
-    if (!isPaket) return qty * unitPrice; // produk biasa
-    return null; // isi paket -> tanda "—"
+    if (isPaket && qty === 1) return qty * unitPrice;
+    if (!isPaket) return qty * unitPrice;
+    return null;
   };
 
   return (
-  <div className="max-w-4xl mx-auto p-10 bg-white text-black invoice-paper">
+    <div className="max-w-4xl mx-auto p-10 bg-white text-black invoice-paper">
 
-    {/* === DOWNLOAD BUTTON (WEB-ONLY) === */}
-    <div className="w-full flex justify-end mb-5 no-print">
-      <a
-        href={`/api/invoice-pdf/${invoice.invoiceId}`}
-        className="px-5 py-2 bg-[#C62828] text-white rounded shadow hover:bg-[#a71e1e] transition text-sm font-semibold"
-      >
-        ⬇ Download Invoice
-      </a>
-    </div>
-
-    {/* === SYARAT & KETENTUAN (selalu tampil) === */}
-    <p className="text-[10px] text-gray-600 mb-4 leading-tight">
-      — <strong>Syarat & Ketentuan:</strong><br />
-      1. Invoice ini otomatis dan sah tanpa tanda tangan atau stempel.<br />
-      2. Pembayaran dianggap sah setelah dana diterima oleh KOJE24.<br />
-      3. Barang yang sudah dibeli tidak dapat dikembalikan kecuali terdapat kerusakan.
-    </p>
-
-    {/* === HEADER === */}
-    <div className="flex justify-between mb-8">
-      <div>
-        <img src="/image/logo-koje24.png" alt="KOJE24" className="h-16 w-auto mb-2" />
-        <p className="text-sm leading-tight">
-          <strong>Healthy Juice for Everyday Energy</strong> <br />
-          Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320
-        </p>
+      {/* DOWNLOAD - hanya web */}
+      <div className="w-full flex justify-end mb-5 no-print">
+        <a
+          href={`/api/invoice-pdf/${invoice.invoiceId}`}
+          className="px-5 py-2 bg-[#C62828] text-white rounded shadow hover:bg-[#a71e1e] transition text-sm font-semibold"
+        >
+          ⬇ Download Invoice
+        </a>
       </div>
 
-      <div className="text-right">
-        <p className="text-3xl font-bold mb-1">INVOICE</p>
-        <img
-          src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
-          alt="barcode"
-          className="h-14 w-auto mx-auto"
-        />
-        <p className="text-xs mt-2">
-          Tanggal: {invoice.timestamp.replace(",", " — ")}
-        </p>
+      {/* HEADER */}
+      <div className="flex justify-between mb-8">
+        <div>
+          <img src="/image/logo-koje24.png" alt="KOJE24" className="h-16 w-auto mb-2" />
+          <p className="text-sm leading-tight">
+            <strong>Healthy Juice for Everyday Energy</strong> <br />
+            Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320
+          </p>
+        </div>
+
+        <div className="text-right">
+          <p className="text-3xl font-bold mb-1">INVOICE</p>
+          <img
+            src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
+            alt="barcode"
+            className="h-14 w-auto mx-auto"
+          />
+          <p className="text-xs mt-2">
+            Tanggal: {invoice.timestamp.replace(",", " — ")}
+          </p>
+        </div>
       </div>
-    </div>
 
       <div className="border-t border-black my-5"></div>
 
@@ -126,7 +112,7 @@ export default function InvoicePage() {
 
       <div className="border-t border-black my-5"></div>
 
-      {/* TABLE */}
+      {/* PRODUK TABLE */}
       <table className="w-full text-sm border border-black" cellPadding={6}>
         <thead>
           <tr>
@@ -139,7 +125,6 @@ export default function InvoicePage() {
         <tbody>
           {items.map((p, idx) => {
             const subtotal = calculateSubtotal(p.name, p.qty);
-
             return (
               <tr key={idx}>
                 <td className="border border-black">{p.name}</td>
@@ -176,26 +161,38 @@ export default function InvoicePage() {
         </table>
       </div>
 
-      {/* QR CODE */}
+      {/* QR */}
       <div className="flex justify-center mt-8">
-        <QRCode value={invoice.invoiceUrl || window.location.href} size={120} />
+        <QRCode value={invoice.invoiceUrl || window.location.href} size={110} />
+      </div>
+
+      {/* SYARAT & KETENTUAN — dipindah ke atas footer */}
+      <div className="text-[10px] text-gray-600 mt-6 leading-tight text-left">
+        — <strong>Syarat & Ketentuan:</strong><br />
+        1. Invoice ini otomatis & sah tanpa tanda tangan atau stempel.<br />
+        2. Pembayaran dianggap sah setelah dana diterima oleh KOJE24.<br />
+        3. Barang yang sudah dibeli tidak dapat dikembalikan kecuali terdapat kerusakan.
       </div>
 
       {/* FOOTER */}
-      <div className="border-t border-black text-center mt-8 pt-3 text-xs leading-tight">
-        Invoice ini otomatis & sah tanpa tanda tangan atau stempel sebagai tanda terima pembelian.
-        <br />Terima kasih telah berbelanja di <strong>KOJE24</strong>.
+      <div className="border-t border-black text-center mt-4 pt-3 text-xs leading-tight">
+        Terima kasih telah berbelanja di <strong>KOJE24</strong>.
       </div>
 
-      {/* PRINT CLEAN */}
+      {/* PRINT MODE FIXES */}
       <style jsx global>{`
         @media print {
           .invoice-paper {
             padding: 0 !important;
             margin: 0 !important;
             background: #fff !important;
+            width: 100% !important;
+            zoom: 93%; /* supaya 1 halaman */
           }
-          a, button, .whatsapp-float, .no-print { display: none !important; }
+          a, button, .whatsapp-float, .no-print {
+            display: none !important;
+            visibility: hidden !important;
+          }
         }
       `}</style>
     </div>
