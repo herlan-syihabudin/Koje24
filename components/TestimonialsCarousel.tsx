@@ -1,14 +1,16 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useEffect, useState, useCallback } from "react"
+import dynamic from "next/dynamic"
+import TulisTestimoniForm from "./TulisTestimoniForm"
 
-type Testi = {
-  timestamp: string
+const Marquee = dynamic(() => import("react-fast-marquee"), { ssr: false })
+
+type Testimoni = {
   nama: string
   kota: string
   pesan: string
-  rating: number | string
+  rating: number
   varian: string
   img?: string
   active?: string | boolean
@@ -19,136 +21,164 @@ function toBool(v: any) {
   return ["true", "1", "yes", "ya"].includes(String(v).trim().toLowerCase())
 }
 
-const AUTO_INTERVAL = 6000 // 6 detik
-
 export default function TestimonialsCarousel() {
-  const [items, setItems] = useState<Testi[]>([])
-  const [index, setIndex] = useState(0)
+  const [data, setData] = useState<Testimoni[]>([])
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const res = await fetch("/api/testimonial", { cache: "no-store" })
-        const json = await res.json()
+  const load = useCallback(async () => {
+    try {
+      setLoading(true)
+      const res = await fetch("/api/testimonial", { cache: "no-store" })
+      const json = await res.json()
 
-        const filtered: Testi[] = json
-          .filter(
-            (x: any) => toBool(x.active) && toBool(x.showOnHome)
-          )
-          .sort((a: any, b: any) => {
-            const ra = Number(a.rating || 0)
-            const rb = Number(b.rating || 0)
-            const pa = a.img ? 1 : 0
-            const pb = b.img ? 1 : 0
-            return rb - ra || pb - pa
-          })
+      // Filter & sort terbaik — rating tinggi dan ada foto tampil dulu
+      const filtered: Testimoni[] = json
+        .filter((x: any) => toBool(x.showOnHome) && toBool(x.active))
+        .sort((a: any, b: any) => {
+          const ra = Number(a.rating || 0)
+          const rb = Number(b.rating || 0)
+          const pa = a.img ? 1 : 0
+          const pb = b.img ? 1 : 0
+          return rb - ra || pb - pa
+        })
 
-        setItems(filtered)
-      } catch (e) {
-        console.error(e)
-      }
+      setData(filtered)
+    } catch (err) {
+      console.error("Error load testimoni:", err)
+    } finally {
+      setLoading(false)
     }
-    run()
   }, [])
 
   useEffect(() => {
-    if (items.length <= 1) return
-    const id = setInterval(() => {
-      setIndex((prev) => (prev + 1) % items.length)
-    }, AUTO_INTERVAL)
-    return () => clearInterval(id)
-  }, [items.length])
-
-  if (items.length === 0) return null
-
-  const current = items[index]
-  const rating = Math.min(5, Math.max(1, Number(current.rating) || 5))
+    load()
+  }, [load])
 
   return (
-    <section className="py-12 bg-[#f6fbfb]">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="flex flex-col md:flex-row items-center gap-8">
-          <div className="flex-1">
+    <section className="py-24 bg-gradient-to-b from-[#f6fbfb] to-[#eef7f7] relative overflow-hidden">
+      {/* soft accent */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(15,163,168,0.08),transparent_60%)]" />
+
+      <div className="max-w-6xl mx-auto px-6 md:px-10 relative z-10">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-10 flex-wrap gap-4">
+          <div>
             <p className="text-xs uppercase tracking-[0.25em] text-[#0FA3A8] mb-2">
               TESTIMONI PELANGGAN
             </p>
-            <h2 className="text-2xl md:text-3xl font-bold text-[#0B4B50] mb-3">
-              Mereka sudah merasakan manfaat KOJE24
+            <h2 className="font-playfair text-3xl md:text-4xl font-semibold text-[#0B4B50] max-w-xl leading-snug">
+              Apa kata mereka tentang <span className="text-[#0FA3A8]">KOJE24</span>?
             </h2>
-            <p className="text-gray-500 text-sm">
-              Beberapa ulasan pilihan dari pelanggan yang rutin minum KOJE24.
-            </p>
           </div>
 
-          <div className="flex-1 relative">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={current.timestamp}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.35 }}
-                className="bg-white rounded-3xl p-6 shadow-[0_16px_50px_rgba(15,163,168,0.15)] border border-[#e8f2f2]"
-              >
-                <div className="flex items-center gap-4 mb-4">
-                  {current.img ? (
-                    <img
-                      src={current.img}
-                      alt={current.nama}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-[#B78F3A]/50"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-[#0FA3A8]/10 flex items-center justify-center text-sm font-semibold text-[#0B4B50]">
-                      {(current.nama || "K")
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .slice(0, 2)}
-                    </div>
-                  )}
-
-                  <div className="flex-1">
-                    <p className="font-semibold text-[#0B4B50]">
-                      {current.nama}
-                    </p>
-                    <p className="text-xs text-gray-500">{current.kota}</p>
-                  </div>
-
-                  <div className="flex gap-[2px] text-[#B78F3A] text-sm">
-                    {"★".repeat(rating)}
-                    <span className="text-gray-300">
-                      {"★".repeat(5 - rating)}
-                    </span>
-                  </div>
-                </div>
-
-                <p className="inline-block text-[11px] font-semibold tracking-wide uppercase mb-2 px-2.5 py-1 rounded-full bg-[#0FA3A8]/10 text-[#0FA3A8]">
-                  {current.varian}
-                </p>
-
-                <p className="italic text-gray-700 text-sm leading-relaxed">
-                  “{current.pesan}”
-                </p>
-
-                {/* bullets */}
-                <div className="flex items-center gap-2 mt-4">
-                  {items.map((it, i) => (
-                    <button
-                      key={it.timestamp}
-                      type="button"
-                      onClick={() => setIndex(i)}
-                      className={`w-2.5 h-2.5 rounded-full transition-all ${
-                        i === index
-                          ? "bg-[#0FA3A8]"
-                          : "bg-gray-300 hover:bg-gray-400"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </motion.div>
-            </AnimatePresence>
+          <div className="flex items-center gap-3">
+            <TulisTestimoniForm onSuccess={load} />
+            <a
+              href="/testimoni"
+              className="text-[#0FA3A8] text-sm md:text-base font-medium hover:underline"
+            >
+              Lihat semua ulasan →
+            </a>
           </div>
         </div>
+
+        {/* Loading skeleton */}
+        {loading && (
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="min-w-[280px] sm:min-w-[330px] bg-white/80 border border-[#e6eeee]/70 rounded-3xl p-6 shadow-sm animate-pulse"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-[#e4f4f4]" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-24 bg-slate-200 rounded" />
+                    <div className="h-3 w-16 bg-slate-100 rounded" />
+                  </div>
+                </div>
+                <div className="h-3 w-28 bg-slate-100 rounded mb-3" />
+                <div className="space-y-2">
+                  <div className="h-3 w-full bg-slate-100 rounded" />
+                  <div className="h-3 w-5/6 bg-slate-100 rounded" />
+                  <div className="h-3 w-3/4 bg-slate-100 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && data.length === 0 && (
+          <p className="text-center text-gray-500 text-sm">
+            Belum ada testimoni yang ditampilkan di beranda. 🙌
+          </p>
+        )}
+
+        {/* MARQUEE TESTIMONI */}
+        {!loading && data.length > 0 && (
+          <Marquee pauseOnHover gradient={false} speed={28}>
+            {data.map((t, i) => {
+              const safeRating = Math.min(5, Math.max(1, Number(t.rating)))
+              const initials =
+                (t.nama || "")
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .slice(0, 2) || "K"
+
+              return (
+                <article
+                  key={i}
+                  className="mx-3 min-w-[280px] sm:min-w-[330px] cursor-pointer"
+                >
+                  <div
+                    className="bg-white/95 border border-[#e6eeee]/80 rounded-3xl p-5 sm:p-6 
+                    shadow-[0_16px_40px_rgba(11,75,80,0.10)] hover:shadow-[0_20px_55px_rgba(11,75,80,0.18)] 
+                    transition-all duration-300"
+                  >
+                    {/* header */}
+                    <div className="flex items-center gap-3 mb-3">
+                      {t.img ? (
+                        <img
+                          src={t.img}
+                          alt={t.nama}
+                          className="w-10 h-10 rounded-full object-cover border border-[#e6eeee]"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-[#0FA3A8]/10 flex items-center justify-center text-xs font-semibold text-[#0B4B50]">
+                          {initials}
+                        </div>
+                      )}
+
+                      <div className="flex-1">
+                        <h3 className="font-playfair text-base sm:text-lg font-semibold text-[#0B4B50]">
+                          {t.nama}
+                        </h3>
+                        <p className="text-xs text-gray-500">{t.kota}</p>
+                      </div>
+
+                      <div className="text-[13px] text-yellow-500 leading-none">
+                        {"★".repeat(safeRating)}
+                        <span className="text-gray-300">
+                          {"★".repeat(5 - safeRating)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* body */}
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-[#0FA3A8] mb-1">
+                      {t.varian}
+                    </p>
+
+                    <p className="text-sm text-gray-700 leading-relaxed line-clamp-4">
+                      “{t.pesan}”
+                    </p>
+                  </div>
+                </article>
+              )
+            })}
+          </Marquee>
+        )}
       </div>
     </section>
   )
