@@ -9,16 +9,18 @@ export default function ProductCard({
   price,
   img,
 }: {
-  id: string
+  id: number
   name: string
   price: number
   img: string
 }) {
   const ranking = useBestSellerRanking()
-  const isBest = ranking[String(id)]?.isBestSeller === true
 
-  // Qty agar ada feedback UX
-  const qty = useCartStore((s) => s.getQty?.(id) ?? 0) // ⬅ id tetap STRING
+  // 🔥 FIX TS BUILD (tanpa ubah logic)
+  const isBest = Boolean(ranking?.[String(id)]?.isBestSeller)
+
+  // Qty agar ada feedback UX (tanpa merubah logic tombol)
+  const qty = useCartStore((s) => s.getQty?.(String(id)) ?? 0)
 
   return (
     <div
@@ -28,7 +30,6 @@ export default function ProductCard({
         hover:-translate-y-1
       "
     >
-
       {/* 🔥 BADGE BEST SELLER */}
       {isBest && (
         <div
@@ -43,7 +44,7 @@ export default function ProductCard({
         </div>
       )}
 
-      {/* 🔥 BADGE QTY */}
+      {/* 🔥 BADGE QTY (feedback kalau produk sudah dimasukkan) */}
       {qty > 0 && (
         <div
           className="
@@ -57,6 +58,7 @@ export default function ProductCard({
         </div>
       )}
 
+      {/* IMAGE */}
       <img
         src={img}
         alt={name}
@@ -68,7 +70,9 @@ export default function ProductCard({
       />
 
       <div className="p-4">
-        <h3 className="font-semibold text-[#0B4B50] leading-tight">{name}</h3>
+        <h3 className="font-semibold text-[#0B4B50] leading-tight">
+          {name}
+        </h3>
         <p className="text-sm text-[#557577] mt-1">
           Rp {price.toLocaleString("id-ID")}
         </p>
