@@ -10,7 +10,6 @@ export type CartItem = {
   qty: number
 }
 
-// 🔥 Tipe promo (belum dipakai hitung harga — disimpan dulu)
 export type Promo = {
   kode: string
   tipe: string
@@ -23,16 +22,12 @@ export interface CartState {
   items: CartItem[]
   totalQty: number
   totalPrice: number
+  promos: Promo[]
   addItem: (item: Omit<CartItem, "qty">) => void
   removeItem: (id: string) => void
   clearCart: () => void
-
-  // Optional
   getQty: (id: string) => number
   getTotalForItem: (id: string) => number
-
-  // 🔥 Promo
-  promos: Promo[]
   addPromo: (promo: Promo) => void
   removePromo: (kode: string) => void
   clearPromos: () => void
@@ -44,20 +39,17 @@ export const useCartStore = create<CartState>()(
       items: [],
       totalQty: 0,
       totalPrice: 0,
+      promos: [],
 
       addItem: (item) => {
         const items = [...get().items]
         const exist = items.find((i) => i.id === item.id)
 
-        if (exist) {
-          exist.qty += 1
-        } else {
-          items.push({ ...item, qty: 1 })
-        }
+        if (exist) exist.qty += 1
+        else items.push({ ...item, qty: 1 })
 
         const totalQty = items.reduce((s, i) => s + i.qty, 0)
         const totalPrice = items.reduce((s, i) => s + i.qty * i.price, 0)
-
         set({ items, totalQty, totalPrice })
       },
 
@@ -66,22 +58,17 @@ export const useCartStore = create<CartState>()(
         const exist = items.find((i) => i.id === id)
         if (!exist) return
 
-        if (exist.qty > 1) {
-          exist.qty -= 1
-        } else {
-          items = items.filter((i) => i.id !== id)
-        }
+        if (exist.qty > 1) exist.qty -= 1
+        else items = items.filter((i) => i.id !== id)
 
         const totalQty = items.reduce((s, i) => s + i.qty, 0)
         const totalPrice = items.reduce((s, i) => s + i.qty * i.price, 0)
-
         set({ items, totalQty, totalPrice })
       },
 
       clearCart: () =>
         set({ items: [], totalQty: 0, totalPrice: 0, promos: [] }),
 
-      // 🔥 Utility
       getQty: (id) => {
         const item = get().items.find((i) => i.id === id)
         return item?.qty || 0
@@ -92,14 +79,12 @@ export const useCartStore = create<CartState>()(
         return item ? item.qty * item.price : 0
       },
 
-      // 🔥 PROMO — tidak menghitung harga, hanya menyimpan dulu
-      promos: [],
       addPromo: (promo) =>
-        set((s) => {
-          // no duplicate kode promo
-          if (s.promos.find((p) => p.kode === promo.kode)) return s
-          return { promos: [...s.promos, promo] }
-        }),
+        set((s) =>
+          s.promos.find((p) => p.kode === promo.kode)
+            ? s
+            : { promos: [...s.promos, promo] }
+        ),
 
       removePromo: (kode) =>
         set((s) => ({
