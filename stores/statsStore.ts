@@ -5,8 +5,6 @@ import { persist, createJSONStorage } from "zustand/middleware"
 type StatsState = {
   orders: Record<string, number>
   addOrder: (id: string, qty: number) => void
-
-  // 🔥 Utility opsional — tidak ubah logic
   getOrderCount: (id: string) => number
 }
 
@@ -19,11 +17,10 @@ export const useStatsStore = create<StatsState>()(
         set((state) => ({
           orders: {
             ...state.orders,
-            [id]: (state.orders[id] || 0) + qty,
+            [id]: (state.orders[id] || 0) + (qty > 0 ? qty : 0),   // ⬅️ prevent NaN
           },
         })),
 
-      // 🔥 Utility aman
       getOrderCount: (id) => get().orders[id] || 0,
     }),
     {
