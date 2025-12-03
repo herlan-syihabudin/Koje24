@@ -12,6 +12,8 @@ import CartPopup from "@/components/CartPopup"
 import PackagePopup from "@/components/PackagePopup"
 import PackagesSection from "@/components/PackagesSection"
 import RatingPopup from "@/components/RatingPopup"
+import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO"
+
 
 export default function HomePage() {
   return (
@@ -44,6 +46,8 @@ export default function HomePage() {
       <section id="testimoni" className="scroll-mt-24">
         <TestimonialsCarousel />
       </section>
+
+      <TestimonialSchemaSEO />
 
       {/* FAQ */}
       <section id="faq" className="scroll-mt-24">
