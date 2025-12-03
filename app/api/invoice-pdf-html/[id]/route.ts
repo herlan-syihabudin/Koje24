@@ -6,15 +6,15 @@ export async function GET(
   req: NextRequest,
   context: { params: { id: string } }
 ) {
-  try {
-    // ⛔ jangan await
-    const { id } = context.params;
+  const { id } = context.params; // ⛔ JANGAN pakai await
 
+  try {
     const html = `
+      <!DOCTYPE html>
       <html>
         <body>
-          <h1>Invoice ${id}</h1>
-          <p>PDF HTML engine OK</p>
+          <h1 style="font-family: sans-serif;">Invoice ${id}</h1>
+          <p>HTML invoice OK</p>
         </body>
       </html>
     `;
@@ -24,9 +24,8 @@ export async function GET(
       headers: { "Content-Type": "text/html" },
     });
   } catch (err: any) {
-    console.error("invoice-html error:", err);
     return NextResponse.json(
-      { error: "Failed generate HTML", detail: err?.message ?? err },
+      { error: "Invoice HTML error", detail: err?.message ?? err },
       { status: 500 }
     );
   }
