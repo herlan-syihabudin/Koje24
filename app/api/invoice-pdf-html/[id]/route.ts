@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
@@ -18,7 +18,7 @@ export async function GET(
     </html>
   `;
 
-  return new NextResponse(html, {
+  return new Response(html, {
     status: 200,
     headers: { "Content-Type": "text/html" },
   });
