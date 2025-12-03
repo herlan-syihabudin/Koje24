@@ -1,5 +1,4 @@
 "use client"
-
 import { useEffect, useState } from "react"
 import { fetchPromos } from "@/lib/promos"
 
@@ -9,9 +8,7 @@ export default function PromoBanner() {
   useEffect(() => {
     const load = async () => {
       const data = await fetchPromos()
-      const active = data.filter(
-        (p) => (p.status?.toLowerCase?.() || "") === "aktif"
-      )
+      const active = data.filter((p) => (p.status?.toLowerCase?.() || "") === "aktif")
       setPromos(active)
     }
     load()
@@ -20,21 +17,19 @@ export default function PromoBanner() {
   if (promos.length === 0) return null
 
   const openPopup = () => {
-    // ⛑️ anti error SSR
-    if (typeof window === "undefined") return
-    window.dispatchEvent(new CustomEvent("open-promo-popup"))
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("open-promo-popup"))
+    }
   }
 
   return (
     <div
-      className="bg-[#0FA3A8] text-white py-3 relative overflow-hidden cursor-pointer select-none"
+      className="bg-[#0FA3A8] text-white py-3 overflow-hidden cursor-pointer select-none"
       onClick={openPopup}
     >
       <div className="whitespace-nowrap flex gap-10 animate-promo-scroll font-inter text-sm px-6">
         {promos.map((p, i) => (
-          <span key={i}>
-            🔥 {p.judul || p.kode} — {p.tipe || ""} {p.nilai || ""}
-          </span>
+          <span key={i}>🔥 {p.kode} — {p.tipe} {p.nilai}</span>
         ))}
       </div>
 
