@@ -68,6 +68,12 @@ export default function InvoicePage() {
 
   return (
     <div className="max-w-4xl mx-auto p-10 bg-white text-black invoice-paper">
+      {/* === SYARAT & KETENTUAN (atas kiri) === */}
+<p className="text-[10px] text-gray-600 mb-4 leading-tight print:block hidden">
+  — <strong>Syarat & Ketentuan:</strong><br />
+  1. Pembayaran dianggap sah setelah dana diterima oleh KOJE24.
+<br />2. Barang yang sudah dibeli tidak dapat dikembalikan kecuali terdapat kerusakan.
+</p>
       {/* HEADER */}
       <div className="flex justify-between mb-8">
         <div>
@@ -166,7 +172,7 @@ export default function InvoicePage() {
 
       {/* FOOTER */}
       <div className="border-t border-black text-center mt-8 pt-3 text-xs leading-tight">
-        Invoice ini sah dan diproses otomatis sebagai tanda terima pembelian.
+        Invoice ini otomatis & sah tanpa tanda tangan atau stempel sebagai tanda terima pembelian.
         <br />Terima kasih telah berbelanja di <strong>KOJE24</strong>.
       </div>
 
