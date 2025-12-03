@@ -6,11 +6,10 @@ const API_KEY = process.env.HTML2PDF_KEY || "demo";
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    // 👇 fix TS — params harus di-await
-    const { id } = await context.params;
+    const id = params.id; // 👍 id langsung terbaca
 
     const invoiceUrl = `${req.nextUrl.origin}/invoice/${id}`;
 
@@ -18,7 +17,7 @@ export async function GET(
       invoiceUrl
     )}&format=A4&printBackground=true&margin=10mm`;
 
-    const result = await fetch(pdfReqUrl);
+    const result = await fetch(pdfReqUrl, { cache: "no-store" });
 
     if (!result.ok) throw new Error("Gagal generate PDF");
 
