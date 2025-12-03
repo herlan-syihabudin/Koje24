@@ -5,7 +5,8 @@ import { Inter, Playfair_Display } from "next/font/google";
 import { CartProvider } from "@/components/CartContext";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import StickyCartBar from "@/components/StickyCartBar";
-import PromoPopup from "@/components/PromoPopup"
+import PromoPopup from "@/components/PromoPopup";
+import PromoBanner from "@/components/PromoBanner"; // ⬅️ DITAMBAHKAN
 
 // === FONTS ===
 const inter = Inter({
@@ -43,8 +44,6 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-
-  // 🔥 Open Graph — buat share WhatsApp/FB/IG keren
   openGraph: {
     title: "KOJE24 • Natural Cold-Pressed Juice",
     description:
@@ -63,7 +62,7 @@ export const metadata: Metadata = {
   },
 };
 
-// === THEME COLOR via viewport (tanpa warning Next 16)
+// === THEME COLOR via viewport
 export const viewport: Viewport = {
   themeColor: "#0FA3A8",
 };
@@ -76,23 +75,24 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <head>
-        {/* ⚡ Percepat loading font */}
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
       </head>
 
       <body className="antialiased font-inter bg-white text-[#0B4B50] max-w-[100vw] overflow-x-hidden">
         <CartProvider>
+          <PromoBanner />   {/* ⬅️ Muncul di atas konten homepage */}
           {children}
         </CartProvider>
-
-        {/* Speed Insights */}
-        <SpeedInsights />
 
         {/* Sticky Cart Bar */}
         <StickyCartBar />
 
+        {/* Promo Popup (muncul saat pertama kali masuk web) */}
         <PromoPopup />
+
+        {/* Speed Insights */}
+        <SpeedInsights />
 
         {/* Smooth scroll fallback */}
         <script
@@ -103,7 +103,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         />
 
-        {/* 🔥 JSON-LD Structured Data (SEO PREMIUM - no effect UI) */}
+        {/* JSON-LD Structured Data */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
