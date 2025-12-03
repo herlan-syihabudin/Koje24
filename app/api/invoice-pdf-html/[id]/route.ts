@@ -6,7 +6,7 @@ export async function GET(
   req: NextRequest,
   context: { params: { id: string } }
 ) {
-  const { id } = context.params; // ⛔ JANGAN pakai await
+  const { id } = context.params;
 
   try {
     const html = `
