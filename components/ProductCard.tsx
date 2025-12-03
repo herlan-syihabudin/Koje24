@@ -15,7 +15,7 @@ export default function ProductCard({
   img: string
 }) {
   const ranking = useBestSellerRanking()
-  const isBest = ranking[id]?.isBestSeller === true   // ⬅ TANPA Number()
+  const isBest = ranking[String(id)]?.isBestSeller === true
 
   // Qty agar ada feedback UX
   const qty = useCartStore((s) => s.getQty?.(id) ?? 0) // ⬅ id tetap STRING
