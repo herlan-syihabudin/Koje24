@@ -124,7 +124,9 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     <>
       <button
         onClick={() => setShow(true)}
-        className="px-5 py-2 bg-[#0FA3A8] text-white rounded-full shadow-md hover:shadow-lg text-sm md:text-base transition-all"
+        className="bg-[#0FA3A8] hover:bg-[#0B4B50] text-white font-semibold px-6 py-3 rounded-full shadow-lg
+           hover:shadow-[0_10px_30px_rgba(15,163,168,0.35)]
+           transition-all"
       >
         + Tulis Testimoni
       </button>
