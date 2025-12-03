@@ -13,6 +13,7 @@ import PackagePopup from "@/components/PackagePopup"
 import PackagesSection from "@/components/PackagesSection"
 import RatingPopup from "@/components/RatingPopup"
 import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO"
+import PromoBanner from "@/components/PromoBanner"
 
 
 export default function HomePage() {
@@ -48,6 +49,8 @@ export default function HomePage() {
       </section>
 
       <TestimonialSchemaSEO />
+
+      <PromoBanner />
 
       {/* FAQ */}
       <section id="faq" className="scroll-mt-24">
