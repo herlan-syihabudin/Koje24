@@ -71,7 +71,6 @@ export default function InvoicePage() {
             alt="barcode"
             className="h-14 w-auto object-contain mx-auto"
           />
-          <p className="text-xs mt-1">{invoice.invoiceId}</p>
 
           {/* Date */}
           <p className="text-xs mt-2">
