@@ -50,33 +50,31 @@ export default function InvoicePage() {
     <div className="max-w-4xl mx-auto p-8 bg-white text-black invoice-paper">
       
       {/* === HEADER === */}
-<div className="flex justify-between items-center mb-6">
+<div className="flex justify-between items-start mb-8 px-4" style={{ width: "100%" }}>
+  
   {/* Logo & Info */}
-  <div className="flex flex-col gap-1">
+  <div className="flex flex-col gap-1 min-w-[300px]">
     <img
       src="/image/logo-koje24.png"
       alt="KOJE24"
       className="h-14 w-auto object-contain"
-      style={{ marginBottom: "-4px" }}
     />
-    <p className="text-xs leading-tight max-w-xs">
+    <p className="text-xs leading-tight">
       <strong>Healthy Juice for Everyday Energy</strong> <br />
       Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320
     </p>
   </div>
 
-  {/* Invoice Title & Barcode */}
-  <div className="text-right flex flex-col items-end">
+  {/* Invoice + Barcode */}
+  <div className="text-right flex flex-col items-end flex-1">
     <p className="text-3xl font-bold tracking-wide mb-1">INVOICE</p>
 
-    <div className="flex flex-col items-center">
-      <img
-        src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
-        alt="barcode"
-        className="h-12 w-auto object-contain"
-      />
-      <p className="text-[10px] mt-1 tracking-wide">{invoice.invoiceId}</p>
-    </div>
+    <img
+      src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
+      alt="barcode"
+      className="h-14 w-auto object-contain"
+    />
+    <p className="text-[10px] tracking-wide">{invoice.invoiceId}</p>
 
     <p className="text-xs mt-2">
       Tanggal: {invoice.timestamp.replace(",", " — ")}
