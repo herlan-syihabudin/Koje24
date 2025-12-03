@@ -11,11 +11,12 @@ export async function GET(
   try {
     const { id } = context.params;
 
-    const invoiceUrl = `${req.nextUrl.origin}/invoice/${id}`;
+    // 🔥 Pakai mode print agar PDF identik dengan web
+    const invoiceUrl = `${req.nextUrl.origin}/invoice/${id}?print=1`;
 
     const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}&url=${encodeURIComponent(
       invoiceUrl
-    )}&format=A4&printBackground=true&margin=10mm`;
+    )}&format=A4&printBackground=true&margin=10mm&delay=2500&waitFor=networkidle`;
 
     const result = await fetch(pdfReqUrl);
 
