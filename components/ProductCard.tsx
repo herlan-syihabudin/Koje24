@@ -9,16 +9,16 @@ export default function ProductCard({
   price,
   img,
 }: {
-  id: number
+  id: string
   name: string
   price: number
   img: string
 }) {
   const ranking = useBestSellerRanking()
-  const isBest = ranking[id]?.isBestSeller === true
+  const isBest = ranking[id]?.isBestSeller === true   // ⬅ TANPA Number()
 
-  // Qty agar ada feedback UX (tanpa merubah logic tombol)
-  const qty = useCartStore((s) => s.getQty?.(String(id)) ?? 0)
+  // Qty agar ada feedback UX
+  const qty = useCartStore((s) => s.getQty?.(id) ?? 0) // ⬅ id tetap STRING
 
   return (
     <div
@@ -43,7 +43,7 @@ export default function ProductCard({
         </div>
       )}
 
-      {/* 🔥 BADGE QTY (feedback kalau produk sudah dimasukkan) */}
+      {/* 🔥 BADGE QTY */}
       {qty > 0 && (
         <div
           className="
@@ -57,7 +57,6 @@ export default function ProductCard({
         </div>
       )}
 
-      {/* IMAGE */}
       <img
         src={img}
         alt={name}
