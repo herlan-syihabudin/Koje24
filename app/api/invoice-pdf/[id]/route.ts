@@ -4,15 +4,19 @@ export async function GET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await context.params; // <- WAJIB pakai await di Next 16
+  const { id } = await context.params; // wajib await di Next 16
 
   try {
     const invoiceUrl = `${req.nextUrl.origin}/invoice/${id}`;
-    const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${process.env.HTML2PDF_KEY}&url=${encodeURIComponent(
-      invoiceUrl
-    )}&format=A4&printBackground=true&margin=10mm`;
 
-    const result = await fetch(pdfReqUrl);
+    const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${
+      process.env.HTML2PDF_KEY
+    }&url=${encodeURIComponent(invoiceUrl)}&format=A4&printBackground=true&margin=10mm&delay=2000`;
+
+    const result = await fetch(pdfReqUrl, {
+      method: "GET",
+    });
+
     if (!result.ok) throw new Error("Gagal generate PDF");
 
     const pdf = await result.arrayBuffer();
