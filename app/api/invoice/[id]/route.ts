@@ -13,8 +13,9 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params     // ← WAJIB pakai await
+    const { id } = await context.params
     const invoiceId = id?.trim()
+
     if (!invoiceId) {
       return NextResponse.json(
         { success: false, message: "Invoice ID kosong" },
@@ -36,6 +37,7 @@ export async function GET(
 
     const rows = res.data.values?.slice(1) || []
     const match = rows.find((r) => (r[1] || "").trim() === invoiceId)
+
     if (!match) {
       return NextResponse.json(
         { success: false, message: "Invoice tidak ditemukan" },
@@ -63,7 +65,7 @@ export async function GET(
     })
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: err.message || "Server error" },
+      { success: false, message: err?.message || "Server error" },
       { status: 500 }
     )
   }
