@@ -10,6 +10,15 @@ export type CartItem = {
   qty: number
 }
 
+// 🔥 Tipe promo (belum dipakai hitung harga — disimpan dulu)
+export type Promo = {
+  kode: string
+  tipe: string
+  nilai: string
+  minimal: number
+  maxDiskon: number | null
+}
+
 export interface CartState {
   items: CartItem[]
   totalQty: number
@@ -18,9 +27,15 @@ export interface CartState {
   removeItem: (id: string) => void
   clearCart: () => void
 
-  // 🔥 Optional utility (tidak mengubah logic & UI)
+  // Optional
   getQty: (id: string) => number
   getTotalForItem: (id: string) => number
+
+  // 🔥 Promo
+  promos: Promo[]
+  addPromo: (promo: Promo) => void
+  removePromo: (kode: string) => void
+  clearPromos: () => void
 }
 
 export const useCartStore = create<CartState>()(
@@ -63,9 +78,10 @@ export const useCartStore = create<CartState>()(
         set({ items, totalQty, totalPrice })
       },
 
-      clearCart: () => set({ items: [], totalQty: 0, totalPrice: 0 }),
+      clearCart: () =>
+        set({ items: [], totalQty: 0, totalPrice: 0, promos: [] }),
 
-      // 🔥 Utility (aman, tanpa pengaruh logic)
+      // 🔥 Utility
       getQty: (id) => {
         const item = get().items.find((i) => i.id === id)
         return item?.qty || 0
@@ -75,6 +91,22 @@ export const useCartStore = create<CartState>()(
         const item = get().items.find((i) => i.id === id)
         return item ? item.qty * item.price : 0
       },
+
+      // 🔥 PROMO — tidak menghitung harga, hanya menyimpan dulu
+      promos: [],
+      addPromo: (promo) =>
+        set((s) => {
+          // no duplicate kode promo
+          if (s.promos.find((p) => p.kode === promo.kode)) return s
+          return { promos: [...s.promos, promo] }
+        }),
+
+      removePromo: (kode) =>
+        set((s) => ({
+          promos: s.promos.filter((p) => p.kode !== kode),
+        })),
+
+      clearPromos: () => set({ promos: [] }),
     }),
     {
       name: "koje24-cart",
