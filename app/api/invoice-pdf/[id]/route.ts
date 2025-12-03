@@ -4,17 +4,17 @@ export async function GET(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await context.params;
-
   try {
-    const invoiceUrl = `${req.nextUrl.origin}/invoice/${id}`;
+    const { id } = await context.params;
+
+    const base = process.env.NEXT_PUBLIC_BASE_URL || "https://webkoje-cacs.vercel.app";
+    const invoiceUrl = `${base}/invoice/${id}?print=1`;
 
     const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${
       process.env.HTML2PDF_KEY
-    }&url=${encodeURIComponent(invoiceUrl)}&format=A4&printBackground=false&margin=0&delay=1200`;
+    }&url=${encodeURIComponent(invoiceUrl)}&format=A4&printBackground=true&margin=10mm&delay=1200`;
 
     const result = await fetch(pdfReqUrl);
-
     if (!result.ok) throw new Error("Gagal generate PDF");
 
     const pdf = await result.arrayBuffer();
