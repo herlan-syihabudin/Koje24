@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";  // <- NextResponse dihapus
 
 export const runtime = "edge";
 
@@ -11,7 +11,6 @@ export async function GET(
   try {
     const { id } = context.params;
 
-    // 🔥 Pakai mode print agar PDF identik dengan web
     const invoiceUrl = `${req.nextUrl.origin}/invoice/${id}?print=1`;
 
     const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}&url=${encodeURIComponent(
@@ -19,12 +18,12 @@ export async function GET(
     )}&format=A4&printBackground=true&margin=10mm&delay=2500&waitFor=networkidle`;
 
     const result = await fetch(pdfReqUrl);
-
     if (!result.ok) throw new Error("Gagal generate PDF");
 
     const pdf = await result.arrayBuffer();
 
-    return new NextResponse(pdf, {
+    // 🚀 Ganti NextResponse jadi Response agar TypeScript sesuai
+    return new Response(pdf, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
@@ -33,9 +32,17 @@ export async function GET(
     });
   } catch (err: any) {
     console.error("PDF error:", err);
-    return NextResponse.json(
-      { error: "Failed to generate PDF", detail: err?.message ?? err },
-      { status: 500 }
+
+    // 🚀 Ganti NextResponse.json juga
+    return new Response(
+      JSON.stringify({
+        error: "Failed to generate PDF",
+        detail: err?.message ?? err,
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
     );
   }
 }
