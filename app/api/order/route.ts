@@ -1,27 +1,26 @@
-import { NextResponse, NextRequest } from "next/server"
-import { google } from "googleapis"
+import { NextResponse, NextRequest } from "next/server";
+import { google } from "googleapis";
+import { useCartStore } from "@/stores/cartStore"; // untuk promo
 
-const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? ""
-const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? ""
-const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? ""
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ""
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? ""
+const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? "";
+const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? "";
+const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? "";
 
-const PRIVATE_KEY = PRIVATE_KEY_RAW
-  .replace(/\\n/g, "\n")
-  .replace(/\\\\n/g, "\n")
+const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n");
 
 export async function POST(req: NextRequest) {
   try {
     if (!SHEET_ID || !CLIENT_EMAIL || !PRIVATE_KEY) {
-      throw new Error("Environment Google Sheet belum lengkap")
+      throw new Error("Environment Google Sheet belum lengkap");
     }
 
-    let body: any = {}
+    let body: any = {};
     try {
-      body = await req.json()
+      body = await req.json();
     } catch {
-      throw new Error("Body JSON tidak valid")
+      throw new Error("Body JSON tidak valid");
     }
 
     const {
@@ -32,93 +31,93 @@ export async function POST(req: NextRequest) {
       catatan,
       payment,
       cart,
-      mapsUrl,
-      distanceKm,
       shippingCost,
-      ongkir,
       grandTotal,
       subtotal,
-    } = body
+      ongkir,
+    } = body;
 
-    if (!nama || !hp || !alamat) throw new Error("Data customer belum lengkap")
-    if (!Array.isArray(cart) || cart.length === 0) throw new Error("Cart kosong!")
+    if (!nama || !hp || !alamat) throw new Error("Data customer belum lengkap");
+    if (!Array.isArray(cart) || cart.length === 0) throw new Error("Cart kosong!");
 
-    // PRODUK
-    const produkList = cart.map((x: any) => `${x.name} (${x.qty}x)`).join(", ")
-    const qtyTotal = cart.reduce((a: number, x: any) => a + Number(x.qty || 0), 0)
+    // Produk
+    const produkList = cart.map((x: any) => `${x.name} (${x.qty}x)`).join(", ");
+    const qtyTotal = cart.reduce((a: number, x: any) => a + Number(x.qty || 0), 0);
 
     const subtotalCalc =
       typeof subtotal === "number"
         ? subtotal
-        : cart.reduce(
-            (a: number, x: any) =>
-              a + Number(x.price || 0) * Number(x.qty || 0),
-            0
-          )
+        : cart.reduce((a: number, x: any) => a + Number(x.price) * Number(x.qty), 0);
 
     const effectiveOngkir =
       typeof ongkir === "number"
         ? ongkir
         : typeof shippingCost === "number"
         ? shippingCost
-        : 15000
+        : 15000;
 
     const effectiveGrandTotal =
       typeof grandTotal === "number"
         ? grandTotal
-        : subtotalCalc + effectiveOngkir
+        : subtotalCalc + effectiveOngkir;
 
-    let paymentLabel = "Transfer"
-    if (payment === "qris") paymentLabel = "QRIS"
-    else if (payment === "cod") paymentLabel = "COD"
+    // Payment label
+    let paymentLabel = "Transfer";
+    if (payment === "qris") paymentLabel = "QRIS";
+    else if (payment === "cod") paymentLabel = "COD";
 
-    // INVOICE ID + URL
+    // Invoice ID & URL
     const invoiceId =
-      "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase()
-    const host = req.nextUrl.host
-    const protocol = req.nextUrl.protocol
-    const baseUrl = `${protocol}//${host}`
-    const invoiceUrl = `${baseUrl}/invoice/${invoiceId}`
+      "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+    const host = req.nextUrl.host;
+    const protocol = req.nextUrl.protocol;
+    const invoiceUrl = `${protocol}//${host}/invoice/${invoiceId}`;
 
-    // GOOGLE SHEET
+    // Ambil promo aktif
+    let promoLabel = "Tidak ada";
+    try {
+      const store = useCartStore.getState();
+      if (store.promos.length > 0) promoLabel = store.promos.map((p) => p.kode).join(", ");
+    } catch {}
+
+    // Save ke Google Sheet database (Sheet2 transaksi)
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    })
-    const sheets = google.sheets({ version: "v4", auth })
+    });
+    const sheets = google.sheets({ version: "v4", auth });
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: "Sheet1!A:M",
+      range: "Sheet2!A:N",
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
           [
-            new Date().toLocaleString("id-ID"),
-            invoiceId,
-            nama,
-            hp,
-            alamat,
-            produkList,
-            qtyTotal,
-            subtotalCalc,
-            "Pending",
-            paymentLabel,
-            effectiveOngkir,
-            effectiveGrandTotal,
-            invoiceUrl,
+            invoiceId, // A - Invoice
+            new Date().toLocaleString("id-ID"), // B - Tanggal
+            nama, // C
+            hp, // D
+            alamat, // E
+            produkList, // F
+            qtyTotal, // G
+            subtotalCalc, // H
+            effectiveOngkir, // I
+            effectiveGrandTotal, // J
+            promoLabel, // K
+            paymentLabel, // L
+            "Pending", // M - Status
+            invoiceUrl, // N - URL
           ],
         ],
       },
-    })
+    });
 
-    // ==============================
-// 🔔 NOTIF TELEGRAM ADMIN + ACTION BUTTON
-// ==============================
-if (BOT_TOKEN && CHAT_ID) {
-  try {
-    const message = `
+    // Notifikasi Telegram admin
+    if (BOT_TOKEN && CHAT_ID) {
+      try {
+        const msg = `
 🛒 *ORDER BARU KOJE24*
 #${invoiceId}
 
@@ -128,49 +127,30 @@ if (BOT_TOKEN && CHAT_ID) {
 🍹 *Pesanan:* ${produkList}
 💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}
 💳 *Metode:* ${paymentLabel}
+🏷 *Promo:* ${promoLabel}
 
 🔗 ${invoiceUrl}
-`.trim()
+`.trim();
 
-    const keyboard = {
-      inline_keyboard: [
-        [
-          { text: "✅ Mark as PAID", callback_data: `paid_${invoiceId}` },
-          { text: "🚚 Mark as COD", callback_data: `cod_${invoiceId}` },
-        ],
-        [{ text: "⏳ Set Pending", callback_data: `pending_${invoiceId}` }],
-      ],
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: CHAT_ID,
+            text: msg,
+            parse_mode: "Markdown",
+          }),
+        });
+      } catch {}
     }
 
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: message,
-        parse_mode: "Markdown",
-        reply_markup: keyboard,
-      }),
-    })
-
-    console.log("📩 Telegram notif sent:", invoiceId)
-  } catch (e) {
-    console.error("⚠️ Telegram error:", e)
-  }
-}
-
-    console.log(`🟢 ORDER TERSIMPAN: ${invoiceId}`)
-    console.log(`🔗 INVOICE URL: ${invoiceUrl}`)
-
-    return NextResponse.json({
-      success: true,
-      invoiceUrl,
-    })
+    console.log(`🟢 ORDER TERSIMPAN: ${invoiceId}`);
+    return NextResponse.json({ success: true, invoiceUrl });
   } catch (err: any) {
-    console.error("❌ ERROR ORDER:", err)
+    console.error("❌ ERROR ORDER:", err);
     return NextResponse.json(
-      { success: false, message: err.message || String(err) },
+      { success: false, message: err.message ?? "Order gagal" },
       { status: 500 }
-    )
+    );
   }
 }
