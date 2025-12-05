@@ -15,8 +15,6 @@ const nextConfig: NextConfig = {
     optimizeCss: true,
     scrollRestoration: true,
   },
-
-  turbopack: {}, // biarkan supaya build cepat dan stabil
 };
 
 export default nextConfig;
