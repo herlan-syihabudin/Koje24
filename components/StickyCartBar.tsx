@@ -4,12 +4,19 @@ import { ShoppingCart } from "lucide-react"
 import { useCartStore } from "@/stores/cartStore"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 
 export default function StickyCartBar() {
   const totalQty = useCartStore((state) => state.totalQty)
   const totalPrice = useCartStore((state) => state.totalPrice)
 
+  const pathname = usePathname()
   const [glow, setGlow] = useState(false)
+  const [cartOpen, setCartOpen] = useState(false) // ⬅️ popup status
+
+  // ❌ sembunyikan sticky bar di halaman checkout
+  const isCheckoutPage = pathname?.includes("/checkout")
+  const shouldShow = totalQty > 0 && !cartOpen && !isCheckoutPage
 
   // 🔥 auto glowing setiap 12 detik
   useEffect(() => {
@@ -21,6 +28,18 @@ export default function StickyCartBar() {
     return () => clearInterval(t)
   }, [totalQty])
 
+  // 🎯 dengarkan event popup open/close
+  useEffect(() => {
+    const open = () => setCartOpen(true)
+    const close = () => setCartOpen(false)
+    window.addEventListener("open-cart", open)
+    window.addEventListener("close-cart", close)
+    return () => {
+      window.removeEventListener("open-cart", open)
+      window.removeEventListener("close-cart", close)
+    }
+  }, [])
+
   const hargaFormat = new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
@@ -31,7 +50,7 @@ export default function StickyCartBar() {
 
   return (
     <AnimatePresence>
-      {totalQty > 0 && (
+      {shouldShow && (
         <motion.div
           key="sticky-cart"
           initial={{ opacity: 0, x: 60, y: 20, scale: 0.7 }}
@@ -59,22 +78,17 @@ export default function StickyCartBar() {
               </span>
             </div>
 
-            {/* BADGE QTY */}
             <motion.span
               layout
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 300, damping: 15 }}
-              className="
-                absolute -top-2 -right-2 bg-[#E8C46B] text-[#0B4B50]
-                text-xs font-bold rounded-full
-                min-w-[20px] h-[20px] flex items-center justify-center
-              "
+              className="absolute -top-2 -right-2 bg-[#E8C46B] text-[#0B4B50]
+              text-xs font-bold rounded-full min-w-[20px] h-[20px] flex items-center justify-center"
             >
               {totalQty}
             </motion.span>
 
-            {/* BADGE BONUS ONGKIR */}
             {bonusOngkir && (
               <span className="absolute -bottom-3 right-0 bg-[#E8C46B] text-[#0B4B50] text-[9px] px-2 py-[2px] rounded-full shadow-md font-bold">
                 Bonus Ongkir 🎁
