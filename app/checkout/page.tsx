@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/stores/cartStore";
@@ -12,7 +11,7 @@ type CheckoutState = "idle" | "submitting" | "error";
 const BASE_LAT = -6.2903238;
 const BASE_LNG = 107.087373;
 
-// haversine
+// hitung jarak km
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -47,6 +46,7 @@ export default function CheckoutPage() {
   const [hp, setHp] = useState("");
   const [alamat, setAlamat] = useState("");
   const [catatan, setCatatan] = useState("");
+
   const [payment, setPayment] = useState<"transfer" | "qris" | "cod">("transfer");
   const [status, setStatus] = useState<CheckoutState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -57,7 +57,7 @@ export default function CheckoutPage() {
   const [buktiBayarFile, setBuktiBayarFile] = useState<File | null>(null);
 
   const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0);
-  const total = Math.max(0, subtotal + (items.length ? ongkir : 0) - promoAmount); // ⛔ never negatif
+  const total = Math.max(0, subtotal + (items.length ? ongkir : 0) - promoAmount);
 
   useEffect(() => {
     setHydrated(true);
@@ -72,7 +72,7 @@ export default function CheckoutPage() {
     }
   }, [items.length, hydrated, router]);
 
-  // GOOGLE AUTOCOMPLETE FIX (anti double init)
+  // GOOGLE AUTOCOMPLETE FIX (tanpa menimpa alamat user)
   useEffect(() => {
     const el = alamatRef.current;
     const w = window as any;
@@ -94,7 +94,9 @@ export default function CheckoutPage() {
         const dKm = haversineDistance(BASE_LAT, BASE_LNG, lat, lng);
         setDistanceKm(dKm);
         setOngkir(calcOngkir(dKm));
-        if (place.formatted_address) setAlamat(place.formatted_address);
+
+        // ⛔ Jangan timpa alamat user
+        setAlamat((prev) => prev || place.formatted_address);
       });
     } catch {}
   }, []);
@@ -107,7 +109,9 @@ export default function CheckoutPage() {
         const dKm = haversineDistance(BASE_LAT, BASE_LNG, latitude, longitude);
         setDistanceKm(dKm);
         setOngkir(calcOngkir(dKm));
-        setAlamat(`Koordinat: ${latitude}, ${longitude}`);
+
+        // ⛔ Jangan timpa alamat user
+        setAlamat((prev) => prev || `Lokasi (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`);
       },
       () => alert("Izin GPS ditolak. Aktifkan lokasi dulu ya 🙏"),
       { enableHighAccuracy: true }
@@ -116,11 +120,10 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (status === "submitting") return; // ⛔ anti submit dobel
     if (!items.length) return;
 
     if (!nama.trim() || !hp.trim() || !alamat.trim()) {
-      setErrorMsg("Lengkapi nama, nomor WhatsApp, dan alamat dulu ya 🙏");
+      setErrorMsg("Lengkapi nama, nomor WhatsApp, dan alamat ya 🙏");
       return;
     }
 
@@ -140,24 +143,22 @@ export default function CheckoutPage() {
         price: x.price,
       }));
 
-      const res = await fetch("/api/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nama,
-          hp,
-          alamat,
-          note: catatan,
-          payment,
-          cart: cartMapped,
-          distanceKm,
-          shippingCost: ongkir,
-          promoAmount,
-          promoLabel,
-          grandTotal: total,
-        }),
-      });
+      // Kirim FormData (supaya file ikut terkirim)
+      const fd = new FormData();
+      fd.append("nama", nama);
+      fd.append("hp", hp);
+      fd.append("alamat", alamat);
+      fd.append("note", catatan);
+      fd.append("payment", payment);
+      fd.append("distanceKm", String(distanceKm || 0));
+      fd.append("shippingCost", String(ongkir));
+      fd.append("promoAmount", String(promoAmount));
+      fd.append("promoLabel", promoLabel);
+      fd.append("grandTotal", String(total));
+      fd.append("cart", JSON.stringify(cartMapped));
+      if (buktiBayarFile) fd.append("buktiBayar", buktiBayarFile);
 
+      const res = await fetch("/api/order", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok || !data?.success) throw new Error(data?.message || "Gagal membuat invoice");
 
@@ -165,73 +166,98 @@ export default function CheckoutPage() {
       router.push(data.invoiceUrl || "/");
     } catch {
       setStatus("error");
-      setErrorMsg("Ada kendala saat membuat invoice — coba ulang sebentar ya 🙏");
+      setErrorMsg("Ada kendala saat membuat invoice — coba sebentar lagi 🙏");
     }
   };
 
-  const disabled = status === "submitting" || !items.length;
+  const disabled = status === "submitting";
 
   return (
     <>
-      <Script src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`} strategy="lazyOnload" />
+      <Script
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        strategy="lazyOnload"
+      />
 
-      {/* === UI tidak disentuh & tetap sama === */}
       <main className="min-h-screen bg-[#F4FAFA] text-[#0B4B50] py-10 px-4 flex justify-center">
         <div className="w-full max-w-5xl">
           <div className="mb-8">
-            <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24 • PREMIUM CHECKOUT</p>
+            <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24 • CHECKOUT</p>
             <h1 className="text-3xl md:text-4xl font-playfair font-semibold">Selesaikan Pesanan Kamu</h1>
-            <p className="text-sm text-gray-600 mt-2 max-w-xl">
-              Isi alamat dengan teliti. Ongkir dihitung otomatis berdasarkan jarak.
-            </p>
           </div>
 
           {hydrated && items.length === 0 ? (
             <p className="text-center text-gray-500">Keranjang kosong. Mengarahkan kembali…</p>
           ) : (
             <div className="grid gap-8 md:grid-cols-[1.15fr_0.85fr]">
+              {/* FORM */}
               <section className="bg-white border rounded-3xl shadow p-6 md:p-7">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nama lengkap" value={nama} onChange={(e) => setNama(e.target.value)} />
                   <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nomor WhatsApp" value={hp} onChange={(e) => setHp(e.target.value)} />
                   <input ref={alamatRef} className="border rounded-lg px-3 py-2 w-full" placeholder="Alamat lengkap" value={alamat} onChange={(e) => setAlamat(e.target.value)} />
 
-                  <button type="button" onClick={handleDetectLocation} className="w-full bg-[#0FA3A8]/90 hover:bg-[#0FA3A8] text-white mt-2 py-2 rounded-lg text-sm font-medium shadow-sm">
-                    📍 Deteksi Lokasi Otomatis (Hitung Ongkir)
+                  <button type="button" onClick={handleDetectLocation} className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm font-medium">
+                    📍 Hitung Ongkir Pakai Lokasi Saya
                   </button>
-
                   {distanceKm && <p className="text-[12px] text-gray-500">Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}</p>}
 
                   <textarea className="border rounded-lg px-3 py-2 w-full h-16 resize-none" placeholder="Catatan (opsional)" value={catatan} onChange={(e) => setCatatan(e.target.value)} />
 
+                  {/* PEMBAYARAN */}
                   <h2 className="font-playfair text-xl">Metode Pembayaran</h2>
+
                   <div className="rounded-xl bg-[#f7fbfb] border p-4 space-y-3">
                     {(["transfer", "qris", "cod"] as const).map((p) => (
                       <label
                         key={p}
-                        className={`flex items-center justify-between cursor-pointer rounded-lg px-3 py-2 ${payment === p ? "bg-white border border-[#0FA3A8]" : ""}`}
+                        className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 ${
+                          payment === p ? "bg-white border border-[#0FA3A8]" : ""
+                        }`}
                       >
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name="payment"
-                            checked={payment === p}
-                            onChange={() => {
-                              setPayment(p);
-                              setBuktiBayarFile(null);
-                              setErrorMsg(""); // ⛔ reset error lama
-                            }}
-                          />
-                          <span className="capitalize">{p === "cod" ? "COD (Bayar di tempat)" : p}</span>
-                        </div>
+                        <input type="radio" checked={payment === p} onChange={() => { setPayment(p); setBuktiBayarFile(null); setErrorMsg(""); }} />
+                        <span className="capitalize">{p === "cod" ? "COD (Bayar di tempat)" : p}</span>
                       </label>
                     ))}
 
-                    {["transfer", "qris"].includes(payment) && (
-                      <div className="mt-3">
-                        <label className="block text-sm font-medium mb-1">Upload Bukti Pembayaran</label>
-                        <input type="file" accept="image/*,.pdf" onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)} className="border rounded-lg px-3 py-2 w-full text-sm bg-white cursor-pointer" />
-                        {buktiBayarFile && <p className="text-[11px] mt-1 text-gray-500">File: {buktiBayarFile.name}</p>}
+                    {/* Transfer */}
+                    {payment === "transfer" && (
+                      <div className="bg-white border rounded-xl p-4 mt-3 space-y-2">
+                        <p className="text-sm font-medium">Rekening Transfer:</p>
+                        <div className="text-sm flex justify-between">
+                          <span>BCA — 5350429695 (KOJE)</span>
+                          <button
+                            type="button"
+                            onClick={() => navigator.clipboard.writeText("5350429695")}
+                            className="text-[#0FA3A8] text-xs"
+                          >
+                            Copy
+                          </button>
+                        </div>
+
+                        <label className="block text-sm font-medium mt-2">Upload Bukti Transfer</label>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)}
+                          className="border rounded-lg px-3 py-2 w-full text-sm bg-white cursor-pointer"
+                        />
+                      </div>
+                    )}
+
+                    {/* QRIS */}
+                    {payment === "qris" && (
+                      <div className="bg-white border rounded-xl p-4 mt-3 space-y-3">
+                        <p className="text-sm font-medium">Scan QRIS untuk pembayaran:</p>
+                        <img src="/qris-static.jpg" className="w-full rounded-lg" alt="QRIS" />
+
+                        <label className="block text-sm font-medium mt-2">Upload Bukti Pembayaran</label>
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)}
+                          className="border rounded-lg px-3 py-2 w-full text-sm bg-white cursor-pointer"
+                        />
                       </div>
                     )}
                   </div>
@@ -255,7 +281,9 @@ export default function CheckoutPage() {
                         <p className="font-medium">{it.name}</p>
                         <p className="text-[12px] text-gray-500">{it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs</p>
                       </div>
-                      <div className="font-semibold whitespace-nowrap">Rp{(it.qty * it.price).toLocaleString("id-ID")}</div>
+                      <div className="font-semibold whitespace-nowrap">
+                        Rp{(it.qty * it.price).toLocaleString("id-ID")}
+                      </div>
                     </div>
                   ))}
                 </div>
