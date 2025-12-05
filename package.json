@@ -23,7 +23,6 @@
     "next": "15.1.6",
     "next-sitemap": "^4.2.3",
     "pdf-lib": "^1.17.1",
-    "critters": "^0.0.20",
     "puppeteer-core": "^22.10.0",
     "qrcode": "^1.5.4",
     "react": "18.3.1",
