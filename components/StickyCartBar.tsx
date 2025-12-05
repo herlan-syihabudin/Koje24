@@ -8,17 +8,27 @@ import { usePathname } from "next/navigation"
 
 export default function StickyCartBar() {
   const pathname = usePathname()
-  const totalQty = useCartStore((state) => state.totalQty)
-  const totalPrice = useCartStore((state) => state.totalPrice)
-  const [glow, setGlow] = useState(false)
+
+  // 🛑 tangani undefined pathname sebelum hydrate
+  if (!pathname) return null
 
   // ❌ sembunyikan di halaman checkout & invoice
-  if (pathname?.startsWith("/checkout") || pathname?.startsWith("/invoice")) {
-    return null
-  }
+  const hide =
+    pathname.startsWith("/checkout") ||
+    pathname.startsWith("/invoice") ||
+    pathname === "/checkout"
 
-  // ❌ sembunyikan kalau keranjang kosong
-  if (totalQty === 0) return null
+  const totalQty = useCartStore((state) => state.totalQty)
+  const totalPrice = useCartStore((state) => state.totalPrice)
+  const hydrated = useCartStore((state) => state.hydrated)
+
+  // 🛑 jangan render sebelum store hydrate
+  if (!hydrated) return null
+
+  // ❌ kalau di halaman yang disembunyikan atau keranjang kosong
+  if (hide || totalQty === 0) return null
+
+  const [glow, setGlow] = useState(false)
 
   // 🔥 auto glowing setiap 12 detik
   useEffect(() => {
@@ -32,10 +42,21 @@ export default function StickyCartBar() {
   const hargaFormat = new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 0
   }).format(totalPrice)
 
   const bonusOngkir = totalPrice >= 120000
+
+  // 🟢 FULL SAFE VERSION
+  const openCart = () => {
+    if (typeof window !== "undefined") {
+      try {
+        window.dispatchEvent(new Event("open-cart"))
+      } catch (e) {
+        console.error("Cart popup error:", e)
+      }
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -48,11 +69,7 @@ export default function StickyCartBar() {
         className="fixed bottom-6 right-4 md:bottom-5 md:right-6 z-50"
       >
         <button
-          onClick={() => {
-            if (typeof window !== "undefined") {
-              window.dispatchEvent(new Event("open-cart"))
-            }
-          }}
+          onClick={openCart}
           className={`
             relative flex items-center gap-2 pl-4 pr-5 py-3
             rounded-full shadow-xl backdrop-blur-md
@@ -65,7 +82,9 @@ export default function StickyCartBar() {
 
           <div className="flex flex-col leading-tight text-left mr-2">
             <span className="font-semibold text-[15px]">{hargaFormat}</span>
-            <span className="text-[10px] opacity-90 -mt-[2px]">Lanjutkan pesanan ➜</span>
+            <span className="text-[10px] opacity-90 -mt-[2px]">
+              Lanjutkan pesanan ➜
+            </span>
           </div>
 
           {/* BADGE QTY */}
@@ -83,7 +102,8 @@ export default function StickyCartBar() {
 
           {/* BADGE BONUS ONGKIR */}
           {bonusOngkir && (
-            <span className="absolute -bottom-3 right-0 bg-[#E8C46B] text-[#0B4B50] text-[9px] px-2 py-[2px] rounded-full shadow-md font-bold">
+            <span className="absolute -bottom-3 right-0 bg-[#E8C46B] text-[#0B4B50] text-[9px] px-2 py-[2px]
+              rounded-full shadow-md font-bold">
               Bonus Ongkir 🎁
             </span>
           )}
