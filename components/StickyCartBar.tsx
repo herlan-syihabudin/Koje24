@@ -12,13 +12,13 @@ export default function StickyCartBar() {
 
   const pathname = usePathname()
   const [glow, setGlow] = useState(false)
-  const [cartOpen, setCartOpen] = useState(false) // ⬅️ popup status
+  const [cartOpen, setCartOpen] = useState(false)
 
-  // ❌ sembunyikan sticky bar di halaman checkout
+  // 🛑 sembunyikan sticky bar di halaman checkout
   const isCheckoutPage = pathname?.includes("/checkout")
   const shouldShow = totalQty > 0 && !cartOpen && !isCheckoutPage
 
-  // 🔥 auto glowing setiap 12 detik
+  // ✨ auto glowing (marketing attention)
   useEffect(() => {
     if (totalQty === 0) return
     const t = setInterval(() => {
@@ -28,17 +28,22 @@ export default function StickyCartBar() {
     return () => clearInterval(t)
   }, [totalQty])
 
-  // 🎯 dengarkan event popup open/close
+  // 🎯 popup event + auto-reset saat pindah halaman
   useEffect(() => {
     const open = () => setCartOpen(true)
     const close = () => setCartOpen(false)
+
     window.addEventListener("open-cart", open)
     window.addEventListener("close-cart", close)
+
+    // 🔥 FIX: reset otomatis jika pindah halaman → sticky muncul lagi tanpa reload
+    setCartOpen(false)
+
     return () => {
       window.removeEventListener("open-cart", open)
       window.removeEventListener("close-cart", close)
     }
-  }, [])
+  }, [pathname])
 
   const hargaFormat = new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -78,6 +83,7 @@ export default function StickyCartBar() {
               </span>
             </div>
 
+            {/* BADGE QTY */}
             <motion.span
               layout
               initial={{ scale: 0 }}
@@ -89,6 +95,7 @@ export default function StickyCartBar() {
               {totalQty}
             </motion.span>
 
+            {/* BONUS ONGKIR */}
             {bonusOngkir && (
               <span className="absolute -bottom-3 right-0 bg-[#E8C46B] text-[#0B4B50] text-[9px] px-2 py-[2px] rounded-full shadow-md font-bold">
                 Bonus Ongkir 🎁
