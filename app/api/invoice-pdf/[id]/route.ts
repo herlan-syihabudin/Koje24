@@ -8,38 +8,42 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-    if (!id) throw new Error("Invoice ID tidak valid");
+    const invoiceId = id?.trim();
+    if (!invoiceId) throw new Error("Invoice ID tidak valid");
 
-    const base =
-      process.env.NEXT_PUBLIC_BASE_URL || "https://webkoje-cacs.vercel.app";
+    const API_KEY = process.env.HTML2PDF_KEY;
+    if (!API_KEY) throw new Error("HTML2PDF API Key belum di-set");
 
-    // ⬇️ Gunakan mode pdf agar elemen non-PDF disembunyikan
-    const invoiceUrl = `${base}/invoice/${id}?pdf=1`;
+    // Auto deteksi domain — jauh lebih aman untuk deploy domain baru
+    const origin = req.nextUrl.origin;
 
-    const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${
-      process.env.HTML2PDF_KEY
-    }&url=${encodeURIComponent(
-      invoiceUrl
-    )}&format=A4&printBackground=true&margin=10mm&delay=900`;
+    // PDF mode (sama halaman tapi sembunyikan elemen web)
+    const invoiceUrl = `${origin}/invoice/${invoiceId}?pdf=1`;
 
-    const result = await fetch(pdfReqUrl);
-    if (!result.ok) {
-      const errText = await result.text().catch(() => "Unknown PDF error");
-      throw new Error("Gagal generate PDF — " + errText);
+    // Build PDF API URL
+    const pdfReqUrl =
+      `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}` +
+      `&url=${encodeURIComponent(invoiceUrl)}` +
+      `&format=A4&printBackground=true&margin=10mm&delay=1600`;
+
+    const response = await fetch(pdfReqUrl);
+    if (!response.ok) {
+      const errMsg = await response.text().catch(() => "");
+      throw new Error("Gagal render PDF: " + errMsg);
     }
 
-    const pdf = await result.arrayBuffer();
+    const pdfBytes = await response.arrayBuffer();
 
-    return new NextResponse(pdf, {
+    return new NextResponse(pdfBytes, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="invoice-${id}.pdf"`,
+        "Content-Disposition": `inline; filename="invoice-${invoiceId}.pdf"`,
       },
     });
   } catch (err: any) {
     return NextResponse.json(
-      { error: "Failed to generate PDF", detail: err?.message ?? err },
+      { error: true, message: err?.message ?? err },
       { status: 500 }
     );
   }
