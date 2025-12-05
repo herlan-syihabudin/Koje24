@@ -1,198 +1,288 @@
 "use client";
 
-import React, { Suspense, useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import QRCode from "react-qr-code";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCartStore } from "@/stores/cartStore";
+import Script from "next/script";
 
-interface InvoiceData {
-  invoiceId: string;
-  timestamp: string;
-  nama: string;
-  hp: string;
-  alamat: string;
-  produkList: string;
-  qtyTotal: number;
-  subtotalCalc: number;
-  status: string;
-  paymentLabel: string;
-  effectiveOngkir: number;
-  effectiveGrandTotal: number;
-  invoiceUrl: string;
-}
+declare const google: any;
 
-const SELLER_INFO = {
-  name: "KOJE24 Official",
-  address: "Jl. Kopi Kenangan No. 24, Jakarta Selatan",
-  hp: "0811-2233-4455",
+type CheckoutState = "idle" | "submitting" | "error";
+
+export type CartItemType = {
+  id: string;
+  name: string;
+  price: number;
+  qty: number;
 };
 
-const formatRupiah = (v: number) =>
-  v.toLocaleString("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 });
+// Koordinat base KOJE24
+const BASE_LAT = -6.2903238;
+const BASE_LNG = 107.087373;
 
-function InvoiceContent() {
-  const { id } = useParams();
-  const invoiceId = String(id);
-  const [invoice, setInvoice] = useState<InvoiceData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const load = async () => {
-      const r = await fetch(`/api/invoice/${invoiceId}`, { cache: "no-store" });
-      const j = await r.json();
-      if (j?.success) setInvoice(j.data);
-      setLoading(false);
-    };
-    load();
-  }, [invoiceId]);
-
-  if (loading) return <div className="flex justify-center items-center min-h-screen">Memuat invoice…</div>;
-  if (!invoice) return <div className="flex justify-center items-center min-h-screen">Invoice tidak ditemukan</div>;
-
-  const formattedDate = new Date(invoice.timestamp).toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-
-  return (
-    <div className="min-h-screen bg-gray-100 p-4 flex justify-center print:p-0">
-      {/* === PRINT CSS & A4 MODE === */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 0;
-          }
-          body {
-            background: white !important;
-          }
-          .a4 {
-            width: 210mm !important;
-            min-height: 297mm !important;
-            padding: 16mm !important;
-            margin: 0 !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      <div className="a4 bg-white w-full max-w-[210mm] mx-auto rounded-xl shadow-xl border p-6 sm:p-10">
-        {/* WATERMARK PAID */}
-        {invoice.status.toLowerCase() === "paid" && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-            <span className="font-extrabold text-[90px] sm:text-[130px] text-green-600 opacity-10 rotate-[-25deg] tracking-[0.18em]">
-              PAID
-            </span>
-          </div>
-        )}
-
-        {/* HEADER */}
-        <div className="flex justify-between items-start mb-8 gap-4">
-          <div>
-            <img src="/image/logo-koje24.png" className="h-14 w-auto" />
-            <p className="text-xs text-gray-600 mt-2">
-              {SELLER_INFO.address} • Telp: {SELLER_INFO.hp}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-3xl font-bold text-[#0B4B50]">INVOICE</p>
-            <p className="font-semibold mt-1">#{invoice.invoiceId}</p>
-            <p className="text-sm text-gray-600 mt-1">{formattedDate}</p>
-          </div>
-        </div>
-
-        {/* PEMBELI */}
-        <div className="mb-8">
-          <p className="text-sm font-bold text-gray-700 mb-1">Pembeli:</p>
-          <p className="text-base font-medium">{invoice.nama}</p>
-          <p className="text-sm text-gray-700">{invoice.alamat}</p>
-          <p className="text-sm text-gray-700">Telp: {invoice.hp}</p>
-        </div>
-
-        {/* PRODUK */}
-        <div className="mb-8">
-          <table className="w-full text-sm border border-gray-300">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border py-2 px-3 text-left">Deskripsi</th>
-                <th className="border py-2 w-20 text-center">Qty</th>
-                <th className="border py-2 w-32 text-right px-3">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="border py-2 px-3">{invoice.produkList}</td>
-                <td className="border text-center">{invoice.qtyTotal}</td>
-                <td className="border text-right px-3">{formatRupiah(invoice.subtotalCalc)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* TOTAL */}
-        <div className="flex justify-end mb-8">
-          <table className="text-sm w-full sm:w-auto">
-            <tbody>
-              <tr>
-                <td className="py-1 px-3">Subtotal Produk:</td>
-                <td className="py-1 px-3 text-right font-medium">{formatRupiah(invoice.subtotalCalc)}</td>
-              </tr>
-              <tr>
-                <td className="py-1 px-3">Ongkir:</td>
-                <td className="py-1 px-3 text-right font-medium">{formatRupiah(invoice.effectiveOngkir)}</td>
-              </tr>
-              <tr className="bg-gray-50 text-lg font-bold">
-                <td className="py-2 px-3">TOTAL DIBAYARKAN:</td>
-                <td className="py-2 px-3 text-right text-red-600">{formatRupiah(invoice.effectiveGrandTotal)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* QR + BARCODE */}
-        <div className="flex justify-between flex-wrap gap-6 mb-6">
-          <div className="text-sm">
-            <p>Scan untuk membuka invoice online:</p>
-            <div className="mt-2 bg-white p-2 border inline-block rounded">
-              <QRCode value={invoice.invoiceUrl} size={110} />
-            </div>
-          </div>
-          <div className="flex flex-col items-center">
-            <img
-              src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
-              className="h-20"
-            />
-            <p className="text-xs mt-1">{invoice.invoiceId}</p>
-          </div>
-        </div>
-
-        {/* FOOTER */}
-        <p className="text-center text-gray-600 text-xs border-t pt-3">
-          Terima kasih telah berbelanja di <b>KOJE24</b> 💛 Semoga sehat & berenergi setiap hari!
-        </p>
-      </div>
-
-      {/* BUTTON CETAK */}
-      <div className="text-center mt-6 no-print">
-        <button
-          onClick={() => window.print()}
-          className="px-6 py-2 bg-[#0FA3A8] text-white rounded-full text-sm"
-        >
-          Cetak & Unduh Invoice (PDF)
-        </button>
-      </div>
-    </div>
-  );
+// Rumus haversine
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export default function InvoicePage() {
+// Perhitungan ongkir
+function calcOngkir(distanceKm: number | null): number {
+  if (!distanceKm || distanceKm <= 0) return 15000;
+  const base = 8000;
+  const perKm = 3000;
+  const minPay = 10000;
+  const raw = base + distanceKm * perKm;
+  const rounded = Math.round(raw / 100) * 100;
+  return Math.max(minPay, rounded);
+}
+
+export default function CheckoutPage() {
+  const router = useRouter();
+  const items = useCartStore((s) => s.items);
+  const clearCart = useCartStore((s) => s.clearCart);
+
+  const [hydrated, setHydrated] = useState(false);
+
+  const [nama, setNama] = useState("");
+  const [hp, setHp] = useState("");
+  const [alamat, setAlamat] = useState("");
+  const [catatan, setCatatan] = useState("");
+  const [payment, setPayment] = useState<"transfer" | "qris" | "cod">("transfer");
+  const [status, setStatus] = useState<CheckoutState>("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const [distanceKm, setDistanceKm] = useState<number | null>(null);
+  const [ongkir, setOngkir] = useState<number>(15000);
+  const alamatRef = useRef<HTMLInputElement | null>(null);
+
+  const [buktiBayarFile, setBuktiBayarFile] = useState<File | null>(null);
+
+  const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0);
+  const total = subtotal + (items.length > 0 ? ongkir : 0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.scrollTo({ top: 0 });
+  }, []);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (items.length === 0) {
+      const t = setTimeout(() => router.push("/#produk"), 1600);
+      return () => clearTimeout(t);
+    }
+  }, [items.length, hydrated, router]);
+
+  // GOOGLE AUTOCOMPLETE (tetap ada, tidak dihapus)
+  useEffect(() => {
+    if (!alamatRef.current) return;
+    const w = window as any;
+    if (!w.google?.maps?.places) return;
+
+    try {
+      const auto = new google.maps.places.Autocomplete(alamatRef.current, {
+        componentRestrictions: { country: "id" },
+        fields: ["formatted_address", "geometry"]
+      });
+
+      auto.addListener("place_changed", () => {
+        const place = auto.getPlace();
+        if (!place?.geometry?.location) return;
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        const dKm = haversineDistance(BASE_LAT, BASE_LNG, lat, lng);
+        setDistanceKm(dKm);
+        setOngkir(calcOngkir(dKm));
+        if (place.formatted_address) setAlamat(place.formatted_address);
+      });
+    } catch {}
+  }, []);
+
+  // 🚀 Fitur Profesional — Deteksi Lokasi Otomatis
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation)
+      return alert("Perangkat tidak mendukung GPS lokasi.");
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const dKm = haversineDistance(BASE_LAT, BASE_LNG, latitude, longitude);
+        setDistanceKm(dKm);
+        setOngkir(calcOngkir(dKm));
+        setAlamat(`Koordinat: ${latitude}, ${longitude}`); // tetap tersimpan
+      },
+      () => alert("Izin GPS ditolak. Aktifkan lokasi ya 🙏"),
+      { enableHighAccuracy: true }
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!items.length) return;
+    if (!nama.trim() || !hp.trim() || !alamat.trim()) {
+      setErrorMsg("Lengkapi nama, nomor WhatsApp, dan alamat dulu ya 🙏");
+      return;
+    }
+    if (["transfer", "qris"].includes(payment) && !buktiBayarFile) {
+      setErrorMsg("Upload bukti pembayaran terlebih dahulu 🙏");
+      return;
+    }
+
+    try {
+      setStatus("submitting");
+      setErrorMsg("");
+
+      const cartMapped = items.map((x) => ({
+        id: x.id,
+        name: x.name,
+        qty: x.qty,
+        price: x.price,
+      }));
+
+      const res = await fetch("/api/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nama,
+          hp,
+          alamat,
+          note: catatan,
+          payment,
+          cart: cartMapped,
+          distanceKm,
+          shippingCost: ongkir,
+          grandTotal: total,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.success)
+        throw new Error(data?.message || "Gagal membuat invoice");
+
+      fetch("/api/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: nama, phone: hp, address: alamat, note: catatan, order: cartMapped, total }),
+      }).catch(() => null);
+
+      clearCart();
+      router.push(data.invoiceUrl || "/");
+    } catch (e) {
+      setStatus("error");
+      setErrorMsg("Ada kendala saat membuat invoice — coba ulang sebentar ya 🙏");
+    } finally {
+      setStatus("idle");
+    }
+  };
+
+  const disabled = status === "submitting" || !items.length;
+
   return (
-    <Suspense fallback={<div className="min-h-screen flex justify-center items-center">Memuat invoice…</div>}>
-      <InvoiceContent />
-    </Suspense>
+    <>
+      <Script src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`} strategy="lazyOnload" />
+
+      <main className="min-h-screen bg-[#F4FAFA] text-[#0B4B50] py-10 px-4 flex justify-center">
+        <div className="w-full max-w-5xl">
+          <div className="mb-8">
+            <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24 • PREMIUM CHECKOUT</p>
+            <h1 className="text-3xl md:text-4xl font-playfair font-semibold">Selesaikan Pesanan Kamu</h1>
+            <p className="text-sm text-gray-600 mt-2 max-w-xl">
+              Isi alamat dengan teliti. Ongkir dihitung otomatis berdasarkan jarak.
+            </p>
+          </div>
+
+          {hydrated && items.length === 0 ? (
+            <p className="text-center text-gray-500">Keranjang kosong. Mengarahkan kembali…</p>
+          ) : (
+            <div className="grid gap-8 md:grid-cols-[1.15fr_0.85fr]">
+              <section className="bg-white border rounded-3xl shadow p-6 md:p-7">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <input className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Nama lengkap" value={nama} onChange={(e) => setNama(e.target.value)} />
+                  <input className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Nomor WhatsApp" value={hp} onChange={(e) => setHp(e.target.value)} />
+
+                  <input ref={alamatRef} className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Alamat lengkap" value={alamat} onChange={(e) => setAlamat(e.target.value)} />
+
+                  {/* tombol deteksi lokasi */}
+                  <button
+                    type="button"
+                    onClick={handleDetectLocation}
+                    className="w-full bg-[#0FA3A8]/90 hover:bg-[#0FA3A8] text-white mt-2 py-2 rounded-lg text-sm font-medium shadow-sm"
+                  >
+                    📍 Deteksi Lokasi Otomatis (Hitung Ongkir)
+                  </button>
+
+                  {distanceKm && (
+                    <p className="text-[12px] text-gray-500">
+                      Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}
+                    </p>
+                  )}
+
+                  <textarea className="border rounded-lg px-3 py-2 w-full h-16 resize-none focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Catatan (opsional)" value={catatan} onChange={(e) => setCatatan(e.target.value)} />
+
+                  <h2 className="font-playfair text-xl">Metode Pembayaran</h2>
+                  <div className="rounded-xl bg-[#f7fbfb] border p-4 space-y-3">
+                    {(["transfer", "qris", "cod"] as const).map((p) => (
+                      <label key={p} className={`flex items-center justify-between cursor-pointer rounded-lg px-3 py-2 ${payment === p ? "bg-white border border-[#0FA3A8]" : ""}`}>
+                        <div className="flex items-center gap-2">
+                          <input type="radio" name="payment" checked={payment === p} onChange={() => { setPayment(p); setBuktiBayarFile(null); }} />
+                          <span className="capitalize">{p === "cod" ? "COD (Bayar di tempat)" : p}</span>
+                        </div>
+                      </label>
+                    ))}
+
+                    {["transfer", "qris"].includes(payment) && (
+                      <div className="mt-3">
+                        <label className="block text-sm font-medium mb-1">Upload Bukti Pembayaran</label>
+                        <input type="file" accept="image/*,.pdf" onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)} className="border rounded-lg px-3 py-2 w-full text-sm bg-white cursor-pointer" />
+                        {buktiBayarFile && <p className="text-[11px] mt-1 text-gray-500">File: {buktiBayarFile.name}</p>}
+                      </div>
+                    )}
+                  </div>
+
+                  {errorMsg && <p className="text-red-500 text-sm pt-1">{errorMsg}</p>}
+
+                  <button disabled={disabled} className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                    {status === "submitting" ? "Memproses pesanan..." : "Buat Pesanan"}
+                  </button>
+                </form>
+              </section>
+
+              <aside className="bg-white border rounded-3xl shadow p-6 flex flex-col gap-4">
+                <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
+                <div className="max-h-[260px] overflow-y-auto space-y-3 pr-1">
+                  {items.map((it) => (
+                    <div key={it.id} className="flex justify-between items-start border-b pb-2 text-sm gap-3">
+                      <div className="flex-1">
+                        <p className="font-medium">{it.name}</p>
+                        <p className="text-[12px] text-gray-500">{it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs</p>
+                      </div>
+                      <div className="font-semibold whitespace-nowrap">Rp{(it.qty * it.price).toLocaleString("id-ID")}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t pt-3 space-y-1 text-sm">
+                  <div className="flex justify-between"><span>Subtotal</span><span>Rp{subtotal.toLocaleString("id-ID")}</span></div>
+                  <div className="flex justify-between"><span>Ongkir</span><span>Rp{ongkir.toLocaleString("id-ID")}</span></div>
+                  <div className="flex justify-between font-semibold text-lg pt-1"><span>Total</span><span>Rp{total.toLocaleString("id-ID")}</span></div>
+                </div>
+              </aside>
+            </div>
+          )}
+        </div>
+      </main>
+    </>
   );
 }
