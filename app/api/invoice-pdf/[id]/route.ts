@@ -1,35 +1,31 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  req: Request,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await context.params;
-    const invoiceId = id?.trim();
+    const invoiceId = params.id?.trim();
     if (!invoiceId) throw new Error("Invoice ID tidak valid");
 
     const API_KEY = process.env.HTML2PDF_KEY;
     if (!API_KEY) throw new Error("HTML2PDF API Key belum di-set");
 
-    // Auto deteksi domain — jauh lebih aman untuk deploy domain baru
     const origin = req.nextUrl.origin;
-
-    // PDF mode (sama halaman tapi sembunyikan elemen web)
     const invoiceUrl = `${origin}/invoice/${invoiceId}?pdf=1`;
 
-    // Build PDF API URL
     const pdfReqUrl =
       `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}` +
       `&url=${encodeURIComponent(invoiceUrl)}` +
       `&format=A4&printBackground=true&margin=10mm&delay=1600`;
 
     const response = await fetch(pdfReqUrl);
+
     if (!response.ok) {
-      const errMsg = await response.text().catch(() => "");
-      throw new Error("Gagal render PDF: " + errMsg);
+      const msg = await response.text().catch(() => "");
+      throw new Error("Gagal render PDF: " + msg);
     }
 
     const pdfBytes = await response.arrayBuffer();
