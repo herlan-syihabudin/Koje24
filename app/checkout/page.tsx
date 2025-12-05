@@ -9,13 +9,6 @@ declare const google: any;
 
 type CheckoutState = "idle" | "submitting" | "error";
 
-export type CartItemType = {
-  id: string;
-  name: string;
-  price: number;
-  qty: number;
-};
-
 // Koordinat base KOJE24
 const BASE_LAT = -6.2903238;
 const BASE_LNG = 107.087373;
@@ -49,8 +42,11 @@ export default function CheckoutPage() {
   const items = useCartStore((s) => s.items);
   const clearCart = useCartStore((s) => s.clearCart);
 
-  const [hydrated, setHydrated] = useState(false);
+  // ⚠️ PROMO dari cartStore
+  const promoLabel = useCartStore((s) => s.promoLabel);
+  const promoAmount = useCartStore((s) => s.promoAmount);
 
+  const [hydrated, setHydrated] = useState(false);
   const [nama, setNama] = useState("");
   const [hp, setHp] = useState("");
   const [alamat, setAlamat] = useState("");
@@ -62,11 +58,12 @@ export default function CheckoutPage() {
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [ongkir, setOngkir] = useState<number>(15000);
   const alamatRef = useRef<HTMLInputElement | null>(null);
-
   const [buktiBayarFile, setBuktiBayarFile] = useState<File | null>(null);
 
   const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0);
-  const total = subtotal + (items.length > 0 ? ongkir : 0);
+
+  // 🔥 total sudah dikurangi promo (kalau ada)
+  const total = subtotal + (items.length > 0 ? ongkir : 0) - promoAmount;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -85,7 +82,7 @@ export default function CheckoutPage() {
     }
   }, [items.length, hydrated, router]);
 
-  // GOOGLE AUTOCOMPLETE (tetap ada, tidak dihapus)
+  // GOOGLE AUTOCOMPLETE
   useEffect(() => {
     if (!alamatRef.current) return;
     const w = window as any;
@@ -110,7 +107,6 @@ export default function CheckoutPage() {
     } catch {}
   }, []);
 
-  // 🚀 Fitur Profesional — Deteksi Lokasi Otomatis
   const handleDetectLocation = () => {
     if (!navigator.geolocation)
       return alert("Perangkat tidak mendukung GPS lokasi.");
@@ -121,7 +117,7 @@ export default function CheckoutPage() {
         const dKm = haversineDistance(BASE_LAT, BASE_LNG, latitude, longitude);
         setDistanceKm(dKm);
         setOngkir(calcOngkir(dKm));
-        setAlamat(`Koordinat: ${latitude}, ${longitude}`); // tetap tersimpan
+        setAlamat(`Koordinat: ${latitude}, ${longitude}`);
       },
       () => alert("Izin GPS ditolak. Aktifkan lokasi ya 🙏"),
       { enableHighAccuracy: true }
@@ -131,10 +127,12 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!items.length) return;
+
     if (!nama.trim() || !hp.trim() || !alamat.trim()) {
       setErrorMsg("Lengkapi nama, nomor WhatsApp, dan alamat dulu ya 🙏");
       return;
     }
+
     if (["transfer", "qris"].includes(payment) && !buktiBayarFile) {
       setErrorMsg("Upload bukti pembayaran terlebih dahulu 🙏");
       return;
@@ -163,6 +161,8 @@ export default function CheckoutPage() {
           cart: cartMapped,
           distanceKm,
           shippingCost: ongkir,
+          promoAmount,
+          promoLabel,
           grandTotal: total,
         }),
       });
@@ -179,7 +179,7 @@ export default function CheckoutPage() {
 
       clearCart();
       router.push(data.invoiceUrl || "/");
-    } catch (e) {
+    } catch {
       setStatus("error");
       setErrorMsg("Ada kendala saat membuat invoice — coba ulang sebentar ya 🙏");
     } finally {
@@ -207,30 +207,23 @@ export default function CheckoutPage() {
             <p className="text-center text-gray-500">Keranjang kosong. Mengarahkan kembali…</p>
           ) : (
             <div className="grid gap-8 md:grid-cols-[1.15fr_0.85fr]">
+              {/* FORM CUSTOMER */}
               <section className="bg-white border rounded-3xl shadow p-6 md:p-7">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <input className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Nama lengkap" value={nama} onChange={(e) => setNama(e.target.value)} />
                   <input className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Nomor WhatsApp" value={hp} onChange={(e) => setHp(e.target.value)} />
-
                   <input ref={alamatRef} className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Alamat lengkap" value={alamat} onChange={(e) => setAlamat(e.target.value)} />
 
                   {/* tombol deteksi lokasi */}
-                  <button
-                    type="button"
-                    onClick={handleDetectLocation}
-                    className="w-full bg-[#0FA3A8]/90 hover:bg-[#0FA3A8] text-white mt-2 py-2 rounded-lg text-sm font-medium shadow-sm"
-                  >
+                  <button type="button" onClick={handleDetectLocation} className="w-full bg-[#0FA3A8]/90 hover:bg-[#0FA3A8] text-white mt-2 py-2 rounded-lg text-sm font-medium shadow-sm">
                     📍 Deteksi Lokasi Otomatis (Hitung Ongkir)
                   </button>
 
-                  {distanceKm && (
-                    <p className="text-[12px] text-gray-500">
-                      Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}
-                    </p>
-                  )}
+                  {distanceKm && <p className="text-[12px] text-gray-500">Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}</p>}
 
                   <textarea className="border rounded-lg px-3 py-2 w-full h-16 resize-none focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Catatan (opsional)" value={catatan} onChange={(e) => setCatatan(e.target.value)} />
 
+                  {/* Pembayaran */}
                   <h2 className="font-playfair text-xl">Metode Pembayaran</h2>
                   <div className="rounded-xl bg-[#f7fbfb] border p-4 space-y-3">
                     {(["transfer", "qris", "cod"] as const).map((p) => (
@@ -259,8 +252,10 @@ export default function CheckoutPage() {
                 </form>
               </section>
 
+              {/* SIDEBAR RINGKASAN */}
               <aside className="bg-white border rounded-3xl shadow p-6 flex flex-col gap-4">
                 <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
+
                 <div className="max-h-[260px] overflow-y-auto space-y-3 pr-1">
                   {items.map((it) => (
                     <div key={it.id} className="flex justify-between items-start border-b pb-2 text-sm gap-3">
@@ -273,10 +268,23 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
+                {/* total */}
                 <div className="border-t pt-3 space-y-1 text-sm">
                   <div className="flex justify-between"><span>Subtotal</span><span>Rp{subtotal.toLocaleString("id-ID")}</span></div>
                   <div className="flex justify-between"><span>Ongkir</span><span>Rp{ongkir.toLocaleString("id-ID")}</span></div>
-                  <div className="flex justify-between font-semibold text-lg pt-1"><span>Total</span><span>Rp{total.toLocaleString("id-ID")}</span></div>
+
+                  {/* 🔥 Promo jika ada */}
+                  {promoAmount > 0 && (
+                    <div className="flex justify-between text-green-600 font-medium">
+                      <span>{promoLabel}</span>
+                      <span>- Rp{promoAmount.toLocaleString("id-ID")}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between font-semibold text-lg pt-1">
+                    <span>Total</span>
+                    <span>Rp{total.toLocaleString("id-ID")}</span>
+                  </div>
                 </div>
               </aside>
             </div>
