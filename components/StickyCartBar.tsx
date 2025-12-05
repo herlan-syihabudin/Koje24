@@ -3,10 +3,31 @@
 import { ShoppingCart } from "lucide-react"
 import { useCartStore } from "@/stores/cartStore"
 import { motion, AnimatePresence } from "framer-motion"
+import { useEffect, useState } from "react"
 
 export default function StickyCartBar() {
   const totalQty = useCartStore((state) => state.totalQty)
-  const totalPrice = useCartStore((state) => state.totalPrice) // ← otomatis terpakai kalau sudah ada
+  const totalPrice = useCartStore((state) => state.totalPrice)
+
+  const [glow, setGlow] = useState(false)
+
+  // 🔥 auto glowing setiap 12 detik
+  useEffect(() => {
+    if (totalQty === 0) return
+    const t = setInterval(() => {
+      setGlow(true)
+      setTimeout(() => setGlow(false), 900)
+    }, 12000)
+    return () => clearInterval(t)
+  }, [totalQty])
+
+  const hargaFormat = new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(totalPrice)
+
+  const bonusOngkir = totalPrice >= 120000
 
   return (
     <AnimatePresence>
@@ -21,23 +42,22 @@ export default function StickyCartBar() {
         >
           <button
             onClick={() => window.dispatchEvent(new Event("open-cart"))}
-            className="
+            className={`
               relative flex items-center gap-2 pl-4 pr-5 py-3
-              bg-[#0FA3A8] hover:bg-[#0DC1C7] text-white
               rounded-full shadow-xl backdrop-blur-md
-              transition-all active:scale-95
-            "
+              transition-all active:scale-95 
+              bg-[#0FA3A8] text-white hover:bg-[#0DC1C7]
+              ${glow ? "ring-4 ring-[#0FA3A8]/40" : ""}
+            `}
           >
             <ShoppingCart className="w-5 h-5" />
 
-            {/* TEKS TOTAL HARGA */}
-            <span className="font-semibold text-[15px]">
-              {new Intl.NumberFormat("id-ID", {
-                style: "currency",
-                currency: "IDR",
-                maximumFractionDigits: 0,
-              }).format(totalPrice)}
-            </span>
+            <div className="flex flex-col leading-tight text-left mr-2">
+              <span className="font-semibold text-[15px]">{hargaFormat}</span>
+              <span className="text-[10px] opacity-90 -mt-[2px]">
+                Lanjutkan pesanan ➜
+              </span>
+            </div>
 
             {/* BADGE QTY */}
             <motion.span
@@ -53,6 +73,13 @@ export default function StickyCartBar() {
             >
               {totalQty}
             </motion.span>
+
+            {/* BADGE BONUS ONGKIR */}
+            {bonusOngkir && (
+              <span className="absolute -bottom-3 right-0 bg-[#E8C46B] text-[#0B4B50] text-[9px] px-2 py-[2px] rounded-full shadow-md font-bold">
+                Bonus Ongkir 🎁
+              </span>
+            )}
           </button>
         </motion.div>
       )}
