@@ -4,37 +4,19 @@ import { ShoppingCart } from "lucide-react"
 import { useCartStore } from "@/stores/cartStore"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 
 export default function StickyCartBar() {
-  const totalQty = useCartStore((s) => s.totalQty)
-  const totalPrice = useCartStore((s) => s.totalPrice)
+  const totalQty = useCartStore((state) => state.totalQty)
+  const totalPrice = useCartStore((state) => state.totalPrice)
 
+  const pathname = usePathname()
   const [glow, setGlow] = useState(false)
-  const [hideSticky, setHideSticky] = useState(false) // 👈 NEW
+  const [cartOpen, setCartOpen] = useState(false) // ⬅️ popup status
 
-  // LISTENER agar sticky sembunyi → kembali muncul setelah popup ditutup
-  useEffect(() => {
-    const open = () => setHideSticky(true)
-    const close = () => setHideSticky(false)
-
-    window.addEventListener("open-cart", open)
-    window.addEventListener("close-cart", close)
-
-    return () => {
-      window.removeEventListener("open-cart", open)
-      window.removeEventListener("close-cart", close)
-    }
-  }, [])
-
-  // HILANG di halaman checkout secara otomatis
-  const pathname = typeof window !== "undefined" ? window.location.pathname : ""
-  if (pathname.startsWith("/checkout") || pathname.startsWith("/invoice/")) return null
-
-  // HILANG jika cart kosong
-  if (totalQty === 0) return null
-
-  // HILANG jika popup cart sedang terbuka
-  if (hideSticky) return null
+  // ❌ sembunyikan sticky bar di halaman checkout
+  const isCheckoutPage = pathname?.includes("/checkout")
+  const shouldShow = totalQty > 0 && !cartOpen && !isCheckoutPage
 
   // 🔥 auto glowing setiap 12 detik
   useEffect(() => {
@@ -46,7 +28,19 @@ export default function StickyCartBar() {
     return () => clearInterval(t)
   }, [totalQty])
 
-  const formatHarga = new Intl.NumberFormat("id-ID", {
+  // 🎯 dengarkan event popup open/close
+  useEffect(() => {
+    const open = () => setCartOpen(true)
+    const close = () => setCartOpen(false)
+    window.addEventListener("open-cart", open)
+    window.addEventListener("close-cart", close)
+    return () => {
+      window.removeEventListener("open-cart", open)
+      window.removeEventListener("close-cart", close)
+    }
+  }, [])
+
+  const hargaFormat = new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
@@ -56,43 +50,53 @@ export default function StickyCartBar() {
 
   return (
     <AnimatePresence>
-      <motion.div
-        key="sticky-cart"
-        initial={{ opacity: 0, x: 60, y: 20, scale: 0.7 }}
-        animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-        exit={{ opacity: 0, x: 60, y: 20, scale: 0.7 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        className="fixed bottom-6 right-4 md:bottom-5 md:right-6 z-50"
-      >
-        <button
-          onClick={() => window.dispatchEvent(new Event("open-cart"))}
-          className={`relative flex items-center gap-2 pl-4 pr-5 py-3 rounded-full shadow-xl backdrop-blur-md transition-all active:scale-95 bg-[#0FA3A8] text-white hover:bg-[#0DC1C7] ${glow ? "ring-4 ring-[#0FA3A8]/40" : ""}`}
+      {shouldShow && (
+        <motion.div
+          key="sticky-cart"
+          initial={{ opacity: 0, x: 60, y: 20, scale: 0.7 }}
+          animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+          exit={{ opacity: 0, x: 60, y: 20, scale: 0.7 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          className="fixed bottom-6 right-4 md:bottom-5 md:right-6 z-50"
         >
-          <ShoppingCart className="w-5 h-5" />
-          <div className="flex flex-col leading-tight text-left mr-2">
-            <span className="font-semibold text-[15px]">{formatHarga}</span>
-            <span className="text-[10px] opacity-90 -mt-[2px]">Lanjutkan pesanan ➜</span>
-          </div>
-
-          {/* QTY */}
-          <motion.span
-            layout
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 15 }}
-            className="absolute -top-2 -right-2 bg-[#E8C46B] text-[#0B4B50] text-xs font-bold rounded-full min-w-[20px] h-[20px] flex items-center justify-center"
+          <button
+            onClick={() => window.dispatchEvent(new Event("open-cart"))}
+            className={`
+              relative flex items-center gap-2 pl-4 pr-5 py-3
+              rounded-full shadow-xl backdrop-blur-md
+              transition-all active:scale-95 
+              bg-[#0FA3A8] text-white hover:bg-[#0DC1C7]
+              ${glow ? "ring-4 ring-[#0FA3A8]/40" : ""}
+            `}
           >
-            {totalQty}
-          </motion.span>
+            <ShoppingCart className="w-5 h-5" />
 
-          {/* BONUS ONGKIR */}
-          {bonusOngkir && (
-            <span className="absolute -bottom-3 right-0 bg-[#E8C46B] text-[#0B4B50] text-[9px] px-2 py-[2px] rounded-full shadow-md font-bold">
-              Bonus Ongkir 🎁
-            </span>
-          )}
-        </button>
-      </motion.div>
+            <div className="flex flex-col leading-tight text-left mr-2">
+              <span className="font-semibold text-[15px]">{hargaFormat}</span>
+              <span className="text-[10px] opacity-90 -mt-[2px]">
+                Lanjutkan pesanan ➜
+              </span>
+            </div>
+
+            <motion.span
+              layout
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 15 }}
+              className="absolute -top-2 -right-2 bg-[#E8C46B] text-[#0B4B50]
+              text-xs font-bold rounded-full min-w-[20px] h-[20px] flex items-center justify-center"
+            >
+              {totalQty}
+            </motion.span>
+
+            {bonusOngkir && (
+              <span className="absolute -bottom-3 right-0 bg-[#E8C46B] text-[#0B4B50] text-[9px] px-2 py-[2px] rounded-full shadow-md font-bold">
+                Bonus Ongkir 🎁
+              </span>
+            )}
+          </button>
+        </motion.div>
+      )}
     </AnimatePresence>
   )
 }
