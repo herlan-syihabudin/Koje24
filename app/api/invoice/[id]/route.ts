@@ -6,9 +6,7 @@ export const dynamic = "force-dynamic";
 const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? "";
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? "";
 const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
-const PRIVATE_KEY = PRIVATE_KEY_RAW
-  .replace(/\\n/g, "\n")
-  .replace(/\\\\n/g, "\n");
+const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n");
 
 export async function GET(
   req: Request,
