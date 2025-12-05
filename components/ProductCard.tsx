@@ -8,19 +8,30 @@ export default function ProductCard({
   name,
   price,
   img,
+  promo, // ⬅️ optional data promo
 }: {
   id: string
   name: string
   price: number
   img: string
+  promo?: {
+    active: boolean
+    discountPercent: number
+  }
 }) {
   const ranking = useBestSellerRanking()
-
-  // 🔥 Aman untuk TypeScript & Runtime
   const isBest = Boolean(ranking?.[id]?.isBestSeller)
 
-  // Qty agar ada feedback UX (tanpa mengubah logic tombol)
   const qty = useCartStore((s) => s.getQty?.(id) ?? 0)
+  const addItem = useCartStore((s) => s.addItem)
+  const removeItem = useCartStore((s) => s.removeItem)
+
+  // 🔥 Hitung harga promo
+  const hasPromo = promo?.active && promo.discountPercent > 0
+  const discount = hasPromo
+    ? Math.round(price * (promo.discountPercent / 100))
+    : 0
+  const finalPrice = price - discount
 
   return (
     <div
@@ -58,7 +69,7 @@ export default function ProductCard({
         </div>
       )}
 
-      {/* IMAGE */}
+      {/* GAMBAR */}
       <img
         src={img}
         alt={name}
@@ -71,9 +82,50 @@ export default function ProductCard({
 
       <div className="p-4">
         <h3 className="font-semibold text-[#0B4B50] leading-tight">{name}</h3>
-        <p className="text-sm text-[#557577] mt-1">
-          Rp {price.toLocaleString("id-ID")}
-        </p>
+
+        {/* 🔥 HARGA PROMO */}
+        {hasPromo ? (
+          <div className="mt-1">
+            <p className="text-[#D20000] font-bold text-[15px]">
+              Rp {finalPrice.toLocaleString("id-ID")}
+            </p>
+            <p className="line-through text-[12px] text-[#8fa2a2]">
+              Rp {price.toLocaleString("id-ID")}
+            </p>
+            <span className="inline-block mt-1 bg-[#D20000] text-white text-[10px] px-2 py-[3px] rounded-full font-semibold">
+              -{promo.discountPercent}%
+            </span>
+          </div>
+        ) : (
+          <p className="text-sm text-[#557577] mt-1">
+            Rp {price.toLocaleString("id-ID")}
+          </p>
+        )}
+
+        {/* 🔘 BUTTONS */}
+        <div className="flex items-center gap-2 mt-4">
+          {qty > 0 && (
+            <button
+              onClick={() => removeItem(id)}
+              className="
+                px-3 py-1 bg-[#0FA3A8] text-white rounded-lg text-sm font-semibold
+                hover:opacity-80
+              "
+            >
+              –
+            </button>
+          )}
+
+          <button
+            onClick={() => addItem({ id, name, price: finalPrice, img })}
+            className="
+              flex-1 px-4 py-2 bg-[#0FA3A8] text-white rounded-lg text-sm font-semibold
+              hover:bg-[#0a898c] transition
+            "
+          >
+            Tambah
+          </button>
+        </div>
       </div>
     </div>
   )
