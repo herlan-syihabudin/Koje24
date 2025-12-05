@@ -33,23 +33,24 @@ export default function CartPopup() {
   // === CLOSE VIA ESC BUTTON ===
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        window.dispatchEvent(new Event("close-cart")); // 🔥 penting
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // 💡 Format nama paket detox
   const formatName = (name: string) => {
     const match = name.match(/^(.*?) — \[(.*)\]$/);
     if (!match) return { title: name, detail: null };
-
-    const title = match[1];
-    const items = match[2].replace(/, /g, " • ");
-    return { title, detail: items };
+    return {
+      title: match[1],
+      detail: match[2].replace(/, /g, " • "),
+    };
   };
 
-  // JIKA POPUP TERTUTUP → JANGAN RENDER
   if (!open) return null;
 
   return (
@@ -59,16 +60,14 @@ export default function CartPopup() {
       aria-modal="true"
       aria-label="Keranjang Belanja"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) setOpen(false);
+        if (e.target === e.currentTarget) {
+          setOpen(false);
+          window.dispatchEvent(new Event("close-cart")); // 🔥 penting
+        }
       }}
     >
       <div
-        className="
-          koje-modal-box
-          w-[92%] sm:w-[420px] max-w-[480px]
-          max-h-[85vh]
-          overflow-y-auto smooth-scroll
-        "
+        className="koje-modal-box w-[92%] sm:w-[420px] max-w-[480px] max-h-[85vh] overflow-y-auto smooth-scroll"
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
@@ -76,12 +75,18 @@ export default function CartPopup() {
           <h2 className="text-xl font-semibold text-[#0B4B50]">
             Keranjang Belanja
           </h2>
-          <button aria-label="Tutup keranjang" onClick={() => setOpen(false)}>
+          <button
+            aria-label="Tutup keranjang"
+            onClick={() => {
+              setOpen(false);
+              window.dispatchEvent(new Event("close-cart")); // 🔥 penting
+            }}
+          >
             <X className="text-[#0B4B50]" size={26} />
           </button>
         </div>
 
-        {/* LIST PRODUK */}
+        {/* LIST */}
         <div className="divide-y divide-gray-200 px-5">
           {items.length === 0 && (
             <p className="py-10 text-center text-gray-500">Keranjang kosong</p>
@@ -89,18 +94,14 @@ export default function CartPopup() {
 
           {items.map((item) => {
             const { title, detail } = formatName(item.name);
-
             return (
               <div key={item.id} className="flex gap-3 py-4 items-center">
-                {/* FOTO */}
                 <img
                   src={item.img || "/images/no-image.jpg"}
-                  alt={item.name}
-                  loading="lazy"
                   className="w-14 h-14 rounded-md object-cover"
+                  alt={item.name}
                 />
 
-                {/* INFO PRODUK */}
                 <div className="flex-1 flex flex-col">
                   <div className="flex items-start justify-between gap-2">
                     <div className="max-w-[65%]">
@@ -113,9 +114,8 @@ export default function CartPopup() {
                         </p>
                       )}
                     </div>
-
                     <p className="font-semibold text-[#0B4B50] whitespace-nowrap">
-                      Rp {(item.price * item.qty).toLocaleString("id-ID")}
+                      Rp {(item.qty * item.price).toLocaleString("id-ID")}
                     </p>
                   </div>
 
@@ -124,7 +124,6 @@ export default function CartPopup() {
                       Rp {item.price.toLocaleString("id-ID")} / pcs
                     </p>
 
-                    {/* QTY BUTTON */}
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => removeItem(item.id)}
@@ -169,6 +168,7 @@ export default function CartPopup() {
             <button
               onClick={() => {
                 setOpen(false);
+                window.dispatchEvent(new Event("close-cart")); // 🔥 penting
                 window.location.href = "/checkout";
               }}
               className="w-full py-3 bg-[#0FA3A8] text-white rounded-xl font-semibold mt-1 hover:bg-[#0B4B50] transition-all"
