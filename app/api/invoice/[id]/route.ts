@@ -10,9 +10,12 @@ const PRIVATE_KEY = PRIVATE_KEY_RAW
   .replace(/\\n/g, "\n")
   .replace(/\\\\n/g, "\n");
 
-export async function GET(req: Request, context: any) {
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const invoiceId = context?.params?.id?.trim();
+    const invoiceId = params.id?.trim();
     if (!invoiceId) {
       return NextResponse.json({ success: false, message: "Invoice ID kosong" });
     }
