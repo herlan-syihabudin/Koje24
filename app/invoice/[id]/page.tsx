@@ -98,10 +98,11 @@ export default function InvoicePage() {
   };
 
   // 🔥 promo
-  const { label: promoLabel, amount: promoAmount } = parsePromo(
-    invoice.promoRaw
-  );
-  const hasPromo = promoAmount > 0;
+  // 🔥 promo
+const { label: promoLabel, amount: promoAmount } = parsePromo(
+  invoice.promoRaw || invoice.promo || invoice.promoLabel
+);
+const hasPromo = promoAmount > 0;
 
   return (
     <div className="max-w-4xl mx-auto p-10 bg-white text-black invoice-paper">
