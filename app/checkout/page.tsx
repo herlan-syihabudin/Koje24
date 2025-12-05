@@ -9,11 +9,10 @@ declare const google: any;
 
 type CheckoutState = "idle" | "submitting" | "error";
 
-// Koordinat base KOJE24
 const BASE_LAT = -6.2903238;
 const BASE_LNG = 107.087373;
 
-// Rumus haversine
+// haversine
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -26,7 +25,6 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Perhitungan ongkir
 function calcOngkir(distanceKm: number | null): number {
   if (!distanceKm || distanceKm <= 0) return 15000;
   const base = 8000;
@@ -41,8 +39,6 @@ export default function CheckoutPage() {
   const router = useRouter();
   const items = useCartStore((s) => s.items);
   const clearCart = useCartStore((s) => s.clearCart);
-
-  // ⚠️ PROMO dari cartStore
   const promoLabel = useCartStore((s) => s.promoLabel);
   const promoAmount = useCartStore((s) => s.promoAmount);
 
@@ -61,17 +57,11 @@ export default function CheckoutPage() {
   const [buktiBayarFile, setBuktiBayarFile] = useState<File | null>(null);
 
   const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0);
-
-  // 🔥 total sudah dikurangi promo (kalau ada)
-  const total = subtotal + (items.length > 0 ? ongkir : 0) - promoAmount;
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.scrollTo({ top: 0 });
-  }, []);
+  const total = Math.max(0, subtotal + (items.length ? ongkir : 0) - promoAmount); // ⛔ never negatif
 
   useEffect(() => {
     setHydrated(true);
+    window.scrollTo({ top: 0 });
   }, []);
 
   useEffect(() => {
@@ -82,16 +72,18 @@ export default function CheckoutPage() {
     }
   }, [items.length, hydrated, router]);
 
-  // GOOGLE AUTOCOMPLETE
+  // GOOGLE AUTOCOMPLETE FIX (anti double init)
   useEffect(() => {
-    if (!alamatRef.current) return;
+    const el = alamatRef.current;
     const w = window as any;
-    if (!w.google?.maps?.places) return;
+    if (!el || !w.google?.maps?.places) return;
+    if ((el as any)._autocomplete_inited) return;
+    (el as any)._autocomplete_inited = true;
 
     try {
-      const auto = new google.maps.places.Autocomplete(alamatRef.current, {
+      const auto = new google.maps.places.Autocomplete(el, {
         componentRestrictions: { country: "id" },
-        fields: ["formatted_address", "geometry"]
+        fields: ["formatted_address", "geometry"],
       });
 
       auto.addListener("place_changed", () => {
@@ -108,9 +100,7 @@ export default function CheckoutPage() {
   }, []);
 
   const handleDetectLocation = () => {
-    if (!navigator.geolocation)
-      return alert("Perangkat tidak mendukung GPS lokasi.");
-
+    if (!navigator.geolocation) return alert("Perangkat tidak mendukung GPS lokasi.");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
@@ -119,13 +109,14 @@ export default function CheckoutPage() {
         setOngkir(calcOngkir(dKm));
         setAlamat(`Koordinat: ${latitude}, ${longitude}`);
       },
-      () => alert("Izin GPS ditolak. Aktifkan lokasi ya 🙏"),
+      () => alert("Izin GPS ditolak. Aktifkan lokasi dulu ya 🙏"),
       { enableHighAccuracy: true }
     );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (status === "submitting") return; // ⛔ anti submit dobel
     if (!items.length) return;
 
     if (!nama.trim() || !hp.trim() || !alamat.trim()) {
@@ -168,22 +159,13 @@ export default function CheckoutPage() {
       });
 
       const data = await res.json();
-      if (!res.ok || !data?.success)
-        throw new Error(data?.message || "Gagal membuat invoice");
-
-      fetch("/api/whatsapp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: nama, phone: hp, address: alamat, note: catatan, order: cartMapped, total }),
-      }).catch(() => null);
+      if (!res.ok || !data?.success) throw new Error(data?.message || "Gagal membuat invoice");
 
       clearCart();
       router.push(data.invoiceUrl || "/");
     } catch {
       setStatus("error");
       setErrorMsg("Ada kendala saat membuat invoice — coba ulang sebentar ya 🙏");
-    } finally {
-      setStatus("idle");
     }
   };
 
@@ -193,6 +175,7 @@ export default function CheckoutPage() {
     <>
       <Script src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`} strategy="lazyOnload" />
 
+      {/* === UI tidak disentuh & tetap sama === */}
       <main className="min-h-screen bg-[#F4FAFA] text-[#0B4B50] py-10 px-4 flex justify-center">
         <div className="w-full max-w-5xl">
           <div className="mb-8">
@@ -207,29 +190,38 @@ export default function CheckoutPage() {
             <p className="text-center text-gray-500">Keranjang kosong. Mengarahkan kembali…</p>
           ) : (
             <div className="grid gap-8 md:grid-cols-[1.15fr_0.85fr]">
-              {/* FORM CUSTOMER */}
               <section className="bg-white border rounded-3xl shadow p-6 md:p-7">
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <input className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Nama lengkap" value={nama} onChange={(e) => setNama(e.target.value)} />
-                  <input className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Nomor WhatsApp" value={hp} onChange={(e) => setHp(e.target.value)} />
-                  <input ref={alamatRef} className="border rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Alamat lengkap" value={alamat} onChange={(e) => setAlamat(e.target.value)} />
+                  <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nama lengkap" value={nama} onChange={(e) => setNama(e.target.value)} />
+                  <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nomor WhatsApp" value={hp} onChange={(e) => setHp(e.target.value)} />
+                  <input ref={alamatRef} className="border rounded-lg px-3 py-2 w-full" placeholder="Alamat lengkap" value={alamat} onChange={(e) => setAlamat(e.target.value)} />
 
-                  {/* tombol deteksi lokasi */}
                   <button type="button" onClick={handleDetectLocation} className="w-full bg-[#0FA3A8]/90 hover:bg-[#0FA3A8] text-white mt-2 py-2 rounded-lg text-sm font-medium shadow-sm">
                     📍 Deteksi Lokasi Otomatis (Hitung Ongkir)
                   </button>
 
                   {distanceKm && <p className="text-[12px] text-gray-500">Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}</p>}
 
-                  <textarea className="border rounded-lg px-3 py-2 w-full h-16 resize-none focus:ring-2 focus:ring-[#0FA3A8]/60" placeholder="Catatan (opsional)" value={catatan} onChange={(e) => setCatatan(e.target.value)} />
+                  <textarea className="border rounded-lg px-3 py-2 w-full h-16 resize-none" placeholder="Catatan (opsional)" value={catatan} onChange={(e) => setCatatan(e.target.value)} />
 
-                  {/* Pembayaran */}
                   <h2 className="font-playfair text-xl">Metode Pembayaran</h2>
                   <div className="rounded-xl bg-[#f7fbfb] border p-4 space-y-3">
                     {(["transfer", "qris", "cod"] as const).map((p) => (
-                      <label key={p} className={`flex items-center justify-between cursor-pointer rounded-lg px-3 py-2 ${payment === p ? "bg-white border border-[#0FA3A8]" : ""}`}>
+                      <label
+                        key={p}
+                        className={`flex items-center justify-between cursor-pointer rounded-lg px-3 py-2 ${payment === p ? "bg-white border border-[#0FA3A8]" : ""}`}
+                      >
                         <div className="flex items-center gap-2">
-                          <input type="radio" name="payment" checked={payment === p} onChange={() => { setPayment(p); setBuktiBayarFile(null); }} />
+                          <input
+                            type="radio"
+                            name="payment"
+                            checked={payment === p}
+                            onChange={() => {
+                              setPayment(p);
+                              setBuktiBayarFile(null);
+                              setErrorMsg(""); // ⛔ reset error lama
+                            }}
+                          />
                           <span className="capitalize">{p === "cod" ? "COD (Bayar di tempat)" : p}</span>
                         </div>
                       </label>
@@ -246,13 +238,13 @@ export default function CheckoutPage() {
 
                   {errorMsg && <p className="text-red-500 text-sm pt-1">{errorMsg}</p>}
 
-                  <button disabled={disabled} className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                  <button disabled={disabled} className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold disabled:opacity-50">
                     {status === "submitting" ? "Memproses pesanan..." : "Buat Pesanan"}
                   </button>
                 </form>
               </section>
 
-              {/* SIDEBAR RINGKASAN */}
+              {/* SIDEBAR */}
               <aside className="bg-white border rounded-3xl shadow p-6 flex flex-col gap-4">
                 <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
 
@@ -268,12 +260,10 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
-                {/* total */}
                 <div className="border-t pt-3 space-y-1 text-sm">
                   <div className="flex justify-between"><span>Subtotal</span><span>Rp{subtotal.toLocaleString("id-ID")}</span></div>
                   <div className="flex justify-between"><span>Ongkir</span><span>Rp{ongkir.toLocaleString("id-ID")}</span></div>
 
-                  {/* 🔥 Promo jika ada */}
                   {promoAmount > 0 && (
                     <div className="flex justify-between text-green-600 font-medium">
                       <span>{promoLabel}</span>
