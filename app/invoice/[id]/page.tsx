@@ -97,11 +97,14 @@ export default function InvoicePage() {
     return null; // paket multi qty kita biarkan "—" (totalnya sudah masuk subtotal global)
   };
 
-  // 🔥 promo
-  // 🔥 promo
-const { label: promoLabel, amount: promoAmount } = parsePromo(
-  invoice.promoRaw || invoice.promo || invoice.promoLabel
-);
+  // 🔥 promo (aman untuk TS & fleksibel untuk API)
+const rawPromo =
+  invoice.promoRaw ??
+  (invoice as any).promo ??
+  invoice.promoLabel ??
+  "";
+
+const { label: promoLabel, amount: promoAmount } = parsePromo(rawPromo);
 const hasPromo = promoAmount > 0;
 
   return (
