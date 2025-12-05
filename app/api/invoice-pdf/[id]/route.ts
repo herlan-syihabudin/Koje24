@@ -13,7 +13,12 @@ export async function GET(
     const API_KEY = process.env.HTML2PDF_KEY;
     if (!API_KEY) throw new Error("HTML2PDF API Key belum di-set");
 
-    const origin = req.nextUrl.origin;
+    // 🔥 FIX origin (tanpa nextUrl)
+    const origin =
+      req.headers.get("origin") ||
+      new URL(req.url).origin;
+
+    // PDF mode
     const invoiceUrl = `${origin}/invoice/${invoiceId}?pdf=1`;
 
     const pdfReqUrl =
