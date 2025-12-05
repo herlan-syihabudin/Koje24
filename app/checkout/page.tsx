@@ -102,30 +102,39 @@ export default function CheckoutPage() {
   }, []);
 
   const handleDetectLocation = () => {
-    if (!navigator.geolocation) return alert("Perangkat tidak mendukung GPS lokasi.");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const dKm = haversineDistance(BASE_LAT, BASE_LNG, latitude, longitude);
-        setDistanceKm(dKm);
-        setOngkir(calcOngkir(dKm));
+  if (!navigator.geolocation) {
+    alert("Perangkat tidak mendukung GPS lokasi.");
+    return;
+  }
 
-        // ⛔ Jangan timpa alamat user
-        setAlamat((prev) => prev || `Lokasi (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`);
-      },
-      () => alert("Izin GPS ditolak. Aktifkan lokasi dulu ya 🙏"),
-      { enableHighAccuracy: true }
-    );
-  };
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      const dKm = haversineDistance(BASE_LAT, BASE_LNG, latitude, longitude);
+
+      setDistanceKm(dKm);
+      setOngkir(calcOngkir(dKm));
+
+      // ❗ TIDAK menyentuh alamat lagi (alamat manual tetap sepenuhnya milik user)
+      alert("GPS berhasil! Ongkir sudah dihitung otomatis 🚚");
+    },
+    () => alert("Izin GPS ditolak. Aktifkan lokasi ya 🙏"),
+    { enableHighAccuracy: true }
+  );
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!items.length) return;
 
     if (!nama.trim() || !hp.trim() || !alamat.trim()) {
-      setErrorMsg("Lengkapi nama, nomor WhatsApp, dan alamat ya 🙏");
-      return;
-    }
+  setErrorMsg("Lengkapi nama, nomor WhatsApp, dan alamat ya 🙏");
+  return;
+}
+if (!distanceKm) {
+  setErrorMsg("Klik tombol GPS dulu untuk menghitung ongkir 🚚");
+  return;
+}
 
     if (["transfer", "qris"].includes(payment) && !buktiBayarFile) {
       setErrorMsg("Upload bukti pembayaran terlebih dahulu 🙏");
