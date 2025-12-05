@@ -40,8 +40,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
   useEffect(() => {
     const handler = () => setShow(false);
     window.addEventListener("close-testimoni-modal", handler);
-    return () =>
-      window.removeEventListener("close-testimoni-modal", handler);
+    return () => window.removeEventListener("close-testimoni-modal", handler);
   }, []);
 
   /* BODY LOCK */
@@ -62,6 +61,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     return Object.keys(err).length === 0;
   };
 
+  /* UPLOAD IMAGE */
   const uploadFileToBlob = async () => {
     if (!file) return "";
     const fd = new FormData();
@@ -71,12 +71,14 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     return json.url || "";
   };
 
+  /* SUBMIT */
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setStatusMsg(null);
 
     if (!validate()) return;
 
+    // anti spam
     if (lastSubmit && Date.now() - lastSubmit < 6000) {
       setStatusMsg("Tunggu sebentar sebelum mengirim lagi…");
       return;
@@ -95,9 +97,9 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
         img: imageUrl,
       };
 
-      // 🔥 AUTO BEST SELLER UPDATE
-      const productId = VARIAN_ID_MAP[form.varian] || 0;
-      if (productId > 0) {
+      /* 🔥 AUTO BEST SELLER UPDATE — sudah FIX type-safe */
+      const productId = VARIAN_ID_MAP[form.varian];
+      if (typeof productId === "number" && productId > 0) {
         updateRating(String(productId), form.rating);
       }
 
@@ -110,7 +112,6 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
       setLastSubmit(Date.now());
       setStatusMsg("Terima kasih! Testimoni kamu terkirim 🙌");
       onSuccess?.();
-
       setTimeout(() => setShow(false), 900);
     } catch (err) {
       console.error(err);
@@ -119,6 +120,10 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
       setSending(false);
     }
   };
+
+  /* DISABLE BUTTON JIKA FORM BELUM VALID */
+  const isInvalid =
+    !form.nama || !form.kota || !form.pesan || !form.varian;
 
   return (
     <>
@@ -134,21 +139,11 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
       {show && (
         <div
           onClick={() => setShow(false)}
-          className="
-            fixed inset-0 bg-black/60 backdrop-blur-sm
-            z-[999999] overflow-y-auto
-            flex items-start md:items-center justify-center
-            pt-20 md:pt-0 pb-10 koje-modal-overlay
-          "
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999999] overflow-y-auto flex items-start md:items-center justify-center pt-20 md:pt-0 pb-10 koje-modal-overlay"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="
-              relative w-[92%] sm:w-full max-w-md
-              bg-white rounded-3xl shadow-xl
-              p-6 z-[1000000] max-h-[85vh]
-              overflow-y-auto koje-modal-box
-            "
+            className="relative w-[92%] sm:w-full max-w-md bg-white rounded-3xl shadow-xl p-6 z-[1000000] max-h-[85vh] overflow-y-auto koje-modal-box"
           >
             <button
               type="button"
@@ -171,57 +166,41 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 <label className="text-xs text-gray-600">Nama Lengkap</label>
                 <input
                   value={form.nama}
-                  onChange={(e) =>
-                    setForm({ ...form, nama: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, nama: e.target.value })}
                   placeholder="Contoh: Herlan S."
                   className="mt-1 border p-2 rounded-lg w-full text-sm"
                 />
-                {errors.nama && (
-                  <p className="text-[11px] text-red-500">{errors.nama}</p>
-                )}
+                {errors.nama && <p className="text-[11px] text-red-500">{errors.nama}</p>}
               </div>
 
               <div>
                 <label className="text-xs text-gray-600">Kota / Domisili</label>
                 <input
                   value={form.kota}
-                  onChange={(e) =>
-                    setForm({ ...form, kota: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, kota: e.target.value })}
                   placeholder="Contoh: Bekasi"
                   className="mt-1 border p-2 rounded-lg w-full text-sm"
                 />
-                {errors.kota && (
-                  <p className="text-[11px] text-red-500">{errors.kota}</p>
-                )}
+                {errors.kota && <p className="text-[11px] text-red-500">{errors.kota}</p>}
               </div>
 
               <div>
-                <label className="text-xs text-gray-600">
-                  Ceritakan Pengalamanmu
-                </label>
+                <label className="text-xs text-gray-600">Ceritakan Pengalamanmu</label>
                 <textarea
                   value={form.pesan}
-                  onChange={(e) =>
-                    setForm({ ...form, pesan: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, pesan: e.target.value })}
                   placeholder="Contoh: Setelah rutin minum KOJE24..."
                   rows={3}
                   className="mt-1 border p-2 rounded-lg w-full text-sm resize-none"
                 />
-                {errors.pesan && (
-                  <p className="text-[11px] text-red-500">{errors.pesan}</p>
-                )}
+                {errors.pesan && <p className="text-[11px] text-red-500">{errors.pesan}</p>}
               </div>
 
               <div>
                 <label className="text-xs text-gray-600">Varian Favorit</label>
                 <select
                   value={form.varian}
-                  onChange={(e) =>
-                    setForm({ ...form, varian: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, varian: e.target.value })}
                   className="mt-1 border p-2 rounded-lg w-full text-sm"
                 >
                   <option value="">Pilih Varian</option>
@@ -232,15 +211,11 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                   <option>Lemongrass Fresh</option>
                   <option>Red Vitality</option>
                 </select>
-                {errors.varian && (
-                  <p className="text-[11px] text-red-500">{errors.varian}</p>
-                )}
+                {errors.varian && <p className="text-[11px] text-red-500">{errors.varian}</p>}
               </div>
 
               <div>
-                <label className="text-xs text-gray-600">
-                  Rating Kepuasan
-                </label>
+                <label className="text-xs text-gray-600">Rating Kepuasan</label>
                 <div className="flex gap-1 mt-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -248,9 +223,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                       type="button"
                       onMouseEnter={() => setHoverRating(star)}
                       onMouseLeave={() => setHoverRating(null)}
-                      onClick={() =>
-                        setForm({ ...form, rating: star })
-                      }
+                      onClick={() => setForm({ ...form, rating: star })}
                       className="text-xl"
                     >
                       <span
@@ -268,9 +241,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               </div>
 
               <div>
-                <label className="text-xs text-gray-600">
-                  Foto (opsional)
-                </label>
+                <label className="text-xs text-gray-600">Foto (opsional)</label>
                 <input
                   type="file"
                   accept="image/*"
@@ -282,23 +253,18 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                   className="mt-1 border p-2 rounded-lg w-full text-sm"
                 />
                 {preview && (
-                  <img
-                    src={preview}
-                    className="w-20 h-20 rounded-lg object-cover mt-2 border"
-                  />
+                  <img src={preview} className="w-20 h-20 rounded-lg object-cover mt-2 border" />
                 )}
               </div>
 
               {statusMsg && (
-                <p className="text-[11px] text-center text-gray-600">
-                  {statusMsg}
-                </p>
+                <p className="text-[11px] text-center text-gray-600">{statusMsg}</p>
               )}
 
               <button
                 type="submit"
-                disabled={sending}
-                className="w-full bg-[#0FA3A8] text-white py-2.5 rounded-full text-sm font-medium"
+                disabled={sending || isInvalid}
+                className="w-full bg-[#0FA3A8] text-white py-2.5 rounded-full text-sm font-medium disabled:bg-gray-300"
               >
                 {sending ? "Mengirim…" : "Kirim Testimoni"}
               </button>
