@@ -1,6 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
 import { google } from "googleapis";
-import { useCartStore } from "@/stores/cartStore"; // untuk promo
 
 const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? "";
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? "";
@@ -35,6 +34,8 @@ export async function POST(req: NextRequest) {
       grandTotal,
       subtotal,
       ongkir,
+      promoAmount,
+      promoLabel,
     } = body;
 
     if (!nama || !hp || !alamat) throw new Error("Data customer belum lengkap");
@@ -42,12 +43,19 @@ export async function POST(req: NextRequest) {
 
     // Produk
     const produkList = cart.map((x: any) => `${x.name} (${x.qty}x)`).join(", ");
-    const qtyTotal = cart.reduce((a: number, x: any) => a + Number(x.qty || 0), 0);
+    const qtyTotal = cart.reduce(
+      (a: number, x: any) => a + Number(x.qty || 0),
+      0
+    );
 
     const subtotalCalc =
       typeof subtotal === "number"
         ? subtotal
-        : cart.reduce((a: number, x: any) => a + Number(x.price) * Number(x.qty), 0);
+        : cart.reduce(
+            (a: number, x: any) =>
+              a + Number(x.price || 0) * Number(x.qty || 0),
+            0
+          );
 
     const effectiveOngkir =
       typeof ongkir === "number"
@@ -56,10 +64,15 @@ export async function POST(req: NextRequest) {
         ? shippingCost
         : 15000;
 
-    const effectiveGrandTotal =
+    const safePromoAmount =
+      typeof promoAmount === "number" && promoAmount > 0 ? promoAmount : 0;
+
+    const rawGrandTotal =
       typeof grandTotal === "number"
         ? grandTotal
-        : subtotalCalc + effectiveOngkir;
+        : subtotalCalc + effectiveOngkir - safePromoAmount;
+
+    const effectiveGrandTotal = Math.max(0, rawGrandTotal);
 
     // Payment label
     let paymentLabel = "Transfer";
@@ -70,15 +83,14 @@ export async function POST(req: NextRequest) {
     const invoiceId =
       "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
     const host = req.nextUrl.host;
-    const protocol = req.nextUrl.protocol;
+    const protocol = req.nextUrl.protocol; // "https:" misalnya
     const invoiceUrl = `${protocol}//${host}/invoice/${invoiceId}`;
 
-    // Ambil promo aktif
-    let promoLabel = "Tidak ada";
-    try {
-      const store = useCartStore.getState();
-      if (store.promos.length > 0) promoLabel = store.promos.map((p) => p.kode).join(", ");
-    } catch {}
+    // Promo text
+    const promoText =
+      safePromoAmount > 0
+        ? `${promoLabel || "Promo"}`
+        : promoLabel || "Tidak ada";
 
     // Save ke Google Sheet database (Sheet2 transaksi)
     const auth = new google.auth.JWT({
@@ -105,7 +117,7 @@ export async function POST(req: NextRequest) {
             subtotalCalc, // H
             effectiveOngkir, // I
             effectiveGrandTotal, // J
-            promoLabel, // K
+            promoText, // K (label promo)
             paymentLabel, // L
             "Pending", // M - Status
             invoiceUrl, // N - URL
@@ -127,8 +139,9 @@ export async function POST(req: NextRequest) {
 🍹 *Pesanan:* ${produkList}
 💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}
 💳 *Metode:* ${paymentLabel}
-🏷 *Promo:* ${promoLabel}
+🏷 *Promo:* ${promoText}
 
+📝 Catatan: ${catatan || note || "-"}
 🔗 ${invoiceUrl}
 `.trim();
 
