@@ -1,5 +1,6 @@
 {
-  "installCommand": "npm ci --prefer-offline --no-audit",
   "framework": "nextjs",
+  "installCommand": "echo 'skip install'",
+  "buildCommand": "npm run build",
   "ignoreCommand": "git diff --quiet HEAD^ HEAD ./"
 }
