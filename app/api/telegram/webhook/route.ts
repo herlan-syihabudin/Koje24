@@ -1,29 +1,43 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server";
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://webkoje-cacs.vercel.app"
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
+  if (!BOT_TOKEN)
+    return NextResponse.json({ ok: false, message: "Bot token kosong" });
 
-  // CALLBACK BUTTON
+  const body = await req.json();
+
+  // Ambil BASE URL dinamis (lebih aman dari env)
+  const host = req.headers.get("host");
+  const protocol = req.headers.get("x-forwarded-proto") || "https";
+  const BASE_URL = `${protocol}://${host}`;
+
+  /* ================================
+     CALLBACK BUTTON DARI TELEGRAM
+  ================================= */
   if (body.callback_query) {
-    const callback = body.callback_query
-    const chatId = callback.message.chat.id
-    const data = callback.data // paid_INV-XXXXXX
+    const callback = body.callback_query;
+    const chatId = callback.message.chat.id;
+    const data = callback.data; // contoh: paid_INV-XXXXXX
 
-    const [action, invoiceId] = String(data).split("_")
+    const [action, invoiceId] = String(data).split("_");
 
-    let status = "Pending"
-    if (action === "paid") status = "Paid"
-    if (action === "cod") status = "COD"
+    if (!invoiceId)
+      return NextResponse.json({ ok: false, message: "invoiceId kosong" });
 
-    // Update status ke Google Sheet via API
-    await fetch(`${BASE_URL}/api/invoice/status`, {
+    let status = "Pending";
+    if (action === "paid") status = "Paid";
+    if (action === "cod") status = "COD";
+
+    // Update Google Sheet
+    const res = await fetch(`${BASE_URL}/api/invoice/status`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ invoiceId, status }),
-    })
+    });
+
+    if (!res.ok) console.error("❌ Gagal update status invoice ke Google Sheet");
 
     // Balasan ke Telegram
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -34,14 +48,16 @@ export async function POST(req: NextRequest) {
         text: `Status invoice *${invoiceId}* diperbarui menjadi *${status.toUpperCase()}* ✔️`,
         parse_mode: "Markdown",
       }),
-    })
+    });
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true });
   }
 
-  // MANUAL MESSAGE
+  /* ================================
+     CHAT MANUAL (USER KETIK PESAN)
+  ================================= */
   if (body.message) {
-    const chatId = body.message.chat.id
+    const chatId = body.message.chat.id;
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -49,8 +65,8 @@ export async function POST(req: NextRequest) {
         chat_id: chatId,
         text: "👋 Bot aktif! Notifikasi pesanan & update invoice akan otomatis dikirim ke sini.",
       }),
-    })
+    });
   }
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true });
 }
