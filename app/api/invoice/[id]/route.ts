@@ -32,11 +32,13 @@ export async function GET(
     const sheets = google.sheets({ version: "v4", auth })
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Sheet1!A:M",
+      range: "Sheet2!A:N", // ⬅ Transaksi yang benar
     })
 
     const rows = res.data.values?.slice(1) || []
-    const match = rows.find((r) => (r[1] || "").trim() === invoiceId)
+
+    // cari invoice di kolom A (index 0)
+    const match = rows.find((r) => (r[0] || "").trim() === invoiceId)
 
     if (!match) {
       return NextResponse.json(
@@ -49,18 +51,19 @@ export async function GET(
       success: true,
       data: {
         invoiceId,
-        timestamp: match[0] ?? "",
+        timestamp: match[1] ?? "",
         nama: match[2] ?? "",
         hp: match[3] ?? "",
         alamat: match[4] ?? "",
         produkList: match[5] ?? "",
         qtyTotal: Number(match[6] ?? 0),
         subtotalCalc: Number(match[7] ?? 0),
-        status: match[8] ?? "Pending",
-        paymentLabel: match[9] ?? "Transfer",
-        effectiveOngkir: Number(match[10] ?? 0),
-        effectiveGrandTotal: Number(match[11] ?? 0),
-        invoiceUrl: match[12] ?? "",
+        effectiveOngkir: Number(match[8] ?? 0),
+        effectiveGrandTotal: Number(match[9] ?? 0),
+        promoRaw: match[10] ?? "",        // ⬅ biar halaman invoice bisa ambil promo
+        paymentLabel: match[11] ?? "Transfer",
+        status: match[12] ?? "Pending",
+        invoiceUrl: match[13] ?? "",
       },
     })
   } catch (err: any) {
