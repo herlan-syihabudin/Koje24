@@ -13,7 +13,7 @@ const STORAGE_KEY = "koje24-best-seller-data"
 const UPDATE_EVENT = "bestseller-update"
 
 /* ======================================================
-   📌 SAFE localStorage
+   📌 SAFE LOCALSTORAGE (Universal / tidak bikin crash di SSR)
 ====================================================== */
 const safeGetItem = (key: string) => {
   if (typeof window === "undefined") return null
@@ -32,7 +32,7 @@ const safeSetItem = (key: string, val: string) => {
 }
 
 /* ======================================================
-   📌 Ambil history statistik dari localStorage
+   📌 AMBIL STATISTIK BEST SELLER
 ====================================================== */
 function getStats(): Record<string, RankData> {
   try {
@@ -58,7 +58,7 @@ export function updateRating(productId: string, newRating: number) {
   const stats = getStats()
 
   if (!stats[productId]) {
-    // produk baru pertama dapat rating
+    // produk pertama kali dapat rating
     stats[productId] = {
       rating: newRating,
       reviews: 1,
@@ -79,12 +79,12 @@ export function updateRating(productId: string, newRating: number) {
 
   saveStats(stats)
 
-  // trigger UI untuk update ranking
+  // trigger UI refresh
   window.dispatchEvent(new Event(UPDATE_EVENT))
 }
 
 /* ======================================================
-   🔥 HITUNG 3 PRODUK BEST SELLER
+   🔥 HITUNG 3 PRODUK TERATAS → BEST SELLER
 ====================================================== */
 export function getBestSellerList() {
   const stats = getStats()
@@ -92,25 +92,25 @@ export function getBestSellerList() {
 
   const before = JSON.stringify(stats)
 
-  // ranking score
+  // ranking score → ambil top 3
   const top3 = Object.entries(stats)
     .sort((a, b) => b[1].score - a[1].score)
     .slice(0, 3)
 
-  // reset status
+  // reset
   Object.values(stats).forEach((s) => (s.isBestSeller = false))
+
+  // kasih bendera best seller
   top3.forEach(([id]) => (stats[id].isBestSeller = true))
 
-  const after = JSON.stringify(stats)
-
-  // hindari infinite loop — hanya simpan jika ada perubahan nyata
-  if (before !== after) saveStats(stats)
+  // hanya update kalau ada perubahan
+  if (before !== JSON.stringify(stats)) saveStats(stats)
 
   return stats
 }
 
 /* ======================================================
-   🔥 HOOK CLIENT — auto update visual
+   🔥 HOOK UNTUK UI — auto update visual tanpa refresh
 ====================================================== */
 export function useBestSellerRanking() {
   const [stats, setStats] = useState<Record<string, RankData>>({})
