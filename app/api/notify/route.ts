@@ -5,29 +5,58 @@ const CHAT_ID = process.env.TELEGRAM_CHAT_ID!
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    const { invoiceId, nama, alamat, produk, total, invoiceUrl } = body
-
-    if (!invoiceId || !nama) {
-      throw new Error("Data tidak lengkap untuk notifikasi Telegram")
+    if (!BOT_TOKEN || !CHAT_ID) {
+      throw new Error("ENV TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID belum diisi")
     }
 
+    const body = await req.json()
+    const {
+      invoiceId,
+      nama,
+      hp,
+      alamat,
+      produk = [],
+      total,
+      invoiceUrl = "-",
+    } = body
+
+    if (!invoiceId || !nama) {
+      throw new Error("invoiceId & nama wajib")
+    }
+
+    const formatProduk =
+      Array.isArray(produk) && produk.length > 0
+        ? produk.map((p: any) => `• ${p.qty}× ${p.name}`).join("\n")
+        : "-"
+
+    const now = new Date().toLocaleString("id-ID", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    })
+
     const text = `
-🛒 *ORDER BARU KOJE24*
-#${invoiceId}
+🛒 *ORDER BARU — KOJE24*
+📍 ${now}
 
-👤 *${nama}*
-📍 ${alamat}
+🧾 *Invoice:* ${invoiceId}
 
-🍹 *Pesanan:* ${produk}
-💰 *Total:* Rp${total.toLocaleString("id-ID")}
+👤 *Customer:*
+${nama}
+📞 ${hp || "-"}
 
-🔗 ${invoiceUrl}
+🏠 *Alamat:*
+${alamat || "-"}
+
+🍹 *Pesanan:*
+${formatProduk}
+
+💰 *Total Bayar:* Rp${Number(total || 0).toLocaleString("id-ID")}
+
+🔗 *Invoice:*
+${invoiceUrl}
 `.trim()
 
-    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`
-
-    await fetch(url, {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -40,6 +69,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true })
   } catch (err: any) {
     console.error("Telegram notify error:", err)
+
+    // kirim log error ke admin Telegram jika token + chat_id ada
+    if (BOT_TOKEN && CHAT_ID) {
+      try {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: CHAT_ID,
+            text: `⚠️ *ERROR NOTIFIKASI TELEGRAM*\n${err?.message || err}`,
+            parse_mode: "Markdown",
+          }),
+        })
+      } catch {}
+    }
+
     return NextResponse.json({ success: false }, { status: 500 })
   }
 }
