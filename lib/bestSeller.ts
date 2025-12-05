@@ -10,6 +10,7 @@ export interface RankData {
 }
 
 const STORAGE_KEY = "koje24-best-seller-data"
+const UPDATE_EVENT = "bestseller-update"
 
 /* ======================================================
    📌 SAFE localStorage
@@ -31,7 +32,7 @@ const safeSetItem = (key: string, val: string) => {
 }
 
 /* ======================================================
-   📌 Ambil data history dari localStorage
+   📌 Ambil history statistik dari localStorage
 ====================================================== */
 function getStats(): Record<string, RankData> {
   try {
@@ -56,30 +57,30 @@ export function updateRating(productId: string, newRating: number) {
 
   const stats = getStats()
 
-  // kalau produk belum punya statistik → buat baru
   if (!stats[productId]) {
+    // produk baru pertama dapat rating
     stats[productId] = {
       rating: newRating,
       reviews: 1,
-      score: newRating * 5 + 3, // default score awal
+      score: newRating * 5 + 3,
       isBestSeller: false,
     }
   } else {
-    // update rating & reviews
+    // update rating existing
     const prev = stats[productId]
     prev.rating =
       (prev.rating * prev.reviews + newRating) / (prev.reviews + 1)
     prev.reviews += 1
   }
 
-  // hitung score terkini
+  // hitung score baru
   const s = stats[productId]
   s.score = s.rating * 5 + s.reviews * 3
 
   saveStats(stats)
 
-  // 👇 trigger agar product lain update badge Best Seller
-  window.dispatchEvent(new Event("storage"))
+  // trigger UI untuk update ranking
+  window.dispatchEvent(new Event(UPDATE_EVENT))
 }
 
 /* ======================================================
@@ -87,26 +88,29 @@ export function updateRating(productId: string, newRating: number) {
 ====================================================== */
 export function getBestSellerList() {
   const stats = getStats()
-
   if (!stats || Object.keys(stats).length === 0) return {}
 
-  // rank 3 terbaik berdasarkan total score
+  const before = JSON.stringify(stats)
+
+  // ranking score
   const top3 = Object.entries(stats)
     .sort((a, b) => b[1].score - a[1].score)
     .slice(0, 3)
 
-  // reset semua → non best seller dulu
+  // reset status
   Object.values(stats).forEach((s) => (s.isBestSeller = false))
-
-  // kasih bendera best seller ke top 3
   top3.forEach(([id]) => (stats[id].isBestSeller = true))
 
-  saveStats(stats)
+  const after = JSON.stringify(stats)
+
+  // hindari infinite loop — hanya simpan jika ada perubahan nyata
+  if (before !== after) saveStats(stats)
+
   return stats
 }
 
 /* ======================================================
-   🔥 HOOK CLIENT (auto update visual)
+   🔥 HOOK CLIENT — auto update visual
 ====================================================== */
 export function useBestSellerRanking() {
   const [stats, setStats] = useState<Record<string, RankData>>({})
@@ -119,9 +123,9 @@ export function useBestSellerRanking() {
       setStats({ ...s })
     }
 
-    load()
-    window.addEventListener("storage", load)
-    return () => window.removeEventListener("storage", load)
+    load() // load awal
+    window.addEventListener(UPDATE_EVENT, load)
+    return () => window.removeEventListener(UPDATE_EVENT, load)
   }, [])
 
   return stats
