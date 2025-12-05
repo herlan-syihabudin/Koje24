@@ -14,7 +14,10 @@ export async function GET(req: Request, context: any) {
   try {
     const invoiceId = context?.params?.id?.trim();
     if (!invoiceId) {
-      return NextResponse.json({ success: false, message: "Invoice ID kosong" });
+      return NextResponse.json({
+        success: false,
+        message: "Invoice ID kosong",
+      });
     }
 
     const auth = new google.auth.JWT({
