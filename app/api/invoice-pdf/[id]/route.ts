@@ -22,10 +22,9 @@ export async function GET(
       `&format=A4&printBackground=true&margin=10mm&delay=1600`;
 
     const response = await fetch(pdfReqUrl);
-
     if (!response.ok) {
-      const msg = await response.text().catch(() => "");
-      throw new Error("Gagal render PDF: " + msg);
+      const errMsg = await response.text().catch(() => "");
+      throw new Error("Gagal render PDF: " + errMsg);
     }
 
     const pdfBytes = await response.arrayBuffer();
