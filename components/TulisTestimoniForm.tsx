@@ -98,7 +98,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
       // 🔥 AUTO BEST SELLER UPDATE
       const productId = VARIAN_ID_MAP[form.varian] || 0;
       if (productId > 0) {
-        updateRating(productId, form.rating);
+        updateRating(String(productId), form.rating);
       }
 
       await fetch("/api/testimonial", {
