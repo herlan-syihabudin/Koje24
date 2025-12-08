@@ -2,12 +2,10 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: Request) {
   try {
-    const invoiceId = params.id?.trim();
+    // 🔥 Ambil invoiceId tanpa "params"
+    const invoiceId = req.url.split("/").pop()?.replace("?pdf=1", "").trim();
     if (!invoiceId) throw new Error("Invoice ID tidak valid");
 
     const API_KEY = process.env.HTML2PDF_KEY;
@@ -15,8 +13,7 @@ export async function GET(
 
     // 🔥 FIX origin (tanpa nextUrl)
     const origin =
-      req.headers.get("origin") ||
-      new URL(req.url).origin;
+      req.headers.get("origin") || new URL(req.url).origin;
 
     // PDF mode
     const invoiceUrl = `${origin}/invoice/${invoiceId}?pdf=1`;
