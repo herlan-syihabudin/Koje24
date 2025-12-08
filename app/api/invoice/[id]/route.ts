@@ -15,10 +15,7 @@ export async function GET(
   try {
     const invoiceId = params.id?.trim();
     if (!invoiceId) {
-      return NextResponse.json({
-        success: false,
-        message: "Invoice ID kosong",
-      });
+      return NextResponse.json({ success: false, message: "Invoice ID kosong" });
     }
 
     const auth = new google.auth.JWT({
@@ -28,7 +25,6 @@ export async function GET(
     });
 
     const sheets = google.sheets({ version: "v4", auth });
-
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: "Transaksi!A:N",
@@ -62,7 +58,7 @@ export async function GET(
         status: match[12] ?? "Pending",
         invoiceUrl: match[13] ?? "",
       },
-    }, { headers: { "Cache-Control": "no-store" } });
+    });
   } catch (err: any) {
     return NextResponse.json(
       {
