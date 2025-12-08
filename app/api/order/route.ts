@@ -3,24 +3,27 @@ import { google } from "googleapis";
 
 export const dynamic = "force-dynamic";
 
+// 🔐 ENV
 const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? "";
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? "";
 const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? "";
+
+// 🔑 Fix private key new line
 const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n");
 
-// 📌 Sheet yang benar dari screenshot
+// 📌 Nama Sheet yang dipakai (sesuai Excel kamu)
 const SHEET_NAME = "Transaksi";
 
 export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
 
-    const nama = String(form.get("nama") ?? "");
-    const hp = String(form.get("hp") ?? "");
-    const alamat = String(form.get("alamat") ?? "");
-    const note = String(form.get("note") ?? "");
+    const nama = String(form.get("nama") ?? "").trim();
+    const hp = String(form.get("hp") ?? "").trim();
+    const alamat = String(form.get("alamat") ?? "").trim();
+    const note = String(form.get("note") ?? "").trim();
     const payment = String(form.get("payment") ?? "");
     const distanceKm = Number(form.get("distanceKm") ?? 0);
     const shippingCost = Number(form.get("shippingCost") ?? 0);
@@ -31,7 +34,7 @@ export async function POST(req: NextRequest) {
     const cart = JSON.parse(cartJson || "[]");
 
     if (!nama || !hp || !alamat) throw new Error("Data belum lengkap");
-    if (!Array.isArray(cart) || cart.length === 0) throw new Error("Cart kosong");
+    if (!Array.isArray(cart) || cart.length === 0) throw new Error("Keranjang kosong");
 
     const produkList = cart.map((x: any) => `${x.name} (${x.qty}x)`).join(", ");
     const qtyTotal = cart.reduce((a: number, x: any) => a + Number(x.qty), 0);
@@ -54,7 +57,7 @@ export async function POST(req: NextRequest) {
       payment === "qris" ? "QRIS" : payment === "cod" ? "COD" : "Transfer";
     const promoText = safePromoAmount > 0 ? promoLabel : "-";
 
-    // 🟢 SAVE to Google Sheet
+    // 🟢 Auth ke Google Sheets
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
@@ -63,6 +66,7 @@ export async function POST(req: NextRequest) {
 
     const sheets = google.sheets({ version: "v4", auth });
 
+    // 🟢 Simpan ke Google Sheet sesuai kolom A–N
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A:N`,
@@ -70,26 +74,26 @@ export async function POST(req: NextRequest) {
       requestBody: {
         values: [
           [
-            invoiceId,
-            new Date().toLocaleString("id-ID"),
-            nama,
-            hp,
-            alamat,
-            produkList,
-            qtyTotal,
-            subtotalCalc,
-            effectiveOngkir,
-            effectiveGrandTotal,
-            promoText,
-            paymentLabel,
-            "Pending",
-            invoiceUrl,
+            invoiceId,                        // A
+            new Date().toLocaleString("id-ID"), // B
+            nama,                             // C
+            hp,                               // D
+            alamat,                           // E
+            produkList,                       // F
+            qtyTotal,                         // G
+            subtotalCalc,                     // H
+            effectiveOngkir,                  // I
+            effectiveGrandTotal,              // J
+            promoText,                        // K
+            paymentLabel,                     // L
+            "Pending",                        // M
+            invoiceUrl,                       // N
           ],
         ],
       },
     });
 
-    // 🔥 Telegram Admin
+    // 🔥 Notifikasi Telegram Admin
     if (BOT_TOKEN && CHAT_ID) {
       const esc = (t: string) =>
         String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
@@ -114,7 +118,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 🌍 Auto WA customer
+    // 🔗 Auto WhatsApp ke customer
     const waText = `
 Halo kak ${nama}, terima kasih sudah order KOJE24 🍹
 
@@ -132,6 +136,7 @@ Butuh bantuan? Balas chat ini ya kak 🙏
       ""
     )}&text=${encodeURIComponent(waText)}`;
 
+    // 🔥 Success response ke FE
     return NextResponse.json({
       success: true,
       invoiceId,
@@ -141,9 +146,12 @@ Butuh bantuan? Balas chat ini ya kak 🙏
     });
   } catch (err: any) {
     console.error("❌ ERROR ORDER:", err.message);
-    return NextResponse.json({
-      success: false,
-      message: err?.message ?? "Order gagal",
-    });
+    return NextResponse.json(
+      {
+        success: false,
+        message: err?.message ?? "Order gagal",
+      },
+      { status: 400 }
+    );
   }
 }
