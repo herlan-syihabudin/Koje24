@@ -1,17 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest, context: { params: { id: string } }) {
   try {
-    const url = new URL(req.url);
-    const invoiceId = url.pathname.split("/").pop()?.trim();
+    const invoiceId = context?.params?.id?.trim();
     if (!invoiceId) throw new Error("Invoice ID tidak valid");
 
     const API_KEY = process.env.HTML2PDF_KEY;
     if (!API_KEY) throw new Error("HTML2PDF API Key belum di-set");
 
-    const origin = url.origin;
+    const origin = req.nextUrl.origin;
     const invoiceUrl = `${origin}/invoice/${invoiceId}?pdf=1`;
 
     const pdfReqUrl =
@@ -32,9 +31,9 @@ export async function GET(req: Request) {
       },
     });
   } catch (err: any) {
-    return NextResponse.json({
-      error: true,
-      message: err?.message ?? err
-    }, { status: 500 });
+    return NextResponse.json(
+      { error: true, message: err?.message ?? err },
+      { status: 500 }
+    );
   }
 }
