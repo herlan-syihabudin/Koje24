@@ -10,7 +10,7 @@ interface InvoiceData {
   nama: string;
   hp: string;
   alamat: string;
-  produkList: string;
+  produkList: string; // "Green Boost (2x), Red Detox (1x)"
   qtyTotal: number;
   subtotalCalc: number;
   status: string;
@@ -18,8 +18,7 @@ interface InvoiceData {
   effectiveOngkir: number;
   effectiveGrandTotal: number;
   invoiceUrl?: string;
-  // kolom "Promo" dari Sheet2 (Transaksi), misal: "KOJE10K (-Rp10.000)"
-  promoRaw?: string;
+  promoRaw?: string; // contoh: "KOJE10K (-Rp10.000)"
 }
 
 const formatCurrency = (n: number) =>
@@ -29,27 +28,14 @@ const formatCurrency = (n: number) =>
     minimumFractionDigits: 0,
   }).format(n);
 
-// 🔍 parsing promo: "KOJE10K (-Rp10.000)" => { label: "KOJE10K", amount: 10000 }
-function parsePromo(promoRaw?: string): { label: string; amount: number } {
-  if (!promoRaw) return { label: "", amount: 0 };
-
-  const text = promoRaw.trim();
-  if (!text) return { label: "", amount: 0 };
-
-  // ambil kode (kata pertama huruf/angka)
-  const codeMatch = text.match(/^([A-Z0-9]+)/i);
-  const label = codeMatch ? codeMatch[1].toUpperCase() : text;
-
-  // ambil angka diskon (cari "- Rp10.000" dll)
+// 🔥 parsing promo fleksibel
+function parsePromo(raw?: string): { label: string; amount: number } {
+  if (!raw) return { label: "", amount: 0 };
+  const text = raw.trim();
+  const label = (text.match(/^([A-Z0-9]+)/i)?.[1] ?? "").toUpperCase();
   const amountMatch = text.match(/-?\s*Rp?\s*([\d\.]+)/i);
-  let amount = 0;
-  if (amountMatch && amountMatch[1]) {
-    const digits = amountMatch[1].replace(/\./g, "");
-    const parsed = Number(digits);
-    if (!Number.isNaN(parsed)) amount = parsed;
-  }
-
-  return { label, amount };
+  const amount = amountMatch ? Number(amountMatch[1].replace(/\./g, "")) : 0;
+  return { label, amount: isNaN(amount) ? 0 : amount };
 }
 
 export default function InvoicePage() {
@@ -59,12 +45,12 @@ export default function InvoicePage() {
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch data invoice
   useEffect(() => {
     const load = async () => {
       try {
         const res = await fetch(`/api/invoice/${invoiceId}`);
         const json = await res.json();
-        // asumsi API: { success: boolean, data: InvoiceData }
         if (json?.data) setInvoice(json.data);
       } finally {
         setLoading(false);
@@ -74,42 +60,37 @@ export default function InvoicePage() {
   }, [invoiceId]);
 
   if (loading) return <div className="p-10">Memuat invoice...</div>;
-  if (!invoice)
-    return <div className="p-10 text-red-600">Invoice tidak ditemukan.</div>;
+  if (!invoice) return <div className="p-10 text-red-600">Invoice tidak ditemukan.</div>;
 
+  // parsing produk list
   const rawItems = invoice.produkList.split(",").map((x) => x.trim());
   const items = rawItems.map((line) => {
-    const match = line.match(/(.+?)\s*\((\d+)x\)/);
-    return match
-      ? { name: match[1].trim(), qty: Number(match[2]) }
-      : { name: line.trim(), qty: 1 };
+    const m = line.match(/(.+?)\s*\((\d+)x\)/);
+    return m ? { name: m[1].trim(), qty: Number(m[2]) } : { name: line, qty: 1 };
   });
 
-  const unitPrice =
-    invoice.qtyTotal > 0 ? invoice.subtotalCalc / invoice.qtyTotal : 0;
-
-  const calculateSubtotal = (name: string, qty: number) => {
+  // harga per pcs (untuk produk non-paket)
+  const unitPrice = invoice.qtyTotal > 0 ? invoice.subtotalCalc / invoice.qtyTotal : 0;
+  const calcSubtotal = (name: string, qty: number) => {
     const isPaket = name.toLowerCase().includes("paket");
     if (unitPrice <= 0) return null;
-
     if (isPaket && qty === 1) return qty * unitPrice;
     if (!isPaket) return qty * unitPrice;
-    return null; // paket multi qty kita biarkan "—" (totalnya sudah masuk subtotal global)
+    return null;
   };
 
- // 🔥 promo (aman untuk TS & fleksibel untuk API)
-const rawPromo =
-  invoice.promoRaw ??
-  (invoice as any)?.promo ??
-  (invoice as any)?.promoLabel ??
-  "";
-
-const { label: promoLabel, amount: promoAmount } = parsePromo(rawPromo);
-const hasPromo = promoAmount > 0;
+  // promo
+  const rawPromo =
+    invoice.promoRaw ??
+    (invoice as any)?.promo ??
+    (invoice as any)?.promoLabel ??
+    "";
+  const { label: promoLabel, amount: promoAmount } = parsePromo(rawPromo);
+  const hasPromo = promoAmount > 0;
 
   return (
     <div className="max-w-4xl mx-auto p-10 bg-white text-black invoice-paper">
-      {/* === DOWNLOAD BUTTON (web only) === */}
+      {/* === DOWNLOAD BUTTON === */}
       <div className="w-full flex justify-end mb-4 no-pdf">
         <a
           href={`/api/invoice-pdf/${invoice.invoiceId}`}
@@ -119,18 +100,13 @@ const hasPromo = promoAmount > 0;
         </a>
       </div>
 
-      {/* ===== HEADER ===== */}
+      {/* === HEADER === */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <img
-            src="/image/logo-koje24.png"
-            alt="KOJE24"
-            className="h-16 w-auto mb-1"
-          />
+          <img src="/image/logo-koje24.png" alt="KOJE24" className="h-16 w-auto mb-1" />
           <p className="text-sm leading-tight">
             <strong>Healthy Juice for Everyday Energy</strong> <br />
-            Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi, Jawa Barat
-            17320
+            Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320
           </p>
         </div>
 
@@ -149,23 +125,19 @@ const hasPromo = promoAmount > 0;
 
       <div className="border-t border-black mb-4" />
 
-      {/* ===== PAYMENT STATUS ===== */}
+      {/* PAYMENT */}
       <div className="flex justify-between text-sm mb-6">
-        <p>
-          Pembayaran: <strong>{invoice.paymentLabel}</strong>
-        </p>
-        <p>
-          Status: <strong>{invoice.status.toUpperCase()}</strong>
-        </p>
+        <p>Pembayaran: <strong>{invoice.paymentLabel}</strong></p>
+        <p>Status: <strong>{invoice.status.toUpperCase()}</strong></p>
       </div>
 
-      {/* ===== CUSTOMER ===== */}
+      {/* CUSTOMER */}
       <p className="text-sm font-bold mb-1">Invoice To:</p>
       <p className="text-sm">Nama: {invoice.nama}</p>
       <p className="text-sm">Alamat: {invoice.alamat}</p>
       <p className="text-sm mb-4">Telp: {invoice.hp}</p>
 
-      {/* ===== PRODUCT TABLE ===== */}
+      {/* PRODUCT TABLE */}
       <table className="w-full text-sm border border-black" cellPadding={6}>
         <thead>
           <tr>
@@ -176,17 +148,17 @@ const hasPromo = promoAmount > 0;
           </tr>
         </thead>
         <tbody>
-          {items.map((p, idx) => {
-            const subtotal = calculateSubtotal(p.name, p.qty);
+          {items.map((p, i) => {
+            const sub = calcSubtotal(p.name, p.qty);
             return (
-              <tr key={idx}>
+              <tr key={i}>
                 <td className="border border-black">{p.name}</td>
                 <td className="border border-black text-right">
-                  {subtotal === null ? "—" : formatCurrency(unitPrice)}
+                  {sub === null ? "—" : formatCurrency(unitPrice)}
                 </td>
                 <td className="border border-black text-center">{p.qty}</td>
                 <td className="border border-black text-right">
-                  {subtotal === null ? "—" : formatCurrency(subtotal)}
+                  {sub === null ? "—" : formatCurrency(sub)}
                 </td>
               </tr>
             );
@@ -194,15 +166,13 @@ const hasPromo = promoAmount > 0;
         </tbody>
       </table>
 
-      {/* ===== TOTAL ===== */}
+      {/* TOTAL */}
       <div className="flex justify-end mt-5">
         <table className="text-sm">
           <tbody>
             <tr>
               <td className="py-1 pr-6">Subtotal Produk:</td>
-              <td className="text-right">
-                {formatCurrency(invoice.subtotalCalc)}
-              </td>
+              <td className="text-right">{formatCurrency(invoice.subtotalCalc)}</td>
             </tr>
 
             {hasPromo && (
@@ -218,10 +188,9 @@ const hasPromo = promoAmount > 0;
 
             <tr>
               <td className="py-1 pr-6">Ongkir:</td>
-              <td className="text-right">
-                {formatCurrency(invoice.effectiveOngkir)}
-              </td>
+              <td className="text-right">{formatCurrency(invoice.effectiveOngkir)}</td>
             </tr>
+
             <tr className="font-bold text-lg border-t border-black">
               <td className="py-2 pr-6">TOTAL DIBAYARKAN:</td>
               <td className="text-right">
@@ -232,29 +201,34 @@ const hasPromo = promoAmount > 0;
         </table>
       </div>
 
-      {/* ===== QR CODE ===== */}
+      {/* QR CODE */}
       <div className="flex justify-center mt-8">
-        <QRCode value={invoice.invoiceUrl || window.location.href} size={110} />
+        <QRCode
+          size={110}
+          value={
+            invoice.invoiceUrl ||
+            (typeof window !== "undefined" ? window.location.href : "")
+          }
+        />
       </div>
 
-      {/* ===== SYARAT & KETENTUAN ===== */}
-      <div className="text-[10px] text-gray-600 mt-6 leading-tight text-left">
+      {/* TERMS */}
+      <div className="text-[10px] text-gray-600 mt-6 leading-tight text-justify">
         — <strong>Syarat & Ketentuan:</strong>
         <br />
         1. Invoice ini otomatis & sah tanpa tanda tangan atau stempel.
         <br />
         2. Pembayaran dianggap sah setelah dana diterima oleh KOJE24.
         <br />
-        3. Barang yang sudah dibeli tidak dapat dikembalikan kecuali terdapat
-        kerusakan.
+        3. Barang yang sudah dibeli tidak dapat dikembalikan kecuali terdapat kerusakan.
       </div>
 
-      {/* ===== FOOTER ===== */}
+      {/* FOOTER */}
       <div className="border-t border-black text-center mt-4 pt-3 text-xs leading-tight">
         Terima kasih telah berbelanja di <strong>KOJE24</strong>.
       </div>
 
-      {/* ===== PRINT MODE ===== */}
+      {/* PRINT MODE */}
       <style jsx global>{`
         @media print {
           .invoice-paper {
@@ -262,9 +236,9 @@ const hasPromo = promoAmount > 0;
             padding: 0 !important;
             zoom: 93%;
           }
+          .no-pdf,
           a,
-          button,
-          .no-pdf {
+          button {
             display: none !important;
           }
         }
