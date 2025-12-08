@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 
 export const dynamic = "force-dynamic";
@@ -9,11 +9,12 @@ const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
 const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n");
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const invoiceId = params.id?.trim();
+    const { id } = await context.params; // ⬅️ FIX WAJIB
+    const invoiceId = id?.trim();
     if (!invoiceId) {
       return NextResponse.json({ success: false, message: "Invoice ID kosong" });
     }
