@@ -4,18 +4,14 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
-    // 🔥 Ambil invoiceId tanpa "params"
-    const invoiceId = req.url.split("/").pop()?.replace("?pdf=1", "").trim();
+    const url = new URL(req.url);
+    const invoiceId = url.pathname.split("/").pop()?.trim();
     if (!invoiceId) throw new Error("Invoice ID tidak valid");
 
     const API_KEY = process.env.HTML2PDF_KEY;
     if (!API_KEY) throw new Error("HTML2PDF API Key belum di-set");
 
-    // 🔥 FIX origin (tanpa nextUrl)
-    const origin =
-      req.headers.get("origin") || new URL(req.url).origin;
-
-    // PDF mode
+    const origin = url.origin;
     const invoiceUrl = `${origin}/invoice/${invoiceId}?pdf=1`;
 
     const pdfReqUrl =
@@ -23,12 +19,12 @@ export async function GET(req: Request) {
       `&url=${encodeURIComponent(invoiceUrl)}` +
       `&format=A4&printBackground=true&margin=10mm&delay=1600`;
 
-    const response = await fetch(pdfReqUrl);
-    if (!response.ok) throw new Error("Gagal render PDF");
+    const result = await fetch(pdfReqUrl);
+    if (!result.ok) throw new Error("Gagal render PDF");
 
-    const pdfBytes = await response.arrayBuffer();
+    const pdfData = await result.arrayBuffer();
 
-    return new NextResponse(pdfBytes, {
+    return new NextResponse(pdfData, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
@@ -36,9 +32,9 @@ export async function GET(req: Request) {
       },
     });
   } catch (err: any) {
-    return NextResponse.json(
-      { error: true, message: err?.message ?? err },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      error: true,
+      message: err?.message ?? err
+    }, { status: 500 });
   }
 }
