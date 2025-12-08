@@ -12,52 +12,48 @@ const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n"
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    // ❤️ FIX PALING PENTING → FORM DATA
+    const form = await req.formData();
 
-    const {
-      nama, hp, alamat, note, catatan,
-      payment, cart, shippingCost,
-      grandTotal, subtotal, ongkir,
-      promoAmount, promoLabel,
-    } = body;
+    const nama = String(form.get("nama") ?? "");
+    const hp = String(form.get("hp") ?? "");
+    const alamat = String(form.get("alamat") ?? "");
+    const note = String(form.get("note") ?? "");
+    const payment = String(form.get("payment") ?? "");
+    const distanceKm = Number(form.get("distanceKm") ?? 0);
+    const shippingCost = Number(form.get("shippingCost") ?? 0);
+    const promoAmount = Number(form.get("promoAmount") ?? 0);
+    const promoLabel = String(form.get("promoLabel") ?? "");
+    const cartJson = String(form.get("cart") ?? "[]");
+    const buktiBayar = form.get("buktiBayar") as File | null;
 
-    if (!nama || !hp || !alamat)
-      throw new Error("Data customer belum lengkap");
-    if (!Array.isArray(cart) || cart.length === 0)
-      throw new Error("Cart kosong!");
+    const cart = JSON.parse(cartJson || "[]");
+
+    if (!nama || !hp || !alamat) throw new Error("Data customer belum lengkap");
+    if (!Array.isArray(cart) || cart.length === 0) throw new Error("Cart kosong!");
 
     const produkList = cart.map((x: any) => `${x.name} (${x.qty}x)`).join(", ");
     const qtyTotal = cart.reduce((a: number, x: any) => a + Number(x.qty || 0), 0);
+    const subtotalCalc = cart.reduce((a: number, x: any) => a + Number(x.price) * Number(x.qty), 0);
 
-    const subtotalCalc = typeof subtotal === "number"
-      ? subtotal
-      : cart.reduce((a: number, x: any) => a + Number(x.price || 0) * Number(x.qty || 0), 0);
-
-    const effectiveOngkir = typeof ongkir === "number"
-      ? ongkir
-      : typeof shippingCost === "number"
-      ? shippingCost
-      : 15000;
-
-    const safePromoAmount = typeof promoAmount === "number" && promoAmount > 0 ? promoAmount : 0;
+    const effectiveOngkir = shippingCost > 0 ? shippingCost : 15000;
+    const safePromoAmount = promoAmount > 0 ? promoAmount : 0;
     const effectiveGrandTotal = Math.max(0, subtotalCalc + effectiveOngkir - safePromoAmount);
 
     const invoiceId = "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
     const invoiceUrl = `${req.nextUrl.origin}/invoice/${invoiceId}`;
 
     const paymentLabel = payment === "qris" ? "QRIS" : payment === "cod" ? "COD" : "Transfer";
-    const promoText = safePromoAmount > 0 ? promoLabel || "Promo" : promoLabel || "-";
+    const promoText = safePromoAmount > 0 ? promoLabel : "-";
 
-    // connect google sheet
+    // connect Google Sheet
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
-
     const sheets = google.sheets({ version: "v4", auth });
 
-    // ⚠ gunakan sheet "Transaksi" biar match sama Google Sheet
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: "Transaksi!A:N",
@@ -82,7 +78,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // telegram notif
+    // 🚀 kirim ke Telegram
     if (BOT_TOKEN && CHAT_ID) {
       const esc = (t: string) => String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
 
@@ -93,7 +89,7 @@ export async function POST(req: NextRequest) {
         `💳 *Metode:* ${paymentLabel}\n` +
         `💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}\n` +
         `🏷 Promo: ${esc(promoText)}\n\n` +
-        `📝 Catatan: ${esc(catatan || note || "-")}\n` +
+        `📝 Catatan: ${esc(note || "-")}\n` +
         `🔗 ${invoiceUrl}`;
 
       fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -111,9 +107,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     console.error("❌ ERROR ORDER:", err.message);
-    return NextResponse.json(
-      { success: false, message: err?.message || "Order gagal" },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      success: false,
+      message: err?.message || "Order gagal",
+    });
   }
 }
