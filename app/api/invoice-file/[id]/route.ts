@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = context.params.id?.trim();
+    const { id } = await params;
     if (!id) {
       return NextResponse.json(
         { success: false, message: "Missing invoice ID" },
@@ -14,7 +14,6 @@ export async function GET(
     }
 
     const API_KEY = process.env.HTML2PDF_KEY ?? "";
-    
     if (!API_KEY) {
       return NextResponse.json(
         { success: false, message: "Missing HTML2PDF API key" },
@@ -29,11 +28,9 @@ export async function GET(
     )}&format=A4&printBackground=true&margin=10mm&waitFor=1800`;
 
     const result = await fetch(pdfReqUrl);
-
-    if (!result.ok) throw new Error(`PDF failed: ${result.status}`);
+    if (!result.ok) throw new Error("PDF failed");
 
     const pdf = await result.arrayBuffer();
-
     return new NextResponse(pdf, {
       status: 200,
       headers: {
@@ -42,7 +39,6 @@ export async function GET(
       },
     });
   } catch (err: any) {
-    console.error("PDF error:", err);
     return NextResponse.json(
       { success: false, message: err?.message ?? "Unexpected PDF error" },
       { status: 500 }
