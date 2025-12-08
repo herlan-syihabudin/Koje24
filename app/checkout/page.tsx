@@ -11,7 +11,7 @@ type CheckoutState = "idle" | "submitting" | "error";
 const BASE_LAT = -6.2903238;
 const BASE_LNG = 107.087373;
 
-// hitung jarak km
+// hitung jarak km (haversine)
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -24,6 +24,7 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+// hitung ongkir Jakarta Timur
 function calcOngkir(distanceKm: number | null): number {
   if (!distanceKm || distanceKm <= 0) return 15000;
   const base = 8000;
@@ -64,6 +65,7 @@ export default function CheckoutPage() {
     window.scrollTo({ top: 0 });
   }, []);
 
+  // redirect kalau keranjang kosong
   useEffect(() => {
     if (!hydrated) return;
     if (items.length === 0) {
@@ -72,7 +74,7 @@ export default function CheckoutPage() {
     }
   }, [items.length, hydrated, router]);
 
-  // GOOGLE AUTOCOMPLETE FIX (tanpa menimpa alamat user)
+  // GOOGLE AUTOCOMPLETE (tidak memaksa & tidak menimpa input)
   useEffect(() => {
     const el = alamatRef.current;
     const w = window as any;
@@ -92,49 +94,51 @@ export default function CheckoutPage() {
         const lat = place.geometry.location.lat();
         const lng = place.geometry.location.lng();
         const dKm = haversineDistance(BASE_LAT, BASE_LNG, lat, lng);
+
         setDistanceKm(dKm);
         setOngkir(calcOngkir(dKm));
 
-        // ⛔ Jangan timpa alamat user
+        // alamat manual user tetap dipakai jika sudah input duluan
         setAlamat((prev) => prev || place.formatted_address);
       });
     } catch {}
   }, []);
 
   const handleDetectLocation = () => {
-  if (!navigator.geolocation) {
-    alert("Perangkat tidak mendukung GPS lokasi.");
-    return;
-  }
+    if (!navigator.geolocation) {
+      alert("Perangkat tidak mendukung GPS lokasi.");
+      return;
+    }
 
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const { latitude, longitude } = pos.coords;
-      const dKm = haversineDistance(BASE_LAT, BASE_LNG, latitude, longitude);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const dKm = haversineDistance(BASE_LAT, BASE_LNG, latitude, longitude);
 
-      setDistanceKm(dKm);
-      setOngkir(calcOngkir(dKm));
-
-      // ❗ TIDAK menyentuh alamat lagi (alamat manual tetap sepenuhnya milik user)
-      alert("GPS berhasil! Ongkir sudah dihitung otomatis 🚚");
-    },
-    () => alert("Izin GPS ditolak. Aktifkan lokasi ya 🙏"),
-    { enableHighAccuracy: true }
-  );
-};
+        setDistanceKm(dKm);
+        setOngkir(calcOngkir(dKm));
+        alert("GPS berhasil! Ongkir sudah dihitung otomatis 🚚");
+      },
+      () => alert("Izin GPS ditolak. Aktifkan lokasi ya 🙏"),
+      { enableHighAccuracy: true }
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (status === "submitting") return;
     if (!items.length) return;
 
     if (!nama.trim() || !hp.trim() || !alamat.trim()) {
-  setErrorMsg("Lengkapi nama, nomor WhatsApp, dan alamat ya 🙏");
-  return;
-}
-if (!distanceKm) {
-  setErrorMsg("Klik tombol GPS dulu untuk menghitung ongkir 🚚");
-  return;
-}
+      setErrorMsg("Lengkapi nama, nomor WhatsApp, dan alamat ya 🙏");
+      return;
+    }
+
+    // jika user tidak klik GPS → tetap lanjut ongkir default
+    if (!distanceKm) {
+      setDistanceKm(3);
+      setOngkir(calcOngkir(3));
+    }
 
     if (["transfer", "qris"].includes(payment) && !buktiBayarFile) {
       setErrorMsg("Upload bukti pembayaran terlebih dahulu 🙏");
@@ -152,7 +156,6 @@ if (!distanceKm) {
         price: x.price,
       }));
 
-      // Kirim FormData (supaya file ikut terkirim)
       const fd = new FormData();
       fd.append("nama", nama);
       fd.append("hp", hp);
@@ -169,6 +172,7 @@ if (!distanceKm) {
 
       const res = await fetch("/api/order", { method: "POST", body: fd });
       const data = await res.json();
+
       if (!res.ok || !data?.success) throw new Error(data?.message || "Gagal membuat invoice");
 
       clearCart();
@@ -209,7 +213,17 @@ if (!distanceKm) {
                   <button type="button" onClick={handleDetectLocation} className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm font-medium">
                     📍 Hitung Ongkir Pakai Lokasi Saya
                   </button>
-                  {distanceKm && <p className="text-[12px] text-gray-500">Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}</p>}
+
+                  {!distanceKm && (
+                    <p className="text-[12px] text-gray-500 mt-1">
+                      Ongkir sementara Rp15.000 — klik tombol di atas untuk hitung otomatis 📍
+                    </p>
+                  )}
+                  {distanceKm && (
+                    <p className="text-[12px] text-gray-500">
+                      Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}
+                    </p>
+                  )}
 
                   <textarea className="border rounded-lg px-3 py-2 w-full h-16 resize-none" placeholder="Catatan (opsional)" value={catatan} onChange={(e) => setCatatan(e.target.value)} />
 
@@ -224,33 +238,32 @@ if (!distanceKm) {
                           payment === p ? "bg-white border border-[#0FA3A8]" : ""
                         }`}
                       >
-                        <input type="radio" checked={payment === p} onChange={() => { setPayment(p); setBuktiBayarFile(null); setErrorMsg(""); }} />
+                        <input
+                          type="radio"
+                          checked={payment === p}
+                          onChange={() => {
+                            setPayment(p);
+                            setBuktiBayarFile(null);
+                            setErrorMsg("");
+                          }}
+                        />
                         <span className="capitalize">{p === "cod" ? "COD (Bayar di tempat)" : p}</span>
                       </label>
                     ))}
 
-                    {/* Transfer */}
+                    {/* TRANSFER */}
                     {payment === "transfer" && (
                       <div className="bg-white border rounded-xl p-4 mt-3 space-y-2">
                         <p className="text-sm font-medium">Rekening Transfer:</p>
                         <div className="text-sm flex justify-between">
                           <span>BCA — 5350429695 (KOJE)</span>
-                          <button
-                            type="button"
-                            onClick={() => navigator.clipboard.writeText("5350429695")}
-                            className="text-[#0FA3A8] text-xs"
-                          >
+                          <button type="button" onClick={() => navigator.clipboard.writeText("5350429695")} className="text-[#0FA3A8] text-xs">
                             Copy
                           </button>
                         </div>
 
                         <label className="block text-sm font-medium mt-2">Upload Bukti Transfer</label>
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)}
-                          className="border rounded-lg px-3 py-2 w-full text-sm bg-white cursor-pointer"
-                        />
+                        <input type="file" accept="image/*,.pdf" onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)} className="border rounded-lg px-3 py-2 w-full text-sm bg-white cursor-pointer" />
                       </div>
                     )}
 
@@ -261,12 +274,7 @@ if (!distanceKm) {
                         <img src="/qris-static.jpg" className="w-full rounded-lg" alt="QRIS" />
 
                         <label className="block text-sm font-medium mt-2">Upload Bukti Pembayaran</label>
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)}
-                          className="border rounded-lg px-3 py-2 w-full text-sm bg-white cursor-pointer"
-                        />
+                        <input type="file" accept="image/*,.pdf" onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)} className="border rounded-lg px-3 py-2 w-full text-sm bg-white cursor-pointer" />
                       </div>
                     )}
                   </div>
@@ -288,7 +296,9 @@ if (!distanceKm) {
                     <div key={it.id} className="flex justify-between items-start border-b pb-2 text-sm gap-3">
                       <div className="flex-1">
                         <p className="font-medium">{it.name}</p>
-                        <p className="text-[12px] text-gray-500">{it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs</p>
+                        <p className="text-[12px] text-gray-500">
+                          {it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs
+                        </p>
                       </div>
                       <div className="font-semibold whitespace-nowrap">
                         Rp{(it.qty * it.price).toLocaleString("id-ID")}
@@ -298,8 +308,14 @@ if (!distanceKm) {
                 </div>
 
                 <div className="border-t pt-3 space-y-1 text-sm">
-                  <div className="flex justify-between"><span>Subtotal</span><span>Rp{subtotal.toLocaleString("id-ID")}</span></div>
-                  <div className="flex justify-between"><span>Ongkir</span><span>Rp{ongkir.toLocaleString("id-ID")}</span></div>
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>Rp{subtotal.toLocaleString("id-ID")}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Ongkir</span>
+                    <span>Rp{ongkir.toLocaleString("id-ID")}</span>
+                  </div>
 
                   {promoAmount > 0 && (
                     <div className="flex justify-between text-green-600 font-medium">
