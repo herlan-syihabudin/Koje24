@@ -12,7 +12,7 @@ const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n"
 
 export async function POST(req: NextRequest) {
   try {
-    // ❤️ FIX PALING PENTING → FORM DATA
+    // 📌 FormData (bukan JSON)
     const form = await req.formData();
 
     const nama = String(form.get("nama") ?? "");
@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
     const promoAmount = Number(form.get("promoAmount") ?? 0);
     const promoLabel = String(form.get("promoLabel") ?? "");
     const cartJson = String(form.get("cart") ?? "[]");
-    const buktiBayar = form.get("buktiBayar") as File | null;
 
     const cart = JSON.parse(cartJson || "[]");
 
@@ -33,20 +32,28 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(cart) || cart.length === 0) throw new Error("Cart kosong!");
 
     const produkList = cart.map((x: any) => `${x.name} (${x.qty}x)`).join(", ");
-    const qtyTotal = cart.reduce((a: number, x: any) => a + Number(x.qty || 0), 0);
-    const subtotalCalc = cart.reduce((a: number, x: any) => a + Number(x.price) * Number(x.qty), 0);
+    const qtyTotal = cart.reduce((a: number, x: any) => a + Number(x.qty), 0);
+    const subtotalCalc = cart.reduce(
+      (a: number, x: any) => a + Number(x.price) * Number(x.qty),
+      0
+    );
 
     const effectiveOngkir = shippingCost > 0 ? shippingCost : 15000;
     const safePromoAmount = promoAmount > 0 ? promoAmount : 0;
-    const effectiveGrandTotal = Math.max(0, subtotalCalc + effectiveOngkir - safePromoAmount);
+    const effectiveGrandTotal = Math.max(
+      0,
+      subtotalCalc + effectiveOngkir - safePromoAmount
+    );
 
-    const invoiceId = "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+    const invoiceId =
+      "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
     const invoiceUrl = `${req.nextUrl.origin}/invoice/${invoiceId}`;
 
-    const paymentLabel = payment === "qris" ? "QRIS" : payment === "cod" ? "COD" : "Transfer";
+    const paymentLabel =
+      payment === "qris" ? "QRIS" : payment === "cod" ? "COD" : "Transfer";
     const promoText = safePromoAmount > 0 ? promoLabel : "-";
 
-    // connect Google Sheet
+    // 🟢 Save to Google Sheet "Transaksi"
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
@@ -59,28 +66,31 @@ export async function POST(req: NextRequest) {
       range: "Transaksi!A:N",
       valueInputOption: "USER_ENTERED",
       requestBody: {
-        values: [[
-          invoiceId,
-          new Date().toLocaleString("id-ID"),
-          nama,
-          hp,
-          alamat,
-          produkList,
-          qtyTotal,
-          subtotalCalc,
-          effectiveOngkir,
-          effectiveGrandTotal,
-          promoText,
-          paymentLabel,
-          "Pending",
-          invoiceUrl,
-        ]],
+        values: [
+          [
+            invoiceId,
+            new Date().toLocaleString("id-ID"),
+            nama,
+            hp,
+            alamat,
+            produkList,
+            qtyTotal,
+            subtotalCalc,
+            effectiveOngkir,
+            effectiveGrandTotal,
+            promoText,
+            paymentLabel,
+            "Pending",
+            invoiceUrl,
+          ],
+        ],
       },
     });
 
-    // 🚀 kirim ke Telegram
+    // 🔥 Auto Telegram Admin
     if (BOT_TOKEN && CHAT_ID) {
-      const esc = (t: string) => String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
+      const esc = (t: string) =>
+        String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
 
       const msg =
         `🛒 *ORDER BARU KOJE24*\n#${invoiceId}\n\n` +
@@ -95,14 +105,38 @@ export async function POST(req: NextRequest) {
       fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: CHAT_ID, text: msg, parse_mode: "Markdown" }),
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text: msg,
+          parse_mode: "Markdown",
+        }),
       }).catch(() => {});
     }
 
+    // 🌍 Auto WhatsApp link untuk customer
+    const waText = `
+Halo kak ${nama}, terima kasih sudah order KOJE24 🍹
+
+Berikut invoice pembelian kakak 👇
+${invoiceUrl}
+
+Total pembayaran: Rp${effectiveGrandTotal.toLocaleString("id-ID")}
+Metode bayar: ${paymentLabel}
+
+Setelah transfer atau ada pertanyaan, cukup balas chat ini ya kak 🙏
+`.trim();
+
+    const waUrl = `https://api.whatsapp.com/send?phone=${hp.replace(
+      /[^0-9]/g,
+      ""
+    )}&text=${encodeURIComponent(waText)}`;
+
+    // 🔥 API Response (FE akan redirect ke WA otomatis)
     return NextResponse.json({
       success: true,
       invoiceId,
       invoiceUrl,
+      waUrl,
       grandTotal: effectiveGrandTotal,
     });
   } catch (err: any) {
