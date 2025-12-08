@@ -4,6 +4,10 @@
 out
 build
 
+# TypeScript build cache
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
 # Dependencies
 node_modules
 
@@ -26,3 +30,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 bun-debug.log*
+
+# Misc
+dist
