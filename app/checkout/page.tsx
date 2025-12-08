@@ -146,37 +146,41 @@ export default function CheckoutPage() {
     }
 
     try {
-      setStatus("submitting");
-      setErrorMsg("");
+  setStatus("submitting");
+  setErrorMsg("");
 
-      const fd = new FormData();
-      fd.append("nama", nama);
-      fd.append("hp", hp);
-      fd.append("alamat", alamat);
-      fd.append("note", catatan);
-      fd.append("payment", payment);
-      fd.append("distanceKm", String(distanceKm || 0));
-      fd.append("shippingCost", String(ongkir));
-      fd.append("promoAmount", String(promoAmount));
-      fd.append("promoLabel", promoLabel);
-      fd.append("grandTotal", String(total));
-      fd.append(
-        "cart",
-        JSON.stringify(items.map((x) => ({ id: x.id, name: x.name, qty: x.qty, price: x.price })))
-      );
-      if (buktiBayarFile) fd.append("buktiBayar", buktiBayarFile);
+  const fd = new FormData();
+  fd.append("nama", nama);
+  fd.append("hp", hp);
+  fd.append("alamat", alamat);
+  fd.append("note", catatan);
+  fd.append("payment", payment);
+  fd.append("distanceKm", String(distanceKm || 0));
+  fd.append("shippingCost", String(ongkir));
+  fd.append("promoAmount", String(promoAmount));
+  fd.append("promoLabel", promoLabel);
+  fd.append("grandTotal", String(total));
+  fd.append(
+    "cart",
+    JSON.stringify(items.map((x) => ({ id: x.id, name: x.name, qty: x.qty, price: x.price })))
+  );
 
-      const res = await fetch("/api/order", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!data?.success) throw new Error();
+  if (buktiBayarFile) fd.append("buktiBayar", buktiBayarFile);
 
-      clearCart();
-      router.push(data.waUrl); // ⬅⬅⬅ redirect ke WhatsApp (fix terbaru)
-    } catch {
-      setStatus("error");
-      setErrorMsg("Ada gangguan sistem — coba sebentar lagi 🙏");
-    }
-  };
+  const res = await fetch(`${window.location.origin}/api/order`, {
+    method: "POST",
+    body: fd,
+  });
+
+  const data = await res.json();
+  if (!data?.success) throw new Error();
+
+  clearCart();
+  router.push(data.waUrl);
+} catch {
+  setStatus("error");
+  setErrorMsg("Ada gangguan sistem — coba sebentar lagi 🙏");
+}
 
   const disabled = status === "submitting";
 
