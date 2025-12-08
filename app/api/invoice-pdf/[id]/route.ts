@@ -6,7 +6,6 @@ export async function GET(
 ) {
   try {
     const id = context.params.id?.trim();
-
     if (!id) {
       return NextResponse.json(
         { success: false, message: "Missing invoice ID" },
@@ -15,6 +14,7 @@ export async function GET(
     }
 
     const API_KEY = process.env.HTML2PDF_KEY ?? "";
+    
     if (!API_KEY) {
       return NextResponse.json(
         { success: false, message: "Missing HTML2PDF API key" },
@@ -29,6 +29,7 @@ export async function GET(
     )}&format=A4&printBackground=true&margin=10mm&waitFor=1800`;
 
     const result = await fetch(pdfReqUrl);
+
     if (!result.ok) throw new Error(`PDF failed: ${result.status}`);
 
     const pdf = await result.arrayBuffer();
