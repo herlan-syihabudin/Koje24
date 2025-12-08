@@ -13,7 +13,7 @@ const CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? "";
 // 🔑 Fix private key new line
 const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n");
 
-// 📌 Nama Sheet yang dipakai (sesuai Excel kamu)
+// 📌 Nama Sheet yang dipakai
 const SHEET_NAME = "Transaksi";
 
 export async function POST(req: NextRequest) {
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
 
     const cart = JSON.parse(cartJson || "[]");
 
+    // 🛑 Validasi wajib
     if (!nama || !hp || !alamat) throw new Error("Data belum lengkap");
     if (!Array.isArray(cart) || cart.length === 0) throw new Error("Keranjang kosong");
 
@@ -45,20 +46,20 @@ export async function POST(req: NextRequest) {
 
     const effectiveOngkir = shippingCost > 0 ? shippingCost : 15000;
     const safePromoAmount = promoAmount > 0 ? promoAmount : 0;
-    const effectiveGrandTotal = Math.max(
-      0,
-      subtotalCalc + effectiveOngkir - safePromoAmount
-    );
+    const effectiveGrandTotal = Math.max(0, subtotalCalc + effectiveOngkir - safePromoAmount);
 
     const invoiceId =
       "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || req.nextUrl.origin;
-const invoiceUrl = `${baseUrl}/invoice/${invoiceId}`;
+    const invoiceUrl = `${baseUrl}/invoice/${invoiceId}`;
+
     const paymentLabel =
       payment === "qris" ? "QRIS" : payment === "cod" ? "COD" : "Transfer";
+
     const promoText = safePromoAmount > 0 ? promoLabel : "-";
 
-    // 🟢 Auth ke Google Sheets
+    // 🟢 Google Sheets Auth
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
@@ -67,7 +68,7 @@ const invoiceUrl = `${baseUrl}/invoice/${invoiceId}`;
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // 🟢 Simpan ke Google Sheet sesuai kolom A–N
+    // 🟢 Simpan ke Google Sheet
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A:N`,
@@ -75,51 +76,48 @@ const invoiceUrl = `${baseUrl}/invoice/${invoiceId}`;
       requestBody: {
         values: [
           [
-            invoiceId,                        // A
-            new Date().toLocaleString("id-ID"), // B
-            nama,                             // C
-            hp,                               // D
-            alamat,                           // E
-            produkList,                       // F
-            qtyTotal,                         // G
-            subtotalCalc,                     // H
-            effectiveOngkir,                  // I
-            effectiveGrandTotal,              // J
-            promoText,                        // K
-            paymentLabel,                     // L
-            "Pending",                        // M
-            invoiceUrl,                       // N
+            invoiceId,
+            new Date().toLocaleString("id-ID"),
+            nama,
+            hp,
+            alamat,
+            produkList,
+            qtyTotal,
+            subtotalCalc,
+            effectiveOngkir,
+            effectiveGrandTotal,
+            promoText,
+            paymentLabel,
+            "Pending",
+            invoiceUrl,
           ],
         ],
       },
     });
 
-    // 🔥 Notifikasi Telegram Admin
+    // 🔥 Notif Telegram Admin (jika env lengkap)
     if (BOT_TOKEN && CHAT_ID) {
-      const esc = (t: string) =>
-        String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
-
-      const msg =
-        `🛒 *ORDER BARU KOJE24*\n#${invoiceId}\n\n` +
-        `👤 *${esc(nama)}*\n📞 ${esc(hp)}\n📍 ${esc(alamat)}\n\n` +
-        `🍹 *Produk:* ${esc(produkList)}\n` +
-        `💳 *Metode:* ${paymentLabel}\n` +
-        `💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}\n\n` +
-        `📝 Catatan: ${esc(note || "-")}\n` +
-        `🔗 ${invoiceUrl}`;
+      const esc = (t: string) => String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
 
       fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: CHAT_ID,
-          text: msg,
+          text:
+            `🛒 *ORDER BARU KOJE24*\n#${invoiceId}\n\n` +
+            `👤 *${esc(nama)}*\n📞 ${esc(hp)}\n📍 ${esc(alamat)}\n\n` +
+            `🍹 *Produk:* ${esc(produkList)}\n` +
+            `💳 *Metode:* ${paymentLabel}\n` +
+            `💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}\n\n` +
+            `📝 Catatan: ${esc(note || "-")}\n` +
+            `🔗 ${invoiceUrl}`,
           parse_mode: "Markdown",
         }),
       });
     }
 
-    // 🔗 Auto WhatsApp ke customer
+    // 🔗 WhatsApp auto redirect untuk customer
     const waText = `
 Halo kak ${nama}, terima kasih sudah order KOJE24 🍹
 
@@ -137,7 +135,6 @@ Butuh bantuan? Balas chat ini ya kak 🙏
       ""
     )}&text=${encodeURIComponent(waText)}`;
 
-    // 🔥 Success response ke FE
     return NextResponse.json({
       success: true,
       invoiceId,
@@ -146,7 +143,9 @@ Butuh bantuan? Balas chat ini ya kak 🙏
       grandTotal: effectiveGrandTotal,
     });
   } catch (err: any) {
-    console.error("❌ ERROR ORDER:", err.message);
+    // ❗ tampilkan error asli biar gampang debug
+    console.error("❌ ERROR ORDER:", err);
+
     return NextResponse.json(
       {
         success: false,
