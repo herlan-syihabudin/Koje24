@@ -52,7 +52,8 @@ export async function POST(req: NextRequest) {
 
     const invoiceId =
       "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-    const invoiceUrl = `${req.nextUrl.origin}/invoice/${invoiceId}`;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || req.nextUrl.origin;
+const invoiceUrl = `${baseUrl}/invoice/${invoiceId}`;
     const paymentLabel =
       payment === "qris" ? "QRIS" : payment === "cod" ? "COD" : "Transfer";
     const promoText = safePromoAmount > 0 ? promoLabel : "-";
