@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const paymentLabel = payment === "qris" ? "QRIS" : payment === "cod" ? "COD" : "Transfer";
     const promoText = safePromoAmount > 0 ? promoLabel || "Promo" : promoLabel || "-";
 
-    // google sheets write
+    // connect google sheet
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
@@ -57,9 +57,10 @@ export async function POST(req: NextRequest) {
 
     const sheets = google.sheets({ version: "v4", auth });
 
+    // ⚠ gunakan sheet "Transaksi" biar match sama Google Sheet
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: "Sheet2!A:N",
+      range: "Transaksi!A:N",
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // notify telegram
+    // telegram notif
     if (BOT_TOKEN && CHAT_ID) {
       const esc = (t: string) => String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
 
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
     console.error("❌ ERROR ORDER:", err.message);
     return NextResponse.json(
       { success: false, message: err?.message || "Order gagal" },
-      { status: 200 } // biar FE tetap aman dan tidak muncul alert merah JSON <...
+      { status: 200 }
     );
   }
 }
