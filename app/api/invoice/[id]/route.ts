@@ -10,13 +10,17 @@ const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n"
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params; // ⬅️ FIX WAJIB
-    const invoiceId = id?.trim();
+    const { id } = await params;
+    const invoiceId = id.trim();
+
     if (!invoiceId) {
-      return NextResponse.json({ success: false, message: "Invoice ID kosong" });
+      return NextResponse.json({
+        success: false,
+        message: "Invoice ID kosong",
+      });
     }
 
     const auth = new google.auth.JWT({
@@ -61,10 +65,13 @@ export async function GET(
       },
     });
   } catch (err: any) {
-    return NextResponse.json({
-      success: false,
-      message: "Gagal memuat invoice",
-      detail: err?.message ?? err,
-    });
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Gagal memuat invoice",
+        detail: err?.message ?? err,
+      },
+      { status: 500 }
+    );
   }
 }

@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = context.params;
+    const { id } = await params;
 
     if (!id) {
       return NextResponse.json(
@@ -29,9 +29,7 @@ export async function GET(
 
     const result = await fetch(pdfReqUrl);
 
-    if (!result.ok) {
-      throw new Error(`HTML2PDF failed: ${result.status} ${result.statusText}`);
-    }
+    if (!result.ok) throw new Error(`PDF failed: ${result.status}`);
 
     const pdf = await result.arrayBuffer();
 
@@ -45,10 +43,7 @@ export async function GET(
   } catch (err: any) {
     console.error("PDF error:", err);
     return NextResponse.json(
-      {
-        success: false,
-        message: err?.message ?? "Unexpected error while generating PDF",
-      },
+      { success: false, message: err?.message ?? "Unexpected PDF error" },
       { status: 500 }
     );
   }

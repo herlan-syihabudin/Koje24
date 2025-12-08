@@ -3,14 +3,14 @@
   "name": "koje24",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "dev-fast": "next dev --turbo",
-    "build": "next build",
-    "start": "next start",
-    "postbuild": "next-sitemap",
-    "lint": "eslint"
-  },
+ "scripts": {
+  "dev": "next dev",
+  "dev-fast": "next dev --turbo",
+  "build": "next build",
+  "start": "next start",
+  "postbuild": "next-sitemap --config next-sitemap.config.cjs",
+  "lint": "eslint"
+},
   "dependencies": {
     "@fontsource/inter": "5.2.8",
     "@fontsource/playfair-display": "5.2.8",

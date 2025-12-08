@@ -1,70 +1,45 @@
-import { NextResponse } from "next/server";
-import { google } from "googleapis";
+import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? "";
-const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? "";
-const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
-const PRIVATE_KEY = PRIVATE_KEY_RAW
-  .replace(/\\n/g, "\n")
-  .replace(/\\\\n/g, "\n");
-
-export async function GET(req: Request, context: any) {
+export async function GET(req: NextRequest) {
   try {
-    const invoiceId = context?.params?.id?.trim();
+    const { searchParams } = new URL(req.url);
+    const invoiceId = searchParams.get("id")?.trim();
+
     if (!invoiceId) {
       return NextResponse.json({
         success: false,
-        message: "Invoice ID kosong",
+        message: "Parameter ?id= kosong",
       });
     }
 
-    const auth = new google.auth.JWT({
-      email: CLIENT_EMAIL,
-      key: PRIVATE_KEY,
-      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
-    });
+    // CALL invoice API – bukan import module
+    const res = await fetch(
+      `${req.nextUrl.origin}/api/invoice/${invoiceId}`,
+      { method: "GET" }
+    );
 
-    const sheets = google.sheets({ version: "v4", auth });
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: "Sheet2!A:N",
-    });
+    const json = await res.json();
 
-    const rows = res.data.values ?? [];
-    const match = rows.find((r) => (r?.[0] || "").trim() === invoiceId);
-
-    if (!match) {
+    if (!json?.success) {
       return NextResponse.json({
         success: false,
-        message: "Invoice tidak ditemukan",
+        message: json?.message ?? "Invoice tidak ditemukan",
       });
     }
 
     return NextResponse.json({
       success: true,
-      data: {
-        invoiceId,
-        timestamp: match[1] ?? "",
-        nama: match[2] ?? "",
-        hp: match[3] ?? "",
-        alamat: match[4] ?? "",
-        produkList: match[5] ?? "",
-        qtyTotal: Number(match[6] ?? 0),
-        subtotalCalc: Number(match[7] ?? 0),
-        effectiveOngkir: Number(match[8] ?? 0),
-        effectiveGrandTotal: Number(match[9] ?? 0),
-        promoRaw: match[10] ?? "",
-        paymentLabel: match[11] ?? "Transfer",
-        status: match[12] ?? "Pending",
-        invoiceUrl: match[13] ?? "",
-      },
+      status: json.data?.status ?? "Unknown",
+      paymentLabel: json.data?.paymentLabel ?? "-",
+      timestamp: json.data?.timestamp ?? "",
+      invoiceUrl: json.data?.invoiceUrl ?? "",
     });
   } catch (err: any) {
     return NextResponse.json({
       success: false,
-      message: "Gagal memuat invoice",
+      message: "Gagal mengambil status invoice",
       detail: err?.message ?? err,
     });
   }

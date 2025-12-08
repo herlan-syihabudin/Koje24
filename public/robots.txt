@@ -1,0 +1,15 @@
+# *
+User-agent: *
+Allow: /
+
+# *
+User-agent: *
+Disallow: /invoice/*
+Disallow: /checkout
+Disallow: /api/*
+
+# Host
+Host: https://webkoje24.vercel.app
+
+# Sitemaps
+Sitemap: https://webkoje24.vercel.app/sitemap.xml
