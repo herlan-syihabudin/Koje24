@@ -14,27 +14,26 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // CALL invoice API – bukan import module
-    const res = await fetch(
-      `${req.nextUrl.origin}/api/invoice/${invoiceId}`,
-      { method: "GET" }
-    );
-
+    // Call endpoint resmi invoice
+    const res = await fetch(`${req.nextUrl.origin}/api/invoice/${invoiceId}`);
     const json = await res.json();
 
-    if (!json?.success) {
+    if (!json?.success || !json?.data) {
       return NextResponse.json({
         success: false,
         message: json?.message ?? "Invoice tidak ditemukan",
       });
     }
 
+    const d = json.data;
+
     return NextResponse.json({
       success: true,
-      status: json.data?.status ?? "Unknown",
-      paymentLabel: json.data?.paymentLabel ?? "-",
-      timestamp: json.data?.timestamp ?? "",
-      invoiceUrl: json.data?.invoiceUrl ?? "",
+      invoiceId: d.invoiceId,
+      status: d.status ?? "Unknown",
+      paymentLabel: d.paymentLabel ?? "-",
+      timestamp: d.timestamp ?? "",
+      invoiceUrl: d.invoiceUrl ?? "",
     });
   } catch (err: any) {
     return NextResponse.json({
