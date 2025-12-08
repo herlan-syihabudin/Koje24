@@ -6,6 +6,7 @@ export async function GET(
 ) {
   try {
     const { id } = context.params;
+
     if (!id) {
       return NextResponse.json(
         { success: false, message: "Missing invoice ID" },
@@ -13,15 +14,24 @@ export async function GET(
       );
     }
 
-    const invoiceUrl = `${req.nextUrl.origin}/invoice/${id}`;
+    const API_KEY = process.env.HTML2PDF_KEY ?? "";
+    if (!API_KEY) {
+      return NextResponse.json(
+        { success: false, message: "Missing HTML2PDF API key" },
+        { status: 500 }
+      );
+    }
 
-    const API_KEY = process.env.HTML2PDF_KEY ?? "demo";
+    const invoiceUrl = `${req.nextUrl.origin}/invoice/${id}`;
     const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}&url=${encodeURIComponent(
       invoiceUrl
     )}&format=A4&printBackground=true&margin=10mm`;
 
     const result = await fetch(pdfReqUrl);
-    if (!result.ok) throw new Error("Failed to generate PDF");
+
+    if (!result.ok) {
+      throw new Error(`HTML2PDF failed: ${result.status} ${result.statusText}`);
+    }
 
     const pdf = await result.arrayBuffer();
 
@@ -33,8 +43,12 @@ export async function GET(
       },
     });
   } catch (err: any) {
+    console.error("PDF error:", err);
     return NextResponse.json(
-      { success: false, message: err?.message ?? "Unexpected error" },
+      {
+        success: false,
+        message: err?.message ?? "Unexpected error while generating PDF",
+      },
       { status: 500 }
     );
   }
