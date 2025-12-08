@@ -11,7 +11,7 @@ type CheckoutState = "idle" | "submitting" | "error";
 const BASE_LAT = -6.2903238;
 const BASE_LNG = 107.087373;
 
-// 📍 hitung jarak km Haversine
+// 📍 hitung jarak km
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -24,15 +24,14 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// 📍 Hitung ongkir otomatis
-function calcOngkir(dKm: number | null) {
-  if (!dKm || dKm <= 0) return 15000;
+// 📍 hitung ongkir otomatis
+function calcOngkir(distanceKm: number | null) {
+  if (!distanceKm || distanceKm <= 0) return 15000;
   const base = 8000;
   const perKm = 3000;
-  const minPay = 10000;
-  const raw = base + dKm * perKm;
+  const raw = base + distanceKm * perKm;
   const rounded = Math.round(raw / 100) * 100;
-  return Math.max(minPay, rounded);
+  return Math.max(10000, rounded);
 }
 
 export default function CheckoutPage() {
@@ -51,25 +50,24 @@ export default function CheckoutPage() {
   const [payment, setPayment] = useState<"transfer" | "qris" | "cod">("transfer");
   const [status, setStatus] = useState<CheckoutState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
-
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [ongkir, setOngkir] = useState<number>(15000);
-  const alamatRef = useRef<HTMLInputElement | null>(null);
   const [buktiBayarFile, setBuktiBayarFile] = useState<File | null>(null);
+  const alamatRef = useRef<HTMLInputElement | null>(null);
 
   const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0);
   const total = Math.max(0, subtotal + ongkir - promoAmount);
 
-  // 🚀 Auto hydrate + fokus input
+  // ⚡ hydrate + fokus alamat
   useEffect(() => {
     setHydrated(true);
     setTimeout(() => {
       alamatRef.current?.focus();
       window.scrollTo({ top: 0, behavior: "smooth" });
-    }, 200);
+    }, 250);
   }, []);
 
-  // 🚀 Redirect kalau keranjang kosong
+  // ⚡ redirect jika keranjang kosong
   useEffect(() => {
     if (!hydrated) return;
     if (items.length === 0) {
@@ -83,8 +81,8 @@ export default function CheckoutPage() {
     const el = alamatRef.current;
     const w = window as any;
     if (!el || !w.google?.maps?.places) return;
-    if ((el as any)._autocomplete_inited) return;
-    (el as any)._autocomplete_inited = true;
+    if ((el as any)._autocomplete_done) return;
+    (el as any)._autocomplete_done = true;
 
     try {
       const auto = new google.maps.places.Autocomplete(el, {
@@ -101,18 +99,17 @@ export default function CheckoutPage() {
 
         setDistanceKm(dKm);
         setOngkir(calcOngkir(dKm));
-
         setAlamat((prev) => prev || place.formatted_address);
       });
     } catch {}
   }, []);
 
+  // 🛰 ambil GPS otomatis
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
       alert("Perangkat tidak mendukung GPS.");
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const dKm = haversine(BASE_LAT, BASE_LNG, pos.coords.latitude, pos.coords.longitude);
@@ -125,6 +122,7 @@ export default function CheckoutPage() {
     );
   };
 
+  // 🚀 SUBMIT -> Google Sheet + Telegram + WhatsApp (redirect)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (status === "submitting") return;
@@ -135,11 +133,13 @@ export default function CheckoutPage() {
       return;
     }
 
+    // jika user belum klik GPS, asumsi jarak 3km
     if (!distanceKm) {
       setDistanceKm(3);
       setOngkir(calcOngkir(3));
     }
 
+    // jika transfer/QRIS wajib upload bukti
     if (["transfer", "qris"].includes(payment) && !buktiBayarFile) {
       setErrorMsg("Upload bukti pembayaran dulu 🙏");
       return;
@@ -160,7 +160,10 @@ export default function CheckoutPage() {
       fd.append("promoAmount", String(promoAmount));
       fd.append("promoLabel", promoLabel);
       fd.append("grandTotal", String(total));
-      fd.append("cart", JSON.stringify(items.map((x) => ({ id: x.id, name: x.name, qty: x.qty, price: x.price }))));
+      fd.append(
+        "cart",
+        JSON.stringify(items.map((x) => ({ id: x.id, name: x.name, qty: x.qty, price: x.price })))
+      );
       if (buktiBayarFile) fd.append("buktiBayar", buktiBayarFile);
 
       const res = await fetch("/api/order", { method: "POST", body: fd });
@@ -168,7 +171,7 @@ export default function CheckoutPage() {
       if (!data?.success) throw new Error();
 
       clearCart();
-      router.push(data.invoiceUrl);
+      router.push(data.waUrl); // ⬅⬅⬅ redirect ke WhatsApp (fix terbaru)
     } catch {
       setStatus("error");
       setErrorMsg("Ada gangguan sistem — coba sebentar lagi 🙏");
@@ -179,6 +182,7 @@ export default function CheckoutPage() {
 
   return (
     <>
+      {/* Google Maps */}
       <Script
         src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
         strategy="lazyOnload"
@@ -186,7 +190,7 @@ export default function CheckoutPage() {
 
       <main className="min-h-screen bg-[#F4FAFA] text-[#0B4B50] py-10 px-4 flex justify-center">
         <div className="w-full max-w-6xl space-y-6">
-          <div className="mb-4">
+          <div>
             <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24 • CHECKOUT</p>
             <h1 className="text-3xl md:text-4xl font-playfair font-semibold">Selesaikan Pesanan Kamu</h1>
           </div>
@@ -194,9 +198,9 @@ export default function CheckoutPage() {
           {hydrated && items.length === 0 ? (
             <p className="text-center text-gray-500">Keranjang kosong. Mengarahkan kembali…</p>
           ) : (
-            <div className="grid gap-8 md:grid-cols-[1.1fr_0.9fr]">
+            <div className="grid gap-8 md:grid-cols-[1.15fr_0.85fr]">
               {/* FORM */}
-              <section className="bg-white border rounded-3xl shadow p-6 md:p-8 space-y-4">
+              <section className="bg-white border rounded-3xl shadow p-6 md:p-8 space-y-5">
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nama lengkap" value={nama} onChange={(e) => setNama(e.target.value)} />
                   <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nomor WhatsApp" value={hp} onChange={(e) => setHp(e.target.value)} />
@@ -207,9 +211,7 @@ export default function CheckoutPage() {
                   </button>
 
                   {distanceKm ? (
-                    <p className="text-[13px] text-gray-600">
-                      Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}
-                    </p>
+                    <p className="text-[13px] text-gray-600">Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}</p>
                   ) : (
                     <p className="text-[12px] text-gray-500">Ongkir sementara Rp15.000</p>
                   )}
@@ -231,9 +233,7 @@ export default function CheckoutPage() {
                         <p className="text-sm font-medium">Rekening Transfer:</p>
                         <div className="text-sm flex justify-between">
                           <span>BCA — 5350429695 (KOJE)</span>
-                          <button type="button" onClick={() => navigator.clipboard.writeText("5350429695")} className="text-[#0FA3A8] text-xs">
-                            Copy
-                          </button>
+                          <button type="button" onClick={() => navigator.clipboard.writeText("5350429695")} className="text-[#0FA3A8] text-xs">Copy</button>
                         </div>
                         <label className="block text-sm font-medium">Upload Bukti Transfer</label>
                         <input type="file" accept="image/*,.pdf" onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)} className="border rounded-lg px-3 py-2 w-full text-sm cursor-pointer" />
@@ -261,31 +261,22 @@ export default function CheckoutPage() {
               {/* SIDEBAR */}
               <aside className="bg-white border rounded-3xl shadow p-6 space-y-4 h-fit sticky top-6">
                 <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
+
                 <div className="max-h-[260px] overflow-y-auto space-y-3 pr-1">
                   {items.map((it) => (
                     <div key={it.id} className="flex justify-between items-start border-b pb-2 text-sm gap-3">
                       <div className="flex-1">
                         <p className="font-medium">{it.name}</p>
-                        <p className="text-[12px] text-gray-500">
-                          {it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs
-                        </p>
+                        <p className="text-[12px] text-gray-500">{it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs</p>
                       </div>
-                      <div className="font-semibold whitespace-nowrap">
-                        Rp{(it.qty * it.price).toLocaleString("id-ID")}
-                      </div>
+                      <div className="font-semibold whitespace-nowrap">Rp{(it.qty * it.price).toLocaleString("id-ID")}</div>
                     </div>
                   ))}
                 </div>
 
                 <div className="border-t pt-3 space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>Rp{subtotal.toLocaleString("id-ID")}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Ongkir</span>
-                    <span>Rp{ongkir.toLocaleString("id-ID")}</span>
-                  </div>
+                  <div className="flex justify-between"><span>Subtotal</span><span>Rp{subtotal.toLocaleString("id-ID")}</span></div>
+                  <div className="flex justify-between"><span>Ongkir</span><span>Rp{ongkir.toLocaleString("id-ID")}</span></div>
 
                   {promoAmount > 0 && (
                     <div className="flex justify-between text-green-600 font-medium">
