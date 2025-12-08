@@ -10,13 +10,15 @@ const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n"
 
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await context.params; // ⬅ kompatibel Next.js 16
-    const invoiceId = id?.trim();
+    const invoiceId = params.id?.trim();
     if (!invoiceId) {
-      return NextResponse.json({ success: false, message: "Invoice ID kosong" });
+      return NextResponse.json({
+        success: false,
+        message: "Invoice ID kosong",
+      });
     }
 
     const auth = new google.auth.JWT({
@@ -26,9 +28,10 @@ export async function GET(
     });
 
     const sheets = google.sheets({ version: "v4", auth });
+
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Transaksi!A:N", // ⬅ gunakan sheet yang benar
+      range: "Transaksi!A:N",
     });
 
     const rows = res.data.values ?? [];
@@ -59,7 +62,7 @@ export async function GET(
         status: match[12] ?? "Pending",
         invoiceUrl: match[13] ?? "",
       },
-    });
+    }, { headers: { "Cache-Control": "no-store" } });
   } catch (err: any) {
     return NextResponse.json(
       {
