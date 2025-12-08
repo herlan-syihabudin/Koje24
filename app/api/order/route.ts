@@ -29,9 +29,18 @@ export async function POST(req: NextRequest) {
     const shippingCost = Number(form.get("shippingCost") ?? 0);
     const promoAmount = Number(form.get("promoAmount") ?? 0);
     const promoLabel = String(form.get("promoLabel") ?? "");
-    const cartJson = String(form.get("cart") ?? "[]");
 
-    const cart = JSON.parse(cartJson || "[]");
+    // 💥 cart fallback aman
+    const cartJson = String(
+      form.get("cart") || form.get("items") || form.get("keranjang") || "[]"
+    );
+
+    let cart: any[] = [];
+    try {
+      cart = JSON.parse(cartJson);
+    } catch {
+      cart = [];
+    }
 
     // 🛑 Validasi wajib
     if (!nama || !hp || !alamat) throw new Error("Data belum lengkap");
