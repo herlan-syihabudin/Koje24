@@ -10,10 +10,10 @@ const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? "";
 
-// 🔑 Fix private key new line
+// 🛠 Fix Private Key
 const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n");
 
-// 📌 Nama Sheet yang dipakai
+// 📌 Nama Sheet
 const SHEET_NAME = "Transaksi";
 
 export async function POST(req: NextRequest) {
@@ -32,7 +32,10 @@ export async function POST(req: NextRequest) {
 
     // 💥 cart fallback aman
     const cartJson = String(
-      form.get("cart") || form.get("items") || form.get("keranjang") || "[]"
+      form.get("cart") ||
+      form.get("items") ||
+      form.get("keranjang") ||
+      "[]"
     );
 
     let cart: any[] = [];
@@ -47,11 +50,8 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(cart) || cart.length === 0) throw new Error("Keranjang kosong");
 
     const produkList = cart.map((x: any) => `${x.name} (${x.qty}x)`).join(", ");
-    const qtyTotal = cart.reduce((a: number, x: any) => a + Number(x.qty), 0);
-    const subtotalCalc = cart.reduce(
-      (a: number, x: any) => a + Number(x.price) * Number(x.qty),
-      0
-    );
+    const qtyTotal = cart.reduce((a, x) => a + Number(x.qty), 0);
+    const subtotalCalc = cart.reduce((a, x) => a + Number(x.price) * Number(x.qty), 0);
 
     const effectiveOngkir = shippingCost > 0 ? shippingCost : 15000;
     const safePromoAmount = promoAmount > 0 ? promoAmount : 0;
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
     const promoText = safePromoAmount > 0 ? promoLabel : "-";
 
-    // 🟢 Google Sheets Auth
+    // 🟢 Simpan ke Google Sheet
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
@@ -77,7 +77,6 @@ export async function POST(req: NextRequest) {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // 🟢 Simpan ke Google Sheet
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A:N`,
@@ -104,29 +103,31 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 🔥 Notif Telegram Admin (jika env lengkap)
+    // 🔥 Telegram notif (jika aktif)
     if (BOT_TOKEN && CHAT_ID) {
       const esc = (t: string) => String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
+
+      const msg =
+        `🛒 *ORDER BARU KOJE24*\n#${invoiceId}\n\n` +
+        `👤 *${esc(nama)}*\n📞 ${esc(hp)}\n📍 ${esc(alamat)}\n\n` +
+        `🍹 *Produk:* ${esc(produkList)}\n` +
+        `💳 *Metode:* ${paymentLabel}\n` +
+        `💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}\n\n` +
+        `📝 Catatan: ${esc(note || "-")}\n` +
+        `🔗 ${invoiceUrl}`;
 
       fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: CHAT_ID,
-          text:
-            `🛒 *ORDER BARU KOJE24*\n#${invoiceId}\n\n` +
-            `👤 *${esc(nama)}*\n📞 ${esc(hp)}\n📍 ${esc(alamat)}\n\n` +
-            `🍹 *Produk:* ${esc(produkList)}\n` +
-            `💳 *Metode:* ${paymentLabel}\n` +
-            `💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}\n\n` +
-            `📝 Catatan: ${esc(note || "-")}\n` +
-            `🔗 ${invoiceUrl}`,
+          text: msg,
           parse_mode: "Markdown",
         }),
       });
     }
 
-    // 🔗 WhatsApp auto redirect untuk customer
+    // 🔗 WhatsApp redirect
     const waText = `
 Halo kak ${nama}, terima kasih sudah order KOJE24 🍹
 
@@ -152,14 +153,9 @@ Butuh bantuan? Balas chat ini ya kak 🙏
       grandTotal: effectiveGrandTotal,
     });
   } catch (err: any) {
-    // ❗ tampilkan error asli biar gampang debug
     console.error("❌ ERROR ORDER:", err);
-
     return NextResponse.json(
-      {
-        success: false,
-        message: err?.message ?? "Order gagal",
-      },
+      { success: false, message: err?.message ?? "Order gagal" },
       { status: 400 }
     );
   }
