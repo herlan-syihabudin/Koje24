@@ -10,6 +10,9 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? "";
 const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n");
 
+// 📌 Sheet yang benar dari screenshot
+const SHEET_NAME = "Transaksi";
+
 export async function POST(req: NextRequest) {
   try {
     const form = await req.formData();
@@ -24,17 +27,11 @@ export async function POST(req: NextRequest) {
     const promoAmount = Number(form.get("promoAmount") ?? 0);
     const promoLabel = String(form.get("promoLabel") ?? "");
     const cartJson = String(form.get("cart") ?? "[]");
-    const buktiBayar = form.get("buktiBayar") as File | null;
 
     const cart = JSON.parse(cartJson || "[]");
 
-    if (!nama || !hp || !alamat) throw new Error("Data customer belum lengkap");
-    if (!Array.isArray(cart) || cart.length === 0) throw new Error("Cart kosong!");
-
-    // 🔥 Validasi upload bukti bayar hanya untuk TRANSFER & QRIS
-    if ((payment === "transfer" || payment === "qris") && !buktiBayar) {
-      throw new Error("Upload bukti pembayaran dulu 🙏");
-    }
+    if (!nama || !hp || !alamat) throw new Error("Data belum lengkap");
+    if (!Array.isArray(cart) || cart.length === 0) throw new Error("Cart kosong");
 
     const produkList = cart.map((x: any) => `${x.name} (${x.qty}x)`).join(", ");
     const qtyTotal = cart.reduce((a: number, x: any) => a + Number(x.qty), 0);
@@ -50,13 +47,14 @@ export async function POST(req: NextRequest) {
       subtotalCalc + effectiveOngkir - safePromoAmount
     );
 
-    const invoiceId = "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+    const invoiceId =
+      "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
     const invoiceUrl = `${req.nextUrl.origin}/invoice/${invoiceId}`;
-
-    const paymentLabel = payment === "qris" ? "QRIS" : payment === "cod" ? "COD" : "Transfer";
+    const paymentLabel =
+      payment === "qris" ? "QRIS" : payment === "cod" ? "COD" : "Transfer";
     const promoText = safePromoAmount > 0 ? promoLabel : "-";
 
-    // === SIMPAN KE GOOGLE SHEET ===
+    // 🟢 SAVE to Google Sheet
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
@@ -67,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: "Transaksi!A:N",
+      range: `${SHEET_NAME}!A:N`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
@@ -91,17 +89,17 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // === TELEGRAM NOTIF ===
+    // 🔥 Telegram Admin
     if (BOT_TOKEN && CHAT_ID) {
-      const esc = (t: string) => String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
+      const esc = (t: string) =>
+        String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
 
       const msg =
         `🛒 *ORDER BARU KOJE24*\n#${invoiceId}\n\n` +
         `👤 *${esc(nama)}*\n📞 ${esc(hp)}\n📍 ${esc(alamat)}\n\n` +
-        `🍹 *Pesanan:* ${esc(produkList)}\n` +
+        `🍹 *Produk:* ${esc(produkList)}\n` +
         `💳 *Metode:* ${paymentLabel}\n` +
-        `💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}\n` +
-        `🏷 Promo: ${esc(promoText)}\n\n` +
+        `💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}\n\n` +
         `📝 Catatan: ${esc(note || "-")}\n` +
         `🔗 ${invoiceUrl}`;
 
@@ -113,10 +111,10 @@ export async function POST(req: NextRequest) {
           text: msg,
           parse_mode: "Markdown",
         }),
-      }).catch(() => {});
+      });
     }
 
-    // === AUTO WHATSAPP CUSTOMER ===
+    // 🌍 Auto WA customer
     const waText = `
 Halo kak ${nama}, terima kasih sudah order KOJE24 🍹
 
@@ -126,7 +124,7 @@ ${invoiceUrl}
 Total pembayaran: Rp${effectiveGrandTotal.toLocaleString("id-ID")}
 Metode bayar: ${paymentLabel}
 
-Setelah transfer atau ada pertanyaan silakan balas chat ini ya kak 🙏
+Butuh bantuan? Balas chat ini ya kak 🙏
 `.trim();
 
     const waUrl = `https://api.whatsapp.com/send?phone=${hp.replace(
@@ -145,7 +143,7 @@ Setelah transfer atau ada pertanyaan silakan balas chat ini ya kak 🙏
     console.error("❌ ERROR ORDER:", err.message);
     return NextResponse.json({
       success: false,
-      message: err?.message || "Order gagal",
+      message: err?.message ?? "Order gagal",
     });
   }
 }
