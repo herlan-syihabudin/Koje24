@@ -12,7 +12,6 @@ const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n"
 
 export async function POST(req: NextRequest) {
   try {
-    // 📌 FormData (bukan JSON)
     const form = await req.formData();
 
     const nama = String(form.get("nama") ?? "");
@@ -25,11 +24,17 @@ export async function POST(req: NextRequest) {
     const promoAmount = Number(form.get("promoAmount") ?? 0);
     const promoLabel = String(form.get("promoLabel") ?? "");
     const cartJson = String(form.get("cart") ?? "[]");
+    const buktiBayar = form.get("buktiBayar") as File | null;
 
     const cart = JSON.parse(cartJson || "[]");
 
     if (!nama || !hp || !alamat) throw new Error("Data customer belum lengkap");
     if (!Array.isArray(cart) || cart.length === 0) throw new Error("Cart kosong!");
+
+    // 🔥 Validasi upload bukti bayar hanya untuk TRANSFER & QRIS
+    if ((payment === "transfer" || payment === "qris") && !buktiBayar) {
+      throw new Error("Upload bukti pembayaran dulu 🙏");
+    }
 
     const produkList = cart.map((x: any) => `${x.name} (${x.qty}x)`).join(", ");
     const qtyTotal = cart.reduce((a: number, x: any) => a + Number(x.qty), 0);
@@ -45,20 +50,19 @@ export async function POST(req: NextRequest) {
       subtotalCalc + effectiveOngkir - safePromoAmount
     );
 
-    const invoiceId =
-      "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+    const invoiceId = "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
     const invoiceUrl = `${req.nextUrl.origin}/invoice/${invoiceId}`;
 
-    const paymentLabel =
-      payment === "qris" ? "QRIS" : payment === "cod" ? "COD" : "Transfer";
+    const paymentLabel = payment === "qris" ? "QRIS" : payment === "cod" ? "COD" : "Transfer";
     const promoText = safePromoAmount > 0 ? promoLabel : "-";
 
-    // 🟢 Save to Google Sheet "Transaksi"
+    // === SIMPAN KE GOOGLE SHEET ===
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
+
     const sheets = google.sheets({ version: "v4", auth });
 
     await sheets.spreadsheets.values.append({
@@ -87,10 +91,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 🔥 Auto Telegram Admin
+    // === TELEGRAM NOTIF ===
     if (BOT_TOKEN && CHAT_ID) {
-      const esc = (t: string) =>
-        String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
+      const esc = (t: string) => String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
 
       const msg =
         `🛒 *ORDER BARU KOJE24*\n#${invoiceId}\n\n` +
@@ -113,17 +116,17 @@ export async function POST(req: NextRequest) {
       }).catch(() => {});
     }
 
-    // 🌍 Auto WhatsApp link untuk customer
+    // === AUTO WHATSAPP CUSTOMER ===
     const waText = `
 Halo kak ${nama}, terima kasih sudah order KOJE24 🍹
 
-Berikut invoice pembelian kakak 👇
+Invoice pembelian kakak 👇
 ${invoiceUrl}
 
 Total pembayaran: Rp${effectiveGrandTotal.toLocaleString("id-ID")}
 Metode bayar: ${paymentLabel}
 
-Setelah transfer atau ada pertanyaan, cukup balas chat ini ya kak 🙏
+Setelah transfer atau ada pertanyaan silakan balas chat ini ya kak 🙏
 `.trim();
 
     const waUrl = `https://api.whatsapp.com/send?phone=${hp.replace(
@@ -131,7 +134,6 @@ Setelah transfer atau ada pertanyaan, cukup balas chat ini ya kak 🙏
       ""
     )}&text=${encodeURIComponent(waText)}`;
 
-    // 🔥 API Response (FE akan redirect ke WA otomatis)
     return NextResponse.json({
       success: true,
       invoiceId,
