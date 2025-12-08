@@ -11,7 +11,6 @@ type CheckoutState = "idle" | "submitting" | "error";
 const BASE_LAT = -6.2903238;
 const BASE_LNG = 107.087373;
 
-// 📍 hitung jarak km
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -24,7 +23,6 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// 📍 hitung ongkir otomatis
 function calcOngkir(distanceKm: number | null) {
   if (!distanceKm || distanceKm <= 0) return 15000;
   const base = 8000;
@@ -58,7 +56,6 @@ export default function CheckoutPage() {
   const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0);
   const total = Math.max(0, subtotal + ongkir - promoAmount);
 
-  // ⚡ hydrate + fokus alamat
   useEffect(() => {
     setHydrated(true);
     setTimeout(() => {
@@ -67,7 +64,6 @@ export default function CheckoutPage() {
     }, 250);
   }, []);
 
-  // ⚡ redirect jika keranjang kosong
   useEffect(() => {
     if (!hydrated) return;
     if (items.length === 0) {
@@ -76,7 +72,6 @@ export default function CheckoutPage() {
     }
   }, [items.length, hydrated, router]);
 
-  // 🌍 Google autocomplete
   useEffect(() => {
     const el = alamatRef.current;
     const w = window as any;
@@ -104,7 +99,6 @@ export default function CheckoutPage() {
     } catch {}
   }, []);
 
-  // 🛰 ambil GPS otomatis
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
       alert("Perangkat tidak mendukung GPS.");
@@ -122,7 +116,7 @@ export default function CheckoutPage() {
     );
   };
 
-  // 🚀 SUBMIT -> Google Sheet + Telegram + WhatsApp (redirect)
+  // 🚀 SUBMIT — FIX VERCEL & redirect WA
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (status === "submitting") return;
@@ -132,61 +126,57 @@ export default function CheckoutPage() {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-
-    // jika user belum klik GPS, asumsi jarak 3km
     if (!distanceKm) {
       setDistanceKm(3);
       setOngkir(calcOngkir(3));
     }
-
-    // jika transfer/QRIS wajib upload bukti
     if (["transfer", "qris"].includes(payment) && !buktiBayarFile) {
       setErrorMsg("Upload bukti pembayaran dulu 🙏");
       return;
     }
 
     try {
-  setStatus("submitting");
-  setErrorMsg("");
+      setStatus("submitting");
+      setErrorMsg("");
 
-  const fd = new FormData();
-  fd.append("nama", nama);
-  fd.append("hp", hp);
-  fd.append("alamat", alamat);
-  fd.append("note", catatan);
-  fd.append("payment", payment);
-  fd.append("distanceKm", String(distanceKm || 0));
-  fd.append("shippingCost", String(ongkir));
-  fd.append("promoAmount", String(promoAmount));
-  fd.append("promoLabel", promoLabel);
-  fd.append("grandTotal", String(total));
-  fd.append(
-    "cart",
-    JSON.stringify(items.map((x) => ({ id: x.id, name: x.name, qty: x.qty, price: x.price })))
-  );
+      const fd = new FormData();
+      fd.append("nama", nama);
+      fd.append("hp", hp);
+      fd.append("alamat", alamat);
+      fd.append("note", catatan);
+      fd.append("payment", payment);
+      fd.append("distanceKm", String(distanceKm || 0));
+      fd.append("shippingCost", String(ongkir));
+      fd.append("promoAmount", String(promoAmount));
+      fd.append("promoLabel", promoLabel);
+      fd.append("grandTotal", String(total));
+      fd.append(
+        "cart",
+        JSON.stringify(items.map((x) => ({ id: x.id, name: x.name, qty: x.qty, price: x.price })))
+      );
+      if (buktiBayarFile) fd.append("buktiBayar", buktiBayarFile);
 
-  if (buktiBayarFile) fd.append("buktiBayar", buktiBayarFile);
+      const res = await fetch(`${window.location.origin}/api/order`, {
+        method: "POST",
+        body: fd,
+      });
 
-  const res = await fetch(`${window.location.origin}/api/order`, {
-    method: "POST",
-    body: fd,
-  });
+      if (!res.ok) throw new Error("Bad response");
+      const data = await res.json();
+      if (!data?.success) throw new Error("API failed");
 
-  const data = await res.json();
-  if (!data?.success) throw new Error();
-
-  clearCart();
-  router.push(data.waUrl);
-} catch {
-  setStatus("error");
-  setErrorMsg("Ada gangguan sistem — coba sebentar lagi 🙏");
-}
+      clearCart();
+      window.location.href = data.waUrl;
+    } catch {
+      setStatus("error");
+      setErrorMsg("Ada gangguan sistem — coba sebentar lagi 🙏");
+    }
+  };
 
   const disabled = status === "submitting";
 
   return (
     <>
-      {/* Google Maps */}
       <Script
         src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
         strategy="lazyOnload"
@@ -222,7 +212,6 @@ export default function CheckoutPage() {
 
                   <textarea className="border rounded-lg px-3 py-2 w-full h-18 resize-none" placeholder="Catatan (opsional)" value={catatan} onChange={(e) => setCatatan(e.target.value)} />
 
-                  {/* PAYMENT */}
                   <h2 className="font-playfair text-xl">Metode Pembayaran</h2>
                   <div className="rounded-xl bg-[#f7fbfb] border p-4 space-y-3">
                     {(["transfer", "qris", "cod"] as const).map((p) => (
@@ -262,7 +251,7 @@ export default function CheckoutPage() {
                 </form>
               </section>
 
-              {/* SIDEBAR */}
+              {/* RINGKASAN */}
               <aside className="bg-white border rounded-3xl shadow p-6 space-y-4 h-fit sticky top-6">
                 <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
 
