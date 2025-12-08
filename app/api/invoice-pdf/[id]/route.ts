@@ -23,9 +23,10 @@ export async function GET(
     }
 
     const invoiceUrl = `${req.nextUrl.origin}/invoice/${id}`;
+
     const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}&url=${encodeURIComponent(
       invoiceUrl
-    )}&format=A4&printBackground=true&margin=10mm`;
+    )}&format=A4&printBackground=true&margin=10mm&waitFor=1800`;
 
     const result = await fetch(pdfReqUrl);
 
