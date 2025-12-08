@@ -74,7 +74,7 @@ export default function CheckoutPage() {
     }
   }, [items.length, hydrated, router]);
 
-  // GOOGLE AUTOCOMPLETE (tidak memaksa & tidak menimpa input)
+  // GOOGLE AUTOCOMPLETE
   useEffect(() => {
     const el = alamatRef.current;
     const w = window as any;
@@ -98,7 +98,6 @@ export default function CheckoutPage() {
         setDistanceKm(dKm);
         setOngkir(calcOngkir(dKm));
 
-        // alamat manual user tetap dipakai jika sudah input duluan
         setAlamat((prev) => prev || place.formatted_address);
       });
     } catch {}
@@ -127,14 +126,12 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (status === "submitting") return;
-    if (!items.length) return;
 
     if (!nama.trim() || !hp.trim() || !alamat.trim()) {
       setErrorMsg("Lengkapi nama, nomor WhatsApp, dan alamat ya 🙏");
       return;
     }
 
-    // jika user tidak klik GPS → tetap lanjut ongkir default
     if (!distanceKm) {
       setDistanceKm(3);
       setOngkir(calcOngkir(3));
@@ -176,7 +173,17 @@ export default function CheckoutPage() {
       if (!res.ok || !data?.success) throw new Error(data?.message || "Gagal membuat invoice");
 
       clearCart();
-      router.push(data.invoiceUrl || "/");
+
+      // 🔥 NEW: pertama redirect ke halaman invoice
+      router.push(data.invoiceUrl);
+
+      // ⏳ NEW: lalu otomatis buka WhatsApp setelah 0.8 detik
+      if (data.waUrl) {
+        setTimeout(() => {
+          window.location.href = data.waUrl;
+        }, 800);
+      }
+
     } catch {
       setStatus("error");
       setErrorMsg("Ada kendala saat membuat invoice — coba sebentar lagi 🙏");
@@ -198,142 +205,3 @@ export default function CheckoutPage() {
             <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24 • CHECKOUT</p>
             <h1 className="text-3xl md:text-4xl font-playfair font-semibold">Selesaikan Pesanan Kamu</h1>
           </div>
-
-          {hydrated && items.length === 0 ? (
-            <p className="text-center text-gray-500">Keranjang kosong. Mengarahkan kembali…</p>
-          ) : (
-            <div className="grid gap-8 md:grid-cols-[1.15fr_0.85fr]">
-              {/* FORM */}
-              <section className="bg-white border rounded-3xl shadow p-6 md:p-7">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nama lengkap" value={nama} onChange={(e) => setNama(e.target.value)} />
-                  <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nomor WhatsApp" value={hp} onChange={(e) => setHp(e.target.value)} />
-                  <input ref={alamatRef} className="border rounded-lg px-3 py-2 w-full" placeholder="Alamat lengkap" value={alamat} onChange={(e) => setAlamat(e.target.value)} />
-
-                  <button type="button" onClick={handleDetectLocation} className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm font-medium">
-                    📍 Hitung Ongkir Pakai Lokasi Saya
-                  </button>
-
-                  {!distanceKm && (
-                    <p className="text-[12px] text-gray-500 mt-1">
-                      Ongkir sementara Rp15.000 — klik tombol di atas untuk hitung otomatis 📍
-                    </p>
-                  )}
-                  {distanceKm && (
-                    <p className="text-[12px] text-gray-500">
-                      Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}
-                    </p>
-                  )}
-
-                  <textarea className="border rounded-lg px-3 py-2 w-full h-16 resize-none" placeholder="Catatan (opsional)" value={catatan} onChange={(e) => setCatatan(e.target.value)} />
-
-                  {/* PEMBAYARAN */}
-                  <h2 className="font-playfair text-xl">Metode Pembayaran</h2>
-
-                  <div className="rounded-xl bg-[#f7fbfb] border p-4 space-y-3">
-                    {(["transfer", "qris", "cod"] as const).map((p) => (
-                      <label
-                        key={p}
-                        className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 ${
-                          payment === p ? "bg-white border border-[#0FA3A8]" : ""
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          checked={payment === p}
-                          onChange={() => {
-                            setPayment(p);
-                            setBuktiBayarFile(null);
-                            setErrorMsg("");
-                          }}
-                        />
-                        <span className="capitalize">{p === "cod" ? "COD (Bayar di tempat)" : p}</span>
-                      </label>
-                    ))}
-
-                    {/* TRANSFER */}
-                    {payment === "transfer" && (
-                      <div className="bg-white border rounded-xl p-4 mt-3 space-y-2">
-                        <p className="text-sm font-medium">Rekening Transfer:</p>
-                        <div className="text-sm flex justify-between">
-                          <span>BCA — 5350429695 (KOJE)</span>
-                          <button type="button" onClick={() => navigator.clipboard.writeText("5350429695")} className="text-[#0FA3A8] text-xs">
-                            Copy
-                          </button>
-                        </div>
-
-                        <label className="block text-sm font-medium mt-2">Upload Bukti Transfer</label>
-                        <input type="file" accept="image/*,.pdf" onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)} className="border rounded-lg px-3 py-2 w-full text-sm bg-white cursor-pointer" />
-                      </div>
-                    )}
-
-                    {/* QRIS */}
-                    {payment === "qris" && (
-                      <div className="bg-white border rounded-xl p-4 mt-3 space-y-3">
-                        <p className="text-sm font-medium">Scan QRIS untuk pembayaran:</p>
-                        <img src="/qris-static.jpg" className="w-full rounded-lg" alt="QRIS" />
-
-                        <label className="block text-sm font-medium mt-2">Upload Bukti Pembayaran</label>
-                        <input type="file" accept="image/*,.pdf" onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)} className="border rounded-lg px-3 py-2 w-full text-sm bg-white cursor-pointer" />
-                      </div>
-                    )}
-                  </div>
-
-                  {errorMsg && <p className="text-red-500 text-sm pt-1">{errorMsg}</p>}
-
-                  <button disabled={disabled} className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold disabled:opacity-50">
-                    {status === "submitting" ? "Memproses pesanan..." : "Buat Pesanan"}
-                  </button>
-                </form>
-              </section>
-
-              {/* SIDEBAR */}
-              <aside className="bg-white border rounded-3xl shadow p-6 flex flex-col gap-4">
-                <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
-
-                <div className="max-h-[260px] overflow-y-auto space-y-3 pr-1">
-                  {items.map((it) => (
-                    <div key={it.id} className="flex justify-between items-start border-b pb-2 text-sm gap-3">
-                      <div className="flex-1">
-                        <p className="font-medium">{it.name}</p>
-                        <p className="text-[12px] text-gray-500">
-                          {it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs
-                        </p>
-                      </div>
-                      <div className="font-semibold whitespace-nowrap">
-                        Rp{(it.qty * it.price).toLocaleString("id-ID")}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t pt-3 space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>Rp{subtotal.toLocaleString("id-ID")}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Ongkir</span>
-                    <span>Rp{ongkir.toLocaleString("id-ID")}</span>
-                  </div>
-
-                  {promoAmount > 0 && (
-                    <div className="flex justify-between text-green-600 font-medium">
-                      <span>{promoLabel}</span>
-                      <span>- Rp{promoAmount.toLocaleString("id-ID")}</span>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between font-semibold text-lg pt-1">
-                    <span>Total</span>
-                    <span>Rp{total.toLocaleString("id-ID")}</span>
-                  </div>
-                </div>
-              </aside>
-            </div>
-          )}
-        </div>
-      </main>
-    </>
-  );
-}
