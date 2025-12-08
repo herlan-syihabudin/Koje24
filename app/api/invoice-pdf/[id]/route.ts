@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const id = context.params.id?.trim();
 
     if (!id) {
       return NextResponse.json(
@@ -29,7 +29,6 @@ export async function GET(
     )}&format=A4&printBackground=true&margin=10mm&waitFor=1800`;
 
     const result = await fetch(pdfReqUrl);
-
     if (!result.ok) throw new Error(`PDF failed: ${result.status}`);
 
     const pdf = await result.arrayBuffer();
