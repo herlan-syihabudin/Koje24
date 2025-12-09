@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
+export const runtime = "nodejs"; // ⬅ wajib untuk Nodemailer, bukan Edge
+
 export async function POST(req: NextRequest) {
   try {
     const { email, nama, invoiceId, invoiceUrl } = await req.json();
 
+    // 🔍 Validasi
     if (!email || !invoiceId || !invoiceUrl) {
       return NextResponse.json(
         { success: false, message: "Payload tidak lengkap" },
@@ -23,9 +26,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 💌 Format email
+    // 💌 Konten email
     const html = `
-      <div style="font-family: Arial, sans-serif; font-size: 15px;">
+      <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6;">
         <p>Halo <b>${nama}</b>, terima kasih sudah order KOJE24 🍹</p>
 
         <p>Invoice untuk pesanan kamu sudah dibuat:</p>
@@ -36,8 +39,8 @@ export async function POST(req: NextRequest) {
 
         <p>
           Klik link invoice kamu di bawah ini 👇<br/>
-          <a href="${invoiceUrl}" style="color:#0FA3A8; font-size:16px;">
-            Buka Invoice
+          <a href="${invoiceUrl}" style="color:#0FA3A8; font-size:16px; font-weight:600;">
+            🔗 Buka Invoice
           </a>
         </p>
 
@@ -47,6 +50,7 @@ export async function POST(req: NextRequest) {
       </div>
     `;
 
+    // 🚀 Kirim email
     await transporter.sendMail({
       from: process.env.EMAIL_FROM,
       to: email,
