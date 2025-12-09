@@ -1,14 +1,17 @@
+// app/api/invoice-file/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "nodejs"; // PDF generator harus NodeJS runtime
+export const runtime = "edge"; // aman di Edge, cuma fetch HTML2PDF
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } // ⬅️ WAJIB: params pakai Promise
 ) {
   try {
-    const { id } = params;
-    if (!id) {
+    const { id } = await context.params; // ⬅️ di-await
+    const invoiceId = id?.trim();
+
+    if (!invoiceId) {
       return NextResponse.json(
         { success: false, message: "Missing invoice ID" },
         { status: 400 }
@@ -23,26 +26,33 @@ export async function GET(
       );
     }
 
-    const invoiceUrl = `${req.nextUrl.origin}/invoice/${id}`;
+    // URL halaman invoice (HTML) yang sudah kita buat
+    const invoiceUrl = `${req.nextUrl.origin}/invoice/${invoiceId}`;
+
+    // Panggil layanan HTML2PDF
     const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}&url=${encodeURIComponent(
       invoiceUrl
-    )}&format=A4&printBackground=true&margin=10mm`;
+    )}&format=A4&printBackground=true&margin=10mm&waitFor=1800`;
 
     const result = await fetch(pdfReqUrl);
-    if (!result.ok) throw new Error("Failed to generate PDF");
+    if (!result.ok) throw new Error("PDF failed");
 
     const pdf = await result.arrayBuffer();
+
     return new NextResponse(pdf, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="invoice-${id}.pdf"`,
+        "Content-Disposition": `inline; filename="invoice-${invoiceId}.pdf"`,
       },
     });
   } catch (err: any) {
-    console.error("PDF ERROR:", err);
+    console.error("❌ INVOICE FILE ERROR:", err);
     return NextResponse.json(
-      { success: false, message: err?.message ?? "Unexpected PDF error" },
+      {
+        success: false,
+        message: err?.message ?? "Unexpected PDF error",
+      },
       { status: 500 }
     );
   }
