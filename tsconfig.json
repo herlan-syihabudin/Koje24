@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -18,19 +14,20 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    // ✅ alias penting biar "@/components" dikenali
+
+    // 🔥 alias
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
-    // ✅ plugin Next.js biar turbo gak bingung
+
+    // 🔥 Biar Next.js turbo ngerti config
     "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+      { "name": "next" }
+    ],
+
+    // ⚠️ Tambahan WAJIB untuk fix error nodemailer
+    "typeRoots": ["./types", "./node_modules/@types"]
   },
   "include": [
     "next-env.d.ts",
@@ -39,7 +36,5 @@
     ".next/dev/types/**/*.ts",
     ".next/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }
