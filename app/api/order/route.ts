@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
 
     const nama = String(form.get("nama") ?? "").trim();
     const hp = String(form.get("hp") ?? "").trim();
+    const email = String(form.get("email") ?? "").trim(); // ⬅ NEW
     const alamat = String(form.get("alamat") ?? "").trim();
     const note = String(form.get("note") ?? "").trim();
     const payment = String(form.get("payment") ?? "");
@@ -33,11 +34,10 @@ export async function POST(req: NextRequest) {
     // 💥 cart fallback aman
     const cartJson = String(
       form.get("cart") ||
-      form.get("items") ||
-      form.get("keranjang") ||
-      "[]"
+        form.get("items") ||
+        form.get("keranjang") ||
+        "[]"
     );
-
     let cart: any[] = [];
     try {
       cart = JSON.parse(cartJson);
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 🛑 Validasi wajib
-    if (!nama || !hp || !alamat) throw new Error("Data belum lengkap");
+    if (!nama || !hp || !alamat || !email) throw new Error("Data belum lengkap");
     if (!Array.isArray(cart) || cart.length === 0) throw new Error("Keranjang kosong");
 
     const produkList = cart.map((x: any) => `${x.name} (${x.qty}x)`).join(", ");
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:N`,
+      range: `${SHEET_NAME}!A:O`,  // ⬅ KOLUMN O (EMAIL)
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
@@ -98,14 +98,16 @@ export async function POST(req: NextRequest) {
             paymentLabel,
             "Pending",
             invoiceUrl,
+            email, // ⬅ EMAIL DISIMPAN
           ],
         ],
       },
     });
 
-    // 🔥 Telegram notif (jika aktif)
+    // 🔥 Telegram notif (opsional)
     if (BOT_TOKEN && CHAT_ID) {
-      const esc = (t: string) => String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
+      const esc = (t: string) =>
+        String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
 
       const msg =
         `🛒 *ORDER BARU KOJE24*\n#${invoiceId}\n\n` +
@@ -127,29 +129,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 🔗 WhatsApp redirect
-    const waText = `
-Halo kak ${nama}, terima kasih sudah order KOJE24 🍹
-
-Invoice pembelian kakak 👇
-${invoiceUrl}
-
-Total pembayaran: Rp${effectiveGrandTotal.toLocaleString("id-ID")}
-Metode bayar: ${paymentLabel}
-
-Butuh bantuan? Balas chat ini ya kak 🙏
-`.trim();
-
-    const waUrl = `https://api.whatsapp.com/send?phone=${hp.replace(
-      /[^0-9]/g,
-      ""
-    )}&text=${encodeURIComponent(waText)}`;
-
     return NextResponse.json({
-  success: true,
-  invoiceId,
-  invoicePdfUrl: `${baseUrl}/api/invoice-pdf/${invoiceId}`,
-});
+      success: true,
+      invoiceId,
+      invoiceUrl,
+      invoicePdfUrl: `${baseUrl}/api/invoice-pdf/${invoiceId}`,
+      email, // dikirim juga ke FE
+    });
   } catch (err: any) {
     console.error("❌ ERROR ORDER:", err);
     return NextResponse.json(
