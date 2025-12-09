@@ -146,12 +146,10 @@ Butuh bantuan? Balas chat ini ya kak 🙏
     )}&text=${encodeURIComponent(waText)}`;
 
     return NextResponse.json({
-      success: true,
-      invoiceId,
-      invoiceUrl,
-      waUrl,
-      grandTotal: effectiveGrandTotal,
-    });
+  success: true,
+  invoiceId,
+  invoicePdfUrl: `${baseUrl}/api/invoice-pdf/${invoiceId}`,
+});
   } catch (err: any) {
     console.error("❌ ERROR ORDER:", err);
     return NextResponse.json(
