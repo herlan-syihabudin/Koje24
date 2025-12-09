@@ -42,6 +42,7 @@ export default function CheckoutPage() {
   const [hydrated, setHydrated] = useState(false);
   const [nama, setNama] = useState("");
   const [hp, setHp] = useState("");
+  const [email, setEmail] = useState("");  // <-- NEW
   const [alamat, setAlamat] = useState("");
   const [catatan, setCatatan] = useState("");
 
@@ -116,7 +117,6 @@ export default function CheckoutPage() {
     );
   };
 
-  // 🚀 SUBMIT — FIX VERCEL & redirect WA
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (status === "submitting") return;
@@ -126,6 +126,13 @@ export default function CheckoutPage() {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
+
+    // 🔥 NEW VALIDASI EMAIL
+    if (!email.trim() || !email.includes("@")) {
+      setErrorMsg("Masukkan email yang valid ya 🙏");
+      return;
+    }
+
     if (!distanceKm) {
       setDistanceKm(3);
       setOngkir(calcOngkir(3));
@@ -142,6 +149,7 @@ export default function CheckoutPage() {
       const fd = new FormData();
       fd.append("nama", nama);
       fd.append("hp", hp);
+      fd.append("email", email);  // <-- NEW
       fd.append("alamat", alamat);
       fd.append("note", catatan);
       fd.append("payment", payment);
@@ -166,7 +174,8 @@ export default function CheckoutPage() {
       if (!data?.success) throw new Error("API failed");
 
       clearCart();
-      window.location.href = data.waUrl;
+      router.push("/pesanan-berhasil");  // <-- sementara redirect ke halaman sukses
+
     } catch {
       setStatus("error");
       setErrorMsg("Ada gangguan sistem — coba sebentar lagi 🙏");
@@ -193,11 +202,13 @@ export default function CheckoutPage() {
             <p className="text-center text-gray-500">Keranjang kosong. Mengarahkan kembali…</p>
           ) : (
             <div className="grid gap-8 md:grid-cols-[1.15fr_0.85fr]">
+
               {/* FORM */}
               <section className="bg-white border rounded-3xl shadow p-6 md:p-8 space-y-5">
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nama lengkap" value={nama} onChange={(e) => setNama(e.target.value)} />
                   <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nomor WhatsApp" value={hp} onChange={(e) => setHp(e.target.value)} />
+                  <input className="border rounded-lg px-3 py-2 w-full" placeholder="Email (untuk menerima invoice)" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /> {/* NEW */}
                   <input ref={alamatRef} className="border rounded-lg px-3 py-2 w-full" placeholder="Alamat lengkap" value={alamat} onChange={(e) => setAlamat(e.target.value)} />
 
                   <button type="button" onClick={handleDetectLocation} className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm font-medium">
