@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     const nama = String(form.get("nama") ?? "").trim();
     const hp = String(form.get("hp") ?? "").trim();
-    const email = String(form.get("email") ?? "").trim(); // ⬅ NEW
+    const email = String(form.get("email") ?? "").trim();
     const alamat = String(form.get("alamat") ?? "").trim();
     const note = String(form.get("note") ?? "").trim();
     const payment = String(form.get("payment") ?? "");
@@ -31,12 +31,12 @@ export async function POST(req: NextRequest) {
     const promoAmount = Number(form.get("promoAmount") ?? 0);
     const promoLabel = String(form.get("promoLabel") ?? "");
 
-    // 💥 cart fallback aman
+    // 💥 Cart fallback aman
     const cartJson = String(
       form.get("cart") ||
-        form.get("items") ||
-        form.get("keranjang") ||
-        "[]"
+      form.get("items") ||
+      form.get("keranjang") ||
+      "[]"
     );
     let cart: any[] = [];
     try {
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
     const promoText = safePromoAmount > 0 ? promoLabel : "-";
 
-    // 🟢 Simpan ke Google Sheet
+    // 🟢 Simpan ke Google Sheet (kolom O untuk Email)
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:O`,  // ⬅ KOLUMN O (EMAIL)
+      range: `${SHEET_NAME}!A:O`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
             paymentLabel,
             "Pending",
             invoiceUrl,
-            email, // ⬅ EMAIL DISIMPAN
+            email, // ⬅ email disimpan
           ],
         ],
       },
@@ -129,12 +129,22 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // 🚀 Trigger auto-email invoice (opsi A: link invoice)
+    fetch(`${baseUrl}/api/send-invoice-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        nama,
+        invoiceId,
+        invoiceUrl,
+      }),
+    }).catch(() => {});
+
     return NextResponse.json({
       success: true,
       invoiceId,
       invoiceUrl,
-      invoicePdfUrl: `${baseUrl}/api/invoice-pdf/${invoiceId}`,
-      email, // dikirim juga ke FE
     });
   } catch (err: any) {
     console.error("❌ ERROR ORDER:", err);
