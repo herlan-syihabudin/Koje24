@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs"; // wajib utk generate PDF
+
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     if (!id) {
       return NextResponse.json(
         { success: false, message: "Missing invoice ID" },
@@ -25,10 +27,10 @@ export async function GET(
 
     const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}&url=${encodeURIComponent(
       invoiceUrl
-    )}&format=A4&printBackground=true&margin=10mm&waitFor=1800`;
+    )}&format=A4&printBackground=true&margin=10mm`;
 
     const result = await fetch(pdfReqUrl);
-    if (!result.ok) throw new Error("PDF failed");
+    if (!result.ok) throw new Error("Failed to generate PDF");
 
     const pdf = await result.arrayBuffer();
     return new NextResponse(pdf, {
@@ -39,6 +41,7 @@ export async function GET(
       },
     });
   } catch (err: any) {
+    console.error("PDF ERROR:", err);
     return NextResponse.json(
       { success: false, message: err?.message ?? "Unexpected PDF error" },
       { status: 500 }
