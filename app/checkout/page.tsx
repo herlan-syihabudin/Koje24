@@ -171,10 +171,11 @@ export default function CheckoutPage() {
 
       if (!res.ok) throw new Error("Bad response");
       const data = await res.json();
-      if (!data?.success) throw new Error("API failed");
+if (!data?.success) throw new Error("API failed");
 
-      clearCart();
-      router.push("/pesanan-berhasil");  // <-- sementara redirect ke halaman sukses
+// nanti kalau mau, data.invoiceUrl / data.invoicePdfUrl bisa dipakai di popup
+clearCart();
+router.push("/"); // balik ke homepage, tidak 404 lagi
 
     } catch {
       setStatus("error");
