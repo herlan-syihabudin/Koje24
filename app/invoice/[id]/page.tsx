@@ -93,11 +93,13 @@ export default function InvoicePage() {
       {/* === DOWNLOAD BUTTON === */}
       <div className="w-full flex justify-end mb-4 no-pdf">
         <a
-          href={`/api/invoice-pdf/${invoice.invoiceId}`}
-          className="px-5 py-2 bg-[#C62828] text-white rounded shadow hover:bg-[#a71e1e] transition text-sm font-semibold"
-        >
-          ⬇ Download Invoice
-        </a>
+  href={`/api/invoice-file/${invoiceId}`}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="px-4 py-2 bg-teal-600 text-white rounded-md"
+>
+  Download PDF
+</a>
       </div>
 
       {/* === HEADER === */}
