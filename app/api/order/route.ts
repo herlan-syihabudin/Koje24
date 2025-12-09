@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
             paymentLabel,
             "Pending",
             invoiceUrl,
-            email, // ⬅ email disimpan
+            email,
           ],
         ],
       },
@@ -129,8 +129,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 🚀 Trigger auto-email invoice (opsi A: link invoice)
-    fetch(`${baseUrl}/api/send-invoice-email`, {
+    // 🚀 Trigger auto-email invoice (WAJIB pakai await biar stabil di Vercel)
+    await fetch(`${baseUrl}/api/send-invoice-email`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
         invoiceId,
         invoiceUrl,
       }),
-    }).catch(() => {});
+    });
 
     return NextResponse.json({
       success: true,
