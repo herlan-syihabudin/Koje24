@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
-export const runtime = "nodejs"; // ⬅ wajib untuk Nodemailer, bukan Edge
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs"; // ⬅ wajib untuk Nodemailer
 
 export async function POST(req: NextRequest) {
   try {
     const { email, nama, invoiceId, invoiceUrl } = await req.json();
 
-    // 🔍 Validasi
     if (!email || !invoiceId || !invoiceUrl) {
       return NextResponse.json(
         { success: false, message: "Payload tidak lengkap" },
@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 🔥 SMTP Gmail
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT),
@@ -26,31 +25,25 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 💌 Konten email
     const html = `
       <div style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.6;">
         <p>Halo <b>${nama}</b>, terima kasih sudah order KOJE24 🍹</p>
-
         <p>Invoice untuk pesanan kamu sudah dibuat:</p>
-
         <p style="font-size: 18px; font-weight: bold; margin: 10px 0;">
           ${invoiceId}
         </p>
-
         <p>
           Klik link invoice kamu di bawah ini 👇<br/>
           <a href="${invoiceUrl}" style="color:#0FA3A8; font-size:16px; font-weight:600;">
             🔗 Buka Invoice
           </a>
         </p>
-
         <br />
         <p>Terima kasih sudah mempercayai KOJE24 💚</p>
         <p><i>Minum sehat itu gampang kalau rasanya enak! 🍹</i></p>
       </div>
     `;
 
-    // 🚀 Kirim email
     await transporter.sendMail({
       from: process.env.EMAIL_FROM,
       to: email,
