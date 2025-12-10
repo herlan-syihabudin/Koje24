@@ -3,12 +3,18 @@ import { google } from "googleapis";
 
 export async function GET() {
   try {
-    const CLIENT_EMAIL = process.env.GS_CLIENT_EMAIL ?? "";
-    const PRIVATE_KEY_RAW = process.env.GS_PRIVATE_KEY ?? "";
-    const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n");
+    const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? "";
+    const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
+    const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? "";
 
-    if (!CLIENT_EMAIL || !PRIVATE_KEY) {
-      throw new Error("Missing GS_CLIENT_EMAIL or GS_PRIVATE_KEY");
+    // Private key fix
+    const PRIVATE_KEY = PRIVATE_KEY_RAW
+      .replace(/\\n/g, "\n")
+      .replace(/\\\\n/g, "\n");
+
+    // Validasi ENV
+    if (!CLIENT_EMAIL || !PRIVATE_KEY || !SHEET_ID) {
+      throw new Error("Missing Google Sheet ENV (email / key / sheetId)");
     }
 
     const auth = new google.auth.GoogleAuth({
@@ -21,20 +27,18 @@ export async function GET() {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    const spreadsheetId = process.env.GS_SHEET_ID ?? "";
+    // Range dari A2 sampai K (sesuai sheet kamu)
     const res = await sheets.spreadsheets.values.get({
-      spreadsheetId,
+      spreadsheetId: SHEET_ID,
       range: "Transaksi!A2:K",
     });
 
     const rows = res.data.values ?? [];
 
+    // FE RatingPopup perlu array raw → jangan ubah struktur
     return NextResponse.json(rows);
   } catch (err: any) {
-    console.error("API TRANSAKSI ERROR:", err);
-    return NextResponse.json(
-      { error: err?.message ?? "Unknown error" },
-      { status: 500 }
-    );
+    console.error("API TRANSAKSI ERROR:", err?.message ?? err);
+    return NextResponse.json([], { status: 200 });
   }
 }
