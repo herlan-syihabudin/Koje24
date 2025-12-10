@@ -18,7 +18,6 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
-// === SEO ===
 export const metadata: Metadata = {
   title: {
     default: "KOJE24 • Natural Cold-Pressed Juice",
@@ -27,10 +26,16 @@ export const metadata: Metadata = {
   description:
     "KOJE24 — minuman cold-pressed alami premium tanpa gula tambahan dan tanpa pengawet. Cocok untuk detoks harian dan menjaga imunitas.",
   manifest: "/manifest.json",
-  icons: { icon: "/favicon.ico", apple: "/icons/apple-touch-icon.png" },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" }
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
-// THEME COLOR
 export const viewport: Viewport = { themeColor: "#0FA3A8" };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -43,6 +48,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
 
       <body className="antialiased font-inter bg-white text-[#0B4B50] max-w-[100vw] overflow-x-hidden">
