@@ -17,6 +17,7 @@ export async function GET(
       );
     }
 
+    // 🔐 API KEY
     const API_KEY = process.env.HTML2PDF_KEY ?? "";
     if (!API_KEY) {
       return NextResponse.json(
@@ -25,15 +26,25 @@ export async function GET(
       );
     }
 
-    const invoiceUrl = `${req.nextUrl.origin}/invoice/${invoiceId}`;
+    // 🟢 FIX TERPENTING: origin Vercel sering kosong → pakai BASE_URL fallback
+    const BASE_URL =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      req.nextUrl.origin ||
+      "https://webkoje-cacs.vercel.app";
 
-    // 🟢 TUNGGU sampe elemen ".invoice-wrapper" muncul
+    const invoiceUrl = `${BASE_URL}/invoice/${invoiceId}`;
+
+    // 🟢 WAIT UNTUK ".invoice-wrapper"
     const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}&url=${encodeURIComponent(
       invoiceUrl
     )}&format=A4&printBackground=true&margin=10mm&waitFor=.invoice-wrapper`;
 
     const result = await fetch(pdfReqUrl);
-    if (!result.ok) throw new Error("PDF failed");
+
+    if (!result.ok) {
+      const text = await result.text();
+      throw new Error(`PDF failed: ${text}`);
+    }
 
     const pdf = await result.arrayBuffer();
 
@@ -44,10 +55,15 @@ export async function GET(
         "Content-Disposition": `inline; filename="invoice-${invoiceId}.pdf"`,
       },
     });
+
   } catch (err: any) {
     console.error("❌ INVOICE PDF ERROR:", err);
     return NextResponse.json(
-      { success: false, message: err?.message ?? "PDF failed" },
+      {
+        success: false,
+        message: "PDF failed",
+        detail: err?.message ?? err,
+      },
       { status: 500 }
     );
   }
