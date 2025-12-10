@@ -17,7 +17,6 @@ export async function GET(
       );
     }
 
-    // 🔐 API KEY
     const API_KEY = process.env.HTML2PDF_KEY ?? "";
     if (!API_KEY) {
       return NextResponse.json(
@@ -26,7 +25,6 @@ export async function GET(
       );
     }
 
-    // 🟢 FIX TERPENTING: origin Vercel sering kosong → pakai BASE_URL fallback
     const BASE_URL =
       process.env.NEXT_PUBLIC_SITE_URL ||
       req.nextUrl.origin ||
@@ -34,10 +32,10 @@ export async function GET(
 
     const invoiceUrl = `${BASE_URL}/invoice/${invoiceId}`;
 
-    // 🟢 WAIT UNTUK ".invoice-wrapper"
+    // 🟢 FIX: gunakan body, bukan .invoice-wrapper
     const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}&url=${encodeURIComponent(
       invoiceUrl
-    )}&format=A4&printBackground=true&margin=10mm&waitFor=.invoice-wrapper`;
+    )}&format=A4&printBackground=true&margin=10mm&waitFor=body`;
 
     const result = await fetch(pdfReqUrl);
 
