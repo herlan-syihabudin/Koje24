@@ -373,4 +373,81 @@ iframe {
   font-weight: 800 !important;
   letter-spacing: 0.02em;
 }
+/* ===========================================================
+   🔥 INVOICE HEADER FIX — SAFARI ADDRESS BUG
+   (menghilangkan icon directions, highlight, editable effect)
+=========================================================== */
+
+/* Biar Safari tidak mendeteksi teks sebagai alamat */
+.not-address {
+  unicode-bidi: plaintext !important;
+}
+
+/* Hilangin ability untuk disorot / di-select */
+.not-address,
+.invoice-wrapper p,
+.invoice-wrapper span {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+/* Hapus highlight biru Safari ketika klik */
+.invoice-wrapper p:focus,
+.invoice-wrapper span:focus {
+  outline: none !important;
+  border: none !important;
+}
+
+/* Prevent Safari auto-link address (macOS & iOS) */
+a[href^="tel:"],
+a[href^="mailto:"],
+a[href^="maps:"] {
+  pointer-events: none !important;
+  text-decoration: none !important;
+}
+
+/* Safari remove text field shadow / border */
+.invoice-wrapper p,
+.invoice-wrapper span {
+  -webkit-text-size-adjust: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+}
+
+/* ===========================================================
+   🔥 FIX FULL CLEAN FOR PDF — AGAR HTML2PDF STABIL
+=========================================================== */
+.invoice-wrapper {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+}
+
+/* Sembunyikan area yang tidak perlu di PDF */
+@media print {
+  .no-pdf,
+  .no-print,
+  .download-btn,
+  .download-area {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+  }
+}
+
+/* Jangan ada padding kiri-kanan yang bikin PDF overflow */
+@media print {
+  .invoice-wrapper {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+/* Fix font size Safari di PDF */
+@media print {
+  .invoice-wrapper * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
 
