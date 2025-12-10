@@ -10,7 +10,7 @@ interface InvoiceData {
   nama: string;
   hp: string;
   alamat: string;
-  produkList: string; // "Green Boost (2x), Red Detox (1x)"
+  produkList: string;
   qtyTotal: number;
   subtotalCalc: number;
   status: string;
@@ -18,7 +18,7 @@ interface InvoiceData {
   effectiveOngkir: number;
   effectiveGrandTotal: number;
   invoiceUrl?: string;
-  promoRaw?: string; // contoh: "KOJE10K (-Rp10.000)"
+  promoRaw?: string;
 }
 
 const formatCurrency = (n: number) =>
@@ -69,7 +69,7 @@ export default function InvoicePage() {
     return m ? { name: m[1].trim(), qty: Number(m[2]) } : { name: line, qty: 1 };
   });
 
-  // harga per pcs (untuk produk non-paket)
+  // harga per pcs
   const unitPrice = invoice.qtyTotal > 0 ? invoice.subtotalCalc / invoice.qtyTotal : 0;
   const calcSubtotal = (name: string, qty: number) => {
     const isPaket = name.toLowerCase().includes("paket");
@@ -89,17 +89,19 @@ export default function InvoicePage() {
   const hasPromo = promoAmount > 0;
 
   return (
-    <div className="max-w-4xl mx-auto p-10 bg-white text-black invoice-paper">
+    // 🟢 FIX: tambah wrapper agar HTML2PDF bisa waitFor .invoice-wrapper
+    <div className="invoice-wrapper max-w-4xl mx-auto p-10 bg-white text-black invoice-paper">
+
       {/* === DOWNLOAD BUTTON === */}
       <div className="w-full flex justify-end mb-4 no-pdf">
         <a
-  href={`/api/invoice-file/${invoiceId}`}
-  target="_blank"
-  rel="noopener noreferrer"
-  className="px-4 py-2 bg-teal-600 text-white rounded-md"
->
-  Download PDF
-</a>
+          href={`/api/invoice-file/${invoiceId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-4 py-2 bg-teal-600 text-white rounded-md"
+        >
+          Download PDF
+        </a>
       </div>
 
       {/* === HEADER === */}
