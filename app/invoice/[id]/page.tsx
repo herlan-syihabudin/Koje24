@@ -103,10 +103,12 @@ export default function InvoicePage() {
         <div className="flex justify-between items-start mb-4">
           <div>
             <img src="/image/logo-koje24.png" alt="KOJE24" className="h-16 w-auto mb-1" />
-            <p className="text-sm leading-tight">
-              <strong>Healthy Juice for Everyday Energy</strong> <br />
-              Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320
-            </p>
+            <p className="text-sm leading-tight select-none pointer-events-none">
+  <strong>Healthy Juice for Everyday Energy</strong> <br />
+  <span className="not-address">
+    Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi, Jawa Barat 17320
+  </span>
+</p>
           </div>
 
           <div className="text-right">
