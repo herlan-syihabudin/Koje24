@@ -32,10 +32,10 @@ export async function GET(
 
     const invoiceUrl = `${BASE_URL}/invoice/${invoiceId}`;
 
-    // 🟢 FIX: gunakan body, bukan .invoice-wrapper
+    // 🟢 FIX: TANPA WAITFOR (INILAH YANG HARUS)
     const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}&url=${encodeURIComponent(
       invoiceUrl
-    )}&format=A4&printBackground=true&margin=10mm&waitFor=body`;
+    )}&format=A4&printBackground=true&margin=10mm`;
 
     const result = await fetch(pdfReqUrl);
 
