@@ -12,7 +12,7 @@ export default function PromoPopup() {
   const addPromo = useCartStore((s: any) => s.addPromo);
   const currentPromoLabel = useCartStore((s: any) => s.promoLabel);
 
-  // event listener dari tombol "lihat promo"
+  // ▶️ Popup dibuka manual dari tombol "Lihat Promo"
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handler = () => setOpen(true);
@@ -20,17 +20,16 @@ export default function PromoPopup() {
     return () => window.removeEventListener("open-promo-popup", handler);
   }, []);
 
-  // load promo hanya sekali
+  // ▶️ Load promo dari API hanya sekali saat component mount
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await fetchPromos(); // sudah hanya promo aktif
+        const data = await fetchPromos(); // sudah hanya ambil promo aktif
         if (Array.isArray(data) && data.length > 0) {
           setPromos(data);
-          setOpen(true);
         }
       } catch (err) {
-        console.error("PROMO POPUP – fetch failed:", err);
+        console.error("PROMO POPUP – FETCH ERROR:", err);
       }
     };
     load();
@@ -47,13 +46,13 @@ export default function PromoPopup() {
   const close = () => setOpen(false);
 
   const apply = () => {
-    // cegah promo dobel di cart
+    // ❗ Jika promo yang sama sudah dipakai, langsung tutup
     if (currentPromoLabel && currentPromoLabel === p.kode) {
-      next();                      // lanjut promo lain kalau ada
-      if (promos.length === 1) setOpen(false);
+      setOpen(false);
       return;
     }
 
+    // Masukkan promo ke cart store
     addPromo({
       label: p.kode,
       tipe: p.tipe,
@@ -62,14 +61,19 @@ export default function PromoPopup() {
       maxDiskon: p.maxDiskon,
     });
 
-    next();
-    if (promos.length === 1) setOpen(false);
+    // 🔥 Langsung close setelah berhasil dipakai
+    setOpen(false);
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[99999]">
-      <div className="bg-white rounded-3xl p-7 max-w-sm mx-auto shadow-2xl relative">
-
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[99999]"
+      onClick={close} // Tutup kalau klik area gelap
+    >
+      <div
+        className="bg-white rounded-3xl p-7 max-w-sm mx-auto shadow-2xl relative"
+        onClick={(e) => e.stopPropagation()} // Biar klik di dalam box nggak nutup
+      >
         <h2 className="font-playfair text-xl font-semibold text-[#0B4B50] mb-3 text-center">
           Promo Spesial Untuk Kamu 🎁
         </h2>
@@ -80,7 +84,7 @@ export default function PromoPopup() {
             {p.kode}
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            {p.tipe} — {p.nilai}
+            {p.tipe} • {p.nilai}
           </p>
         </div>
 
