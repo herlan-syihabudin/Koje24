@@ -7,20 +7,39 @@ export default function Hero() {
   const { scrollY } = useScroll()
   const [loaded, setLoaded] = useState(false)
 
-  // Disable parallax for mobile
+  // =========================
+  // MOBILE DETECTION (SAFE)
+  // =========================
   const [isMobile, setIsMobile] = useState(false)
+
   useEffect(() => {
-    setIsMobile(window.innerWidth < 768)
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener("resize", check)
+    return () => window.removeEventListener("resize", check)
   }, [])
 
+  // =========================
+  // PARALLAX & VISUAL MOTION
+  // =========================
   const y = useTransform(scrollY, [0, 400], [0, isMobile ? 0 : 110])
   const glowY = useTransform(scrollY, [0, 350], [0, isMobile ? 0 : 60])
   const opacity = useTransform(scrollY, [0, 200], [1, 0.88])
 
-  // CTA animation – makin dikit scroll, makin blur & hilang
-  const ctaOpacity = useTransform(scrollY, [0, 100], [1, 0])
+  // =========================
+  // CTA BEHAVIOUR (MOBILE SAFE)
+  // =========================
+  const ctaOpacity = useTransform(
+    scrollY,
+    [0, isMobile ? 60 : 100],
+    [1, 0]
+  )
   const ctaY = useTransform(scrollY, [0, 100], [0, -24])
-  const ctaBlur = useTransform(scrollY, [0, 100], ["blur(0px)", "blur(10px)"])
+  const ctaBlur = useTransform(
+    scrollY,
+    [0, isMobile ? 60 : 100],
+    ["blur(0px)", "blur(10px)"]
+  )
 
   return (
     <section className="relative min-h-screen w-full flex items-center bg-[#020507] overflow-hidden">
@@ -47,23 +66,27 @@ export default function Hero() {
       </motion.div>
 
       {/* ==== PREMIUM DARK GRADIENT ==== */}
-      <div className="
-        absolute inset-0 
-        bg-gradient-to-br 
-        from-black/85 
-        via-black/60 
-        to-transparent
-        pointer-events-none
-      " />
+      <div
+        className="
+          absolute inset-0 
+          bg-gradient-to-br 
+          from-black/85 
+          via-black/60 
+          to-transparent
+          pointer-events-none
+        "
+      />
 
-      {/* ==== RIGHT LIGHT BOOST (biar botol lebih hidup) ==== */}
-      <div className="
-        absolute inset-y-0 right-0 w-[45%]
-        bg-gradient-to-l from-white/6 to-transparent
-        pointer-events-none
-      " />
+      {/* ==== RIGHT LIGHT BOOST ==== */}
+      <div
+        className="
+          absolute inset-y-0 right-0 w-[45%]
+          bg-gradient-to-l from-white/6 to-transparent
+          pointer-events-none
+        "
+      />
 
-      {/* ==== LIGHT SWEEP (subtle) ==== */}
+      {/* ==== LIGHT SWEEP ==== */}
       <motion.div
         style={{ y: glowY }}
         className="
@@ -79,13 +102,15 @@ export default function Hero() {
       />
 
       {/* ==== NOISE ==== */}
-      <div className="
-        absolute inset-0 
-        opacity-[0.06]
-        bg-[url('/noise.png')] 
-        mix-blend-overlay
-        pointer-events-none
-      " />
+      <div
+        className="
+          absolute inset-0 
+          opacity-[0.06]
+          bg-[url('/noise.png')] 
+          mix-blend-overlay
+          pointer-events-none
+        "
+      />
 
       {/* ==== CONTENT ==== */}
       <div className="relative z-10 px-6 md:px-20 lg:px-32 w-full max-w-5xl">
@@ -123,7 +148,7 @@ export default function Hero() {
           dan tanpa pengawet. Nutrisi tetap maksimal.
         </motion.p>
 
-        {/* ==== CTA HERO (Fade/Blur Saat Scroll) ==== */}
+        {/* ==== CTA HERO ==== */}
         <motion.div
           style={{
             opacity: ctaOpacity,
@@ -149,12 +174,14 @@ export default function Hero() {
 
       </div>
 
-      {/* Bottom fade – dibuat lebih tipis & premium */}
-      <div className="
-        absolute bottom-0 left-0 w-full h-20
-        bg-gradient-to-t from-[#f8fcfc]/60 to-transparent 
-        pointer-events-none
-      " />
+      {/* ==== BOTTOM FADE ==== */}
+      <div
+        className="
+          absolute bottom-0 left-0 w-full h-20
+          bg-gradient-to-t from-[#f8fcfc]/60 to-transparent 
+          pointer-events-none
+        "
+      />
     </section>
   )
 }
