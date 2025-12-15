@@ -86,10 +86,18 @@ export default function SubscriptionSection() {
           >
             {/* BADGE POPULAR */}
             {p.popular && (
-              <span className="absolute top-4 right-4 bg-[#E8C46B] text-[#0B4B50] text-[11px] font-bold px-3 py-1 rounded-full shadow">
-                ⭐ PALING DIPILIH
-              </span>
-            )}
+  <div className="mb-3 flex justify-center">
+    <span className="
+      inline-flex items-center gap-1
+      bg-[#E8C46B]/90 text-[#0B4B50]
+      text-[11px] font-semibold
+      px-3 py-1 rounded-full
+      shadow-sm
+    ">
+      Paling Dipilih
+    </span>
+  </div>
+)}
 
             {/* Accent line */}
             <div className="absolute inset-x-0 top-0 h-[5px] bg-gradient-to-r from-[#0FA3A8] to-[#E8C46B] opacity-70 group-hover:opacity-100 transition-opacity duration-500" />
