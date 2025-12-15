@@ -35,7 +35,7 @@ export default function AboutSection() {
           </p>
 
           <p className="font-inter text-gray-600 leading-relaxed text-base md:text-lg mb-8">
-            Kami menggabungkan <b>rasa enak</b> dan <b>manfaat nyata</b> seperti imun lebih kuat,
+            Kami menggabungkan <b>bahan alami</b> dan <b>manfaat nyata</b> seperti imun lebih kuat,
             metabolisme lebih stabil, pencernaan lebih nyaman, dan tubuh terasa lebih ringan.
             <br />
             Ini bukan sekadar jus — ini adalah <b>pengalaman hidup sehat premium</b> 🍃.
