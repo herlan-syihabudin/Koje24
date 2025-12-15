@@ -3,15 +3,16 @@
 import Header from "@/components/Header"
 import PromoBanner from "@/components/PromoBanner"
 import Hero from "@/components/Hero"
+import FeaturedProducts from "@/components/FeaturedProducts"
 import ProductGrid from "@/components/ProductGrid"
 import AboutSection from "@/components/AboutSection"
+import PackagesSection from "@/components/PackagesSection"
 import SubscriptionSection from "@/components/SubscriptionSection"
 import TestimonialsCarousel from "@/components/TestimonialsCarousel"
 import FaqSection from "@/components/FaqSection"
 import Footer from "@/components/Footer"
 import CartPopup from "@/components/CartPopup"
 import PackagePopup from "@/components/PackagePopup"
-import PackagesSection from "@/components/PackagesSection"
 import RatingPopup from "@/components/RatingPopup"
 import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO"
 
@@ -19,7 +20,7 @@ export default function HomePage() {
   return (
     <main role="main" aria-label="KOJE24 - Natural Cold-Pressed Juice">
 
-      {/* 🔥 PROMO BANNER PALING ATAS (WAJIB DI SINI) */}
+      {/* 🔥 PROMO BANNER PALING ATAS */}
       <PromoBanner />
 
       {/* HEADER */}
@@ -28,7 +29,10 @@ export default function HomePage() {
       {/* HERO */}
       <Hero />
 
-      {/* PRODUK */}
+      {/* 🔥 FEATURED PRODUCTS (UX GUIDE, AMAN) */}
+      <FeaturedProducts />
+
+      {/* PRODUK (GRID FULL) */}
       <section id="produk" className="scroll-mt-24">
         <ProductGrid />
       </section>
@@ -61,9 +65,10 @@ export default function HomePage() {
         <FaqSection />
       </section>
 
+      {/* FOOTER */}
       <Footer />
 
-      {/* POPUPS */}
+      {/* POPUPS (GLOBAL) */}
       <CartPopup />
       <PackagePopup />
       <RatingPopup />
