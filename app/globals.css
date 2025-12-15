@@ -444,4 +444,11 @@ a[href^="maps:"] {
     print-color-adjust: exact !important;
   }
 }
+/* === BODY MENU LOCK (MOBILE MENU FIX) === */
+.body-menu-lock {
+  overflow: hidden !important;
+  height: 100vh !important;
+  width: 100% !important;
+  position: fixed !important;
+}
 
