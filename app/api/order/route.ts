@@ -140,6 +140,18 @@ export async function POST(req: NextRequest) {
         invoiceUrl,
       }),
     });
+    
+// 🔔 AUTO SUBSCRIBE (NON-BLOCKING, TIDAK BOLEH GAGALKAN ORDER)
+fetch(`${baseUrl}/api/subscribe`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    email,
+    source: "checkout",
+  }),
+}).catch(() => {
+  // sengaja dikosongkan
+});
 
     return NextResponse.json({
       success: true,
