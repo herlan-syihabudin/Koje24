@@ -86,17 +86,18 @@ export default function SubscriptionSection() {
           >
             {/* BADGE POPULAR */}
             {p.popular && (
-  <div className="mb-3 flex justify-center">
-    <span className="
-      inline-flex items-center gap-1
-      bg-[#E8C46B]/90 text-[#0B4B50]
+  <span
+    className="
+      absolute top-5 left-5
+      bg-[#0FA3A8]/90 text-white
       text-[11px] font-semibold
       px-3 py-1 rounded-full
       shadow-sm
-    ">
-      Paling Dipilih
-    </span>
-  </div>
+      backdrop-blur
+    "
+  >
+    Favorit
+  </span>
 )}
 
             {/* Accent line */}
