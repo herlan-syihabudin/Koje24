@@ -88,7 +88,7 @@ export default function SubscriptionSection() {
             {p.popular && (
   <span
     className="
-      absolute top-1 left-1
+      absolute top-2 left-2
       bg-[#0FA3A8]/90 text-white
       text-[11px] font-semibold
       px-3 py-1 rounded-full
