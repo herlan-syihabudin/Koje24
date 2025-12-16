@@ -68,13 +68,19 @@ export const useCartStore = create<CartState>()(
         const exist = items.find((i) => i.id === id)
 
         if (!exist) return
-        if (exist.qty > 1) exist.qty -= 1
-        else items = items.filter((i) => i.id !== id)
+
+        if (exist.qty > 1) {
+          exist.qty -= 1
+        } else {
+          items = items.filter((i) => i.id !== id)
+        }
 
         set({
           items,
           totalQty: items.reduce((s, i) => s + i.qty, 0),
           totalPrice: items.reduce((s, i) => s + i.qty * i.price, 0),
+          // 🔥 AUTO CLEAR PROMO JIKA CART KOSONG
+          promo: items.length === 0 ? null : get().promo,
         })
       },
 
@@ -97,13 +103,20 @@ export const useCartStore = create<CartState>()(
         if (totalPrice < promo.minimal) return 0
 
         let d = 0
+
         if (promo.tipe === "percent") {
           d = (totalPrice * promo.nilai) / 100
         } else if (promo.tipe === "flat") {
           d = promo.nilai
+        } else if (promo.tipe === "free_shipping") {
+          // 🔧 Placeholder — ongkir di-handle di checkout
+          d = 0
         }
 
-        if (promo.maxDiskon) d = Math.min(d, promo.maxDiskon)
+        if (promo.maxDiskon) {
+          d = Math.min(d, promo.maxDiskon)
+        }
+
         return Math.floor(d)
       },
 
