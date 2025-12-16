@@ -2,16 +2,20 @@ import "./globals.css";
 import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+
 import { CartProvider } from "@/components/CartContext";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import StickyCartBar from "@/components/StickyCartBar";
 import PromoPopup from "@/components/PromoPopup";
+import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO";
+
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
 });
+
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
@@ -30,13 +34,15 @@ export const metadata: Metadata = {
     icon: [
       { url: "/favicon.ico" },
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" }
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: "/icons/apple-touch-icon.png",
   },
 };
 
-export const viewport: Viewport = { themeColor: "#0FA3A8" };
+export const viewport: Viewport = {
+  themeColor: "#0FA3A8",
+};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -53,6 +59,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
 
       <body className="antialiased font-inter bg-white text-[#0B4B50] max-w-[100vw] overflow-x-hidden">
+        {/* ⭐ SEO: Aggregate Rating & Review Schema */}
+        <TestimonialSchemaSEO />
+
         <CartProvider>
           {children}
         </CartProvider>
@@ -61,6 +70,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <PromoPopup />
         <SpeedInsights />
 
+        {/* smooth scroll fallback */}
         <script
           dangerouslySetInnerHTML={{
             __html: `try { document.documentElement.style.scrollBehavior = "smooth"; } catch(e){}`
