@@ -9,25 +9,21 @@ export default function PromoPopup() {
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
 
-  const promo = useCartStore((s) => s.promo);
+  const promoAktif = useCartStore((s) => s.promo);
   const setPromo = useCartStore((s) => s.setPromo);
 
-  // ===============================
-  // AUTO OPEN SAAT FIRST VISIT (1x)
-  // ===============================
+  // ✅ Auto open 1x saat first visit (opsional)
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    const seen = localStorage.getItem("koje24_promo_seen");
-    if (seen) return;
-
-    setOpen(true);
-    localStorage.setItem("koje24_promo_seen", "1");
+    const KEY = "koje24_promo_seen";
+    const seen = localStorage.getItem(KEY);
+    if (!seen) {
+      localStorage.setItem(KEY, "1");
+      setOpen(true);
+    }
   }, []);
 
-  // ===============================
-  // OPEN VIA MANUAL EVENT (OPTIONAL)
-  // ===============================
+  // ✅ Bisa juga dibuka manual via event
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handler = () => setOpen(true);
@@ -35,16 +31,12 @@ export default function PromoPopup() {
     return () => window.removeEventListener("open-promo-popup", handler);
   }, []);
 
-  // ===============================
-  // LOAD PROMO
-  // ===============================
+  // Load promo
   useEffect(() => {
     const load = async () => {
       try {
         const data = await fetchPromos();
-        if (Array.isArray(data) && data.length > 0) {
-          setPromos(data);
-        }
+        if (Array.isArray(data)) setPromos(data.filter(Boolean));
       } catch (err) {
         console.error("PROMO POPUP – FETCH ERROR:", err);
       }
@@ -56,33 +48,33 @@ export default function PromoPopup() {
 
   const p = promos[index];
 
+  const close = () => setOpen(false);
+  const next = () => setIndex((i) => (i + 1) % promos.length);
+
+  const normalizeType = (t: string) => {
+    const tt = String(t || "").toLowerCase();
+    if (tt.includes("persen") || tt.includes("percent")) return "percent";
+    if (tt.includes("nominal") || tt.includes("flat")) return "flat";
+    return "flat";
+  };
+
   const apply = () => {
-    // kalau promo yang sama sudah aktif
-    if (promo && promo.kode === p.kode) {
-      setOpen(false);
+    // kalau promo sama sudah aktif → close
+    if (promoAktif?.kode && promoAktif.kode === p.kode) {
+      close();
       return;
     }
 
-    // SET PROMO (FINAL)
     setPromo({
-      kode: p.kode,
-      tipe: p.tipe,
-      nilai: Number(p.nilai),
-      minimal: Number(p.minimal),
-      maxDiskon: p.maxDiskon ? Number(p.maxDiskon) : null,
+      kode: String(p.kode || "").toUpperCase(),
+      tipe: normalizeType(p.tipe),
+      nilai: Number(p.nilai || 0),
+      minimal: Number(p.minimal || 0),
+      maxDiskon: p.maxDiskon === null ? null : Number(p.maxDiskon || 0),
     });
 
-    // buka cart biar user lihat efeknya
-    window.dispatchEvent(new Event("open-cart"));
-
-    setOpen(false);
+    close();
   };
-
-  const next = () => {
-    setIndex((i) => (i + 1) % promos.length);
-  };
-
-  const close = () => setOpen(false);
 
   return (
     <div
@@ -98,14 +90,12 @@ export default function PromoPopup() {
         </h2>
 
         <div className="text-center mb-4">
-          <p className="text-sm text-gray-600 mb-1">Gunakan promo:</p>
+          <p className="text-sm text-gray-600 mb-1">Gunakan kode:</p>
           <div className="text-2xl font-bold tracking-wide text-[#0FA3A8]">
-            {p.kode}
+            {String(p.kode || "").toUpperCase()}
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            {p.tipe === "percent"
-              ? `Diskon ${p.nilai}%`
-              : `Potongan Rp ${Number(p.nilai).toLocaleString("id-ID")}`}
+            {normalizeType(p.tipe)} • {Number(p.nilai || 0)}
           </p>
         </div>
 
@@ -113,7 +103,7 @@ export default function PromoPopup() {
           onClick={apply}
           className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold shadow-md hover:bg-[#0DC1C7] active:scale-95 transition-all"
         >
-          Ambil Promo 🚀
+          Gunakan Promo 🚀
         </button>
 
         <button
