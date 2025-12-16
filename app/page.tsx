@@ -14,12 +14,10 @@ import Footer from "@/components/Footer"
 import CartPopup from "@/components/CartPopup"
 import PackagePopup from "@/components/PackagePopup"
 import RatingPopup from "@/components/RatingPopup"
-import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO"
 
 export default function HomePage() {
   return (
     <main role="main" aria-label="KOJE24 - Natural Cold-Pressed Juice">
-
       {/* 🔥 PROMO BANNER PALING ATAS */}
       <PromoBanner />
 
@@ -29,7 +27,7 @@ export default function HomePage() {
       {/* HERO */}
       <Hero />
 
-      {/* 🔥 FEATURED PRODUCTS (UX GUIDE, AMAN) */}
+      {/* 🔥 FEATURED PRODUCTS (UX GUIDE) */}
       <FeaturedProducts />
 
       {/* PRODUK (GRID FULL) */}
@@ -57,9 +55,6 @@ export default function HomePage() {
         <TestimonialsCarousel />
       </section>
 
-      {/* SEO JSON-LD TESTIMONI */}
-      <TestimonialSchemaSEO />
-
       {/* FAQ */}
       <section id="faq" className="scroll-mt-24">
         <FaqSection />
@@ -72,7 +67,6 @@ export default function HomePage() {
       <CartPopup />
       <PackagePopup />
       <RatingPopup />
-
     </main>
   )
 }
