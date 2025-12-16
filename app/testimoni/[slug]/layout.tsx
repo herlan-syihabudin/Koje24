@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata } from "next"
+import type { ReactNode } from "react"
 
 export const metadata: Metadata = {
   title: "Testimoni Pelanggan KOJE24",
@@ -15,4 +16,13 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     images: ["/og-testimoni.jpg"],
   },
-};
+}
+
+// ⬇️ INI YANG KEMARIN BELUM ADA
+export default function TestimoniDetailLayout({
+  children,
+}: {
+  children: ReactNode
+}) {
+  return <>{children}</>
+}
