@@ -21,11 +21,13 @@ module.exports = {
 
   // Auto generate tambahan untuk SEO lebih optimal
   transform: async (config, path) => {
-    return {
-      loc: path,
-      changefreq: "weekly",
-      priority: 0.7,
-      lastmod: new Date().toISOString(),
+  const isTestimoni = path.startsWith("/testimoni")
+
+  return {
+    loc: path,
+    changefreq: isTestimoni ? "daily" : "weekly",
+    priority: isTestimoni ? 0.9 : 0.7,
+    lastmod: new Date().toISOString(),
     };
   },
 };
