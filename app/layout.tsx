@@ -7,6 +7,8 @@ import { CartProvider } from "@/components/CartContext";
 import StickyCartBar from "@/components/StickyCartBar";
 import PromoPopup from "@/components/PromoPopup";
 import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO";
+import InstallPWAButton from "@/components/InstallPWAButton";
+
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -65,6 +67,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <CartProvider>
           {children}
         </CartProvider>
+        <InstallPWAButton />
 
         <StickyCartBar />
         <PromoPopup />
