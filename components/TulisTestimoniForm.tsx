@@ -36,11 +36,12 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     showOnHome: false,
   });
 
-  /* === AUTO CLOSE LISTENER dari HEADER === */
+  /* === AUTO CLOSE LISTENER === */
   useEffect(() => {
     const handler = () => setShow(false);
     window.addEventListener("close-testimoni-modal", handler);
-    return () => window.removeEventListener("close-testimoni-modal", handler);
+    return () =>
+      window.removeEventListener("close-testimoni-modal", handler);
   }, []);
 
   /* BODY LOCK */
@@ -55,20 +56,30 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     const err: Record<string, string> = {};
     if (form.nama.trim().length < 2) err.nama = "Nama minimal 2 karakter";
     if (form.kota.trim().length < 2) err.kota = "Kota minimal 2 karakter";
-    if (form.pesan.trim().length < 10) err.pesan = "Minimal 10 karakter";
+    if (form.pesan.trim().length < 10)
+      err.pesan = "Minimal 10 karakter";
     if (!form.varian) err.varian = "Pilih varian";
     setErrors(err);
     return Object.keys(err).length === 0;
   };
 
-  /* UPLOAD IMAGE */
+  /* UPLOAD FOTO (OPSIONAL) */
   const uploadFileToBlob = async () => {
-    if (!file) return "";
+    if (!file) return ""; // 🔑 FOTO OPSIONAL
     const fd = new FormData();
     fd.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
+
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: fd,
+    });
     const json = await res.json();
-    return json.url || "";
+
+    if (!json.success) {
+      throw new Error(json.message || "Upload foto gagal");
+    }
+
+    return json.url;
   };
 
   /* SUBMIT */
@@ -87,41 +98,57 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     setSending(true);
 
     try {
-      let imageUrl = "";
-      if (file) imageUrl = await uploadFileToBlob();
+      // 1️⃣ upload foto dulu (kalau ada)
+      const imageUrl = await uploadFileToBlob();
 
-      const newForm = {
+      // 2️⃣ payload testimoni (PENDING)
+      const payload = {
         ...form,
-        active: form.rating > 3,
-        showOnHome: form.rating > 3,
-        img: imageUrl,
+        img: imageUrl || "", // 🔑 boleh kosong
+        active: false,
+        showOnHome: false,
       };
 
-      /* 🔥 AUTO BEST SELLER UPDATE — sudah FIX type-safe */
+      // 3️⃣ update rating bestseller (tidak blocking)
       const productId = VARIAN_ID_MAP[form.varian];
       if (typeof productId === "number" && productId > 0) {
         updateRating(String(productId), form.rating);
       }
 
+      // 4️⃣ kirim testimoni
       await fetch("/api/testimonial", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newForm),
+        body: JSON.stringify(payload),
       });
 
       setLastSubmit(Date.now());
       setStatusMsg("Terima kasih! Testimoni kamu terkirim 🙌");
       onSuccess?.();
+
+      // 5️⃣ reset form
+      setForm({
+        nama: "",
+        kota: "",
+        pesan: "",
+        rating: 5,
+        varian: "",
+        img: "",
+        active: false,
+        showOnHome: false,
+      });
+      setFile(null);
+      setPreview(null);
+
       setTimeout(() => setShow(false), 900);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setStatusMsg("Terjadi kesalahan, coba lagi.");
+      setStatusMsg(err?.message || "Terjadi kesalahan, coba lagi.");
     } finally {
       setSending(false);
     }
   };
 
-  /* DISABLE BUTTON JIKA FORM BELUM VALID */
   const isInvalid =
     !form.nama || !form.kota || !form.pesan || !form.varian;
 
@@ -129,9 +156,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     <>
       <button
         onClick={() => setShow(true)}
-        className="bg-[#0FA3A8] hover:bg-[#0B4B50] text-white font-semibold px-6 py-3 rounded-full shadow-lg
-           hover:shadow-[0_10px_30px_rgba(15,163,168,0.35)]
-           transition-all"
+        className="bg-[#0FA3A8] hover:bg-[#0B4B50] text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-all"
       >
         + Tulis Testimoni
       </button>
@@ -139,20 +164,12 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
       {show && (
         <div
           onClick={() => setShow(false)}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999999] overflow-y-auto flex items-start md:items-center justify-center pt-20 md:pt-0 pb-10 koje-modal-overlay"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999999] flex items-center justify-center p-4"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-[92%] sm:w-full max-w-md bg-white rounded-3xl shadow-xl p-6 z-[1000000] max-h-[85vh] overflow-y-auto koje-modal-box"
+            className="w-full max-w-md bg-white rounded-3xl shadow-xl p-6"
           >
-            <button
-              type="button"
-              onClick={() => setShow(false)}
-              className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-[#0FA3A8] z-[1000002]"
-            >
-              ✕
-            </button>
-
             <h3 className="text-xl font-semibold mb-1 text-[#0B4B50]">
               Tulis Testimoni Kamu 💬
             </h3>
@@ -160,105 +177,97 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
               Ceritakan pengalamanmu setelah minum KOJE24.
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-3 pb-3">
-              {/* --- INPUT FIELDS --- */}
-              <div>
-                <label className="text-xs text-gray-600">Nama Lengkap</label>
-                <input
-                  value={form.nama}
-                  onChange={(e) => setForm({ ...form, nama: e.target.value })}
-                  placeholder="Contoh: Herlan S."
-                  className="mt-1 border p-2 rounded-lg w-full text-sm"
-                />
-                {errors.nama && <p className="text-[11px] text-red-500">{errors.nama}</p>}
-              </div>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <input
+                placeholder="Nama"
+                value={form.nama}
+                onChange={(e) =>
+                  setForm({ ...form, nama: e.target.value })
+                }
+                className="border p-2 rounded-lg w-full text-sm"
+              />
 
-              <div>
-                <label className="text-xs text-gray-600">Kota / Domisili</label>
-                <input
-                  value={form.kota}
-                  onChange={(e) => setForm({ ...form, kota: e.target.value })}
-                  placeholder="Contoh: Bekasi"
-                  className="mt-1 border p-2 rounded-lg w-full text-sm"
-                />
-                {errors.kota && <p className="text-[11px] text-red-500">{errors.kota}</p>}
-              </div>
+              <input
+                placeholder="Kota"
+                value={form.kota}
+                onChange={(e) =>
+                  setForm({ ...form, kota: e.target.value })
+                }
+                className="border p-2 rounded-lg w-full text-sm"
+              />
 
-              <div>
-                <label className="text-xs text-gray-600">Ceritakan Pengalamanmu</label>
-                <textarea
-                  value={form.pesan}
-                  onChange={(e) => setForm({ ...form, pesan: e.target.value })}
-                  placeholder="Contoh: Setelah rutin minum KOJE24..."
-                  rows={3}
-                  className="mt-1 border p-2 rounded-lg w-full text-sm resize-none"
-                />
-                {errors.pesan && <p className="text-[11px] text-red-500">{errors.pesan}</p>}
-              </div>
+              <textarea
+                placeholder="Ceritakan pengalamanmu"
+                rows={3}
+                value={form.pesan}
+                onChange={(e) =>
+                  setForm({ ...form, pesan: e.target.value })
+                }
+                className="border p-2 rounded-lg w-full text-sm"
+              />
 
-              <div>
-                <label className="text-xs text-gray-600">Varian Favorit</label>
-                <select
-                  value={form.varian}
-                  onChange={(e) => setForm({ ...form, varian: e.target.value })}
-                  className="mt-1 border p-2 rounded-lg w-full text-sm"
-                >
-                  <option value="">Pilih Varian</option>
-                  <option>Golden Detox</option>
-                  <option>Yellow Immunity</option>
-                  <option>Green Revive</option>
-                  <option>Sunrise Boost</option>
-                  <option>Lemongrass Fresh</option>
-                  <option>Red Vitality</option>
-                </select>
-                {errors.varian && <p className="text-[11px] text-red-500">{errors.varian}</p>}
-              </div>
+              <select
+                value={form.varian}
+                onChange={(e) =>
+                  setForm({ ...form, varian: e.target.value })
+                }
+                className="border p-2 rounded-lg w-full text-sm"
+              >
+                <option value="">Pilih Varian</option>
+                {Object.keys(VARIAN_ID_MAP).map((v) => (
+                  <option key={v}>{v}</option>
+                ))}
+              </select>
 
-              <div>
-                <label className="text-xs text-gray-600">Rating Kepuasan</label>
-                <div className="flex gap-1 mt-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onMouseEnter={() => setHoverRating(star)}
-                      onMouseLeave={() => setHoverRating(null)}
-                      onClick={() => setForm({ ...form, rating: star })}
-                      className="text-xl"
+              {/* RATING */}
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(null)}
+                    onClick={() =>
+                      setForm({ ...form, rating: star })
+                    }
+                    className="text-xl"
+                  >
+                    <span
+                      className={
+                        (hoverRating ?? form.rating) >= star
+                          ? "text-yellow-400"
+                          : "text-gray-300"
+                      }
                     >
-                      <span
-                        className={
-                          (hoverRating ?? form.rating) >= star
-                            ? "text-yellow-400"
-                            : "text-gray-300"
-                        }
-                      >
-                        ★
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                      ★
+                    </span>
+                  </button>
+                ))}
               </div>
 
-              <div>
-                <label className="text-xs text-gray-600">Foto (opsional)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0] || null;
-                    setFile(f);
-                    if (f) setPreview(URL.createObjectURL(f));
-                  }}
-                  className="mt-1 border p-2 rounded-lg w-full text-sm"
+              {/* FOTO OPSIONAL */}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] || null;
+                  setFile(f);
+                  if (f) setPreview(URL.createObjectURL(f));
+                }}
+                className="border p-2 rounded-lg w-full text-sm"
+              />
+
+              {preview && (
+                <img
+                  src={preview}
+                  className="w-20 h-20 rounded-lg object-cover border"
                 />
-                {preview && (
-                  <img src={preview} className="w-20 h-20 rounded-lg object-cover mt-2 border" />
-                )}
-              </div>
+              )}
 
               {statusMsg && (
-                <p className="text-[11px] text-center text-gray-600">{statusMsg}</p>
+                <p className="text-xs text-center text-gray-600">
+                  {statusMsg}
+                </p>
               )}
 
               <button
