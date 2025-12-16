@@ -26,18 +26,18 @@ export async function GET(req: NextRequest) {
 
     const sheets = google.sheets({ version: "v4", auth })
 
-    // Ambil semua subscriber
+    // 🔍 ambil semua kolom
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "SUBSCRIBERS!A2:C",
+      range: "SUBSCRIBERS!A2:F",
     })
 
     const rows = res.data.values || []
-
     let rowIndex = -1
+
     rows.forEach((row, i) => {
       if (String(row[0]).toLowerCase() === email) {
-        rowIndex = i + 2 // karena mulai dari A2
+        rowIndex = i + 2 // start A2
       }
     })
 
@@ -48,13 +48,24 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    // Update kolom ACTIVE → FALSE
+    const now = new Date()
+      .toISOString()
+      .replace("T", " ")
+      .slice(0, 19)
+
+    // ✅ update ACTIVE + LAST_ACTION + UPDATED_AT
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `SUBSCRIBERS!C${rowIndex}`,
+      range: `SUBSCRIBERS!B${rowIndex}:F${rowIndex}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
-        values: [["FALSE"]],
+        values: [[
+          "FALSE",           // active
+          rows[rowIndex - 2][2], // source (biarin)
+          rows[rowIndex - 2][3], // created_at (jangan diubah)
+          "UNSUBSCRIBE",     // last_action
+          now                // updated_at
+        ]],
       },
     })
 
