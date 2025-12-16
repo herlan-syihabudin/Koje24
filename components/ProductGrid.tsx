@@ -137,7 +137,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
           const qty = qtyOf(p.id)
           const isAdded = added === p.id
 
-          const stats = (rankStats as any)[Number(p.id)]
+          const stats = rankStats?.[String(p.id)]
           const isBest = stats?.isBestSeller === true
 
           return (
