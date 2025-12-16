@@ -9,10 +9,25 @@ export default function PromoPopup() {
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
 
-  const addPromo = useCartStore((s: any) => s.addPromo);
-  const currentPromoLabel = useCartStore((s: any) => s.promoLabel);
+  const promo = useCartStore((s) => s.promo);
+  const setPromo = useCartStore((s) => s.setPromo);
 
-  // ▶️ Popup dibuka manual dari tombol "Lihat Promo"
+  // ===============================
+  // AUTO OPEN SAAT FIRST VISIT (1x)
+  // ===============================
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const seen = localStorage.getItem("koje24_promo_seen");
+    if (seen) return;
+
+    setOpen(true);
+    localStorage.setItem("koje24_promo_seen", "1");
+  }, []);
+
+  // ===============================
+  // OPEN VIA MANUAL EVENT (OPTIONAL)
+  // ===============================
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handler = () => setOpen(true);
@@ -20,11 +35,13 @@ export default function PromoPopup() {
     return () => window.removeEventListener("open-promo-popup", handler);
   }, []);
 
-  // ▶️ Load promo dari API hanya sekali saat component mount
+  // ===============================
+  // LOAD PROMO
+  // ===============================
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await fetchPromos(); // sudah hanya ambil promo aktif
+        const data = await fetchPromos();
         if (Array.isArray(data) && data.length > 0) {
           setPromos(data);
         }
@@ -39,52 +56,56 @@ export default function PromoPopup() {
 
   const p = promos[index];
 
+  const apply = () => {
+    // kalau promo yang sama sudah aktif
+    if (promo && promo.kode === p.kode) {
+      setOpen(false);
+      return;
+    }
+
+    // SET PROMO (FINAL)
+    setPromo({
+      kode: p.kode,
+      tipe: p.tipe,
+      nilai: Number(p.nilai),
+      minimal: Number(p.minimal),
+      maxDiskon: p.maxDiskon ? Number(p.maxDiskon) : null,
+    });
+
+    // buka cart biar user lihat efeknya
+    window.dispatchEvent(new Event("open-cart"));
+
+    setOpen(false);
+  };
+
   const next = () => {
     setIndex((i) => (i + 1) % promos.length);
   };
 
   const close = () => setOpen(false);
 
-  const apply = () => {
-    // ❗ Jika promo yang sama sudah dipakai, langsung tutup
-    if (currentPromoLabel && currentPromoLabel === p.kode) {
-      setOpen(false);
-      return;
-    }
-
-    // Masukkan promo ke cart store
-    addPromo({
-      label: p.kode,
-      tipe: p.tipe,
-      nilai: p.nilai,
-      minimal: p.minimal,
-      maxDiskon: p.maxDiskon,
-    });
-
-    // 🔥 Langsung close setelah berhasil dipakai
-    setOpen(false);
-  };
-
   return (
     <div
       className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[99999]"
-      onClick={close} // Tutup kalau klik area gelap
+      onClick={close}
     >
       <div
         className="bg-white rounded-3xl p-7 max-w-sm mx-auto shadow-2xl relative"
-        onClick={(e) => e.stopPropagation()} // Biar klik di dalam box nggak nutup
+        onClick={(e) => e.stopPropagation()}
       >
         <h2 className="font-playfair text-xl font-semibold text-[#0B4B50] mb-3 text-center">
           Promo Spesial Untuk Kamu 🎁
         </h2>
 
         <div className="text-center mb-4">
-          <p className="text-sm text-gray-600 mb-1">Gunakan kode:</p>
+          <p className="text-sm text-gray-600 mb-1">Gunakan promo:</p>
           <div className="text-2xl font-bold tracking-wide text-[#0FA3A8]">
             {p.kode}
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            {p.tipe} • {p.nilai}
+            {p.tipe === "percent"
+              ? `Diskon ${p.nilai}%`
+              : `Potongan Rp ${Number(p.nilai).toLocaleString("id-ID")}`}
           </p>
         </div>
 
@@ -92,7 +113,7 @@ export default function PromoPopup() {
           onClick={apply}
           className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold shadow-md hover:bg-[#0DC1C7] active:scale-95 transition-all"
         >
-          Gunakan Promo 🚀
+          Ambil Promo 🚀
         </button>
 
         <button
