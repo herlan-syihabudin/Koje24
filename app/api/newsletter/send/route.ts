@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
 import nodemailer from "nodemailer"
+import { newsletterTemplate } from "@/lib/email/newsletterTemplate"
+
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
