@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import dynamic from "next/dynamic"
+import Image from "next/image"
 import TulisTestimoniForm from "./TulisTestimoniForm"
 
 const Marquee = dynamic(() => import("react-fast-marquee"), { ssr: false })
@@ -24,6 +25,7 @@ function toBool(v: any) {
 export default function TestimonialsCarousel() {
   const [data, setData] = useState<Testimoni[]>([])
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -31,7 +33,7 @@ export default function TestimonialsCarousel() {
       const res = await fetch("/api/testimonial", { cache: "no-store" })
       const json = await res.json()
 
-      // Filter & sort terbaik — rating tinggi dan ada foto tampil dulu
+      // 🔥 Filter + sort + LIMIT (ANTI BERAT)
       const filtered: Testimoni[] = json
         .filter((x: any) => toBool(x.showOnHome) && toBool(x.active))
         .sort((a: any, b: any) => {
@@ -41,6 +43,7 @@ export default function TestimonialsCarousel() {
           const pb = b.img ? 1 : 0
           return rb - ra || pb - pa
         })
+        .slice(0, 12) // ⬅️ LIMIT WAJIB
 
       setData(filtered)
     } catch (err) {
@@ -51,8 +54,12 @@ export default function TestimonialsCarousel() {
   }, [])
 
   useEffect(() => {
+    setMounted(true)
     load()
   }, [load])
+
+  // ⛔ cegah hydration glitch
+  if (!mounted) return null
 
   return (
     <section className="py-24 bg-gradient-to-b from-[#f6fbfb] to-[#eef7f7] relative overflow-hidden">
@@ -67,7 +74,8 @@ export default function TestimonialsCarousel() {
               TESTIMONI PELANGGAN
             </p>
             <h2 className="font-playfair text-3xl md:text-4xl font-semibold text-[#0B4B50] max-w-xl leading-snug">
-              Apa kata mereka tentang <span className="text-[#0FA3A8]">KOJE24</span>?
+              Apa kata mereka tentang{" "}
+              <span className="text-[#0FA3A8]">KOJE24</span>?
             </h2>
           </div>
 
@@ -82,13 +90,15 @@ export default function TestimonialsCarousel() {
           </div>
         </div>
 
-        {/* Loading skeleton */}
+        {/* Loading skeleton (ANTI CLS) */}
         {loading && (
           <div className="flex gap-4 overflow-x-auto pb-2">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="min-w-[280px] sm:min-w-[330px] bg-white/80 border border-[#e6eeee]/70 rounded-3xl p-6 shadow-sm animate-pulse"
+                className="min-w-[280px] sm:min-w-[330px] bg-white/80
+                           border border-[#e6eeee]/70 rounded-3xl p-6
+                           shadow-sm animate-pulse"
               >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-full bg-[#e4f4f4]" />
@@ -114,7 +124,7 @@ export default function TestimonialsCarousel() {
           </p>
         )}
 
-        {/* MARQUEE TESTIMONI */}
+        {/* MARQUEE */}
         {!loading && data.length > 0 && (
           <Marquee pauseOnHover gradient={false} speed={28}>
             {data.map((t, i) => {
@@ -129,23 +139,30 @@ export default function TestimonialsCarousel() {
               return (
                 <article
                   key={i}
-                  className="mx-3 min-w-[280px] sm:min-w-[330px] cursor-pointer"
+                  className="mx-3 min-w-[280px] sm:min-w-[330px]"
                 >
                   <div
-                    className="bg-white/95 border border-[#e6eeee]/80 rounded-3xl p-5 sm:p-6 
-                    shadow-[0_16px_40px_rgba(11,75,80,0.10)] hover:shadow-[0_20px_55px_rgba(11,75,80,0.18)] 
-                    transition-all duration-300"
+                    className="bg-white/95 border border-[#e6eeee]/80
+                               rounded-3xl p-5 sm:p-6
+                               shadow-[0_16px_40px_rgba(11,75,80,0.10)]
+                               hover:shadow-[0_20px_55px_rgba(11,75,80,0.18)]
+                               transition-all duration-300"
                   >
                     {/* header */}
                     <div className="flex items-center gap-3 mb-3">
                       {t.img ? (
-                        <img
+                        <Image
                           src={t.img}
                           alt={t.nama}
-                          className="w-10 h-10 rounded-full object-cover border border-[#e6eeee]"
+                          width={40}
+                          height={40}
+                          loading="lazy"
+                          className="rounded-full object-cover border border-[#e6eeee]"
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-[#0FA3A8]/10 flex items-center justify-center text-xs font-semibold text-[#0B4B50]">
+                        <div className="w-10 h-10 rounded-full bg-[#0FA3A8]/10
+                                        flex items-center justify-center
+                                        text-xs font-semibold text-[#0B4B50]">
                           {initials}
                         </div>
                       )}
