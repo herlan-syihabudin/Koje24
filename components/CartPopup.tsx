@@ -7,7 +7,18 @@ import { useRouter } from "next/navigation";
 
 export default function CartPopup() {
   const router = useRouter();
-  const { items, totalPrice, addItem, removeItem, clearCart } = useCartStore();
+
+  const items = useCartStore((s) => s.items);
+  const totalPrice = useCartStore((s) => s.totalPrice);
+  const promo = useCartStore((s) => s.promo);
+  const getDiscount = useCartStore((s) => s.getDiscount);
+  const getFinalTotal = useCartStore((s) => s.getFinalTotal);
+
+  const addItem = useCartStore((s) => s.addItem);
+  const removeItem = useCartStore((s) => s.removeItem);
+  const clearCart = useCartStore((s) => s.clearCart);
+  const clearPromo = useCartStore((s) => s.clearPromo);
+
   const [open, setOpen] = useState(false);
 
   // === EVENT BUKA / TUTUP POPUP ===
@@ -47,6 +58,9 @@ export default function CartPopup() {
   };
 
   if (!open) return null;
+
+  const discount = getDiscount();
+  const finalTotal = getFinalTotal();
 
   return (
     <div
@@ -99,7 +113,11 @@ export default function CartPopup() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="max-w-[65%]">
                         <p className="font-semibold text-[#0B4B50] leading-snug">{title}</p>
-                        {detail && <p className="text-xs text-gray-500 leading-tight mt-0.5">{detail}</p>}
+                        {detail && (
+                          <p className="text-xs text-gray-500 leading-tight mt-0.5">
+                            {detail}
+                          </p>
+                        )}
                       </div>
                       <p className="font-semibold text-[#0B4B50] whitespace-nowrap">
                         Rp {(item.qty * item.price).toLocaleString("id-ID")}
@@ -119,7 +137,9 @@ export default function CartPopup() {
                           -
                         </button>
 
-                        <span className="min-w-[24px] text-center font-semibold">{item.qty}</span>
+                        <span className="min-w-[24px] text-center font-semibold">
+                          {item.qty}
+                        </span>
 
                         <button
                           onClick={() =>
@@ -145,10 +165,31 @@ export default function CartPopup() {
 
         {/* FOOTER */}
         {items.length > 0 && (
-          <div className="p-5 border-t border-gray-200 space-y-4">
-            <div className="flex justify-between text-lg font-semibold">
-              <span>Total</span>
+          <div className="p-5 border-t border-gray-200 space-y-3">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
               <span>Rp {totalPrice.toLocaleString("id-ID")}</span>
+            </div>
+
+            {promo && discount > 0 && (
+              <div className="flex justify-between text-green-700 font-medium">
+                <span>Promo {promo.kode}</span>
+                <span>- Rp {discount.toLocaleString("id-ID")}</span>
+              </div>
+            )}
+
+            {promo && (
+              <button
+                onClick={clearPromo}
+                className="text-xs text-red-500 underline text-left"
+              >
+                Hapus promo
+              </button>
+            )}
+
+            <div className="flex justify-between text-lg font-semibold pt-1">
+              <span>Total</span>
+              <span>Rp {finalTotal.toLocaleString("id-ID")}</span>
             </div>
 
             <button
@@ -157,7 +198,7 @@ export default function CartPopup() {
                 window.dispatchEvent(new Event("close-cart"));
                 router.push("/checkout");
               }}
-              className="w-full py-3 bg-[#0FA3A8] text-white rounded-xl font-semibold mt-1 hover:bg-[#0B4B50] transition-all"
+              className="w-full py-3 bg-[#0FA3A8] text-white rounded-xl font-semibold hover:bg-[#0B4B50] transition-all"
             >
               Checkout
             </button>
