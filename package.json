@@ -30,7 +30,7 @@
   "react-qr-code": "2.0.18",
   "zustand": "4.5.0",
   "nodemailer": "6.9.16",
-  "resend": "^x.x.x"
+  "resend": "3.5.0"
 },
   "devDependencies": {
   "@types/node": "20.14.10",
