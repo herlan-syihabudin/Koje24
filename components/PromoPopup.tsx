@@ -12,7 +12,9 @@ export default function PromoPopup() {
   const promoAktif = useCartStore((s) => s.promo);
   const setPromo = useCartStore((s) => s.setPromo);
 
-  // ✅ Auto open 1x saat first visit (opsional)
+  // ===============================
+  // AUTO OPEN 1x SAAT FIRST VISIT
+  // ===============================
   useEffect(() => {
     if (typeof window === "undefined") return;
     const KEY = "koje24_promo_seen";
@@ -23,7 +25,9 @@ export default function PromoPopup() {
     }
   }, []);
 
-  // ✅ Bisa juga dibuka manual via event
+  // ===============================
+  // OPEN MANUAL VIA EVENT
+  // ===============================
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handler = () => setOpen(true);
@@ -31,12 +35,16 @@ export default function PromoPopup() {
     return () => window.removeEventListener("open-promo-popup", handler);
   }, []);
 
-  // Load promo
+  // ===============================
+  // LOAD PROMO DARI API
+  // ===============================
   useEffect(() => {
     const load = async () => {
       try {
         const data = await fetchPromos();
-        if (Array.isArray(data)) setPromos(data.filter(Boolean));
+        if (Array.isArray(data)) {
+          setPromos(data.filter(Boolean));
+        }
       } catch (err) {
         console.error("PROMO POPUP – FETCH ERROR:", err);
       }
@@ -51,15 +59,27 @@ export default function PromoPopup() {
   const close = () => setOpen(false);
   const next = () => setIndex((i) => (i + 1) % promos.length);
 
-  const normalizeType = (t: string) => {
-    const tt = String(t || "").toLowerCase();
-    if (tt.includes("persen") || tt.includes("percent")) return "percent";
-    if (tt.includes("nominal") || tt.includes("flat")) return "flat";
-    return "flat";
+  // ===============================
+  // NORMALIZE TIPE PROMO (PENTING)
+  // ===============================
+  const normalizeType = (
+    tipe: string
+  ): "percent" | "flat" | "free_shipping" | "cashback" => {
+    const t = String(tipe || "").toLowerCase();
+
+    if (t.includes("diskon")) return "percent";        // Diskon %
+    if (t.includes("potongan")) return "flat";         // Potongan Rp
+    if (t.includes("free")) return "free_shipping";    // Free Ongkir
+    if (t.includes("cashback")) return "cashback";     // Cashback
+
+    return "flat"; // default aman
   };
 
+  // ===============================
+  // APPLY PROMO KE CART STORE
+  // ===============================
   const apply = () => {
-    // kalau promo sama sudah aktif → close
+    // Jika promo yang sama sudah aktif → tutup saja
     if (promoAktif?.kode && promoAktif.kode === p.kode) {
       close();
       return;
@@ -70,7 +90,10 @@ export default function PromoPopup() {
       tipe: normalizeType(p.tipe),
       nilai: Number(p.nilai || 0),
       minimal: Number(p.minimal || 0),
-      maxDiskon: p.maxDiskon === null ? null : Number(p.maxDiskon || 0),
+      maxDiskon:
+        p.maxDiskon === null || p.maxDiskon === undefined
+          ? null
+          : Number(p.maxDiskon || 0),
     });
 
     close();
@@ -95,7 +118,7 @@ export default function PromoPopup() {
             {String(p.kode || "").toUpperCase()}
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            {normalizeType(p.tipe)} • {Number(p.nilai || 0)}
+            {p.tipe} • {Number(p.nilai || 0).toLocaleString("id-ID")}
           </p>
         </div>
 
