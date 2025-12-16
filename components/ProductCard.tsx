@@ -20,9 +20,9 @@ export default function ProductCard({
   const info = ranking[id]
   const isBest = Boolean(info?.isBestSeller)
 
-  const qty = useCartStore((s) =>
-    typeof s.getQty === "function" ? s.getQty(id) : 0
-  )
+  const qty = useCartStore(
+  (s) => s.items.find((i) => i.id === id)?.qty ?? 0
+)
   const addItem = useCartStore((s) => s.addItem)
   const removeItem = useCartStore((s) => s.removeItem)
 
