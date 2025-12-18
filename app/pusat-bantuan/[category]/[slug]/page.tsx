@@ -1,10 +1,26 @@
-// app/pusat-bantuan/[category]/[slug]/page.tsx
-
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 import { ArrowLeft, MessageCircle } from "lucide-react"
 import { helpCategories } from "../../helpCategories"
+
+/* ===============================
+   STATIC PARAMS (WAJIB)
+================================ */
+export function generateStaticParams() {
+  const params: { category: string; slug: string }[] = []
+
+  Object.entries(helpCategories).forEach(([category, data]) => {
+    data.items.forEach((item) => {
+      params.push({
+        category,
+        slug: item.slug,
+      })
+    })
+  })
+
+  return params
+}
 
 /* ===============================
    SEO METADATA DINAMIS
