@@ -1,10 +1,17 @@
-// app/pusat-bantuan/[category]/page.tsx
-
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 import { ArrowLeft, ChevronRight } from "lucide-react"
 import { helpCategories } from "../helpCategories"
+
+/* ===============================
+   STATIC PARAMS (WAJIB DI VERCEL)
+================================ */
+export function generateStaticParams() {
+  return Object.keys(helpCategories).map((category) => ({
+    category,
+  }))
+}
 
 /* ===============================
    SEO METADATA
