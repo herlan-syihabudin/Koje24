@@ -13,10 +13,7 @@ export async function POST(req: NextRequest) {
 
     const cleanEmail = String(email || "").toLowerCase().trim()
     if (!cleanEmail || !cleanEmail.includes("@")) {
-      return NextResponse.json(
-        { success: false, message: "Email tidak valid" },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, message: "Email invalid" })
     }
 
     const auth = new google.auth.JWT({
@@ -27,48 +24,61 @@ export async function POST(req: NextRequest) {
 
     const sheets = google.sheets({ version: "v4", auth })
 
-    // 🔍 cek email existing
-    const existing = await sheets.spreadsheets.values.get({
+    // Ambil semua subscriber
+    const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "SUBSCRIBERS!A2:A",
+      range: "SUBSCRIBERS!A2:F",
     })
 
-    const emails =
-      existing.data.values?.flat().map(e => String(e).toLowerCase()) || []
+    const rows = res.data.values || []
+    let rowIndex = -1
 
-    if (emails.includes(cleanEmail)) {
-      return NextResponse.json({
-        success: true,
-        message: "Already subscribed",
+    rows.forEach((row, i) => {
+      if (String(row[0]).toLowerCase() === cleanEmail) {
+        rowIndex = i + 2
+      }
+    })
+
+    const now = new Date().toISOString().replace("T", " ").slice(0, 19)
+
+    // 🔁 EMAIL SUDAH ADA → AKTIFKAN ULANG
+    if (rowIndex !== -1) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `SUBSCRIBERS!B${rowIndex}:F${rowIndex}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [[
+            "TRUE",        // active
+            source,        // source
+            rows[rowIndex - 2][3], // created_at (jangan ubah)
+            "RESUBSCRIBE", // last_action
+            now            // updated_at
+          ]],
+        },
       })
+
+      return NextResponse.json({ success: true, message: "Re-subscribed" })
     }
 
-    const now = new Date()
-      .toISOString()
-      .replace("T", " ")
-      .slice(0, 19)
-
-    // ➕ append subscriber (URUTAN KOLOM BENAR)
+    // ➕ EMAIL BARU
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: "SUBSCRIBERS!A:F",
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          cleanEmail, // A email
-          "TRUE",     // B active
-          source,     // C source
-          now,        // D created_at
-          "",         // E last_action
-          "",         // F updated_at
+          cleanEmail,
+          "TRUE",
+          source,
+          now,
+          "SUBSCRIBE",
+          ""
         ]],
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      message: "Subscribed",
-    })
+    return NextResponse.json({ success: true, message: "Subscribed" })
   } catch (err) {
     console.error("SUBSCRIBE ERROR:", err)
     return NextResponse.json(
