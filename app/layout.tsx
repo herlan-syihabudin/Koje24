@@ -1,89 +1,85 @@
-"use client";
+import "./globals.css";
+import type { ReactNode } from "react";
+import type { Metadata, Viewport } from "next";
+import { Inter, Playfair_Display } from "next/font/google";
 
-import Header from "@/components/Header";
-import PromoBanner from "@/components/PromoBanner";
-import Hero from "@/components/Hero";
-import FeaturedProducts from "@/components/FeaturedProducts";
-import ProductGrid from "@/components/ProductGrid";
-import AboutSection from "@/components/AboutSection";
-import PackagesSection from "@/components/PackagesSection";
-import SubscriptionSection from "@/components/SubscriptionSection";
-import TestimonialsCarousel from "@/components/TestimonialsCarousel";
-import FaqSection from "@/components/FaqSection";
-import Footer from "@/components/Footer";
-import CartPopup from "@/components/CartPopup";
-import PackagePopup from "@/components/PackagePopup";
-import RatingPopup from "@/components/RatingPopup";
+import { CartProvider } from "@/components/CartContext";
+import StickyCartBar from "@/components/StickyCartBar";
+import PromoPopup from "@/components/PromoPopup";
+import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO";
+import InstallPWAButton from "@/components/InstallPWAButton";
 
-// 🔥 ANIMATION WRAPPER
-import AnimateOnScroll from "@/components/AnimateOnScroll";
 
-export default function HomePage() {
+import { SpeedInsights } from "@vercel/speed-insights/next";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: {
+    default: "KOJE24 • Natural Cold-Pressed Juice",
+    template: "%s | KOJE24",
+  },
+  description:
+    "KOJE24 — minuman cold-pressed alami premium tanpa gula tambahan dan tanpa pengawet. Cocok untuk detoks harian dan menjaga imunitas.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0FA3A8",
+};
+
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <main role="main" aria-label="KOJE24 - Natural Cold-Pressed Juice">
-      {/* 🔥 PROMO BANNER PALING ATAS (JANGAN DIANIMASI) */}
-      <PromoBanner />
+    <html
+      lang="id"
+      className={`${inter.variable} ${playfair.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+      </head>
 
-      {/* HEADER (JANGAN DIANIMASI) */}
-      <Header />
+      <body className="antialiased font-inter bg-white text-[#0B4B50] max-w-[100vw] overflow-x-hidden">
+        {/* ⭐ SEO: Aggregate Rating & Review Schema */}
+        <TestimonialSchemaSEO />
 
-      {/* HERO (PRIORITAS #1) */}
-      <AnimateOnScroll>
-        <Hero />
-      </AnimateOnScroll>
+        <CartProvider>
+          {children}
+        </CartProvider>
+        <InstallPWAButton />
 
-      {/* FEATURED PRODUCTS / UX GUIDE */}
-      <AnimateOnScroll delay={0.1}>
-        <FeaturedProducts />
-      </AnimateOnScroll>
+        <StickyCartBar />
+        <PromoPopup />
+        <SpeedInsights />
 
-      {/* PRODUK GRID (JANGAN DULU, ISINYA BANYAK) */}
-      <section id="produk" className="scroll-mt-24">
-        <ProductGrid />
-      </section>
-
-      {/* ABOUT */}
-      <section id="about" className="scroll-mt-24">
-        <AnimateOnScroll>
-          <AboutSection />
-        </AnimateOnScroll>
-      </section>
-
-      {/* PAKET */}
-      <section id="paket" className="scroll-mt-24">
-        <AnimateOnScroll>
-          <PackagesSection />
-        </AnimateOnScroll>
-      </section>
-
-      {/* LANGGANAN */}
-      <section id="langganan" className="scroll-mt-24">
-        <AnimateOnScroll>
-          <SubscriptionSection />
-        </AnimateOnScroll>
-      </section>
-
-      {/* TESTIMONI (TRUST BOOSTER) */}
-      <section id="testimoni" className="scroll-mt-24">
-        <AnimateOnScroll>
-          <TestimonialsCarousel />
-        </AnimateOnScroll>
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="scroll-mt-24">
-        <AnimateOnScroll>
-          <FaqSection />
-        </AnimateOnScroll>
-      </section>
-
-      {/* FOOTER (NO ANIMATION) */}
-      <Footer />
-
-      {/* POPUPS GLOBAL (NO ANIMATION) */}
-      <CartPopup />
-      <PackagePopup />
-      <RatingPopup />
-    </main>
+        {/* smooth scroll fallback */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try { document.documentElement.style.scrollBehavior = "smooth"; } catch(e){}`
+          }}
+        />
+      </body>
+    </html>
   );
 }
