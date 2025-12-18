@@ -1,5 +1,3 @@
-// app/pusat-bantuan/helpCategories.ts
-
 export const helpCategories = {
   akun: {
     title: "Akun & Keamanan",
@@ -7,76 +5,96 @@ export const helpCategories = {
       {
         slug: "lupa-password",
         title: "Lupa Password",
-        keywords: ["lupa password", "reset password", "password salah", "ganti password"],
+        keywords: ["lupa password", "reset password", "password salah"],
         summary: "Cara reset password akun KOJE24 jika lupa.",
         content: `
 ## Cara Mengatasi Lupa Password
 
 1. Buka halaman login KOJE24.
 2. Klik **Lupa Password**.
-3. Masukkan email yang terdaftar di KOJE24.
-4. Cek email masuk → klik link reset password.
+3. Masukkan email terdaftar.
+4. Cek email dan klik link reset.
 5. Buat password baru dan login kembali.
 
-**Catatan:** Jika email tidak masuk, cek folder spam atau gunakan fitur *kirim ulang*.`
+Jika email tidak masuk, cek folder spam atau kirim ulang.`
       },
       {
         slug: "ubah-data-akun",
         title: "Mengubah Data Akun",
-        keywords: ["ubah data", "edit akun", "ganti nomor", "ganti email"],
-        summary: "Panduan mengganti nama, email, atau nomor WhatsApp.",
+        keywords: ["ubah data akun", "edit akun"],
+        summary: "Panduan mengganti data akun KOJE24.",
         content: `
 ## Cara Mengubah Data Akun
 
 1. Login ke akun KOJE24.
-2. Buka menu **Profil Saya**.
-3. Pilih data yang ingin diubah — nama, email, atau nomor WhatsApp.
-4. Klik **Simpan Perubahan**.
-
-Data akan tersimpan secara otomatis di sistem KOJE24.`
+2. Masuk ke menu **Profil Saya**.
+3. Edit data yang diperlukan.
+4. Klik **Simpan**.`
       },
       {
         slug: "keamanan-akun",
         title: "Tips Keamanan Akun",
-        keywords: ["keamanan akun", "akun dibajak", "akun aman", "otp"],
-        summary: "Cara menjaga akun tetap aman dari penyalahgunaan.",
+        keywords: ["keamanan akun", "otp"],
+        summary: "Tips menjaga akun tetap aman.",
         content: `
-## Tips Keamanan Akun KOJE24
+## Tips Keamanan Akun
 
-- Gunakan password yang kuat dan tidak mudah ditebak.
-- Jangan bagikan OTP atau link login kepada siapapun.
-- Logout setelah menggunakan device umum.
-- Jika merasa akun disusupi, segera ganti password.`
+- Jangan bagikan OTP.
+- Gunakan password unik.
+- Logout di perangkat umum.`
       },
       {
         slug: "hapus-akun",
-        title: "Menghapus Akun KOJE24",
-        keywords: ["hapus akun", "tutup akun", "nonaktif akun"],
-        summary: "Cara menghapus atau menonaktifkan akun.",
+        title: "Menghapus Akun",
+        keywords: ["hapus akun", "tutup akun"],
+        summary: "Cara menghapus akun KOJE24.",
         content: `
-## Cara Menghapus Akun KOJE24
+## Menghapus Akun KOJE24
 
-Jika ingin menghapus akun:
+Hubungi Admin KOJE24 dan sertakan email terdaftar.
+Penghapusan bersifat permanen.`
+      }
+    ]
+  },
 
-1. Hubungi Admin KOJE24 melalui chat.
-2. Berikan email yang digunakan di KOJE24.
-3. Admin akan memproses permintaan penghapusan.
+  pesanan: {
+    title: "Pesanan",
+    items: [
+      {
+        slug: "cek-status-pesanan",
+        title: "Cek Status Pesanan",
+        keywords: ["status pesanan", "cek pesanan"],
+        summary: "Cara melihat status pesanan.",
+        content: `
+## Cara Cek Status Pesanan
 
-**Catatan:** Data yang telah dihapus tidak bisa dikembalikan.`
+1. Login ke akun.
+2. Masuk ke menu **Pesanan Saya**.
+3. Lihat status pesanan aktif.`
       },
       {
-        slug: "verifikasi-email",
-        title: "Verifikasi Email",
-        keywords: ["verifikasi email", "email tidak terverifikasi", "aktivasi email"],
-        summary: "Cara verifikasi email agar pesanan aman.",
+        slug: "ubah-pesanan",
+        title: "Mengubah Pesanan",
+        keywords: ["ubah pesanan", "edit pesanan"],
+        summary: "Mengubah pesanan sebelum diproses.",
         content: `
-## Cara Verifikasi Email KOJE24
+## Mengubah Pesanan
 
-1. Buka kotak masuk email.
-2. Cari pesan dari KOJE24.
-3. Klik tombol **Verifikasi Email**.
+Pesanan hanya bisa diubah sebelum status **Diproses**.
+Hubungi admin secepatnya.`
+      },
+      {
+        slug: "pesanan-dibatalkan",
+        title: "Pesanan Dibatalkan",
+        keywords: ["pesanan dibatalkan"],
+        summary: "Alasan pesanan dibatalkan.",
+        content: `
+## Pesanan Dibatalkan
 
-Jika tidak ada email, gunakan fitur **Kirim Ulang Verifikasi** di halaman profil.`
+Pesanan bisa dibatalkan karena:
+- Pembayaran tidak masuk
+- Stok habis
+- Permintaan pelanggan`
       }
     ]
   },
@@ -87,73 +105,159 @@ Jika tidak ada email, gunakan fitur **Kirim Ulang Verifikasi** di halaman profil
       {
         slug: "metode-pembayaran",
         title: "Metode Pembayaran",
-        keywords: ["cara bayar", "metode bayar", "transfer", "qris", "ewallet"],
-        summary: "Daftar metode pembayaran yang tersedia.",
+        keywords: ["cara bayar", "qris", "transfer"],
+        summary: "Metode pembayaran yang tersedia.",
         content: `
-## Metode Pembayaran KOJE24
+## Metode Pembayaran
 
-- Transfer Bank (BCA, Mandiri)
+- Transfer Bank
 - QRIS
-- E-Wallet (OVO, Dana, GoPay)
-
-Pastikan nama pengirim sesuai agar verifikasi cepat.`
+- E-wallet`
       },
       {
         slug: "pembayaran-gagal",
         title: "Pembayaran Gagal",
-        keywords: ["bayar gagal", "pembayaran gagal", "saldo terpotong"],
-        summary: "Cara penyelesaian jika pembayaran gagal.",
+        keywords: ["pembayaran gagal"],
+        summary: "Solusi jika pembayaran gagal.",
         content: `
 ## Pembayaran Gagal
 
-Jika pembayaran ditolak:
+Cek saldo dan ulangi transaksi.
+Jika saldo terpotong, hubungi admin.`
+      }
+    ]
+  },
 
-1. Cek saldo / limit e-wallet.
-2. Coba ulang dalam 1 menit.
-3. Jika sudah terdebet → kirim bukti transfer ke Admin.
+  pengiriman: {
+    title: "Pengiriman",
+    items: [
+      {
+        slug: "jadwal-pengiriman",
+        title: "Jadwal Pengiriman",
+        keywords: ["jadwal kirim"],
+        summary: "Informasi jadwal pengiriman.",
+        content: `
+## Jadwal Pengiriman
 
-Admin akan verifikasi maksimal 10 menit.`
+Pengiriman dilakukan setiap hari sesuai slot yang dipilih.`
       },
       {
-        slug: "tagihan-tidak-muncul",
-        title: "Tagihan Tidak Muncul",
-        keywords: ["invoice tidak muncul", "tagihan kosong", "checkout error"],
-        summary: "Invoice tidak keluar saat checkout?",
+        slug: "resi-pengiriman",
+        title: "Cek Resi Pengiriman",
+        keywords: ["cek resi"],
+        summary: "Cara cek status pengiriman.",
         content: `
-## Tagihan Tidak Muncul
+## Cek Resi
 
-1. Refresh halaman.
-2. Pastikan koneksi stabil.
-3. Coba checkout ulang.
-4. Jika tetap gagal → kirim screenshot ke Admin.`
+Resi akan dikirim via WhatsApp setelah pesanan dikirim.`
+      }
+    ]
+  },
+
+  refund: {
+    title: "Pengembalian Dana",
+    items: [
+      {
+        slug: "syarat-refund",
+        title: "Syarat Refund",
+        keywords: ["refund", "pengembalian dana"],
+        summary: "Syarat dan ketentuan refund.",
+        content: `
+## Syarat Refund
+
+Refund berlaku jika:
+- Produk rusak
+- Pesanan salah kirim`
       },
       {
-        slug: "pembayaran-dobel",
-        title: "Pembayaran Dobel",
-        keywords: ["pembayaran dobel", "uang terpotong dua kali", "bayar 2x", "double payment"],
-        summary: "Ketika uang terpotong dua kali.",
+        slug: "proses-refund",
+        title: "Proses Refund",
+        keywords: ["proses refund"],
+        summary: "Alur proses refund.",
         content: `
-## Pembayaran Dobel
+## Proses Refund
 
-Jika uang terdebet 2 kali:
+1. Hubungi admin
+2. Kirim bukti
+3. Refund diproses 1×24 jam`
+      }
+    ]
+  },
 
-- Kirim dua bukti transaksi.
-- Admin akan cek keuangan KOJE24.
-- Refund akan diproses maksimal 1×24 jam.`
+  komplain: {
+    title: "Komplain Pesanan",
+    items: [
+      {
+        slug: "produk-rusak",
+        title: "Produk Rusak",
+        keywords: ["produk rusak"],
+        summary: "Jika produk diterima rusak.",
+        content: `
+## Produk Rusak
+
+Segera foto produk dan kirim ke admin.`
       },
       {
-        slug: "konfirmasi-manual",
-        title: "Konfirmasi Pembayaran Manual",
-        keywords: ["konfirmasi manual", "bukti transfer", "verifikasi manual"],
-        summary: "Cara mempercepat verifikasi pembayaran.",
+        slug: "produk-kurang",
+        title: "Produk Kurang",
+        keywords: ["produk kurang"],
+        summary: "Jika produk tidak lengkap.",
         content: `
-## Konfirmasi Manual
+## Produk Kurang
 
-Jika pembayaran tidak terdeteksi:
+Laporkan ke admin maksimal 1 jam setelah terima.`
+      }
+    ]
+  },
 
-- Kirim foto bukti transfer.
-- Sertakan nama pengirim & jumlah pembayaran.
-- Admin akan input manual dalam 3–5 menit.`
+  promo: {
+    title: "Promosi",
+    items: [
+      {
+        slug: "kode-promo",
+        title: "Menggunakan Kode Promo",
+        keywords: ["kode promo"],
+        summary: "Cara menggunakan kode promo.",
+        content: `
+## Cara Pakai Kode Promo
+
+Masukkan kode promo saat checkout.`
+      },
+      {
+        slug: "promo-tidak-berlaku",
+        title: "Promo Tidak Berlaku",
+        keywords: ["promo gagal"],
+        summary: "Kenapa promo tidak bisa dipakai.",
+        content: `
+## Promo Tidak Berlaku
+
+Pastikan syarat & masa berlaku promo masih aktif.`
+      }
+    ]
+  },
+
+  lainnya: {
+    title: "Lainnya",
+    items: [
+      {
+        slug: "tentang-koje24",
+        title: "Tentang KOJE24",
+        keywords: ["tentang koje24"],
+        summary: "Informasi umum KOJE24.",
+        content: `
+## Tentang KOJE24
+
+KOJE24 adalah cold-pressed juice alami tanpa pengawet.`
+      },
+      {
+        slug: "kontak-admin",
+        title: "Kontak Admin",
+        keywords: ["kontak admin"],
+        summary: "Cara menghubungi admin.",
+        content: `
+## Kontak Admin
+
+Hubungi kami via WhatsApp resmi KOJE24.`
       }
     ]
   }
