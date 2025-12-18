@@ -1,72 +1,89 @@
-"use client"
+"use client";
 
-import Header from "@/components/Header"
-import PromoBanner from "@/components/PromoBanner"
-import Hero from "@/components/Hero"
-import FeaturedProducts from "@/components/FeaturedProducts"
-import ProductGrid from "@/components/ProductGrid"
-import AboutSection from "@/components/AboutSection"
-import PackagesSection from "@/components/PackagesSection"
-import SubscriptionSection from "@/components/SubscriptionSection"
-import TestimonialsCarousel from "@/components/TestimonialsCarousel"
-import FaqSection from "@/components/FaqSection"
-import Footer from "@/components/Footer"
-import CartPopup from "@/components/CartPopup"
-import PackagePopup from "@/components/PackagePopup"
-import RatingPopup from "@/components/RatingPopup"
+import Header from "@/components/Header";
+import PromoBanner from "@/components/PromoBanner";
+import Hero from "@/components/Hero";
+import FeaturedProducts from "@/components/FeaturedProducts";
+import ProductGrid from "@/components/ProductGrid";
+import AboutSection from "@/components/AboutSection";
+import PackagesSection from "@/components/PackagesSection";
+import SubscriptionSection from "@/components/SubscriptionSection";
+import TestimonialsCarousel from "@/components/TestimonialsCarousel";
+import FaqSection from "@/components/FaqSection";
+import Footer from "@/components/Footer";
+import CartPopup from "@/components/CartPopup";
+import PackagePopup from "@/components/PackagePopup";
+import RatingPopup from "@/components/RatingPopup";
+
+// 🔥 ANIMATION WRAPPER
+import AnimateOnScroll from "@/components/AnimateOnScroll";
 
 export default function HomePage() {
   return (
     <main role="main" aria-label="KOJE24 - Natural Cold-Pressed Juice">
-      {/* 🔥 PROMO BANNER PALING ATAS */}
+      {/* 🔥 PROMO BANNER PALING ATAS (JANGAN DIANIMASI) */}
       <PromoBanner />
 
-      {/* HEADER */}
+      {/* HEADER (JANGAN DIANIMASI) */}
       <Header />
 
-      {/* HERO */}
-      <Hero />
+      {/* HERO (PRIORITAS #1) */}
+      <AnimateOnScroll>
+        <Hero />
+      </AnimateOnScroll>
 
-      {/* 🔥 FEATURED PRODUCTS (UX GUIDE) */}
-      <FeaturedProducts />
+      {/* FEATURED PRODUCTS / UX GUIDE */}
+      <AnimateOnScroll delay={0.1}>
+        <FeaturedProducts />
+      </AnimateOnScroll>
 
-      {/* PRODUK (GRID FULL) */}
+      {/* PRODUK GRID (JANGAN DULU, ISINYA BANYAK) */}
       <section id="produk" className="scroll-mt-24">
         <ProductGrid />
       </section>
 
       {/* ABOUT */}
       <section id="about" className="scroll-mt-24">
-        <AboutSection />
+        <AnimateOnScroll>
+          <AboutSection />
+        </AnimateOnScroll>
       </section>
 
       {/* PAKET */}
       <section id="paket" className="scroll-mt-24">
-        <PackagesSection />
+        <AnimateOnScroll>
+          <PackagesSection />
+        </AnimateOnScroll>
       </section>
 
       {/* LANGGANAN */}
       <section id="langganan" className="scroll-mt-24">
-        <SubscriptionSection />
+        <AnimateOnScroll>
+          <SubscriptionSection />
+        </AnimateOnScroll>
       </section>
 
-      {/* TESTIMONI */}
+      {/* TESTIMONI (TRUST BOOSTER) */}
       <section id="testimoni" className="scroll-mt-24">
-        <TestimonialsCarousel />
+        <AnimateOnScroll>
+          <TestimonialsCarousel />
+        </AnimateOnScroll>
       </section>
 
       {/* FAQ */}
       <section id="faq" className="scroll-mt-24">
-        <FaqSection />
+        <AnimateOnScroll>
+          <FaqSection />
+        </AnimateOnScroll>
       </section>
 
-      {/* FOOTER */}
+      {/* FOOTER (NO ANIMATION) */}
       <Footer />
 
-      {/* POPUPS (GLOBAL) */}
+      {/* POPUPS GLOBAL (NO ANIMATION) */}
       <CartPopup />
       <PackagePopup />
       <RatingPopup />
     </main>
-  )
+  );
 }
