@@ -7,9 +7,18 @@ export default function InstallPWAButton() {
   const [isIOS, setIsIOS] = useState(false);
   const [hidden, setHidden] = useState(false);
 
+  // ===============================
+  // INIT
+  // ===============================
   useEffect(() => {
-    // cek pernah ditutup
+    // jika user sudah tutup manual
     if (localStorage.getItem("hidePWA") === "1") {
+      setHidden(true);
+      return;
+    }
+
+    // jika sudah terinstall (standalone mode)
+    if (window.matchMedia("(display-mode: standalone)").matches) {
       setHidden(true);
       return;
     }
@@ -17,15 +26,43 @@ export default function InstallPWAButton() {
     const ua = navigator.userAgent.toLowerCase();
     setIsIOS(/iphone|ipad|ipod/.test(ua));
 
+    // tangkap beforeinstallprompt
     const handler = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
     };
 
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+
+    // tangkap event INSTALLED (tracking)
+    const onInstalled = () => {
+      // anti double count
+      if (localStorage.getItem("pwaInstalled") === "1") return;
+      localStorage.setItem("pwaInstalled", "1");
+
+      fetch("/api/pwa-installed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          platform: getPlatform(),
+          ua: navigator.userAgent,
+        }),
+      });
+
+      setHidden(true);
+    };
+
+    window.addEventListener("appinstalled", onInstalled);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
   }, []);
 
+  // ===============================
+  // INSTALL HANDLER
+  // ===============================
   const install = async () => {
     if (!deferredPrompt) {
       alert(
@@ -41,6 +78,9 @@ export default function InstallPWAButton() {
     setDeferredPrompt(null);
   };
 
+  // ===============================
+  // CLOSE BUTTON
+  // ===============================
   const close = () => {
     localStorage.setItem("hidePWA", "1");
     setHidden(true);
@@ -69,4 +109,14 @@ export default function InstallPWAButton() {
       </div>
     </div>
   );
+}
+
+// ===============================
+// HELPER
+// ===============================
+function getPlatform() {
+  const ua = navigator.userAgent.toLowerCase();
+  if (/iphone|ipad|ipod/.test(ua)) return "iOS";
+  if (/android/.test(ua)) return "Android";
+  return "Desktop";
 }
