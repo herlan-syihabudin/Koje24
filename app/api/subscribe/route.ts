@@ -13,7 +13,10 @@ export async function POST(req: NextRequest) {
 
     const cleanEmail = String(email || "").toLowerCase().trim()
     if (!cleanEmail || !cleanEmail.includes("@")) {
-      return NextResponse.json({ success: false, message: "Email invalid" })
+      return NextResponse.json(
+        { success: false, message: "Email tidak valid" },
+        { status: 400 }
+      )
     }
 
     const auth = new google.auth.JWT({
@@ -24,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     const sheets = google.sheets({ version: "v4", auth })
 
-    // 🔍 Ambil email yang sudah ada
+    // 🔍 cek email existing
     const existing = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: "SUBSCRIBERS!A2:A",
@@ -33,9 +36,11 @@ export async function POST(req: NextRequest) {
     const emails =
       existing.data.values?.flat().map(e => String(e).toLowerCase()) || []
 
-    // Kalau sudah ada → anggap sukses
     if (emails.includes(cleanEmail)) {
-      return NextResponse.json({ success: true, message: "Already subscribed" })
+      return NextResponse.json({
+        success: true,
+        message: "Already subscribed",
+      })
     }
 
     const now = new Date()
@@ -43,17 +48,27 @@ export async function POST(req: NextRequest) {
       .replace("T", " ")
       .slice(0, 19)
 
-    // ➕ Tambahkan subscriber
+    // ➕ append subscriber (URUTAN KOLOM BENAR)
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: "SUBSCRIBERS!A:D",
+      range: "SUBSCRIBERS!A:F",
       valueInputOption: "USER_ENTERED",
       requestBody: {
-        values: [[cleanEmail, source, "TRUE", now]],
+        values: [[
+          cleanEmail, // A email
+          "TRUE",     // B active
+          source,     // C source
+          now,        // D created_at
+          "",         // E last_action
+          "",         // F updated_at
+        ]],
       },
     })
 
-    return NextResponse.json({ success: true, message: "Subscribed" })
+    return NextResponse.json({
+      success: true,
+      message: "Subscribed",
+    })
   } catch (err) {
     console.error("SUBSCRIBE ERROR:", err)
     return NextResponse.json(
