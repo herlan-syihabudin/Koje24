@@ -9,7 +9,10 @@ const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
 
 export async function GET(req: NextRequest) {
   try {
-    const email = req.nextUrl.searchParams.get("email")?.toLowerCase().trim()
+    const email = req.nextUrl.searchParams
+      .get("email")
+      ?.toLowerCase()
+      .trim()
 
     if (!email || !email.includes("@")) {
       return NextResponse.json(
@@ -26,7 +29,6 @@ export async function GET(req: NextRequest) {
 
     const sheets = google.sheets({ version: "v4", auth })
 
-    // 🔍 ambil semua kolom
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: "SUBSCRIBERS!A2:F",
@@ -37,7 +39,7 @@ export async function GET(req: NextRequest) {
 
     rows.forEach((row, i) => {
       if (String(row[0]).toLowerCase() === email) {
-        rowIndex = i + 2 // start A2
+        rowIndex = i + 2 // karena mulai A2
       }
     })
 
@@ -53,18 +55,18 @@ export async function GET(req: NextRequest) {
       .replace("T", " ")
       .slice(0, 19)
 
-    // ✅ update ACTIVE + LAST_ACTION + UPDATED_AT
+    // ✅ update status unsubscribe (KOLOM FIX)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `SUBSCRIBERS!B${rowIndex}:F${rowIndex}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          "FALSE",           // active
-          rows[rowIndex - 2][2], // source (biarin)
-          rows[rowIndex - 2][3], // created_at (jangan diubah)
-          "UNSUBSCRIBE",     // last_action
-          now                // updated_at
+          "FALSE",               // B active
+          rows[rowIndex - 2][2], // C source (tetap)
+          rows[rowIndex - 2][3], // D created_at (tetap)
+          "UNSUBSCRIBE",         // E last_action
+          now,                   // F updated_at
         ]],
       },
     })
