@@ -15,7 +15,6 @@ import {
   HelpCircle,
 } from "lucide-react"
 
-// ⬅️ FIX PALING PENTING
 import dynamic from "next/dynamic"
 const KOJE24Assistant = dynamic(() => import("@/components/KOJE24Assistant"), {
   ssr: false,
@@ -48,12 +47,12 @@ const faqs = [
   {
     question: "Berapa lama masa simpan jus KOJE24?",
     answer:
-      "Dalam kondisi tertutup rapat dan disimpan di chiller 0–4°C, jus KOJE24 idealnya dikonsumsi dalam 2–3 hari untuk kualitas rasa dan nutrisi terbaik.",
+      "Dalam kondisi tertutup rapat dan disimpan di chiller 0–4°C, jus KOJE24 idealnya dikonsumsi dalam 2–3 hari.",
   },
   {
     question: "Bagaimana cara memesan KOJE24?",
     answer:
-      "Kamu bisa pesan langsung melalui website ini. Pilih varian, masukkan ke keranjang, isi data pengiriman, lalu selesaikan pembayaran.",
+      "Pilih varian → masukkan ke keranjang → isi alamat → lakukan pembayaran → pesanan diproses.",
   },
 ]
 
@@ -62,148 +61,82 @@ export default function PusatBantuanPage() {
   const [query, setQuery] = useState("")
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0)
 
-  // Greeting otomatis
   useEffect(() => {
-    const now = new Date()
-    const hour = now.getHours()
-
+    const hour = new Date().getHours()
     if (hour >= 5 && hour < 11) setGreeting("Pagi")
     else if (hour >= 11 && hour < 15) setGreeting("Siang")
     else if (hour >= 15 && hour < 18) setGreeting("Sore")
     else setGreeting("Malam")
   }, [])
 
-  // Trigger buka chat
   function handleAsk(e: FormEvent) {
     e.preventDefault()
-    const trimmed = query.trim()
-    if (!trimmed) return
-
-    window.dispatchEvent(
-      new CustomEvent("open-koje24", { detail: trimmed })
-    )
-
+    if (!query.trim()) return
+    window.dispatchEvent(new CustomEvent("open-koje24", { detail: query }))
     setQuery("")
   }
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#f5fbfb] to-white">
+
+      {/* HERO */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-12">
+        <motion.h1
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-3xl sm:text-4xl font-semibold text-[#0b4b50] mb-3"
+        >
+          Selamat {greeting}, <br />
+          <span className="text-[#0FA3A8]">ada yang bisa kami bantu?</span>
+        </motion.h1>
 
-        {/* Breadcrumb */}
-        <div className="inline-flex items-center gap-2 rounded-full bg-white/80 border border-[#d7ecec] px-4 py-1 text-xs font-medium text-[#0b4b50] shadow-sm mb-6">
-          <span className="h-2 w-2 rounded-full bg-[#0FA3A8]" />
-          Pusat Bantuan KOJE24
-        </div>
-
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1.1fr)] items-start">
-          
-          {/* KIRI */}
-          <div>
-            <motion.h1
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-3xl sm:text-4xl lg:text-4xl font-semibold text-[#0b4b50] tracking-tight mb-3"
+        <form onSubmit={handleAsk} className="max-w-xl">
+          <div className="flex items-center gap-3 rounded-full bg-white border border-[#d7ecec] px-4 py-3 shadow-sm">
+            <Search className="h-4 w-4 text-slate-400" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Tulis pertanyaanmu…"
+              className="flex-1 bg-transparent outline-none text-sm"
+            />
+            <button
+              type="submit"
+              className="rounded-full bg-[#0FA3A8] px-4 py-2 text-xs font-semibold text-white"
             >
-              Selamat {greeting},<br />
-              <span className="text-[#0FA3A8]">ada yang bisa kami bantu?</span>
-            </motion.h1>
-
-            <p className="text-sm sm:text-base text-slate-600 max-w-xl mb-6">
-              Ketik pertanyaanmu seputar varian jus, manfaat, pemesanan, pengiriman, atau penyimpanan.
-            </p>
-
-            {/* Search Bar */}
-            <form onSubmit={handleAsk} className="relative mb-4">
-              <div className="flex items-center gap-3 rounded-full bg-white border border-[#d7ecec] px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-[#0FA3A8]/40">
-                <Search className="h-4 w-4 text-slate-400" />
-
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  className="flex-1 bg-transparent text-sm sm:text-base outline-none placeholder:text-slate-400"
-                  placeholder="Tulis pertanyaanmu…"
-                />
-
-                <button
-                  type="submit"
-                  className="hidden sm:inline-flex items-center justify-center rounded-full bg-[#0FA3A8] px-4 py-2 text-xs font-semibold text-white shadow hover:bg-[#0b8f93] transition"
-                >
-                  Tanya KOJE24
-                </button>
-              </div>
-
-              {/* Mobile */}
-              <button
-                type="submit"
-                className="sm:hidden mt-3 w-full rounded-full bg-[#0FA3A8] py-2.5 text-xs font-semibold text-white shadow hover:bg-[#0b8f93] transition"
-              >
-                Tanya KOJE24
-              </button>
-            </form>
-
-            <p className="text-[11px] sm:text-xs text-slate-500">
-              Online • Jawaban cepat dalam hitungan detik
-            </p>
+              Tanya
+            </button>
           </div>
-
-          {/* KANAN */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl border border-[#d7ecec] shadow-sm p-5 sm:p-6"
-          >
-            <div className="text-xs font-semibold text-[#0FA3A8] mb-2">Rekomendasi cepat</div>
-            <h2 className="text-sm sm:text-base font-semibold text-[#0b4b50] mb-2">
-              Pertanyaan yang paling sering ditanyakan
-            </h2>
-
-            <ul className="space-y-2 mb-4 text-xs sm:text-sm text-slate-600">
-              <li>• Pilih varian sesuai kebutuhan harian.</li>
-              <li>• Cek jadwal kirim sebelum checkout.</li>
-              <li>• Chat KOJE24 untuk rekomendasi personal.</li>
-            </ul>
-
-            <div className="flex flex-wrap gap-2 text-[11px] sm:text-xs">
-              <span className="inline-flex items-center rounded-full bg-[#f0fbfb] text-[#0b4b50] px-3 py-1 border border-[#d7ecec]">
-                Detox & pencernaan
-              </span>
-              <span className="inline-flex items-center rounded-full bg-[#f0fbfb] text-[#0b4b50] px-3 py-1 border border-[#d7ecec]">
-                Imun & stamina harian
-              </span>
-              <span className="inline-flex items-center rounded-full bg-[#f0fbfb] text-[#0b4b50] px-3 py-1 border border-[#d7ecec]">
-                Aman untuk maag
-              </span>
-            </div>
-          </motion.div>
-        </div>
+        </form>
       </section>
 
       {/* GRID TOPIK */}
       <section className="border-t border-[#e1f0f0] bg-white/60">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <h2 className="text-lg sm:text-xl font-semibold text-[#0b4b50] mb-1">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+          <h2 className="text-lg font-semibold text-[#0b4b50] mb-4">
             Pilih topik sesuai kendalamu
           </h2>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {topics.map((topic) => {
-  const Icon = topic.icon
-  return (
-    <Link
-      key={topic.id}
-      href={`/pusat-bantuan/${topic.id}`}
-      className="group flex flex-col items-start gap-2 rounded-2xl bg-white border border-[#d7ecec] px-4 py-4 text-left shadow-xs hover:shadow-md hover:border-[#0FA3A8]/50 transition"
-    >
-                  <span className="inline-flex items-center justify-center rounded-xl bg-[#f0fbfb] p-2 mb-1">
+              const Icon = topic.icon
+              return (
+                <Link
+                  key={topic.id}
+                  href={`/pusat-bantuan/${topic.id}`}
+                  className="group flex flex-col gap-2 rounded-2xl bg-white border border-[#d7ecec] px-4 py-4 hover:border-[#0FA3A8] hover:shadow-md transition"
+                >
+                  <span className="inline-flex w-fit rounded-xl bg-[#f0fbfb] p-2">
                     <Icon className="h-4 w-4 text-[#0FA3A8]" />
                   </span>
+
                   <div className="text-sm font-semibold text-[#0b4b50] group-hover:text-[#0FA3A8]">
                     {topic.label}
                   </div>
-                  <p className="text-xs text-slate-600">{topic.description}</p>
-                </button>
+
+                  <p className="text-xs text-slate-600">
+                    {topic.description}
+                  </p>
+                </Link>
               )
             })}
           </div>
@@ -211,43 +144,27 @@ export default function PusatBantuanPage() {
       </section>
 
       {/* FAQ */}
-      <section className="bg-gradient-to-b from-white to-[#f5fbfb] border-t border-[#e1f0f0]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
-          <h2 className="text-xl sm:text-2xl font-semibold text-[#0b4b50] text-center mb-2">
-            Pertanyaan yang Sering Diajukan
+      <section className="border-t border-[#e1f0f0] py-10">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-xl font-semibold text-[#0b4b50] text-center mb-4">
+            Pertanyaan Umum
           </h2>
 
-          <div className="space-y-3">
-            {faqs.map((faq, idx) => {
-              const isOpen = openFaqIndex === idx
-              return (
-                <div
-                  key={faq.question}
-                  className="rounded-2xl bg-white border border-[#d7ecec] shadow-xs overflow-hidden"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                    className="w-full flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 text-left"
-                  >
-                    <span className="text-sm sm:text-base font-medium text-[#0b4b50]">
-                      {faq.question}
-                    </span>
-
-                    <span className="ml-4 flex h-6 w-6 items-center justify-center rounded-full bg-[#f0fbfb] text-[#0b4b50] text-xs">
-                      {isOpen ? "−" : "+"}
-                    </span>
-                  </button>
-
-                  {isOpen && (
-                    <div className="px-4 sm:px-5 pb-4 text-xs sm:text-sm text-slate-600">
-                      {faq.answer}
-                    </div>
-                  )}
+          {faqs.map((faq, i) => (
+            <div key={faq.question} className="mb-3 rounded-xl border bg-white">
+              <button
+                onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}
+                className="w-full px-4 py-3 text-left font-medium"
+              >
+                {faq.question}
+              </button>
+              {openFaqIndex === i && (
+                <div className="px-4 pb-4 text-sm text-slate-600">
+                  {faq.answer}
                 </div>
-              )
-            })}
-          </div>
+              )}
+            </div>
+          ))}
         </div>
       </section>
 
