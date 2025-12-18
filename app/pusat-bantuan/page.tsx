@@ -2,6 +2,7 @@
 
 import { useEffect, useState, FormEvent } from "react"
 import { motion } from "framer-motion"
+import Link from "next/link"
 import {
   Search,
   User,
@@ -188,12 +189,13 @@ export default function PusatBantuanPage() {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {topics.map((topic) => {
-              const Icon = topic.icon
-              return (
-                <button
-                  key={topic.id}
-                  className="group flex flex-col items-start gap-2 rounded-2xl bg-white border border-[#d7ecec] px-4 py-4 text-left shadow-xs hover:shadow-md hover:border-[#0FA3A8]/50 transition"
-                >
+  const Icon = topic.icon
+  return (
+    <Link
+      key={topic.id}
+      href={`/pusat-bantuan/${topic.id}`}
+      className="group flex flex-col items-start gap-2 rounded-2xl bg-white border border-[#d7ecec] px-4 py-4 text-left shadow-xs hover:shadow-md hover:border-[#0FA3A8]/50 transition"
+    >
                   <span className="inline-flex items-center justify-center rounded-xl bg-[#f0fbfb] p-2 mb-1">
                     <Icon className="h-4 w-4 text-[#0FA3A8]" />
                   </span>
