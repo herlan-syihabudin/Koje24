@@ -9,16 +9,9 @@ const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
 
 export async function GET(req: NextRequest) {
   try {
-    const email = req.nextUrl.searchParams
-      .get("email")
-      ?.toLowerCase()
-      .trim()
-
+    const email = req.nextUrl.searchParams.get("email")?.toLowerCase().trim()
     if (!email || !email.includes("@")) {
-      return NextResponse.json(
-        { success: false, message: "Email tidak valid" },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, message: "Email invalid" })
     }
 
     const auth = new google.auth.JWT({
@@ -39,42 +32,32 @@ export async function GET(req: NextRequest) {
 
     rows.forEach((row, i) => {
       if (String(row[0]).toLowerCase() === email) {
-        rowIndex = i + 2 // karena mulai A2
+        rowIndex = i + 2
       }
     })
 
     if (rowIndex === -1) {
-      return NextResponse.json({
-        success: true,
-        message: "Email sudah tidak aktif",
-      })
+      return NextResponse.json({ success: true, message: "Email tidak ditemukan" })
     }
 
-    const now = new Date()
-      .toISOString()
-      .replace("T", " ")
-      .slice(0, 19)
+    const now = new Date().toISOString().replace("T", " ").slice(0, 19)
 
-    // ✅ update status unsubscribe (KOLOM FIX)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `SUBSCRIBERS!B${rowIndex}:F${rowIndex}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          "FALSE",               // B active
-          rows[rowIndex - 2][2], // C source (tetap)
-          rows[rowIndex - 2][3], // D created_at (tetap)
-          "UNSUBSCRIBE",         // E last_action
-          now,                   // F updated_at
+          "FALSE",
+          rows[rowIndex - 2][2],
+          rows[rowIndex - 2][3],
+          "UNSUBSCRIBE",
+          now
         ]],
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      message: "Berhasil unsubscribe",
-    })
+    return NextResponse.json({ success: true, message: "Unsubscribed" })
   } catch (err) {
     console.error("UNSUBSCRIBE ERROR:", err)
     return NextResponse.json(
