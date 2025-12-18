@@ -50,8 +50,9 @@ function findHelpArticle(question: string) {
     for (const item of category.items) {
       if (
         q.includes(item.slug.replace(/-/g, " ")) ||
-        q.includes(item.title.toLowerCase()) ||
-        q.includes(categoryKey)
+  q.includes(item.title.toLowerCase()) ||
+  q.includes(categoryKey) ||
+  item.keywords?.some(k => q.includes(k))
       ) {
         return {
           title: item.title,
