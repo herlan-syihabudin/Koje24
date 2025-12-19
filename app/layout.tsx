@@ -8,7 +8,7 @@ import StickyCartBar from "@/components/StickyCartBar";
 import PromoPopup from "@/components/PromoPopup";
 import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO";
 import InstallPWAButton from "@/components/InstallPWAButton";
-
+import ChatWidget from "@/components/ChatWidget"; // 🔥 CHAT WIDGET GLOBAL
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -67,8 +67,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <CartProvider>
           {children}
         </CartProvider>
-        <InstallPWAButton />
 
+        {/* 🔥 CHAT WIDGET (GLOBAL, AMAN) */}
+        <ChatWidget />
+
+        {/* EXISTING GLOBAL COMPONENTS */}
+        <InstallPWAButton />
         <StickyCartBar />
         <PromoPopup />
         <SpeedInsights />
