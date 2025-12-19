@@ -34,12 +34,13 @@ export default function Header() {
 
   /* ===========================
      BODY LOCK FIX (IOS SAFE)
+     — tidak ganggu popup lainnya
   ============================ */
   const lockBody = () => document.body.classList.add("body-menu-lock");
   const unlockBody = () => document.body.classList.remove("body-menu-lock");
 
   /* ===========================
-     OPEN MENU
+     OPEN MENU FIX
   ============================ */
   const openMenu = () => {
     setMenuOpen(true);
@@ -49,7 +50,7 @@ export default function Header() {
   };
 
   /* ===========================
-     CLOSE MENU
+     CLOSE MENU FIX
   ============================ */
   const closeMenu = () => {
     setMenuAnimate(false);
@@ -193,10 +194,10 @@ export default function Header() {
             )}
           </button>
 
-          {/* 🔥 CHAT DESKTOP — LOGIKA DIUBAH, UI SAMA */}
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent("open-chat"))}
+          <a
+            href="https://wa.me/6282213139580"
+            target="_blank"
+            rel="noopener noreferrer"
             className={`
               ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm shadow-md transition-all
               ${
@@ -209,12 +210,11 @@ export default function Header() {
             `}
           >
             <MessageCircle size={20} /> Chat
-          </button>
+          </a>
         </nav>
 
         {/* MOBILE ICON */}
         <button
-          type="button"
           onClick={openMenu}
           className={`
             md:hidden text-2xl
@@ -261,17 +261,14 @@ export default function Header() {
             </button>
           ))}
 
-          {/* 🔥 CHAT MOBILE — LOGIKA DIUBAH, UI SAMA */}
-          <button
-            type="button"
-            onClick={() => {
-              closeMenu();
-              window.dispatchEvent(new CustomEvent("open-chat"));
-            }}
+          <a
+            href="https://wa.me/6282213139580"
+            target="_blank"
+            rel="noopener noreferrer"
             className="mt-10 flex items-center justify-center gap-3 px-10 py-3 bg-[#0FA3A8] text-white rounded-full text-xl hover:bg-[#0B4B50] transition-all shadow-xl"
           >
             <MessageCircle size={28} /> Chat Sekarang
-          </button>
+          </a>
 
           <div className="absolute bottom-8 text-sm text-gray-500">
             © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
