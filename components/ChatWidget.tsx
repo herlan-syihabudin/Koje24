@@ -3,10 +3,23 @@
 import { useEffect, useState } from "react";
 import { MessageCircle } from "lucide-react";
 
+type UserData = {
+  name: string;
+  phone: string;
+  topic: string;
+};
+
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<"form" | "chat">("form");
   const [msg, setMsg] = useState("");
   const [sending, setSending] = useState(false);
+
+  const [userData, setUserData] = useState<UserData>({
+    name: "",
+    phone: "",
+    topic: "Produk",
+  });
 
   /* ===========================
      STABLE SESSION ID
@@ -31,6 +44,31 @@ export default function ChatWidget() {
   }, []);
 
   /* ===========================
+     PREFILL DATA (JIKA ADA)
+  ============================ */
+  useEffect(() => {
+    if (!open) return;
+    const saved = localStorage.getItem("chat_user_data");
+    if (saved) {
+      setUserData(JSON.parse(saved));
+      setStep("chat");
+    }
+  }, [open]);
+
+  /* ===========================
+     START CHAT (SUBMIT FORM)
+  ============================ */
+  const startChat = () => {
+    if (!userData.name.trim()) {
+      alert("Nama wajib diisi");
+      return;
+    }
+
+    localStorage.setItem("chat_user_data", JSON.stringify(userData));
+    setStep("chat");
+  };
+
+  /* ===========================
      SEND CHAT → API → TELEGRAM
   ============================ */
   const send = async () => {
@@ -42,7 +80,7 @@ export default function ChatWidget() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: "Guest",
+          ...userData,
           message: msg,
           sessionId: getSessionId(),
           page: window.location.pathname,
@@ -50,7 +88,6 @@ export default function ChatWidget() {
       });
 
       setMsg("");
-      alert("Pesan terkirim ke admin");
     } catch (error) {
       console.error("CHAT SEND ERROR:", error);
       alert("Gagal mengirim pesan");
@@ -71,21 +108,77 @@ export default function ChatWidget() {
           <button onClick={() => setOpen(false)}>✕</button>
         </div>
 
-        <textarea
-          value={msg}
-          onChange={(e) => setMsg(e.target.value)}
-          placeholder="Tulis pertanyaan kamu..."
-          className="w-full border rounded p-2 text-sm"
-          rows={3}
-        />
+        {/* ===========================
+            STEP 1 — FORM IDENTITAS
+        ============================ */}
+        {step === "form" && (
+          <>
+            <p className="text-sm text-gray-600 mb-3">
+              Sebelum chat, isi data singkat dulu ya 🙏
+            </p>
 
-        <button
-          onClick={send}
-          disabled={sending}
-          className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded hover:bg-[#0B4B50] disabled:opacity-50"
-        >
-          {sending ? "Mengirim..." : "Kirim"}
-        </button>
+            <input
+              value={userData.name}
+              onChange={(e) =>
+                setUserData({ ...userData, name: e.target.value })
+              }
+              placeholder="Nama"
+              className="w-full border rounded p-2 text-sm mb-2"
+            />
+
+            <input
+              value={userData.phone}
+              onChange={(e) =>
+                setUserData({ ...userData, phone: e.target.value })
+              }
+              placeholder="No. WhatsApp (opsional)"
+              className="w-full border rounded p-2 text-sm mb-2"
+            />
+
+            <select
+              value={userData.topic}
+              onChange={(e) =>
+                setUserData({ ...userData, topic: e.target.value })
+              }
+              className="w-full border rounded p-2 text-sm mb-3"
+            >
+              <option value="Produk">Produk</option>
+              <option value="Langganan">Langganan</option>
+              <option value="Pengiriman">Pengiriman</option>
+              <option value="Komplain">Komplain</option>
+            </select>
+
+            <button
+              onClick={startChat}
+              className="w-full bg-[#0FA3A8] text-white py-2 rounded hover:bg-[#0B4B50]"
+            >
+              Mulai Chat
+            </button>
+          </>
+        )}
+
+        {/* ===========================
+            STEP 2 — CHAT
+        ============================ */}
+        {step === "chat" && (
+          <>
+            <textarea
+              value={msg}
+              onChange={(e) => setMsg(e.target.value)}
+              placeholder="Tulis pertanyaan kamu..."
+              className="w-full border rounded p-2 text-sm"
+              rows={3}
+            />
+
+            <button
+              onClick={send}
+              disabled={sending}
+              className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded hover:bg-[#0B4B50] disabled:opacity-50"
+            >
+              {sending ? "Mengirim..." : "Kirim"}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
