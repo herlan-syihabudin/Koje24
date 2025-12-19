@@ -12,11 +12,26 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAnimate, setMenuAnimate] = useState(false);
 
-  // 🔥 CHAT MODAL STATE (BARU – TIDAK GANGGU LOGIKA LAIN)
+  // 🔥 CHAT STATE
   const [openChat, setOpenChat] = useState(false);
+  const [chatMessage, setChatMessage] = useState("");
+  const [sending, setSending] = useState(false);
 
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
+
+  /* ===========================
+     SESSION ID (STABLE)
+  ============================ */
+  const getSessionId = () => {
+    if (typeof window === "undefined") return "";
+    let sid = localStorage.getItem("chat_session_id");
+    if (!sid) {
+      sid = crypto.randomUUID();
+      localStorage.setItem("chat_session_id", sid);
+    }
+    return sid;
+  };
 
   /* ===========================
      SMART SCROLL LISTENER
@@ -36,14 +51,11 @@ export default function Header() {
   }, [menuOpen]);
 
   /* ===========================
-     BODY LOCK FIX (IOS SAFE)
+     BODY LOCK FIX
   ============================ */
   const lockBody = () => document.body.classList.add("body-menu-lock");
   const unlockBody = () => document.body.classList.remove("body-menu-lock");
 
-  /* ===========================
-     OPEN MENU
-  ============================ */
   const openMenu = () => {
     setMenuOpen(true);
     requestAnimationFrame(() => setMenuAnimate(true));
@@ -51,18 +63,12 @@ export default function Header() {
     lockBody();
   };
 
-  /* ===========================
-     CLOSE MENU
-  ============================ */
   const closeMenu = () => {
     setMenuAnimate(false);
     unlockBody();
     setTimeout(() => setMenuOpen(false), 180);
   };
 
-  /* ===========================
-     SCROLL TO SECTION
-  ============================ */
   const scrollToSection = (href: string) => {
     const target = document.querySelector(href);
     if (!target) return;
@@ -91,6 +97,34 @@ export default function Header() {
     { label: "Bantuan", href: "/pusat-bantuan" },
   ];
 
+  /* ===========================
+     SEND CHAT → TELEGRAM
+  ============================ */
+  const sendChat = async () => {
+    if (!chatMessage.trim() || sending) return;
+
+    setSending(true);
+    try {
+      await fetch("/api/chat/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Guest",
+          message: chatMessage,
+          sessionId: getSessionId(),
+          page: window.location.pathname,
+        }),
+      });
+
+      setChatMessage("");
+      alert("Pesan terkirim. Admin akan membalas 💬");
+    } catch (e) {
+      alert("Gagal mengirim pesan");
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <>
       <header
@@ -113,8 +147,7 @@ export default function Header() {
         <div
           className={`max-w-7xl mx-auto flex items-center justify-between px-5 md:px-10
           ${shrink && !menuOpen ? "h-[60px]" : "h-[82px]"}
-          transition-all duration-700
-        `}
+          transition-all duration-700`}
         >
           {/* LOGO */}
           <Link
@@ -125,17 +158,15 @@ export default function Header() {
               closeMenu();
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
-            className={`
-              font-playfair font-bold transition-all duration-700
-              ${shrink && !menuOpen ? "text-xl" : "text-2xl"}
-              ${
-                menuOpen
-                  ? "text-white"
-                  : isScrolled
-                  ? "text-[#0B4B50]"
-                  : "text-white"
-              }
-            `}
+            className={`font-playfair font-bold transition-all duration-700 ${
+              shrink && !menuOpen ? "text-xl" : "text-2xl"
+            } ${
+              menuOpen
+                ? "text-white"
+                : isScrolled
+                ? "text-[#0B4B50]"
+                : "text-white"
+            }`}
           >
             KOJE
             <span
@@ -157,16 +188,13 @@ export default function Header() {
               <button
                 key={item.href}
                 onClick={() => navClick(item.href)}
-                className={`
-                  font-medium transition-all duration-300
-                  ${
-                    menuOpen
-                      ? "text-white"
-                      : isScrolled
-                      ? "text-[#0B4B50] hover:text-[#0FA3A8]"
-                      : "text-white hover:text-[#E8C46B]"
-                  }
-                `}
+                className={`font-medium transition-all duration-300 ${
+                  menuOpen
+                    ? "text-white"
+                    : isScrolled
+                    ? "text-[#0B4B50] hover:text-[#0FA3A8]"
+                    : "text-white hover:text-[#E8C46B]"
+                }`}
               >
                 {item.label}
               </button>
@@ -195,19 +223,16 @@ export default function Header() {
               )}
             </button>
 
-            {/* 🔥 CHAT BUTTON (DIUBAH – TIDAK KE WA) */}
+            {/* CHAT BUTTON */}
             <button
               onClick={() => setOpenChat(true)}
-              className={`
-                ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm shadow-md transition-all
-                ${
-                  menuOpen
-                    ? "bg-white/20 text-white"
-                    : isScrolled
-                    ? "bg-[#0FA3A8] text-white hover:bg-[#0B4B50]"
-                    : "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30"
-                }
-              `}
+              className={`ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm shadow-md transition-all ${
+                menuOpen
+                  ? "bg-white/20 text-white"
+                  : isScrolled
+                  ? "bg-[#0FA3A8] text-white hover:bg-[#0B4B50]"
+                  : "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30"
+              }`}
             >
               <MessageCircle size={20} /> Chat
             </button>
@@ -216,75 +241,25 @@ export default function Header() {
           {/* MOBILE ICON */}
           <button
             onClick={openMenu}
-            className={`
-              md:hidden text-2xl
-              ${
-                menuOpen
-                  ? "text-white"
-                  : isScrolled
-                  ? "text-[#0B4B50]"
-                  : "text-white"
-              }
-            `}
+            className={`md:hidden text-2xl ${
+              menuOpen
+                ? "text-white"
+                : isScrolled
+                ? "text-[#0B4B50]"
+                : "text-white"
+            }`}
           >
             <Menu size={26} />
           </button>
         </div>
-
-        {/* MOBILE MENU */}
-        {menuOpen && (
-          <div
-            className={`
-              fixed inset-0 z-[300] flex flex-col items-center justify-center gap-8
-              bg-white/95 backdrop-blur-xl transition-all duration-300
-              ${
-                menuAnimate
-                  ? "opacity-100 translate-y-0 pointer-events-auto"
-                  : "opacity-0 translate-y-4 pointer-events-none"
-              }
-            `}
-          >
-            <button
-              onClick={closeMenu}
-              className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8]"
-            >
-              <X size={32} />
-            </button>
-
-            {navItems.map((item) => (
-              <button
-                key={item.href}
-                onClick={() => navClick(item.href)}
-                className="text-3xl font-semibold text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
-              >
-                {item.label}
-              </button>
-            ))}
-
-            {/* 🔥 CHAT MOBILE */}
-            <button
-              onClick={() => {
-                closeMenu();
-                setOpenChat(true);
-              }}
-              className="mt-10 flex items-center justify-center gap-3 px-10 py-3 bg-[#0FA3A8] text-white rounded-full text-xl hover:bg-[#0B4B50] transition-all shadow-xl"
-            >
-              <MessageCircle size={28} /> Chat Sekarang
-            </button>
-
-            <div className="absolute bottom-8 text-sm text-gray-500">
-              © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
-            </div>
-          </div>
-        )}
       </header>
 
       {/* ===========================
-          CHAT MODAL (DUMMY – UI ONLY)
+          CHAT MODAL (AKTIF)
       ============================ */}
       {openChat && (
         <div className="fixed inset-0 z-[500] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="w-full md:w-[420px] bg-white rounded-t-2xl md:rounded-2xl shadow-xl p-5 animate-slideUp">
+          <div className="w-full md:w-[420px] bg-white rounded-t-2xl md:rounded-2xl shadow-xl p-5">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold text-lg text-[#0B4B50]">
                 Chat Admin KOJE24
@@ -292,14 +267,25 @@ export default function Header() {
               <button onClick={() => setOpenChat(false)}>✕</button>
             </div>
 
-            <div className="h-[260px] bg-gray-50 rounded-lg mb-3 flex items-center justify-center text-sm text-gray-400">
-              Chat siap digunakan
+            <div className="h-[220px] bg-gray-50 rounded-lg mb-3 flex items-center justify-center text-sm text-gray-400">
+              Admin akan membalas melalui chat ini
             </div>
 
             <input
+              value={chatMessage}
+              onChange={(e) => setChatMessage(e.target.value)}
               placeholder="Tulis pertanyaan kamu..."
+              disabled={sending}
               className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]"
             />
+
+            <button
+              onClick={sendChat}
+              disabled={sending}
+              className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm hover:bg-[#0B4B50] transition disabled:opacity-50"
+            >
+              {sending ? "Mengirim..." : "Kirim"}
+            </button>
           </div>
         </div>
       )}
