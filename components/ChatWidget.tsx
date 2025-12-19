@@ -8,14 +8,34 @@ export default function ChatWidget() {
   const [msg, setMsg] = useState("");
   const [sending, setSending] = useState(false);
 
+  /* ===========================
+     STABLE SESSION ID
+  ============================ */
+  const getSessionId = () => {
+    if (typeof window === "undefined") return "";
+    let sid = localStorage.getItem("chat_session_id");
+    if (!sid) {
+      sid = crypto.randomUUID();
+      localStorage.setItem("chat_session_id", sid);
+    }
+    return sid;
+  };
+
+  /* ===========================
+     OPEN FROM HEADER EVENT
+  ============================ */
   useEffect(() => {
     const openHandler = () => setOpen(true);
     window.addEventListener("open-chat", openHandler);
     return () => window.removeEventListener("open-chat", openHandler);
   }, []);
 
+  /* ===========================
+     SEND CHAT → API → TELEGRAM
+  ============================ */
   const send = async () => {
     if (!msg.trim() || sending) return;
+
     setSending(true);
     try {
       await fetch("/api/chat/send", {
@@ -24,12 +44,15 @@ export default function ChatWidget() {
         body: JSON.stringify({
           name: "Guest",
           message: msg,
+          sessionId: getSessionId(),
           page: window.location.pathname,
         }),
       });
+
       setMsg("");
       alert("Pesan terkirim ke admin");
-    } catch {
+    } catch (error) {
+      console.error("CHAT SEND ERROR:", error);
       alert("Gagal mengirim pesan");
     } finally {
       setSending(false);
