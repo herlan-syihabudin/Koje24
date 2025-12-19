@@ -5,9 +5,16 @@ const CHAT_ID = process.env.TELEGRAM_CHAT_ID!;
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, message, sessionId, page } = await req.json();
+    const {
+      name,
+      phone,
+      topic,
+      message,
+      sessionId,
+      page,
+    } = await req.json();
 
-    if (!message) {
+    if (!message || !String(message).trim()) {
       return NextResponse.json(
         { ok: false, message: "Pesan kosong" },
         { status: 400 }
@@ -18,12 +25,15 @@ export async function POST(req: NextRequest) {
 📩 *CHAT WEBSITE - KOJE24*
 
 👤 Nama: ${name || "Guest"}
+📱 HP: ${phone || "-"}
+🏷️ Topik: ${topic || "-"}
+
 🆔 Session: ${sessionId || "-"}
 🌐 Page: ${page || "-"}
 
 💬 *Pesan:*
 ${message}
-    `;
+    `.trim();
 
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: "POST",
@@ -38,6 +48,9 @@ ${message}
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("CHAT API ERROR:", error);
-    return NextResponse.json({ ok: false }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, message: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
