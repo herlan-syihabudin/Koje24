@@ -2,72 +2,47 @@ import { NextRequest, NextResponse } from "next/server";
 import { addMessage } from "@/lib/livechatStore";
 import { setAdminActive } from "@/lib/adminStatus";
 
-const BOT_TOKEN = process.env.TELEGRAM_LIVECHAT_BOT_TOKEN!;
+const SECRET = process.env.TELEGRAM_LIVECHAT_WEBHOOK_SECRET || "";
+const ADMIN_ID = Number(process.env.TELEGRAM_LIVECHAT_ADMIN_USER_ID || "0");
 
-// 🔐 simpan session PER ADMIN (AMAN)
-const ACTIVE_SESSIONS = new Map<number, string>();
+function extractSessionId(text: string) {
+  const match = text.match(/Session:\s*([a-zA-Z0-9-]+)/);
+  return match?.[1] || null;
+}
 
 export async function POST(req: NextRequest) {
   try {
+    // 🔐 optional security
+    if (SECRET) {
+      const token = req.headers.get("x-telegram-bot-api-secret-token");
+      if (token !== SECRET) return NextResponse.json({ ok: true });
+    }
+
     const body = await req.json();
+    const msg = body?.message;
+    if (!msg?.text) return NextResponse.json({ ok: true });
 
-    /* ===========================
-       ADMIN KLIK TOMBOL
-    ============================ */
-    if (body.callback_query) {
-      const data = body.callback_query.data;
-      const adminId = body.callback_query.from.id;
-
-      if (data?.startsWith("reply:")) {
-        const sessionId = data.replace("reply:", "");
-
-        ACTIVE_SESSIONS.set(adminId, sessionId);
-
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: adminId,
-            text: "✍️ Silakan ketik balasan untuk user ini",
-          }),
-        });
-      }
-
+    // hanya admin
+    if (ADMIN_ID && msg.from.id !== ADMIN_ID) {
       return NextResponse.json({ ok: true });
     }
 
-    /* ===========================
-       ADMIN KETIK PESAN
-    ============================ */
-    if (body.message?.text) {
-      const adminId = body.message.from.id;
-      const sessionId = ACTIVE_SESSIONS.get(adminId);
-
-      // ❌ admin belum klik tombol
-      if (!sessionId) {
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: adminId,
-            text: "⚠️ Klik tombol *Balas Chat Ini* dulu sebelum membalas",
-            parse_mode: "Markdown",
-          }),
-        });
-
-        return NextResponse.json({ ok: true });
-      }
-
-      // ✅ simpan balasan admin ke web
-      await addMessage(sessionId, {
-        role: "admin",
-        text: body.message.text.trim(),
-        ts: Date.now(),
-      });
-
-      setAdminActive();
-      ACTIVE_SESSIONS.delete(adminId); // reset session admin
+    // ❗ WAJIB reply
+    const replied = msg.reply_to_message?.text;
+    if (!replied) {
+      return NextResponse.json({ ok: true });
     }
+
+    const sessionId = extractSessionId(replied);
+    if (!sessionId) return NextResponse.json({ ok: true });
+
+    await addMessage(sessionId, {
+      role: "admin",
+      text: msg.text.trim(),
+      ts: Date.now(),
+    });
+
+    setAdminActive();
 
     return NextResponse.json({ ok: true });
   } catch (err) {
