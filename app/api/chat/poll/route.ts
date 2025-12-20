@@ -8,13 +8,28 @@ export async function GET(req: NextRequest) {
     const after = Number(searchParams.get("after") || "0");
 
     if (!sid) {
-      return NextResponse.json({ ok: false, message: "sid kosong" }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, message: "sid kosong" },
+        { status: 400 }
+      );
     }
 
-    const messages = await getMessages(sid, after > 0 ? after : undefined);
+    const allMessages = await getMessages(
+      sid,
+      after > 0 ? after : undefined
+    );
+
+    // 🔒 FILTER KETAT: ADMIN SAJA
+    const messages = (allMessages || []).filter(
+      (m: any) => m.role === "admin"
+    );
+
     return NextResponse.json({ ok: true, messages });
   } catch (e) {
     console.error("LIVECHAT POLL ERROR:", e);
-    return NextResponse.json({ ok: false, message: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, message: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
