@@ -1,20 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MessageCircle } from "lucide-react";
 
-type UserData = {
-  name: string;
-  phone: string;
-  topic: string;
-};
+type UserData = { name: string; phone: string; topic: string };
+type ChatMessage = { id: string; sid: string; role: "user" | "admin"; text: string; ts: number };
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"form" | "chat">("form");
+
   const [msg, setMsg] = useState("");
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [lastTs, setLastTs] = useState<number>(0);
+
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const [userData, setUserData] = useState<UserData>({
     name: "",
@@ -22,9 +25,6 @@ export default function ChatWidget() {
     topic: "Produk",
   });
 
-  /* ===========================
-     STABLE SESSION ID
-  ============================ */
   const getSessionId = () => {
     if (typeof window === "undefined") return "";
     let sid = localStorage.getItem("chat_session_id");
@@ -35,18 +35,16 @@ export default function ChatWidget() {
     return sid;
   };
 
-  /* ===========================
-     OPEN FROM HEADER EVENT
-  ============================ */
+  const sid = useMemo(() => (typeof window === "undefined" ? "" : getSessionId()), []);
+
+  // open dari header
   useEffect(() => {
     const openHandler = () => setOpen(true);
     window.addEventListener("open-chat", openHandler);
     return () => window.removeEventListener("open-chat", openHandler);
   }, []);
 
-  /* ===========================
-     PREFILL DATA (JIKA ADA)
-  ============================ */
+  // prefill data
   useEffect(() => {
     if (!open) return;
     const saved = localStorage.getItem("chat_user_data");
@@ -56,9 +54,12 @@ export default function ChatWidget() {
     }
   }, [open]);
 
-  /* ===========================
-     START CHAT (SUBMIT FORM)
-  ============================ */
+  // auto scroll ke bawah
+  useEffect(() => {
+    if (!open || step !== "chat") return;
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, open, step]);
+
   const startChat = () => {
     if (!userData.name.trim()) {
       setErrorMsg("Nama wajib diisi 🙏");
@@ -69,14 +70,19 @@ export default function ChatWidget() {
     setStep("chat");
   };
 
-  /* ===========================
-     SEND CHAT → API → TELEGRAM
-  ============================ */
   const send = async () => {
     if (!msg.trim() || sending) return;
 
     setSending(true);
     setErrorMsg("");
+
+    const text = msg.trim();
+
+    // optimistic bubble
+    setMessages((prev) => [
+      ...prev,
+      { id: `local_${Date.now()}`, sid, role: "user", text, ts: Date.now() },
+    ]);
 
     try {
       const res = await fetch("/api/chat/send", {
@@ -84,40 +90,72 @@ export default function ChatWidget() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...userData,
-          message: msg,
-          sessionId: getSessionId(),
+          message: text,
+          sessionId: sid,
           page: window.location.pathname,
         }),
       });
 
       if (!res.ok) throw new Error("Send failed");
-
       setMsg("");
-    } catch (error) {
-      console.error("CHAT SEND ERROR:", error);
+    } catch (e) {
+      console.error("CHAT SEND ERROR:", e);
       setErrorMsg("Gagal mengirim pesan. Coba lagi ya 🙏");
     } finally {
       setSending(false);
     }
   };
 
+  // polling admin reply
+  useEffect(() => {
+    if (!open || step !== "chat") return;
+
+    let alive = true;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/chat/poll?sid=${encodeURIComponent(sid)}&after=${lastTs}`, {
+          cache: "no-store",
+        });
+        const data = await res.json();
+
+        if (!alive) return;
+        if (data?.ok && Array.isArray(data.messages) && data.messages.length) {
+          setMessages((prev) => {
+            const existing = new Set(prev.map((m) => m.id));
+            const merged = [...prev];
+            for (const m of data.messages as ChatMessage[]) {
+              if (!existing.has(m.id)) merged.push(m);
+            }
+            return merged.sort((a, b) => a.ts - b.ts);
+          });
+
+          const newest = Math.max(...(data.messages as ChatMessage[]).map((m) => m.ts));
+          setLastTs((prev) => Math.max(prev, newest));
+        }
+      } catch (e) {
+        // silent
+      }
+    }, 2000);
+
+    return () => {
+      alive = false;
+      clearInterval(interval);
+    };
+  }, [open, step, sid, lastTs]);
+
   return (
     <>
-      {/* ===========================
-          FLOATING BUTTON
-      ============================ */}
+      {/* Floating button */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
           className="fixed bottom-5 right-5 z-[998] bg-[#0FA3A8] text-white p-4 rounded-full shadow-lg hover:bg-[#0B4B50]"
+          aria-label="Buka chat"
         >
           <MessageCircle size={22} />
         </button>
       )}
 
-      {/* ===========================
-          CHAT MODAL
-      ============================ */}
       {open && (
         <div className="fixed inset-0 z-[999] bg-black/40 flex items-end md:items-center justify-center">
           <div className="w-full md:w-[420px] bg-white rounded-t-2xl md:rounded-2xl p-4 shadow-xl">
@@ -128,42 +166,30 @@ export default function ChatWidget() {
               <button onClick={() => setOpen(false)}>✕</button>
             </div>
 
-            {errorMsg && (
-              <div className="text-sm text-red-600 mb-2">{errorMsg}</div>
-            )}
+            {errorMsg && <div className="text-sm text-red-600 mb-2">{errorMsg}</div>}
 
-            {/* ===========================
-                STEP 1 — FORM IDENTITAS
-            ============================ */}
+            {/* FORM */}
             {step === "form" && (
               <>
-                <p className="text-sm text-gray-600 mb-3">
-                  Sebelum chat, isi data singkat dulu ya 🙏
-                </p>
+                <p className="text-sm text-gray-600 mb-3">Sebelum chat, isi data singkat dulu ya 🙏</p>
 
                 <input
                   value={userData.name}
-                  onChange={(e) =>
-                    setUserData({ ...userData, name: e.target.value })
-                  }
+                  onChange={(e) => setUserData({ ...userData, name: e.target.value })}
                   placeholder="Nama"
                   className="w-full border rounded p-2 text-sm mb-2"
                 />
 
                 <input
                   value={userData.phone}
-                  onChange={(e) =>
-                    setUserData({ ...userData, phone: e.target.value })
-                  }
+                  onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
                   placeholder="No. WhatsApp (opsional)"
                   className="w-full border rounded p-2 text-sm mb-2"
                 />
 
                 <select
                   value={userData.topic}
-                  onChange={(e) =>
-                    setUserData({ ...userData, topic: e.target.value })
-                  }
+                  onChange={(e) => setUserData({ ...userData, topic: e.target.value })}
                   className="w-full border rounded p-2 text-sm mb-3"
                 >
                   <option value="Produk">Produk</option>
@@ -181,16 +207,41 @@ export default function ChatWidget() {
               </>
             )}
 
-            {/* ===========================
-                STEP 2 — CHAT INPUT
-            ============================ */}
+            {/* CHAT */}
             {step === "chat" && (
               <>
+                <div className="h-[260px] overflow-y-auto border rounded p-2 bg-gray-50">
+                  {messages.length === 0 ? (
+                    <div className="text-sm text-gray-500 p-2">
+                      Halo {userData.name || "bro"} 👋 Tulis pertanyaan kamu ya.
+                      <div className="mt-1 text-xs text-gray-400">
+                        *Admin akan membalas via Telegram (pastikan admin reply pesannya).
+                      </div>
+                    </div>
+                  ) : (
+                    messages.map((m) => (
+                      <div
+                        key={m.id}
+                        className={`mb-2 flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div
+                          className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm shadow-sm
+                            ${m.role === "user" ? "bg-[#0FA3A8] text-white rounded-br-sm" : "bg-white text-[#0B4B50] rounded-bl-sm"}
+                          `}
+                        >
+                          {m.text}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div ref={bottomRef} />
+                </div>
+
                 <textarea
                   value={msg}
                   onChange={(e) => setMsg(e.target.value)}
                   placeholder="Tulis pertanyaan kamu..."
-                  className="w-full border rounded p-2 text-sm"
+                  className="w-full border rounded p-2 text-sm mt-2"
                   rows={3}
                 />
 
