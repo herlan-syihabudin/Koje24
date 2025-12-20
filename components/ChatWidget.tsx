@@ -17,7 +17,7 @@ const IDLE_LIMIT = 60_000; // 1 menit
 
 export default function ChatWidget() {
   const pathname = usePathname();
-  const isHome = pathname === "/";
+  const isHome = pathname === "/"; // hanya penanda, bubble tetap off total
 
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"form" | "chat">("form");
@@ -28,6 +28,9 @@ export default function ChatWidget() {
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [lastTs, setLastTs] = useState<number>(0);
+
+  const [adminStatus, setAdminStatus] =
+    useState<"online" | "offline">("offline");
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -57,11 +60,10 @@ export default function ChatWidget() {
   );
 
   /* ===========================
-     IDLE TIMER HANDLER
+     IDLE TIMER
   ============================ */
   const resetIdleTimer = () => {
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-
     idleTimerRef.current = setTimeout(() => {
       setOpen(false);
     }, IDLE_LIMIT);
@@ -116,11 +118,10 @@ export default function ChatWidget() {
   };
 
   /* ===========================
-     SEND MESSAGE
+     SEND MESSAGE (USER)
   ============================ */
   const send = async () => {
     resetIdleTimer();
-
     if (!msg.trim() || sending) return;
 
     setSending(true);
@@ -170,7 +171,6 @@ export default function ChatWidget() {
           { cache: "no-store" }
         );
         const data = await res.json();
-
         if (!alive) return;
 
         if (data?.ok && Array.isArray(data.messages) && data.messages.length) {
@@ -198,9 +198,28 @@ export default function ChatWidget() {
   }, [open, step, sid, lastTs]);
 
   /* ===========================
+     POLLING ADMIN STATUS
+  ============================ */
+  useEffect(() => {
+    if (!open) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/chat/admin-status", {
+          cache: "no-store",
+        });
+        const data = await res.json();
+        if (data?.ok) setAdminStatus(data.status);
+      } catch {}
+    }, 10_000);
+
+    return () => clearInterval(interval);
+  }, [open]);
+
+  /* ===========================
      RENDER
   ============================ */
-  if (!open) return null; // ❌ NO FLOATING BUTTON, NO HOME BUBBLE
+  if (!open) return null; // ❌ no bubble anywhere
 
   return (
     <div
@@ -211,15 +230,26 @@ export default function ChatWidget() {
         className="w-full md:w-[420px] bg-white rounded-t-2xl md:rounded-2xl p-4 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center gap-2 font-semibold">
-            <MessageCircle size={18} /> Chat Admin KOJE24
+        {/* HEADER */}
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2 font-semibold">
+              <MessageCircle size={18} /> Chat Admin KOJE24
+            </div>
+            <div className="text-xs text-gray-500">
+              {adminStatus === "online"
+                ? "🟢 Admin online"
+                : "⚪ Admin offline (balasan mungkin agak lama)"}
+            </div>
           </div>
           <button onClick={() => setOpen(false)}>✕</button>
         </div>
 
-        {errorMsg && <div className="text-sm text-red-600 mb-2">{errorMsg}</div>}
+        {errorMsg && (
+          <div className="text-sm text-red-600 mb-2">{errorMsg}</div>
+        )}
 
+        {/* FORM */}
         {step === "form" && (
           <>
             <p className="text-sm text-gray-600 mb-3">
@@ -266,9 +296,20 @@ export default function ChatWidget() {
           </>
         )}
 
+        {/* CHAT */}
         {step === "chat" && (
           <>
             <div className="h-[260px] overflow-y-auto border rounded p-2 bg-gray-50">
+              {messages.length === 0 && (
+                <div className="text-sm text-gray-500 p-2">
+                  Halo {userData.name || "bro"} 👋  
+                  Silakan tulis pertanyaan kamu ya.  
+                  <div className="text-xs mt-1 text-gray-400">
+                    *Admin akan membalas via Telegram
+                  </div>
+                </div>
+              )}
+
               {messages.map((m) => (
                 <div
                   key={m.id}
