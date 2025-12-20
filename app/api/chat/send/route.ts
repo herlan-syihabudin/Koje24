@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID!;
+const BOT_TOKEN = process.env.TELEGRAM_LIVECHAT_BOT_TOKEN!;
+const CHAT_ID = process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID!;
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     const text = `
-📩 *CHAT WEBSITE - KOJE24*
+📩 *LIVE CHAT WEBSITE - KOJE24*
 
 👤 Nama: ${name || "Guest"}
 📱 HP: ${phone || "-"}
@@ -47,7 +47,7 @@ ${message}
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("CHAT API ERROR:", error);
+    console.error("LIVECHAT API ERROR:", error);
     return NextResponse.json(
       { ok: false, message: "Internal server error" },
       { status: 500 }
