@@ -18,7 +18,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 🔥 AMBIL DATA DARI KV
     const messages = await getMessages(
       sid,
       after > 0 ? after : undefined
@@ -29,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      messages: messages.filter(m => m.role === "admin"),
+      messages, // ⬅️ JANGAN FILTER DI SINI
       adminOnline: adminStatus === "online",
       adminTyping,
     });
