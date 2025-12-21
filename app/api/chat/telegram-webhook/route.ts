@@ -1,23 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  addMessage,
-  setAdminActive,
-  setAdminTyping,
-} from "@/lib/livechatStore";
+import { addMessage, setAdminActive } from "@/lib/livechatStore";
 
 const SECRET = process.env.TELEGRAM_LIVECHAT_WEBHOOK_SECRET || "";
 const ADMIN_ID = Number(process.env.TELEGRAM_LIVECHAT_ADMIN_USER_ID || "0");
 
-// simpan session aktif dari callback button
-let activeSessionFromButton: string | null = null;
-
 function extractSessionId(text?: string | null) {
   if (!text) return null;
 
-  const m1 = text.match(/`([a-zA-Z0-9-]{6,})`/);
+  // ambil dari <code>SESSION</code>
+  const m1 = text.match(/<code>([^<]+)<\/code>/);
   if (m1?.[1]) return m1[1];
 
-  const m2 = text.match(/Session[:\s]*([a-zA-Z0-9-]{6,})/i);
+  // fallback
+  const m2 = text.match(/Session[:\s]*([a-zA-Z0-9-]+)/i);
   if (m2?.[1]) return m2[1];
 
   return null;
@@ -31,59 +26,35 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-
-    // ===============================
-    // 1️⃣ HANDLE INLINE BUTTON
-    // ===============================
-    if (body.callback_query) {
-      const cq = body.callback_query;
-      if (ADMIN_ID && cq.from?.id !== ADMIN_ID) {
-        return NextResponse.json({ ok: true });
-      }
-
-      const data: string = cq.data || "";
-      if (data.startsWith("reply:")) {
-        activeSessionFromButton = data.replace("reply:", "");
-      }
-
-      return NextResponse.json({ ok: true });
-    }
-
-    // ===============================
-    // 2️⃣ HANDLE MESSAGE
-    // ===============================
     const msg = body.message;
     if (!msg) return NextResponse.json({ ok: true });
 
+    // hanya admin
     if (ADMIN_ID && msg.from?.id !== ADMIN_ID) {
       return NextResponse.json({ ok: true });
     }
 
-    let sessionId: string | null = null;
+    // 🚨 WAJIB REPLY
+    const repliedText =
+      msg.reply_to_message?.text ||
+      msg.reply_to_message?.caption;
 
-    // a) reply manual
-    if (msg.reply_to_message?.text) {
-      sessionId = extractSessionId(msg.reply_to_message.text);
+    if (!repliedText) {
+      console.warn("ADMIN BALAS TANPA REPLY — DIABAIKAN");
+      return NextResponse.json({ ok: true });
     }
 
-    // b) fallback dari inline button
-    if (!sessionId && activeSessionFromButton) {
-      sessionId = activeSessionFromButton;
-    }
-
+    const sessionId = extractSessionId(repliedText);
     if (!sessionId) {
-      console.warn("LIVECHAT: sessionId tidak ditemukan");
+      console.warn("SESSION ID TIDAK DITEMUKAN");
       return NextResponse.json({ ok: true });
     }
 
     const text =
       msg.text?.trim() ||
-      msg.caption?.trim() ||
-      null;
+      msg.caption?.trim();
 
     if (!text) return NextResponse.json({ ok: true });
-
-    setAdminTyping(5000);
 
     await addMessage(sessionId, {
       role: "admin",
