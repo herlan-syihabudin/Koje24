@@ -2,11 +2,13 @@
 
 export type ChatMessage = {
   id: string;
-  sid: string;
+  sid: string; // sessionId
   role: "user" | "admin";
   text: string;
-  ts: number;
+  ts: number; // Date.now()
 };
+
+// ================= MESSAGE STORE =================
 
 const mem = new Map<string, ChatMessage[]>();
 
@@ -34,12 +36,31 @@ export async function getMessages(sid: string, afterTs?: number) {
 
 let lastActive = 0;
 
+// dipanggil setiap admin reply dari Telegram
 export function setAdminActive() {
   lastActive = Date.now();
 }
 
+// status admin berdasarkan aktivitas terakhir
 export function getAdminStatus() {
   return Date.now() - lastActive < 2 * 60 * 1000
     ? "online"
     : "offline";
+}
+
+// ================= TYPING INDICATOR =================
+
+let adminTypingUntil = 0;
+
+/**
+ * Set admin sedang mengetik
+ * @param ttlMs durasi typing (default 5 detik)
+ */
+export function setAdminTyping(ttlMs = 5000) {
+  adminTypingUntil = Date.now() + ttlMs;
+}
+
+// cek apakah admin masih dalam status mengetik
+export function isAdminTyping() {
+  return Date.now() < adminTypingUntil;
 }
