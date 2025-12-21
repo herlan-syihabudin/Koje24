@@ -1,4 +1,4 @@
-// lib/livechatStore.ts
+import { kv } from "@vercel/kv";
 
 export type ChatMessage = {
   id: string;
@@ -8,59 +8,46 @@ export type ChatMessage = {
   ts: number;
 };
 
-// ================= MESSAGE STORE =================
-
-const mem = new Map<string, ChatMessage[]>();
-
 function genId() {
   return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
+
+// ================= MESSAGE =================
 
 export async function addMessage(
   sid: string,
   msg: Omit<ChatMessage, "id" | "sid">
 ) {
   const full: ChatMessage = { ...msg, id: genId(), sid };
-  const arr = mem.get(sid) ?? [];
-  arr.push(full);
-  mem.set(sid, arr);
+
+  await kv.rpush(`chat:${sid}`, full);
+  await kv.expire(`chat:${sid}`, 60 * 60 * 24); // 1 hari
+
   return full;
 }
 
 export async function getMessages(sid: string, afterTs?: number) {
-  const arr = mem.get(sid) ?? [];
-  return afterTs ? arr.filter((m) => m.ts > afterTs) : arr;
+  const all = (await kv.lrange(`chat:${sid}`, 0, -1)) as ChatMessage[];
+  return afterTs ? all.filter(m => m.ts > afterTs) : all;
 }
 
 // ================= ADMIN STATUS =================
 
-let lastActive = 0;
-
-// dipanggil setiap admin reply dari Telegram
-export function setAdminActive() {
-  lastActive = Date.now();
+export async function setAdminActive() {
+  await kv.set("admin:lastActive", Date.now(), { ex: 120 });
 }
 
-// status admin berdasarkan aktivitas terakhir
-export function getAdminStatus() {
-  return Date.now() - lastActive < 2 * 60 * 1000
-    ? "online"
-    : "offline";
+export async function getAdminStatus() {
+  const ts = (await kv.get<number>("admin:lastActive")) || 0;
+  return Date.now() - ts < 2 * 60 * 1000 ? "online" : "offline";
 }
 
-// ================= TYPING INDICATOR =================
+// ================= TYPING =================
 
-let adminTypingUntil = 0;
-
-/**
- * Set admin sedang mengetik
- * @param ttlMs durasi typing (default 5 detik)
- */
-export function setAdminTyping(ttlMs = 5000) {
-  adminTypingUntil = Date.now() + ttlMs;
+export async function setAdminTyping(ttlMs = 5000) {
+  await kv.set("admin:typing", 1, { ex: Math.ceil(ttlMs / 1000) });
 }
 
-// cek apakah admin masih dalam status mengetik
-export function isAdminTyping() {
-  return Date.now() < adminTypingUntil;
+export async function isAdminTyping() {
+  return Boolean(await kv.get("admin:typing"));
 }
