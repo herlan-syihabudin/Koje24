@@ -8,49 +8,67 @@ import {
 const SECRET = process.env.TELEGRAM_LIVECHAT_WEBHOOK_SECRET || "";
 const ADMIN_ID = Number(process.env.TELEGRAM_LIVECHAT_ADMIN_USER_ID || "0");
 
+/**
+ * Ambil sessionId dari pesan Telegram yang direply admin
+ * SUPPORT:
+ * - <code>SESSION_ID</code>
+ * - Session:\nSESSION_ID
+ * - Session: SESSION_ID
+ */
 function extractSessionId(text?: string | null) {
   if (!text) return null;
 
-  // 1️⃣ Format paling sering (baris sendiri)
-  const m1 = text.match(/Session[:\s]*\n?([a-zA-Z0-9-]+)/i);
-  if (m1?.[1]) return m1[1];
+  // ✅ FORMAT PALING AMAN (HTML code block)
+  const m0 = text.match(/<code>([^<]+)<\/code>/i);
+  if (m0?.[1]) return m0[1].trim();
 
-  // 2️⃣ Inline fallback
+  // format multiline
+  const m1 = text.match(/Session[:\s]*\n?([a-zA-Z0-9-]+)/i);
+  if (m1?.[1]) return m1[1].trim();
+
+  // inline fallback
   const m2 = text.match(/Session[:\s]*([a-zA-Z0-9-]+)/i);
-  if (m2?.[1]) return m2[1];
+  if (m2?.[1]) return m2[1].trim();
 
   return null;
 }
 
 export async function POST(req: NextRequest) {
   try {
+    // 🔐 SECURITY TOKEN (optional tapi disarankan)
     if (SECRET) {
       const token = req.headers.get("x-telegram-bot-api-secret-token");
-      if (token !== SECRET) return NextResponse.json({ ok: true });
+      if (token !== SECRET) {
+        return NextResponse.json({ ok: true });
+      }
     }
 
     const body = await req.json();
     const msg = body.message;
     if (!msg) return NextResponse.json({ ok: true });
 
-    // 🔒 hanya admin
+    // 🔒 HANYA ADMIN
     if (ADMIN_ID && msg.from?.id !== ADMIN_ID) {
       return NextResponse.json({ ok: true });
     }
 
-    // ❗ admin WAJIB reply
+    // ❗ ADMIN WAJIB REPLY KE PESAN USER
     const repliedText =
       msg.reply_to_message?.text ||
       msg.reply_to_message?.caption;
 
     if (!repliedText) {
-      console.warn("ADMIN BALAS TANPA REPLY — DIABAIKAN");
+      console.warn("❌ ADMIN BALAS TANPA REPLY — DIABAIKAN");
       return NextResponse.json({ ok: true });
     }
 
     const sessionId = extractSessionId(repliedText);
+
+    console.log("📩 RAW REPLY TEXT:", repliedText);
+    console.log("🆔 EXTRACTED SESSION:", sessionId);
+
     if (!sessionId) {
-      console.warn("SESSION ID TIDAK DITEMUKAN");
+      console.warn("❌ SESSION ID TIDAK DITEMUKAN");
       return NextResponse.json({ ok: true });
     }
 
@@ -60,22 +78,23 @@ export async function POST(req: NextRequest) {
 
     if (!text) return NextResponse.json({ ok: true });
 
-    // ✅ SIMPAN PESAN
+    // 💾 SIMPAN PESAN ADMIN KE KV
     await addMessage(sessionId, {
       role: "admin",
       text,
       ts: Date.now(),
     });
 
-    // ✅ WAJIB AWAIT
+    // 🟢 UPDATE STATUS ADMIN
     await setAdminActive();
     await setAdminTyping(5000);
 
     console.log("✅ ADMIN MESSAGE SAVED:", sessionId);
 
+    // ⚠️ TELEGRAM WAJIB TERIMA 200
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("❌ TELEGRAM WEBHOOK ERROR:", err);
-    return NextResponse.json({ ok: true }); // Telegram wajib 200
+    return NextResponse.json({ ok: true });
   }
 }
