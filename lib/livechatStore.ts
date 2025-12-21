@@ -9,7 +9,7 @@ export type ChatMessage = {
 };
 
 function genId() {
-  return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  return crypto.randomUUID();
 }
 
 // ================= MESSAGE =================
@@ -18,10 +18,14 @@ export async function addMessage(
   sid: string,
   msg: Omit<ChatMessage, "id" | "sid">
 ) {
-  const full: ChatMessage = { ...msg, id: genId(), sid };
+  const full: ChatMessage = {
+    ...msg,
+    id: genId(),
+    sid,
+  };
 
   await kv.rpush(`chat:${sid}`, full);
-  await kv.expire(`chat:${sid}`, 60 * 60 * 24); // 1 hari
+  await kv.expire(`chat:${sid}`, 60 * 60 * 24);
 
   return full;
 }
@@ -45,7 +49,9 @@ export async function getAdminStatus() {
 // ================= TYPING =================
 
 export async function setAdminTyping(ttlMs = 5000) {
-  await kv.set("admin:typing", 1, { ex: Math.ceil(ttlMs / 1000) });
+  await kv.set("admin:typing", 1, {
+    ex: Math.ceil(ttlMs / 1000),
+  });
 }
 
 export async function isAdminTyping() {
