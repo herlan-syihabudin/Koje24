@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMessages } from "@/lib/livechatStore";
-import { getAdminStatus } from "@/lib/adminStatus";
+import { getMessages, getAdminStatus } from "@/lib/livechatStore";
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,9 +19,9 @@ export async function GET(req: NextRequest) {
       after > 0 ? after : undefined
     );
 
-    // 🔒 ADMIN ONLY (anti double bubble)
+    // kirim ADMIN saja (anti duplikat bubble)
     const messages = (allMessages || []).filter(
-      (m: any) => m.role === "admin"
+      (m) => m.role === "admin"
     );
 
     return NextResponse.json({
