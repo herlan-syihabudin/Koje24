@@ -2,10 +2,10 @@
 
 export type ChatMessage = {
   id: string;
-  sid: string; // sessionId
+  sid: string;
   role: "user" | "admin";
   text: string;
-  ts: number; // Date.now()
+  ts: number;
 };
 
 // ================= MESSAGE STORE =================
