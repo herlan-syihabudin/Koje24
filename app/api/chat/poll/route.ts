@@ -18,21 +18,20 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const allMessages = await getMessages(
+    // 🔥 AMBIL DATA DARI KV
+    const messages = await getMessages(
       sid,
       after > 0 ? after : undefined
     );
 
-    // kirim ADMIN saja (anti duplikat bubble)
-    const messages = (allMessages || []).filter(
-      (m) => m.role === "admin"
-    );
+    const adminStatus = await getAdminStatus();
+    const adminTyping = await isAdminTyping();
 
     return NextResponse.json({
       ok: true,
-      messages,
-      adminOnline: getAdminStatus() === "online",
-      adminTyping: isAdminTyping(), // ⬅️ PENTING
+      messages: messages.filter(m => m.role === "admin"),
+      adminOnline: adminStatus === "online",
+      adminTyping,
     });
   } catch (e) {
     console.error("LIVECHAT POLL ERROR:", e);
