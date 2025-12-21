@@ -54,6 +54,12 @@ ${esc(message)}
           text,
           parse_mode: "HTML",
           disable_web_page_preview: true,
+
+          // 🔥 INI KUNCI UTAMA
+          reply_markup: {
+            force_reply: true,
+            selective: true,
+          },
         }),
       }
     );
