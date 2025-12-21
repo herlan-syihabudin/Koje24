@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMessages, getAdminStatus } from "@/lib/livechatStore";
+import {
+  getMessages,
+  getAdminStatus,
+  isAdminTyping,
+} from "@/lib/livechatStore";
 
 export async function GET(req: NextRequest) {
   try {
@@ -28,6 +32,7 @@ export async function GET(req: NextRequest) {
       ok: true,
       messages,
       adminOnline: getAdminStatus() === "online",
+      adminTyping: isAdminTyping(), // ⬅️ PENTING
     });
   } catch (e) {
     console.error("LIVECHAT POLL ERROR:", e);
