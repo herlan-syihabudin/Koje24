@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addMessage, setAdminActive } from "@/lib/livechatStore";
+import {
+  addMessage,
+  setAdminActive,
+  setAdminTyping,
+} from "@/lib/livechatStore";
 
 const SECRET = process.env.TELEGRAM_LIVECHAT_WEBHOOK_SECRET || "";
 const ADMIN_ID = Number(process.env.TELEGRAM_LIVECHAT_ADMIN_USER_ID || "0");
@@ -7,11 +11,11 @@ const ADMIN_ID = Number(process.env.TELEGRAM_LIVECHAT_ADMIN_USER_ID || "0");
 function extractSessionId(text?: string | null) {
   if (!text) return null;
 
-  // ambil dari <code>SESSION</code>
-  const m1 = text.match(/<code>([^<]+)<\/code>/);
+  // 1️⃣ Format paling sering (baris sendiri)
+  const m1 = text.match(/Session[:\s]*\n?([a-zA-Z0-9-]+)/i);
   if (m1?.[1]) return m1[1];
 
-  // fallback
+  // 2️⃣ Inline fallback
   const m2 = text.match(/Session[:\s]*([a-zA-Z0-9-]+)/i);
   if (m2?.[1]) return m2[1];
 
@@ -29,12 +33,12 @@ export async function POST(req: NextRequest) {
     const msg = body.message;
     if (!msg) return NextResponse.json({ ok: true });
 
-    // hanya admin
+    // 🔒 hanya admin
     if (ADMIN_ID && msg.from?.id !== ADMIN_ID) {
       return NextResponse.json({ ok: true });
     }
 
-    // 🚨 WAJIB REPLY
+    // ❗ admin WAJIB reply
     const repliedText =
       msg.reply_to_message?.text ||
       msg.reply_to_message?.caption;
@@ -56,17 +60,22 @@ export async function POST(req: NextRequest) {
 
     if (!text) return NextResponse.json({ ok: true });
 
+    // ✅ SIMPAN PESAN
     await addMessage(sessionId, {
       role: "admin",
       text,
       ts: Date.now(),
     });
 
-    setAdminActive();
+    // ✅ WAJIB AWAIT
+    await setAdminActive();
+    await setAdminTyping(5000);
+
+    console.log("✅ ADMIN MESSAGE SAVED:", sessionId);
 
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("❌ TELEGRAM WEBHOOK ERROR:", err);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true }); // Telegram wajib 200
   }
 }
