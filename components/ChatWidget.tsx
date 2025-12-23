@@ -210,26 +210,30 @@ export default function ChatWidget() {
 
 return (
   <div
-    className="
-      fixed z-[999]
-      bottom-0 right-0
-      md:bottom-4 md:right-4
-      w-full md:w-[380px]
-      flex justify-center md:justify-end
-      pointer-events-none
-    "
-  >
+  className="
+    fixed z-[999]
+    inset-0
+    w-full h-[100dvh]
+    md:inset-auto
+    md:bottom-4 md:right-4
+    md:w-[380px] md:h-[600px]
+    flex justify-center md:justify-end
+    pointer-events-none
+  "
+>
     <div
-      className="
-        pointer-events-auto
-        w-full md:w-[380px]
-        bg-white
-        rounded-t-2xl md:rounded-2xl
-        shadow-2xl
-        border
-        animate-slide-up
-      "
-    >
+  className="
+    pointer-events-auto
+    w-full h-full
+    md:w-[380px] md:h-[600px]
+    bg-white
+    rounded-none md:rounded-2xl
+    shadow-2xl
+    border
+    animate-slide-up
+    flex flex-col
+  "
+>
       {/* HEADER */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-2">
@@ -294,7 +298,7 @@ return (
 
         {step === "chat" && (
           <>
-            <div className="h-[300px] overflow-y-auto bg-gray-50 rounded-lg p-2">
+            <div className="flex-1 overflow-y-auto bg-gray-50 rounded-lg p-2">
               {messages.length === 0 && (
                 <div className="text-sm text-gray-500 p-2">
                   Pesan diterima 🙏  
