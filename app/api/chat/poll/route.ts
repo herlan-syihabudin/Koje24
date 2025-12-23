@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { kv } from "@vercel/kv";
 import {
   getMessages,
   getAdminStatus,
@@ -18,19 +19,31 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // 🔹 1) AMBIL PESAN (LOGIKA ASLI - TIDAK DIUBAH)
     const messages = await getMessages(
       sid,
       after > 0 ? after : undefined
     );
 
+    // 🔹 2) STATUS ADMIN (LOGIKA ASLI - TIDAK DIUBAH)
     const adminStatus = await getAdminStatus();
     const adminTyping = await isAdminTyping();
 
+    // 🔹 3) BACA STATE SESSION DARI KV (READ ONLY, TANPA UBAH APA PUN)
+    // key ini sudah dipakai di /api/chat/close
+    const session = await kv.hgetall<{ state?: string }>(
+      `chat:session:${sid}`
+    );
+
+    // default: kalau belum ada state, kita anggap "waiting"
+    const state = (session?.state as "waiting" | "active" | "closed" | undefined) || "waiting";
+
     return NextResponse.json({
       ok: true,
-      messages, // ⬅️ JANGAN FILTER DI SINI
+      messages, // ⬅️ TETAP: tidak difilter
       adminOnline: adminStatus === "online",
       adminTyping,
+      state, // 👈 FIELD BARU: DIPAKAI FRONTEND BUAT ANTRIAN
     });
   } catch (e) {
     console.error("LIVECHAT POLL ERROR:", e);
