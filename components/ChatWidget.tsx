@@ -208,26 +208,47 @@ export default function ChatWidget() {
   ===================== */
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-[999] bg-black/40 flex items-end md:items-center justify-center">
-      <div
-        className="w-full md:w-[420px] bg-white rounded-t-2xl md:rounded-2xl p-4 pb-safe shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* HEADER */}
-        <div className="flex justify-between items-center mb-2">
+return (
+  <div
+    className="
+      fixed z-[999]
+      bottom-0 right-0
+      md:bottom-4 md:right-4
+      w-full md:w-[380px]
+      flex justify-center md:justify-end
+      pointer-events-none
+    "
+  >
+    <div
+      className="
+        pointer-events-auto
+        w-full md:w-[380px]
+        bg-white
+        rounded-t-2xl md:rounded-2xl
+        shadow-2xl
+        border
+        animate-slide-up
+      "
+    >
+      {/* HEADER */}
+      <div className="flex items-center justify-between px-4 py-3 border-b">
+        <div className="flex items-center gap-2">
+          <MessageCircle size={18} />
           <div>
-            <div className="flex items-center gap-2 font-semibold">
-              <MessageCircle size={18} /> Chat Admin KOJE24
-            </div>
+            <div className="font-semibold text-sm">Chat Admin KOJE24</div>
             <div className="text-xs text-gray-500">
               {adminOnline ? "🟢 Admin online" : "⚪ Admin offline"}
             </div>
           </div>
-          <button onClick={closeChat}>✕</button>
         </div>
+        <button onClick={closeChat} className="text-gray-400">✕</button>
+      </div>
 
-        {errorMsg && <div className="text-sm text-red-600 mb-2">{errorMsg}</div>}
+      {/* BODY */}
+      <div className="p-4">
+        {errorMsg && (
+          <div className="text-sm text-red-600 mb-2">{errorMsg}</div>
+        )}
 
         {step === "form" && (
           <>
@@ -237,31 +258,34 @@ export default function ChatWidget() {
                 setUserData({ ...userData, name: e.target.value })
               }
               placeholder="Nama"
-              className="w-full border rounded p-2 text-sm mb-2"
+              className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
             />
+
             <input
               value={userData.phone}
               onChange={(e) =>
                 setUserData({ ...userData, phone: e.target.value })
               }
               placeholder="No. WhatsApp (opsional)"
-              className="w-full border rounded p-2 text-sm mb-2"
+              className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
             />
+
             <select
               value={userData.topic}
               onChange={(e) =>
                 setUserData({ ...userData, topic: e.target.value })
               }
-              className="w-full border rounded p-2 text-sm mb-3"
+              className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
             >
               <option>Produk</option>
               <option>Langganan</option>
               <option>Pengiriman</option>
               <option>Komplain</option>
             </select>
+
             <button
               onClick={startChat}
-              className="w-full bg-[#0FA3A8] text-white py-2 rounded"
+              className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm"
             >
               Mulai Chat
             </button>
@@ -270,10 +294,10 @@ export default function ChatWidget() {
 
         {step === "chat" && (
           <>
-            <div className="max-h-[55vh] overflow-y-auto border rounded p-2 bg-gray-50">
+            <div className="h-[300px] overflow-y-auto bg-gray-50 rounded-lg p-2">
               {messages.length === 0 && (
                 <div className="text-sm text-gray-500 p-2">
-                  Pesan kamu sudah kami terima 🙏  
+                  Pesan diterima 🙏  
                   Admin akan membalas sesuai antrian.
                 </div>
               )}
@@ -286,11 +310,11 @@ export default function ChatWidget() {
                   }`}
                 >
                   <div
-                    className={`px-3 py-2 rounded-2xl text-sm max-w-[85%]
+                    className={`px-3 py-2 rounded-xl text-sm max-w-[85%]
                     ${
                       m.role === "user"
-                        ? "bg-[#0FA3A8] text-white rounded-br-sm"
-                        : "bg-white text-[#0B4B50] rounded-bl-sm"
+                        ? "bg-[#0FA3A8] text-white"
+                        : "bg-white border"
                     }`}
                   >
                     {m.text}
@@ -299,7 +323,7 @@ export default function ChatWidget() {
               ))}
 
               {adminTyping && (
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-gray-400 mt-1">
                   ✍️ Admin sedang mengetik...
                 </div>
               )}
@@ -310,21 +334,22 @@ export default function ChatWidget() {
             <textarea
               value={msg}
               onChange={(e) => setMsg(e.target.value)}
-              placeholder="Tulis pertanyaan lengkap ya kak (produk, tujuan, waktu kirim)"
-              className="w-full border rounded p-2 text-sm mt-2"
-              rows={3}
+              placeholder="Tulis pesan…"
+              className="w-full border rounded-lg p-2 text-sm mt-2"
+              rows={2}
             />
 
             <button
               onClick={send}
               disabled={!msg.trim() || sending}
-              className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded disabled:opacity-50"
+              className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm disabled:opacity-50"
             >
-              {sending ? "Mengirim..." : "Kirim"}
+              {sending ? "Mengirim…" : "Kirim"}
             </button>
           </>
         )}
       </div>
     </div>
-  );
+  </div>
+);
 }
