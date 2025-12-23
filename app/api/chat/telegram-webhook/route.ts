@@ -5,8 +5,13 @@ import {
   setAdminTyping,
 } from "@/lib/livechatStore";
 
+// 🔐 OPTIONAL SECURITY
 const SECRET = process.env.TELEGRAM_LIVECHAT_WEBHOOK_SECRET || "";
-const ADMIN_ID = Number(process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID || "0");
+
+// ✅ FIX UTAMA — SESUAI ENV YANG ADA DI VERCEL
+const ADMIN_ID = Number(
+  process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID || "0"
+);
 
 /**
  * Ambil sessionId dari pesan Telegram yang direply admin
@@ -18,7 +23,7 @@ const ADMIN_ID = Number(process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID || "0");
 function extractSessionId(text?: string | null) {
   if (!text) return null;
 
-  // ✅ FORMAT PALING AMAN (HTML code block)
+  // FORMAT PALING AMAN (HTML code block)
   const m0 = text.match(/<code>([^<]+)<\/code>/i);
   if (m0?.[1]) return m0[1].trim();
 
@@ -35,7 +40,7 @@ function extractSessionId(text?: string | null) {
 
 export async function POST(req: NextRequest) {
   try {
-    // 🔐 SECURITY TOKEN (optional tapi disarankan)
+    // 🔐 VALIDASI SECRET (JIKA DIPAKAI)
     if (SECRET) {
       const token = req.headers.get("x-telegram-bot-api-secret-token");
       if (token !== SECRET) {
@@ -47,12 +52,17 @@ export async function POST(req: NextRequest) {
     const msg = body.message;
     if (!msg) return NextResponse.json({ ok: true });
 
-    // 🔒 HANYA ADMIN
+    // 🧪 DEBUG PENTING (BOLEH DIHAPUS SETELAH FIX)
+    console.log("ADMIN_ID:", ADMIN_ID);
+    console.log("FROM_ID:", msg.from?.id);
+    console.log("HAS_REPLY:", Boolean(msg.reply_to_message));
+
+    // 🔒 HANYA ADMIN YANG BOLEH MASUK
     if (ADMIN_ID && msg.from?.id !== ADMIN_ID) {
       return NextResponse.json({ ok: true });
     }
 
-    // ❗ ADMIN WAJIB REPLY KE PESAN USER
+    // ❗ ADMIN WAJIB REPLY KE PESAN BOT
     const repliedText =
       msg.reply_to_message?.text ||
       msg.reply_to_message?.caption;
@@ -91,7 +101,7 @@ export async function POST(req: NextRequest) {
 
     console.log("✅ ADMIN MESSAGE SAVED:", sessionId);
 
-    // ⚠️ TELEGRAM WAJIB TERIMA 200
+    // ⚠️ TELEGRAM WAJIB TERIMA HTTP 200
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("❌ TELEGRAM WEBHOOK ERROR:", err);
