@@ -20,6 +20,8 @@ type ChatMessage = {
   ts: number;
 };
 
+type ChatState = "waiting" | "active" | "closed"; // 🆕
+
 const POLL_INTERVAL = 2000;
 
 export default function ChatWidget() {
@@ -42,6 +44,8 @@ export default function ChatWidget() {
   const [adminOnline, setAdminOnline] = useState(false);
   const [adminTyping, setAdminTyping] = useState(false);
 
+  const [chatState, setChatState] = useState<ChatState>("waiting"); // 🆕
+
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   /* =====================
@@ -60,7 +64,7 @@ export default function ChatWidget() {
   }, []);
 
   /* =====================
-     BODY SCROLL LOCK (SAMA KAYAK CART)
+     BODY SCROLL LOCK
   ===================== */
   useEffect(() => {
     document.body.classList.toggle("body-cart-lock", open);
@@ -101,8 +105,10 @@ export default function ChatWidget() {
 
   /* =====================
      SEND MESSAGE
+     (TIDAK DIUBAH, HANYA DIJAGA)
   ===================== */
   const send = async () => {
+    if (chatState !== "active") return; // 🆕 guard aman
     if (!msg.trim() || sending) return;
 
     const text = msg.trim();
@@ -134,6 +140,7 @@ export default function ChatWidget() {
 
   /* =====================
      POLLING
+     (AMBIL state, TIDAK UBAH LOGIKA)
   ===================== */
   useEffect(() => {
     if (!open || step !== "chat") return;
@@ -148,6 +155,10 @@ export default function ChatWidget() {
 
         setAdminOnline(!!d.adminOnline);
         setAdminTyping(!!d.adminTyping);
+
+        if (d.state) {
+          setChatState(d.state as ChatState); // 🆕
+        }
 
         if (Array.isArray(d.messages) && d.messages.length) {
           setMessages((prev) => {
@@ -173,6 +184,7 @@ export default function ChatWidget() {
     setLastTs(0);
     setMsg("");
     setErrorMsg("");
+    setChatState("waiting"); // 🆕 reset aman
     localStorage.removeItem("chat_session_id");
     localStorage.removeItem("chat_user_data");
   };
@@ -210,6 +222,13 @@ export default function ChatWidget() {
         {/* BODY */}
         <div className="flex-1 overflow-y-auto p-4">
           {errorMsg && <div className="text-sm text-red-600 mb-2">{errorMsg}</div>}
+
+          {step === "chat" && chatState !== "active" && (
+            <div className="text-xs text-gray-500 mb-3">
+              ⏳ Anda sedang dalam antrian.<br />
+              Admin sedang melayani pengguna lain.
+            </div>
+          )}
 
           {step === "form" && (
             <>
@@ -281,13 +300,18 @@ export default function ChatWidget() {
             <textarea
               value={msg}
               onChange={(e) => setMsg(e.target.value)}
-              placeholder="Tulis pesan…"
+              disabled={chatState !== "active"} // 🆕
+              placeholder={
+                chatState === "active"
+                  ? "Tulis pesan…"
+                  : "⏳ Menunggu giliran..."
+              }
               rows={2}
-              className="w-full border rounded-lg p-2 text-sm"
+              className="w-full border rounded-lg p-2 text-sm disabled:bg-gray-100"
             />
             <button
               onClick={send}
-              disabled={!msg.trim() || sending}
+              disabled={chatState !== "active" || !msg.trim() || sending} // 🆕
               className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm disabled:opacity-50"
             >
               {sending ? "Mengirim…" : "Kirim"}
