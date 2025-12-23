@@ -20,7 +20,6 @@ type ChatMessage = {
   ts: number;
 };
 
-const IDLE_LIMIT = 60_000; // 1 menit
 const POLL_INTERVAL = 2000;
 
 /* =====================
@@ -47,7 +46,6 @@ export default function ChatWidget() {
   const [adminTyping, setAdminTyping] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
-  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   /* =====================
      SESSION ID
@@ -65,22 +63,11 @@ export default function ChatWidget() {
   const sid = useMemo(() => getSessionId(), []);
 
   /* =====================
-     IDLE TIMER
-  ===================== */
-  const resetIdleTimer = () => {
-    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => {
-      setOpen(false);
-    }, IDLE_LIMIT);
-  };
-
-  /* =====================
      OPEN FROM HEADER ONLY
   ===================== */
   useEffect(() => {
     const handler = () => {
       setOpen(true);
-      resetIdleTimer();
     };
     window.addEventListener("open-chat", handler);
     return () => window.removeEventListener("open-chat", handler);
@@ -109,8 +96,6 @@ export default function ChatWidget() {
      START CHAT
   ===================== */
   const startChat = () => {
-    resetIdleTimer();
-
     if (!userData.name.trim()) {
       setErrorMsg("Nama wajib diisi 🙏");
       return;
@@ -125,7 +110,6 @@ export default function ChatWidget() {
      SEND MESSAGE
   ===================== */
   const send = async () => {
-    resetIdleTimer();
     if (!msg.trim() || sending) return;
 
     const text = msg.trim();
@@ -180,7 +164,6 @@ export default function ChatWidget() {
 
         if (!data?.ok) return;
 
-        // admin online & typing
         setAdminOnline(Boolean(data.adminOnline));
         setAdminTyping(Boolean(data.adminTyping));
 
@@ -209,10 +192,7 @@ export default function ChatWidget() {
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[999] bg-black/40 flex items-end md:items-center justify-center"
-      onClick={resetIdleTimer}
-    >
+    <div className="fixed inset-0 z-[999] bg-black/40 flex items-end md:items-center justify-center">
       <div
         className="w-full md:w-[420px] bg-white rounded-t-2xl md:rounded-2xl p-4 shadow-xl"
         onClick={(e) => e.stopPropagation()}
@@ -307,10 +287,7 @@ export default function ChatWidget() {
 
             <textarea
               value={msg}
-              onChange={(e) => {
-                setMsg(e.target.value);
-                resetIdleTimer();
-              }}
+              onChange={(e) => setMsg(e.target.value)}
               placeholder="Tulis pertanyaan kamu..."
               className="w-full border rounded p-2 text-sm mt-2"
               rows={3}
