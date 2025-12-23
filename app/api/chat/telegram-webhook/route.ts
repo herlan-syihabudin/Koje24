@@ -5,13 +5,27 @@ import {
   setAdminTyping,
 } from "@/lib/livechatStore";
 
-// 🔐 OPTIONAL SECURITY
+// 🔐 OPTIONAL SECURITY (boleh kosong)
 const SECRET = process.env.TELEGRAM_LIVECHAT_WEBHOOK_SECRET || "";
 
-// ✅ FIX UTAMA — SESUAI ENV YANG ADA DI VERCEL
+// ✅ ADMIN ID — SESUAI ENV DI VERCEL
 const ADMIN_ID = Number(
   process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID || "0"
 );
+
+/**
+ * ================================
+ * STEP 2 — GET HANDLER (TEST ONLY)
+ * ================================
+ * Supaya endpoint kelihatan hidup di browser
+ * TIDAK mengganggu POST Telegram
+ */
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    message: "Telegram webhook endpoint is alive",
+  });
+}
 
 /**
  * Ambil sessionId dari pesan Telegram yang direply admin
@@ -38,6 +52,11 @@ function extractSessionId(text?: string | null) {
   return null;
 }
 
+/**
+ * ================================
+ * TELEGRAM WEBHOOK (POST)
+ * ================================
+ */
 export async function POST(req: NextRequest) {
   try {
     // 🔐 VALIDASI SECRET (JIKA DIPAKAI)
@@ -48,14 +67,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 🔥 STEP 3 DEBUG — PASTIKAN WEBHOOK KENA
+    console.log("🔥 TELEGRAM WEBHOOK HIT");
+
     const body = await req.json();
+    console.log("📦 RAW BODY:", JSON.stringify(body, null, 2));
+
     const msg = body.message;
     if (!msg) return NextResponse.json({ ok: true });
 
-    // 🧪 DEBUG PENTING (BOLEH DIHAPUS SETELAH FIX)
-    console.log("ADMIN_ID:", ADMIN_ID);
-    console.log("FROM_ID:", msg.from?.id);
-    console.log("HAS_REPLY:", Boolean(msg.reply_to_message));
+    // 🧪 DEBUG ADMIN
+    console.log("👤 FROM_ID:", msg.from?.id);
+    console.log("👑 ADMIN_ID:", ADMIN_ID);
+    console.log("↩️ HAS_REPLY:", Boolean(msg.reply_to_message));
 
     // 🔒 HANYA ADMIN YANG BOLEH MASUK
     if (ADMIN_ID && msg.from?.id !== ADMIN_ID) {
