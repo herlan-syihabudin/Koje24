@@ -1,54 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  addMessage,
-  setAdminActive,
-} from "@/lib/livechatStore";
+import { addMessage, setAdminActive, setAdminTyping } from "@/lib/livechatStore";
 
-/**
- * ================================
- * GET — TEST ENDPOINT
- * ================================
- */
-export async function GET() {
-  return NextResponse.json({
-    ok: true,
-    message: "Telegram webhook endpoint is alive (DEBUG MODE)",
-  });
+const ADMIN_ID = Number(process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID || "0");
+
+function extractSessionId(text?: string | null) {
+  if (!text) return null;
+
+  const m1 = text.match(/Session[:\s]*([a-zA-Z0-9-]+)/i);
+  if (m1?.[1]) return m1[1].trim();
+
+  return null;
 }
 
-/**
- * ================================
- * POST — TELEGRAM → WEB (DEBUG)
- * ================================
- * TANPA:
- * - reply
- * - admin filter
- * - session parsing
- */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const msg = body.message;
+    if (!msg) return NextResponse.json({ ok: true });
 
-    if (!msg?.text) {
+    // 🔒 HANYA ADMIN
+    if (ADMIN_ID && msg.from?.id !== ADMIN_ID) {
       return NextResponse.json({ ok: true });
     }
 
-    // 🔥 HARDCODE SESSION UNTUK TEST
-    const sessionId = "DEBUG_SESSION";
+    // ❗ WAJIB REPLY
+    const repliedText =
+      msg.reply_to_message?.text ||
+      msg.reply_to_message?.caption;
 
-    // 💾 SIMPAN PESAN TELEGRAM KE KV
+    if (!repliedText) return NextResponse.json({ ok: true });
+
+    const sessionId = extractSessionId(repliedText);
+    if (!sessionId) return NextResponse.json({ ok: true });
+
+    const text = msg.text?.trim();
+    if (!text) return NextResponse.json({ ok: true });
+
     await addMessage(sessionId, {
       role: "admin",
-      text: msg.text,
+      text,
       ts: Date.now(),
     });
 
-    // 🟢 SET ADMIN ONLINE
     await setAdminActive();
+    await setAdminTyping(5000);
 
     return NextResponse.json({ ok: true });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ ok: true });
   }
 }
