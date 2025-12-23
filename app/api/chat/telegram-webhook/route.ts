@@ -6,7 +6,7 @@ import {
 } from "@/lib/livechatStore";
 
 const SECRET = process.env.TELEGRAM_LIVECHAT_WEBHOOK_SECRET || "";
-const ADMIN_ID = Number(process.env.TELEGRAM_LIVECHAT_ADMIN_USER_ID || "0");
+const ADMIN_ID = Number(process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID || "0");
 
 /**
  * Ambil sessionId dari pesan Telegram yang direply admin
