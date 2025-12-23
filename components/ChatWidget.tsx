@@ -48,7 +48,7 @@ export default function ChatWidget() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   /* =====================
-     BODY SCROLL LOCK (PRO)
+     BODY SCROLL LOCK
   ===================== */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -58,7 +58,7 @@ export default function ChatWidget() {
   }, [open]);
 
   /* =====================
-     SESSION ID (1 SESSION = 1 MASALAH)
+     SESSION ID
   ===================== */
   const getSessionId = () => {
     if (typeof window === "undefined") return "";
@@ -112,7 +112,6 @@ export default function ChatWidget() {
     setMsg("");
     setSending(true);
 
-    // optimistic bubble
     setMessages((prev) => [
       ...prev,
       {
@@ -145,7 +144,7 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     POLLING (ADMIN + MESSAGE)
+     POLLING
   ===================== */
   useEffect(() => {
     if (!open || step !== "chat") return;
@@ -157,7 +156,6 @@ export default function ChatWidget() {
           { cache: "no-store" }
         );
         const data = await res.json();
-
         if (!data?.ok) return;
 
         setAdminOnline(Boolean(data.adminOnline));
@@ -173,9 +171,7 @@ export default function ChatWidget() {
             return merged.sort((a, b) => a.ts - b.ts);
           });
 
-          const newest = Math.max(
-            ...data.messages.map((m: ChatMessage) => m.ts)
-          );
+          const newest = Math.max(...data.messages.map((m: ChatMessage) => m.ts));
           setLastTs((p) => Math.max(p, newest));
         }
       } catch {}
@@ -185,9 +181,17 @@ export default function ChatWidget() {
   }, [open, step, sid, lastTs]);
 
   /* =====================
-     CLOSE CHAT = RESET TOTAL
+     CLOSE CHAT (KRUSIAL)
   ===================== */
-  const closeChat = () => {
+  const closeChat = async () => {
+    try {
+      await fetch("/api/chat/close", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: sid }),
+      });
+    } catch {}
+
     setOpen(false);
     setStep("form");
     setMessages([]);
@@ -223,11 +227,8 @@ export default function ChatWidget() {
           <button onClick={closeChat}>✕</button>
         </div>
 
-        {errorMsg && (
-          <div className="text-sm text-red-600 mb-2">{errorMsg}</div>
-        )}
+        {errorMsg && <div className="text-sm text-red-600 mb-2">{errorMsg}</div>}
 
-        {/* FORM */}
         {step === "form" && (
           <>
             <input
@@ -267,14 +268,13 @@ export default function ChatWidget() {
           </>
         )}
 
-        {/* CHAT */}
         {step === "chat" && (
           <>
             <div className="max-h-[55vh] overflow-y-auto border rounded p-2 bg-gray-50">
               {messages.length === 0 && (
                 <div className="text-sm text-gray-500 p-2">
-                  Pesan terkirim 🙏  
-                  Admin akan membalas secepatnya.
+                  Pesan kamu sudah kami terima 🙏  
+                  Admin akan membalas sesuai antrian.
                 </div>
               )}
 
