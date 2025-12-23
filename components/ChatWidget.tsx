@@ -210,8 +210,10 @@ export default function ChatWidget() {
             <div>
               <div className="font-semibold text-sm">Chat Admin KOJE24</div>
               <div className="text-xs text-gray-500">
-                {adminOnline ? "🟢 Admin online" : "⚪ Admin offline"}
-              </div>
+  {chatState === "active"
+    ? "🟢 Admin siap melayani"
+    : "⏳ Menunggu giliran"}
+</div>
             </div>
           </div>
           <button onClick={closeChat}>
@@ -224,11 +226,10 @@ export default function ChatWidget() {
           {errorMsg && <div className="text-sm text-red-600 mb-2">{errorMsg}</div>}
 
           {step === "chat" && chatState !== "active" && (
-            <div className="text-xs text-gray-500 mb-3">
-              ⏳ Anda sedang dalam antrian.<br />
-              Admin sedang melayani pengguna lain.
-            </div>
-          )}
+  <div className="text-xs text-gray-500 mb-3">
+    ⏳ Menunggu giliran Anda…
+  </div>
+)}
 
           {step === "form" && (
             <>
