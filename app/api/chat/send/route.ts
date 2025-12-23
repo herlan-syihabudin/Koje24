@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { enqueueChat } from "@/lib/chatQueue"; // queue logic lo
+
+const BOT_TOKEN = process.env.TELEGRAM_LIVECHAT_BOT_TOKEN!;
+const CHAT_ID = process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID!;
+
+// Escape HTML biar aman di Telegram
+function esc(input: string) {
+  return String(input || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,35 +25,54 @@ export async function POST(req: NextRequest) {
     } = body || {};
 
     if (!message?.trim() || !sessionId) {
-      return NextResponse.json({
-        ok: false,
-        reason: "invalid_payload",
-      });
+      return NextResponse.json({ ok: false }, { status: 400 });
     }
 
-    // 🔐 SIMPAN & MASUK QUEUE
-    const status = await enqueueChat({
-      sessionId,
-      name,
-      phone,
-      topic,
-      message,
-      page,
-    });
-    // status: "active" | "queued"
+    const text = `
+📩 <b>LIVE CHAT WEBSITE - KOJE24</b>
 
-    // ⚠️ PENTING: SELALU 200 OK
-    return NextResponse.json({
-      ok: true,
-      status, // dipakai frontend utk UX
-    });
+👤 Nama: ${esc(name)}
+📱 HP: ${esc(phone)}
+🏷️ Topik: ${esc(topic)}
+
+🆔 Session:
+<code>${esc(sessionId)}</code>
+
+🌐 Page: ${esc(page)}
+
+💬 <b>Pesan:</b>
+${esc(message)}
+    `.trim();
+
+    const res = await fetch(
+      `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text,
+          parse_mode: "HTML",
+          disable_web_page_preview: true,
+
+          // 🔥 INI KUNCI UTAMA
+          reply_markup: {
+            force_reply: true,
+            selective: true,
+          },
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.error("TELEGRAM SEND ERROR:", err);
+      return NextResponse.json({ ok: false }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("CHAT SEND ERROR:", err);
-
-    // ❗ Kalau server error baru error
-    return NextResponse.json({
-      ok: false,
-      reason: "server_error",
-    });
+    console.error("LIVECHAT SEND ERROR:", err);
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }
