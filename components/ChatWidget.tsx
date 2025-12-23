@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, X } from "lucide-react";
 
 /* =====================
    TYPES
@@ -22,9 +22,6 @@ type ChatMessage = {
 
 const POLL_INTERVAL = 2000;
 
-/* =====================
-   COMPONENT
-===================== */
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"form" | "chat">("form");
@@ -48,37 +45,38 @@ export default function ChatWidget() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   /* =====================
-     BODY SCROLL LOCK
+     OPEN / CLOSE EVENT
   ===================== */
   useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
+    const openEvent = () => setOpen(true);
+    const closeEvent = () => setOpen(false);
+
+    window.addEventListener("open-chat", openEvent);
+    window.addEventListener("close-chat", closeEvent);
     return () => {
-      document.body.style.overflow = "";
+      window.removeEventListener("open-chat", openEvent);
+      window.removeEventListener("close-chat", closeEvent);
     };
+  }, []);
+
+  /* =====================
+     BODY SCROLL LOCK (SAMA KAYAK CART)
+  ===================== */
+  useEffect(() => {
+    document.body.classList.toggle("body-cart-lock", open);
   }, [open]);
 
   /* =====================
      SESSION ID
   ===================== */
-  const getSessionId = () => {
+  const sid = useMemo(() => {
     if (typeof window === "undefined") return "";
-    let sid = localStorage.getItem("chat_session_id");
-    if (!sid) {
-      sid = crypto.randomUUID();
-      localStorage.setItem("chat_session_id", sid);
+    let v = localStorage.getItem("chat_session_id");
+    if (!v) {
+      v = crypto.randomUUID();
+      localStorage.setItem("chat_session_id", v);
     }
-    return sid;
-  };
-
-  const sid = useMemo(() => getSessionId(), []);
-
-  /* =====================
-     OPEN FROM HEADER
-  ===================== */
-  useEffect(() => {
-    const handler = () => setOpen(true);
-    window.addEventListener("open-chat", handler);
-    return () => window.removeEventListener("open-chat", handler);
+    return v;
   }, []);
 
   /* =====================
@@ -96,7 +94,6 @@ export default function ChatWidget() {
       setErrorMsg("Nama wajib diisi ya kak 🙏");
       return;
     }
-
     localStorage.setItem("chat_user_data", JSON.stringify(userData));
     setErrorMsg("");
     setStep("chat");
@@ -112,19 +109,13 @@ export default function ChatWidget() {
     setMsg("");
     setSending(true);
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `local_${Date.now()}`,
-        sid,
-        role: "user",
-        text,
-        ts: Date.now(),
-      },
+    setMessages((p) => [
+      ...p,
+      { id: `local_${Date.now()}`, sid, role: "user", text, ts: Date.now() },
     ]);
 
     try {
-      const res = await fetch("/api/chat/send", {
+      await fetch("/api/chat/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -134,10 +125,8 @@ export default function ChatWidget() {
           page: window.location.pathname,
         }),
       });
-
-      if (!res.ok) throw new Error();
     } catch {
-      setErrorMsg("Gagal mengirim pesan, silakan coba lagi 🙏");
+      setErrorMsg("Gagal mengirim pesan 🙏");
     } finally {
       setSending(false);
     }
@@ -149,163 +138,114 @@ export default function ChatWidget() {
   useEffect(() => {
     if (!open || step !== "chat") return;
 
-    const interval = setInterval(async () => {
+    const i = setInterval(async () => {
       try {
-        const res = await fetch(
-          `/api/chat/poll?sid=${sid}&after=${lastTs}`,
-          { cache: "no-store" }
-        );
-        const data = await res.json();
-        if (!data?.ok) return;
+        const r = await fetch(`/api/chat/poll?sid=${sid}&after=${lastTs}`, {
+          cache: "no-store",
+        });
+        const d = await r.json();
+        if (!d?.ok) return;
 
-        setAdminOnline(Boolean(data.adminOnline));
-        setAdminTyping(Boolean(data.adminTyping));
+        setAdminOnline(!!d.adminOnline);
+        setAdminTyping(!!d.adminTyping);
 
-        if (Array.isArray(data.messages) && data.messages.length) {
+        if (Array.isArray(d.messages) && d.messages.length) {
           setMessages((prev) => {
             const ids = new Set(prev.map((m) => m.id));
-            const merged = [...prev];
-            for (const m of data.messages) {
-              if (!ids.has(m.id)) merged.push(m);
-            }
-            return merged.sort((a, b) => a.ts - b.ts);
+            return [...prev, ...d.messages.filter((m: ChatMessage) => !ids.has(m.id))]
+              .sort((a, b) => a.ts - b.ts);
           });
-
-          const newest = Math.max(...data.messages.map((m: ChatMessage) => m.ts));
-          setLastTs((p) => Math.max(p, newest));
+          setLastTs((p) => Math.max(p, ...d.messages.map((m: ChatMessage) => m.ts)));
         }
       } catch {}
     }, POLL_INTERVAL);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(i);
   }, [open, step, sid, lastTs]);
 
   /* =====================
-     CLOSE CHAT (KRUSIAL)
+     CLOSE CHAT
   ===================== */
-  const closeChat = async () => {
-    try {
-      await fetch("/api/chat/close", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId: sid }),
-      });
-    } catch {}
-
+  const closeChat = () => {
     setOpen(false);
     setStep("form");
     setMessages([]);
     setLastTs(0);
     setMsg("");
     setErrorMsg("");
-
     localStorage.removeItem("chat_session_id");
     localStorage.removeItem("chat_user_data");
   };
 
-  /* =====================
-     RENDER
-  ===================== */
   if (!open) return null;
 
-return (
-  <div
-  className="
-    fixed z-[999]
-    inset-0
-    w-full h-[100dvh]
-    md:inset-auto
-    md:bottom-4 md:right-4
-    md:w-[380px] md:h-[600px]
-    flex justify-center md:justify-end
-    pointer-events-none
-  "
->
+  return (
     <div
-  className="
-    pointer-events-auto
-    w-full h-full
-    md:w-[380px] md:h-[600px]
-    bg-white
-    rounded-none md:rounded-2xl
-    shadow-2xl
-    border
-    animate-slide-up
-    flex flex-col
-  "
->
-      {/* HEADER */}
-      <div className="flex items-center justify-between px-4 py-3 border-b">
-        <div className="flex items-center gap-2">
-          <MessageCircle size={18} />
-          <div>
-            <div className="font-semibold text-sm">Chat Admin KOJE24</div>
-            <div className="text-xs text-gray-500">
-              {adminOnline ? "🟢 Admin online" : "⚪ Admin offline"}
+      className="koje-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Live Chat KOJE24"
+      onMouseDown={(e) => e.target === e.currentTarget && closeChat()}
+    >
+      <div
+        className="koje-modal-box w-[92%] sm:w-[380px] max-h-[85vh] flex flex-col"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        {/* HEADER */}
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex items-center gap-2">
+            <MessageCircle size={18} />
+            <div>
+              <div className="font-semibold text-sm">Chat Admin KOJE24</div>
+              <div className="text-xs text-gray-500">
+                {adminOnline ? "🟢 Admin online" : "⚪ Admin offline"}
+              </div>
             </div>
           </div>
+          <button onClick={closeChat}>
+            <X size={20} />
+          </button>
         </div>
-        <button onClick={closeChat} className="text-gray-400">✕</button>
-      </div>
 
-      {/* BODY */}
-      <div className="p-4">
-        {errorMsg && (
-          <div className="text-sm text-red-600 mb-2">{errorMsg}</div>
-        )}
+        {/* BODY */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {errorMsg && <div className="text-sm text-red-600 mb-2">{errorMsg}</div>}
 
-        {step === "form" && (
-          <>
-            <input
-              value={userData.name}
-              onChange={(e) =>
-                setUserData({ ...userData, name: e.target.value })
-              }
-              placeholder="Nama"
-              className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
-            />
+          {step === "form" && (
+            <>
+              <input
+                value={userData.name}
+                onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+                placeholder="Nama"
+                className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
+              />
+              <input
+                value={userData.phone}
+                onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+                placeholder="No. WhatsApp (opsional)"
+                className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
+              />
+              <select
+                value={userData.topic}
+                onChange={(e) => setUserData({ ...userData, topic: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
+              >
+                <option>Produk</option>
+                <option>Langganan</option>
+                <option>Pengiriman</option>
+                <option>Komplain</option>
+              </select>
+              <button
+                onClick={startChat}
+                className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm"
+              >
+                Mulai Chat
+              </button>
+            </>
+          )}
 
-            <input
-              value={userData.phone}
-              onChange={(e) =>
-                setUserData({ ...userData, phone: e.target.value })
-              }
-              placeholder="No. WhatsApp (opsional)"
-              className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
-            />
-
-            <select
-              value={userData.topic}
-              onChange={(e) =>
-                setUserData({ ...userData, topic: e.target.value })
-              }
-              className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
-            >
-              <option>Produk</option>
-              <option>Langganan</option>
-              <option>Pengiriman</option>
-              <option>Komplain</option>
-            </select>
-
-            <button
-              onClick={startChat}
-              className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm"
-            >
-              Mulai Chat
-            </button>
-          </>
-        )}
-
-        {step === "chat" && (
-          <>
-            <div className="flex-1 overflow-y-auto bg-gray-50 rounded-lg p-2">
-              {messages.length === 0 && (
-                <div className="text-sm text-gray-500 p-2">
-                  Pesan diterima 🙏  
-                  Admin akan membalas sesuai antrian.
-                </div>
-              )}
-
+          {step === "chat" && (
+            <>
               {messages.map((m) => (
                 <div
                   key={m.id}
@@ -314,8 +254,7 @@ return (
                   }`}
                 >
                   <div
-                    className={`px-3 py-2 rounded-xl text-sm max-w-[85%]
-                    ${
+                    className={`px-3 py-2 rounded-xl text-sm max-w-[85%] ${
                       m.role === "user"
                         ? "bg-[#0FA3A8] text-white"
                         : "bg-white border"
@@ -331,18 +270,21 @@ return (
                   ✍️ Admin sedang mengetik...
                 </div>
               )}
-
               <div ref={bottomRef} />
-            </div>
+            </>
+          )}
+        </div>
 
+        {/* INPUT */}
+        {step === "chat" && (
+          <div className="border-t p-3">
             <textarea
               value={msg}
               onChange={(e) => setMsg(e.target.value)}
               placeholder="Tulis pesan…"
-              className="w-full border rounded-lg p-2 text-sm mt-2"
               rows={2}
+              className="w-full border rounded-lg p-2 text-sm"
             />
-
             <button
               onClick={send}
               disabled={!msg.trim() || sending}
@@ -350,10 +292,9 @@ return (
             >
               {sending ? "Mengirim…" : "Kirim"}
             </button>
-          </>
+          </div>
         )}
       </div>
     </div>
-  </div>
-);
+  );
 }
