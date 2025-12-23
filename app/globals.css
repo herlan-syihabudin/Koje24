@@ -451,4 +451,7 @@ a[href^="maps:"] {
   width: 100% !important;
   position: fixed !important;
 }
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
 
