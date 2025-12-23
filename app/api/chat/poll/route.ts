@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
 import {
   getMessages,
   getAdminStatus,
   isAdminTyping,
 } from "@/lib/livechatStore";
+import { kv } from "@vercel/kv"; // 🆕
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,31 +19,23 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 🔹 1) AMBIL PESAN (LOGIKA ASLI - TIDAK DIUBAH)
     const messages = await getMessages(
       sid,
       after > 0 ? after : undefined
     );
 
-    // 🔹 2) STATUS ADMIN (LOGIKA ASLI - TIDAK DIUBAH)
     const adminStatus = await getAdminStatus();
     const adminTyping = await isAdminTyping();
 
-    // 🔹 3) BACA STATE SESSION DARI KV (READ ONLY, TANPA UBAH APA PUN)
-    // key ini sudah dipakai di /api/chat/close
-    const session = await kv.hgetall<{ state?: string }>(
-      `chat:session:${sid}`
-    );
-
-    // default: kalau belum ada state, kita anggap "waiting"
-    const state = (session?.state as "waiting" | "active" | "closed" | undefined) || "waiting";
+    // 🔥 AMBIL STATE SESSION
+    const session = await kv.hgetall<any>(`chat:session:${sid}`);
 
     return NextResponse.json({
       ok: true,
-      messages, // ⬅️ TETAP: tidak difilter
+      messages,
       adminOnline: adminStatus === "online",
       adminTyping,
-      state, // 👈 FIELD BARU: DIPAKAI FRONTEND BUAT ANTRIAN
+      state: session?.state || "waiting", // 🆕 INI KUNCI TERAKHIR
     });
   } catch (e) {
     console.error("LIVECHAT POLL ERROR:", e);
