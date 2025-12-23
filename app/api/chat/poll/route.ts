@@ -4,7 +4,6 @@ import {
   getAdminStatus,
   isAdminTyping,
 } from "@/lib/livechatStore";
-import { kv } from "@vercel/kv"; // 🆕
 
 export async function GET(req: NextRequest) {
   try {
@@ -27,15 +26,11 @@ export async function GET(req: NextRequest) {
     const adminStatus = await getAdminStatus();
     const adminTyping = await isAdminTyping();
 
-    // 🔥 AMBIL STATE SESSION
-    const session = await kv.hgetall<any>(`chat:session:${sid}`);
-
     return NextResponse.json({
       ok: true,
-      messages,
+      messages, // ⬅️ JANGAN FILTER DI SINI
       adminOnline: adminStatus === "online",
       adminTyping,
-      state: session?.state || "waiting", // 🆕 INI KUNCI TERAKHIR
     });
   } catch (e) {
     console.error("LIVECHAT POLL ERROR:", e);
