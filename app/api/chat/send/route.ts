@@ -1,78 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const BOT_TOKEN = process.env.TELEGRAM_LIVECHAT_BOT_TOKEN!;
-const CHAT_ID = process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID!;
-
-// Escape HTML biar aman di Telegram
-function esc(input: string) {
-  return String(input || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
+import { kv } from "@vercel/kv";
+import { enqueueChat } from "@/lib/chatQueue";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const { sessionId, name, phone, topic, message, page } = body;
 
-    const {
-      name = "Guest",
-      phone = "-",
-      topic = "-",
-      message,
-      sessionId,
-      page = "-",
-    } = body || {};
-
-    if (!message?.trim() || !sessionId) {
+    if (!sessionId || !message) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
 
-    const text = `
-📩 <b>LIVE CHAT WEBSITE - KOJE24</b>
+    // simpan session info
+    await kv.hset(`chat:session:${sessionId}`, {
+      name,
+      phone,
+      topic,
+      page,
+      state: "waiting",
+      createdAt: Date.now(),
+    });
 
-👤 Nama: ${esc(name)}
-📱 HP: ${esc(phone)}
-🏷️ Topik: ${esc(topic)}
+    // simpan pesan user
+    await kv.rpush(`chat:${sessionId}`, {
+      id: `u_${Date.now()}`,
+      sid: sessionId,
+      role: "user",
+      text: message,
+      ts: Date.now(),
+    });
 
-🆔 Session:
-<code>${esc(sessionId)}</code>
+    const activeSid = await kv.get<string>("admin:active");
 
-🌐 Page: ${esc(page)}
+    // jika admin kosong → langsung ACTIVE
+    if (!activeSid) {
+      await kv.set("admin:active", sessionId);
+      await kv.hset(`chat:session:${sessionId}`, { state: "active" });
 
-💬 <b>Pesan:</b>
-${esc(message)}
-    `.trim();
-
-    const res = await fetch(
-      `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
-      {
+      // 🔔 kirim ke Telegram admin
+      await fetch(`${process.env.APP_URL}/api/chat/telegram-push`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: CHAT_ID,
-          text,
-          parse_mode: "HTML",
-          disable_web_page_preview: true,
-
-          // 🔥 INI KUNCI UTAMA
-          reply_markup: {
-            force_reply: true,
-            selective: true,
-          },
-        }),
-      }
-    );
-
-    if (!res.ok) {
-      const err = await res.text();
-      console.error("TELEGRAM SEND ERROR:", err);
-      return NextResponse.json({ ok: false }, { status: 500 });
+        body: JSON.stringify({ sessionId }),
+      });
+    } else {
+      // admin sibuk → masuk antrian
+      await enqueueChat(sessionId);
     }
 
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("LIVECHAT SEND ERROR:", err);
+  } catch (e) {
+    console.error("CHAT SEND ERROR:", e);
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }
