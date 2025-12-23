@@ -20,7 +20,7 @@ type ChatMessage = {
   ts: number;
 };
 
-type ChatState = "waiting" | "active" | "closed"; // 🆕
+type ChatState = "waiting" | "active" | "closed";
 
 const POLL_INTERVAL = 2000;
 
@@ -44,7 +44,7 @@ export default function ChatWidget() {
   const [adminOnline, setAdminOnline] = useState(false);
   const [adminTyping, setAdminTyping] = useState(false);
 
-  const [chatState, setChatState] = useState<ChatState>("waiting"); // 🆕
+  const [chatState, setChatState] = useState<ChatState>("waiting");
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -105,10 +105,9 @@ export default function ChatWidget() {
 
   /* =====================
      SEND MESSAGE
-     (TIDAK DIUBAH, HANYA DIJAGA)
   ===================== */
   const send = async () => {
-    if (chatState !== "active") return; // 🆕 guard aman
+    if (chatState !== "active") return;
     if (!msg.trim() || sending) return;
 
     const text = msg.trim();
@@ -139,8 +138,7 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     POLLING
-     (AMBIL state, TIDAK UBAH LOGIKA)
+     POLLING (FIX FINAL)
   ===================== */
   useEffect(() => {
     if (!open || step !== "chat") return;
@@ -156,17 +154,21 @@ export default function ChatWidget() {
         setAdminOnline(!!d.adminOnline);
         setAdminTyping(!!d.adminTyping);
 
-        if (d.state) {
-          setChatState(d.state as ChatState); // 🆕
-        }
-
         if (Array.isArray(d.messages) && d.messages.length) {
           setMessages((prev) => {
             const ids = new Set(prev.map((m) => m.id));
             return [...prev, ...d.messages.filter((m: ChatMessage) => !ids.has(m.id))]
               .sort((a, b) => a.ts - b.ts);
           });
-          setLastTs((p) => Math.max(p, ...d.messages.map((m: ChatMessage) => m.ts)));
+
+          setLastTs((p) =>
+            Math.max(p, ...d.messages.map((m: ChatMessage) => m.ts))
+          );
+
+          // 🔥 KUNCI UTAMA (AUTO UNLOCK)
+          if (d.messages.some((m: ChatMessage) => m.role === "admin")) {
+            setChatState("active");
+          }
         }
       } catch {}
     }, POLL_INTERVAL);
@@ -184,7 +186,7 @@ export default function ChatWidget() {
     setLastTs(0);
     setMsg("");
     setErrorMsg("");
-    setChatState("waiting"); // 🆕 reset aman
+    setChatState("waiting");
     localStorage.removeItem("chat_session_id");
     localStorage.removeItem("chat_user_data");
   };
@@ -194,9 +196,6 @@ export default function ChatWidget() {
   return (
     <div
       className="koje-modal-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Live Chat KOJE24"
       onMouseDown={(e) => e.target === e.currentTarget && closeChat()}
     >
       <div
@@ -210,10 +209,10 @@ export default function ChatWidget() {
             <div>
               <div className="font-semibold text-sm">Chat Admin KOJE24</div>
               <div className="text-xs text-gray-500">
-  {chatState === "active"
-    ? "🟢 Admin siap melayani"
-    : "⏳ Menunggu giliran"}
-</div>
+                {chatState === "active"
+                  ? "🟢 Admin siap melayani"
+                  : "⏳ Menunggu giliran"}
+              </div>
             </div>
           </div>
           <button onClick={closeChat}>
@@ -225,29 +224,29 @@ export default function ChatWidget() {
         <div className="flex-1 overflow-y-auto p-4">
           {errorMsg && <div className="text-sm text-red-600 mb-2">{errorMsg}</div>}
 
-          {step === "chat" && chatState !== "active" && (
-  <div className="text-xs text-gray-500 mb-3">
-    ⏳ Menunggu giliran Anda…
-  </div>
-)}
-
           {step === "form" && (
             <>
               <input
                 value={userData.name}
-                onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+                onChange={(e) =>
+                  setUserData({ ...userData, name: e.target.value })
+                }
                 placeholder="Nama"
                 className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
               />
               <input
                 value={userData.phone}
-                onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+                onChange={(e) =>
+                  setUserData({ ...userData, phone: e.target.value })
+                }
                 placeholder="No. WhatsApp (opsional)"
                 className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
               />
               <select
                 value={userData.topic}
-                onChange={(e) => setUserData({ ...userData, topic: e.target.value })}
+                onChange={(e) =>
+                  setUserData({ ...userData, topic: e.target.value })
+                }
                 className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
               >
                 <option>Produk</option>
@@ -266,6 +265,12 @@ export default function ChatWidget() {
 
           {step === "chat" && (
             <>
+              {chatState !== "active" && (
+                <div className="text-xs text-gray-500 mb-3">
+                  ⏳ Menunggu giliran Anda…
+                </div>
+              )}
+
               {messages.map((m) => (
                 <div
                   key={m.id}
@@ -286,10 +291,11 @@ export default function ChatWidget() {
               ))}
 
               {adminTyping && (
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="text-xs text-gray-400">
                   ✍️ Admin sedang mengetik...
                 </div>
               )}
+
               <div ref={bottomRef} />
             </>
           )}
@@ -301,7 +307,7 @@ export default function ChatWidget() {
             <textarea
               value={msg}
               onChange={(e) => setMsg(e.target.value)}
-              disabled={chatState !== "active"} // 🆕
+              disabled={chatState !== "active"}
               placeholder={
                 chatState === "active"
                   ? "Tulis pesan…"
@@ -312,7 +318,7 @@ export default function ChatWidget() {
             />
             <button
               onClick={send}
-              disabled={chatState !== "active" || !msg.trim() || sending} // 🆕
+              disabled={chatState !== "active" || !msg.trim() || sending}
               className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm disabled:opacity-50"
             >
               {sending ? "Mengirim…" : "Kirim"}
