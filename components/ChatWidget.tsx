@@ -48,7 +48,17 @@ export default function ChatWidget() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   /* =====================
-     SESSION ID
+     BODY SCROLL LOCK (PRO)
+  ===================== */
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  /* =====================
+     SESSION ID (1 SESSION = 1 MASALAH)
   ===================== */
   const getSessionId = () => {
     if (typeof window === "undefined") return "";
@@ -63,27 +73,13 @@ export default function ChatWidget() {
   const sid = useMemo(() => getSessionId(), []);
 
   /* =====================
-     OPEN FROM HEADER ONLY
+     OPEN FROM HEADER
   ===================== */
   useEffect(() => {
-    const handler = () => {
-      setOpen(true);
-    };
+    const handler = () => setOpen(true);
     window.addEventListener("open-chat", handler);
     return () => window.removeEventListener("open-chat", handler);
   }, []);
-
-  /* =====================
-     PREFILL USER DATA
-  ===================== */
-  useEffect(() => {
-    if (!open) return;
-    const saved = localStorage.getItem("chat_user_data");
-    if (saved) {
-      setUserData(JSON.parse(saved));
-      setStep("chat");
-    }
-  }, [open]);
 
   /* =====================
      AUTO SCROLL
@@ -97,7 +93,7 @@ export default function ChatWidget() {
   ===================== */
   const startChat = () => {
     if (!userData.name.trim()) {
-      setErrorMsg("Nama wajib diisi 🙏");
+      setErrorMsg("Nama wajib diisi ya kak 🙏");
       return;
     }
 
@@ -116,7 +112,7 @@ export default function ChatWidget() {
     setMsg("");
     setSending(true);
 
-    // optimistic user bubble
+    // optimistic bubble
     setMessages((prev) => [
       ...prev,
       {
@@ -142,14 +138,14 @@ export default function ChatWidget() {
 
       if (!res.ok) throw new Error();
     } catch {
-      setErrorMsg("Gagal mengirim pesan 🙏");
+      setErrorMsg("Gagal mengirim pesan, silakan coba lagi 🙏");
     } finally {
       setSending(false);
     }
   };
 
   /* =====================
-     POLLING (ADMIN STATUS + MESSAGE)
+     POLLING (ADMIN + MESSAGE)
   ===================== */
   useEffect(() => {
     if (!open || step !== "chat") return;
@@ -177,7 +173,9 @@ export default function ChatWidget() {
             return merged.sort((a, b) => a.ts - b.ts);
           });
 
-          const newest = Math.max(...data.messages.map((m: ChatMessage) => m.ts));
+          const newest = Math.max(
+            ...data.messages.map((m: ChatMessage) => m.ts)
+          );
           setLastTs((p) => Math.max(p, newest));
         }
       } catch {}
@@ -187,6 +185,21 @@ export default function ChatWidget() {
   }, [open, step, sid, lastTs]);
 
   /* =====================
+     CLOSE CHAT = RESET TOTAL
+  ===================== */
+  const closeChat = () => {
+    setOpen(false);
+    setStep("form");
+    setMessages([]);
+    setLastTs(0);
+    setMsg("");
+    setErrorMsg("");
+
+    localStorage.removeItem("chat_session_id");
+    localStorage.removeItem("chat_user_data");
+  };
+
+  /* =====================
      RENDER
   ===================== */
   if (!open) return null;
@@ -194,7 +207,7 @@ export default function ChatWidget() {
   return (
     <div className="fixed inset-0 z-[999] bg-black/40 flex items-end md:items-center justify-center">
       <div
-        className="w-full md:w-[420px] bg-white rounded-t-2xl md:rounded-2xl p-4 shadow-xl"
+        className="w-full md:w-[420px] bg-white rounded-t-2xl md:rounded-2xl p-4 pb-safe shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
@@ -207,29 +220,37 @@ export default function ChatWidget() {
               {adminOnline ? "🟢 Admin online" : "⚪ Admin offline"}
             </div>
           </div>
-          <button onClick={() => setOpen(false)}>✕</button>
+          <button onClick={closeChat}>✕</button>
         </div>
 
-        {errorMsg && <div className="text-sm text-red-600 mb-2">{errorMsg}</div>}
+        {errorMsg && (
+          <div className="text-sm text-red-600 mb-2">{errorMsg}</div>
+        )}
 
         {/* FORM */}
         {step === "form" && (
           <>
             <input
               value={userData.name}
-              onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+              onChange={(e) =>
+                setUserData({ ...userData, name: e.target.value })
+              }
               placeholder="Nama"
               className="w-full border rounded p-2 text-sm mb-2"
             />
             <input
               value={userData.phone}
-              onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+              onChange={(e) =>
+                setUserData({ ...userData, phone: e.target.value })
+              }
               placeholder="No. WhatsApp (opsional)"
               className="w-full border rounded p-2 text-sm mb-2"
             />
             <select
               value={userData.topic}
-              onChange={(e) => setUserData({ ...userData, topic: e.target.value })}
+              onChange={(e) =>
+                setUserData({ ...userData, topic: e.target.value })
+              }
               className="w-full border rounded p-2 text-sm mb-3"
             >
               <option>Produk</option>
@@ -249,10 +270,11 @@ export default function ChatWidget() {
         {/* CHAT */}
         {step === "chat" && (
           <>
-            <div className="h-[260px] overflow-y-auto border rounded p-2 bg-gray-50">
+            <div className="max-h-[55vh] overflow-y-auto border rounded p-2 bg-gray-50">
               {messages.length === 0 && (
                 <div className="text-sm text-gray-500 p-2">
-                  Pesan kamu sudah terkirim, mohon tunggu admin membalas ya 🙏
+                  Pesan terkirim 🙏  
+                  Admin akan membalas secepatnya.
                 </div>
               )}
 
@@ -288,7 +310,7 @@ export default function ChatWidget() {
             <textarea
               value={msg}
               onChange={(e) => setMsg(e.target.value)}
-              placeholder="Tulis pertanyaan kamu..."
+              placeholder="Tulis pertanyaan lengkap ya kak (produk, tujuan, waktu kirim)"
               className="w-full border rounded p-2 text-sm mt-2"
               rows={3}
             />
