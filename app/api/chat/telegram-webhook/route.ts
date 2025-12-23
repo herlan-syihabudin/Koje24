@@ -2,133 +2,53 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   addMessage,
   setAdminActive,
-  setAdminTyping,
 } from "@/lib/livechatStore";
-
-// 🔐 OPTIONAL SECURITY (boleh kosong)
-const SECRET = process.env.TELEGRAM_LIVECHAT_WEBHOOK_SECRET || "";
-
-// ✅ ADMIN ID — SESUAI ENV DI VERCEL
-const ADMIN_ID = Number(
-  process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID || "0"
-);
 
 /**
  * ================================
- * STEP 2 — GET HANDLER (TEST ONLY)
+ * GET — TEST ENDPOINT
  * ================================
- * Supaya endpoint kelihatan hidup di browser
- * TIDAK mengganggu POST Telegram
  */
 export async function GET() {
   return NextResponse.json({
     ok: true,
-    message: "Telegram webhook endpoint is alive",
+    message: "Telegram webhook endpoint is alive (DEBUG MODE)",
   });
 }
 
 /**
- * Ambil sessionId dari pesan Telegram yang direply admin
- * SUPPORT:
- * - <code>SESSION_ID</code>
- * - Session:\nSESSION_ID
- * - Session: SESSION_ID
- */
-function extractSessionId(text?: string | null) {
-  if (!text) return null;
-
-  // FORMAT PALING AMAN (HTML code block)
-  const m0 = text.match(/<code>([^<]+)<\/code>/i);
-  if (m0?.[1]) return m0[1].trim();
-
-  // format multiline
-  const m1 = text.match(/Session[:\s]*\n?([a-zA-Z0-9-]+)/i);
-  if (m1?.[1]) return m1[1].trim();
-
-  // inline fallback
-  const m2 = text.match(/Session[:\s]*([a-zA-Z0-9-]+)/i);
-  if (m2?.[1]) return m2[1].trim();
-
-  return null;
-}
-
-/**
  * ================================
- * TELEGRAM WEBHOOK (POST)
+ * POST — TELEGRAM → WEB (DEBUG)
  * ================================
+ * TANPA:
+ * - reply
+ * - admin filter
+ * - session parsing
  */
 export async function POST(req: NextRequest) {
   try {
-    // 🔐 VALIDASI SECRET (JIKA DIPAKAI)
-    if (SECRET) {
-      const token = req.headers.get("x-telegram-bot-api-secret-token");
-      if (token !== SECRET) {
-        return NextResponse.json({ ok: true });
-      }
-    }
-
-    // 🔥 STEP 3 DEBUG — PASTIKAN WEBHOOK KENA
-    console.log("🔥 TELEGRAM WEBHOOK HIT");
-
     const body = await req.json();
-    console.log("📦 RAW BODY:", JSON.stringify(body, null, 2));
-
     const msg = body.message;
-    if (!msg) return NextResponse.json({ ok: true });
 
-    // 🧪 DEBUG ADMIN
-    console.log("👤 FROM_ID:", msg.from?.id);
-    console.log("👑 ADMIN_ID:", ADMIN_ID);
-    console.log("↩️ HAS_REPLY:", Boolean(msg.reply_to_message));
-
-    // 🔒 HANYA ADMIN YANG BOLEH MASUK
-    if (ADMIN_ID && msg.from?.id !== ADMIN_ID) {
+    if (!msg?.text) {
       return NextResponse.json({ ok: true });
     }
 
-    // ❗ ADMIN WAJIB REPLY KE PESAN BOT
-    const repliedText =
-      msg.reply_to_message?.text ||
-      msg.reply_to_message?.caption;
+    // 🔥 HARDCODE SESSION UNTUK TEST
+    const sessionId = "DEBUG_SESSION";
 
-    if (!repliedText) {
-      console.warn("❌ ADMIN BALAS TANPA REPLY — DIABAIKAN");
-      return NextResponse.json({ ok: true });
-    }
-
-    const sessionId = extractSessionId(repliedText);
-
-    console.log("📩 RAW REPLY TEXT:", repliedText);
-    console.log("🆔 EXTRACTED SESSION:", sessionId);
-
-    if (!sessionId) {
-      console.warn("❌ SESSION ID TIDAK DITEMUKAN");
-      return NextResponse.json({ ok: true });
-    }
-
-    const text =
-      msg.text?.trim() ||
-      msg.caption?.trim();
-
-    if (!text) return NextResponse.json({ ok: true });
-
-    // 💾 SIMPAN PESAN ADMIN KE KV
+    // 💾 SIMPAN PESAN TELEGRAM KE KV
     await addMessage(sessionId, {
       role: "admin",
-      text,
+      text: msg.text,
       ts: Date.now(),
     });
 
-    // 🟢 UPDATE STATUS ADMIN
+    // 🟢 SET ADMIN ONLINE
     await setAdminActive();
-    await setAdminTyping(5000);
 
-    console.log("✅ ADMIN MESSAGE SAVED:", sessionId);
-
-    // ⚠️ TELEGRAM WAJIB TERIMA HTTP 200
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("❌ TELEGRAM WEBHOOK ERROR:", err);
     return NextResponse.json({ ok: true });
   }
 }
