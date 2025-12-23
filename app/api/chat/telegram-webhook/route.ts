@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addMessage, setAdminActive, setAdminTyping } from "@/lib/livechatStore";
+import { kv } from "@vercel/kv"; // 🆕 TAMBAH INI
 
 const ADMIN_ID = Number(process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID || "0");
 
@@ -36,17 +37,32 @@ export async function POST(req: NextRequest) {
     const text = msg.text?.trim();
     if (!text) return NextResponse.json({ ok: true });
 
+    // =========================
+    // SIMPAN PESAN ADMIN
+    // =========================
     await addMessage(sessionId, {
       role: "admin",
       text,
       ts: Date.now(),
     });
 
+    // =========================
+    // 🔥 FIX KRUSIAL (2 BARIS)
+    // =========================
+    await kv.set("admin:active", sessionId);          // 🆕
+    await kv.hset(`chat:session:${sessionId}`, {     // 🆕
+      state: "active",
+    });
+
+    // =========================
+    // STATUS ADMIN
+    // =========================
     await setAdminActive();
     await setAdminTyping(5000);
 
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (err) {
+    console.error("TELEGRAM WEBHOOK ERROR:", err);
     return NextResponse.json({ ok: true });
   }
 }
