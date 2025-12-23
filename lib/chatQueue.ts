@@ -1,19 +1,32 @@
 import { kv } from "@vercel/kv";
 
-/**
- * Queue chat (FIFO)
- */
+const QUEUE_KEY = "livechat:queue";
+const ACTIVE_KEY = "livechat:active";
 
-export async function enqueueChat(sid: string) {
-  await kv.rpush("queue:chat", sid);
+export type QueueItem = {
+  sessionId: string;
+  ts: number;
+};
+
+export async function enqueue(sessionId: string) {
+  await kv.rpush(QUEUE_KEY, { sessionId, ts: Date.now() });
 }
 
-export async function dequeueChat() {
-  return await kv.lpop<string>("queue:chat");
+export async function getQueue() {
+  return (await kv.lrange(QUEUE_KEY, 0, -1)) as QueueItem[];
 }
 
-export async function getQueuePosition(sid: string) {
-  const list = (await kv.lrange("queue:chat", 0, -1)) as string[];
-  const idx = list.indexOf(sid);
-  return idx === -1 ? null : idx + 1;
+export async function activateNext() {
+  const next = await kv.lpop(QUEUE_KEY);
+  if (!next) return null;
+  await kv.set(ACTIVE_KEY, next);
+  return next;
+}
+
+export async function getActive() {
+  return (await kv.get(ACTIVE_KEY)) as QueueItem | null;
+}
+
+export async function closeActive() {
+  await kv.del(ACTIVE_KEY);
 }
