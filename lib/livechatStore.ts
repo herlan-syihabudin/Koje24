@@ -27,12 +27,27 @@ export async function addMessage(
   await kv.rpush(`chat:${sid}`, full);
   await kv.expire(`chat:${sid}`, 60 * 60 * 24);
 
+  // ⭐ INI KUNCI UTAMA
+  await setLastActiveSessionId(sid);
+
   return full;
 }
 
 export async function getMessages(sid: string, afterTs?: number) {
   const all = (await kv.lrange(`chat:${sid}`, 0, -1)) as ChatMessage[];
   return afterTs ? all.filter(m => m.ts > afterTs) : all;
+}
+
+// ================= SESSION AKTIF =================
+
+// ⭐ SIMPAN SESSION TERAKHIR
+export async function setLastActiveSessionId(sid: string) {
+  await kv.set("chat:lastSession", sid, { ex: 60 * 60 });
+}
+
+// ⭐ AMBIL SESSION TERAKHIR
+export async function getLastActiveSessionId(): Promise<string | null> {
+  return (await kv.get<string>("chat:lastSession")) || null;
 }
 
 // ================= ADMIN STATUS =================
