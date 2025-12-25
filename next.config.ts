@@ -6,9 +6,12 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
-      { protocol: "https", hostname: "webkoje-cacs.vercel.app" }, // old
-      { protocol: "https", hostname: "webkoje24.vercel.app" }, // production
-      { protocol: "https", hostname: "*.vercel.app" }, // preview builds
+
+      // 🔥 DOMAIN PRODUKSI UTAMA
+      { protocol: "https", hostname: "koje24.vercel.app" },
+
+      // 🔁 preview / deployment vercel lain
+      { protocol: "https", hostname: "*.vercel.app" },
     ],
     formats: ["image/avif", "image/webp"],
   },
@@ -17,11 +20,11 @@ const nextConfig: NextConfig = {
     optimizeCss: true,
     scrollRestoration: true,
     serverActions: {
-      allowedOrigins: ["https://webkoje24.vercel.app"],
+      // 🔥 HARUS DOMAIN PRODUKSI
+      allowedOrigins: ["https://koje24.vercel.app"],
     },
   },
 
-  // Recommended for Next.js 16 patch
   poweredByHeader: false,
   compress: true,
   trailingSlash: false,
