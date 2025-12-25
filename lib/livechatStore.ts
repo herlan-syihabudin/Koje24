@@ -98,3 +98,49 @@ export async function isSessionClosed(sid: string): Promise<boolean> {
 
   return status === "closed";
 }
+// ================= SESSION STATUS V2 (PROFESSIONAL) =================
+
+export type SessionStatus = "INIT" | "ACTIVE" | "CLOSED";
+
+/**
+ * Set status session (upgrade version)
+ * Tidak mengganggu closeSession lama
+ */
+export async function setSessionStatus(
+  sid: string,
+  status: SessionStatus
+) {
+  if (!sid) return;
+
+  await kv.hset(`chat:session:${sid}`, {
+    status,
+    updatedAt: Date.now(),
+  });
+
+  await kv.expire(`chat:session:${sid}`, 60 * 60 * 24);
+}
+
+/**
+ * Get status session
+ * Default: INIT
+ * Kompatibel dengan closeSession lama
+ */
+export async function getSessionStatus(
+  sid: string
+): Promise<SessionStatus> {
+  if (!sid) return "INIT";
+
+  const status = await kv.hget<string>(
+    `chat:session:${sid}`,
+    "status"
+  );
+
+  // kompatibel dengan closeSession lama
+  if (status === "closed") return "CLOSED";
+
+  if (status === "ACTIVE" || status === "CLOSED") {
+    return status;
+  }
+
+  return "INIT";
+}
