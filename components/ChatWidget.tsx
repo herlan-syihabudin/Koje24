@@ -165,9 +165,9 @@ export default function ChatWidget() {
           if (incomingAdmin.length) {
             setMessages((prev) => [...prev, ...incomingAdmin]);
             lastAdminTsRef.current = Math.max(
-              lastAdminTsRef.current,
-              ...incomingAdmin.map((m) => m.ts)
-            );
+  lastAdminTsRef.current,
+  ...incomingAdmin.map((m: ChatMessage) => m.ts)
+);
           }
         }
       } catch {
