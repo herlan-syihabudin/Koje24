@@ -142,11 +142,21 @@ export default function ChatWidget() {
         if (!d?.ok) return;
 
         if (d.closed) {
-          setClosed(true);
-          setAdminTyping(false);
-          return;
-        }
+  setClosed(true);
+  setAdminTyping(false);
 
+  // 🔑 RESET SESSION BIAR BISA CHAT BARU
+  const newSid = crypto.randomUUID();
+  localStorage.setItem("chat_session_id", newSid);
+  setSid(newSid);
+
+  // BALIK KE FORM
+  setStep("form");
+  setMessages([]);
+  lastTsRef.current = 0;
+
+  return;
+}
         setAdminOnline(!!d.adminOnline);
         setAdminTyping(!!d.adminTyping);
 
