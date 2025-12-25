@@ -78,25 +78,30 @@ export async function POST(req: NextRequest) {
        COMMAND TUTUP CHAT
     ===================================================== */
     if (
-      textLower === "/tutup" ||
-      textLower === "/close" ||
-      textLower === "/klose"
-    ) {
-      await removeFromQueue(sessionId);
-      await closeSession(sessionId);
+  textLower === "/tutup" ||
+  textLower === "/close" ||
+  textLower === "/klose"
+) {
+  await removeFromQueue(sessionId);
 
-      await addMessage(sessionId, {
-  role: "admin",
-  text: `🙏 Terima kasih sudah menghubungi KOJE24  
+  // 🔥 1️⃣ KIRIM PESAN PENUTUP KE USER (INI YANG KURANG)
+  await addMessage(sessionId, {
+    role: "admin",
+    text: `🙏 Terima kasih sudah menghubungi KOJE24  
 Jika masih ada pertanyaan, silakan mulai chat baru 🌿`,
-  ts: Date.now(),
-});
-      await setAdminActive();
-      await setAdminTyping(0);
-      await clearAdminActiveSession();
+    ts: Date.now(),
+  });
 
-      return NextResponse.json({ ok: true });
-    }
+  // 🔒 2️⃣ BARU TUTUP SESSION
+  await closeSession(sessionId);
+
+  // reset status admin
+  await setAdminActive();
+  await setAdminTyping(0);
+  await clearAdminActiveSession();
+
+  return NextResponse.json({ ok: true });
+}
 
     /* =====================================================
        PESAN ADMIN NORMAL
