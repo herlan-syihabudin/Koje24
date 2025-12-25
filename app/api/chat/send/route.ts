@@ -2,7 +2,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { addMessage, isSessionClosed } from "@/lib/livechatStore";
+import {
+  addMessage,
+  isSessionClosed,
+  getSessionStatus,
+  setSessionStatus,
+} from "@/lib/livechatStore";
 
 const BOT_TOKEN = process.env.TELEGRAM_LIVECHAT_BOT_TOKEN!;
 const CHAT_ID = process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID!;
@@ -31,12 +36,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
 
-    // 🔒 CEK CHAT SUDAH DITUTUP ATAU BELUM
+    // 🔒 CEK CHAT SUDAH DITUTUP
     if (await isSessionClosed(sessionId)) {
       return NextResponse.json({
         ok: false,
         message: "Percakapan telah ditutup oleh admin",
       });
+    }
+
+    // ⭐ STEP 2 — AKTIFKAN SESSION JIKA PERTAMA KALI
+    const status = await getSessionStatus(sessionId);
+    if (status === "INIT") {
+      await setSessionStatus(sessionId, "ACTIVE");
     }
 
     // ✅ SIMPAN PESAN USER
