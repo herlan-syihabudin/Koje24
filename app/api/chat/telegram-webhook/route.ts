@@ -15,71 +15,95 @@ import {
 
 import { dequeueChat, removeFromQueue } from "@/lib/chatQueue";
 
+/* =====================
+   HELPER (TETAP DIPAKAI)
+===================== */
 async function resolveSessionForAdminReply() {
-  // 1) kalau admin sudah pegang 1 sid → pakai itu
   const active = await getAdminActiveSession();
   if (active) return active;
 
-  // 2) kalau belum, ambil dari queue (FIFO)
   const fromQueue = await dequeueChat();
   if (fromQueue) {
     await setAdminActiveSession(fromQueue);
     return fromQueue;
   }
 
-  // 3) fallback: biar sistem lama tetap jalan
   return await getLastActiveSessionId();
 }
 
+/* =====================
+   MAIN HANDLER
+===================== */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const msg = body?.message;
 
-    // ❌ BUKAN PESAN TEKS
     if (!msg?.text) return NextResponse.json({ ok: true });
 
     const textRaw = String(msg.text || "").trim();
     if (!textRaw) return NextResponse.json({ ok: true });
 
-    const text = textRaw; // keep original
     const textLower = textRaw.toLowerCase();
 
-    // ✅ pilih session yang benar untuk dibalas admin
-    const sessionId = await resolveSessionForAdminReply();
+    /* =====================================================
+       🔑 FIX UTAMA (TANPA MERUSAK LOGIC LAMA)
+       PRIORITAS: AMBIL SESSION DARI REPLY TELEGRAM
+    ===================================================== */
+    let sessionId: string | null = null;
+
+    const repliedText =
+      msg.reply_to_message?.text ||
+      msg.reply_to_message?.caption ||
+      "";
+
+    const match = repliedText.match(/Session:\s*([a-zA-Z0-9-]+)/i);
+    if (match?.[1]) {
+      sessionId = match[1].trim();
+    }
+
+    /* =====================================================
+       FALLBACK → LOGIC LAMA TETAP JALAN
+    ===================================================== */
     if (!sessionId) {
-      console.warn("⚠️ NO SESSION AVAILABLE (queue kosong & lastSession kosong)");
+      sessionId = await resolveSessionForAdminReply();
+    }
+
+    if (!sessionId) {
+      console.warn("⚠️ ADMIN REPLY TAPI SESSION TIDAK DITEMUKAN");
       return NextResponse.json({ ok: true });
     }
 
-    // 🔒 COMMAND TUTUP CHAT (tutup session yang sedang di-handle)
-    if (textLower === "/tutup" || textLower === "/close" || textLower === "/klose") {
-      // (aman) kalau sid masih nongol di queue, buang
+    /* =====================================================
+       COMMAND TUTUP CHAT
+    ===================================================== */
+    if (
+      textLower === "/tutup" ||
+      textLower === "/close" ||
+      textLower === "/klose"
+    ) {
       await removeFromQueue(sessionId);
-
       await closeSession(sessionId);
 
-      // kirim pesan penutup ke user (via polling)
       await addMessage(sessionId, {
         role: "admin",
         text: "Percakapan telah ditutup oleh admin 🙏",
         ts: Date.now(),
       });
 
-      // reset status admin
       await setAdminActive();
       await setAdminTyping(0);
-
-      // 🔑 lepas active session → siap ambil chat baru dari queue
       await clearAdminActiveSession();
 
       return NextResponse.json({ ok: true });
     }
 
-    // 💬 PESAN ADMIN BIASA → masuk ke session aktif
+    /* =====================================================
+       PESAN ADMIN NORMAL
+    ===================================================== */
     await addMessage(sessionId, {
       role: "admin",
-      text,
+      text: textRaw,
       ts: Date.now(),
     });
 
