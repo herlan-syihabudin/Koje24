@@ -90,7 +90,7 @@ export default function ChatWidget() {
   }, [messages, adminTyping, closed]);
 
   /* =====================
-     START CHAT
+     START CHAT  (🔥 STEP 5 FIX)
   ===================== */
   const startChat = () => {
     if (!userData.name.trim()) {
@@ -98,7 +98,16 @@ export default function ChatWidget() {
       return;
     }
 
-    // 🔑 RESET STATE PENTING
+    /**
+     * 🔑 STEP 5 — AUTO RESET & NEW SESSION
+     * Jika chat sebelumnya CLOSED → buat session BARU
+     */
+    if (closed) {
+      const newSid = crypto.randomUUID();
+      localStorage.setItem("chat_session_id", newSid);
+    }
+
+    // reset UI state (AMAN)
     setClosed(false);
     setMessages([]);
     lastTsRef.current = 0;
@@ -161,11 +170,9 @@ export default function ChatWidget() {
         const d = await r.json();
         if (!d?.ok) return;
 
-        // 🔒 CHAT DITUTUP ADMIN
         if (d.closed) {
           setClosed(true);
           setAdminTyping(false);
-          setErrorMsg(""); // 🔑 bersihin error lama
           return;
         }
 
