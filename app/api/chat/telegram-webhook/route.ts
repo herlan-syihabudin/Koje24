@@ -1,4 +1,3 @@
-// 🔥 INI WAJIB PALING ATAS
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -9,18 +8,8 @@ import {
   setAdminTyping,
 } from "@/lib/livechatStore";
 
-/**
- * ENV WAJIB:
- * TELEGRAM_LIVECHAT_ADMIN_USER_ID
- * TELEGRAM_LIVECHAT_ADMIN_CHAT_ID
- */
-
 const ADMIN_USER_ID = Number(
   process.env.TELEGRAM_LIVECHAT_ADMIN_USER_ID || "0"
-);
-
-const ADMIN_CHAT_ID = String(
-  process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID || ""
 );
 
 function extractSessionId(text?: string | null) {
@@ -44,16 +33,10 @@ export async function POST(req: NextRequest) {
     if (!msg) return NextResponse.json({ ok: true });
 
     console.log("👤 FROM:", msg.from?.id);
-    console.log("💬 CHAT:", msg.chat?.id);
 
-    // 🔒 VALIDASI ADMIN
+    // 🔒 VALIDASI ADMIN (INI SAJA)
     if (!ADMIN_USER_ID || msg.from?.id !== ADMIN_USER_ID) {
       console.log("⛔ NOT ADMIN");
-      return NextResponse.json({ ok: true });
-    }
-
-    if (ADMIN_CHAT_ID && String(msg.chat?.id) !== ADMIN_CHAT_ID) {
-      console.log("⛔ CHAT ID TIDAK COCOK");
       return NextResponse.json({ ok: true });
     }
 
