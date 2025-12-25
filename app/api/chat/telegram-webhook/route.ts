@@ -34,58 +34,79 @@ function extractSessionId(text?: string | null) {
 }
 
 export async function POST(req: NextRequest) {
+  // 🔥 DEBUG PALING ATAS
+  console.log("🔥 TELEGRAM WEBHOOK HIT");
+
   try {
     const body = await req.json();
-    const msg = body?.message;
+    console.log("📦 RAW BODY:", JSON.stringify(body));
 
-    if (!msg) return NextResponse.json({ ok: true });
+    const msg = body?.message;
+    console.log("💬 MESSAGE FIELD:", msg);
+
+    if (!msg) {
+      console.log("⚠️ NO MESSAGE OBJECT");
+      return NextResponse.json({ ok: true });
+    }
+
+    console.log("👤 FROM ID:", msg.from?.id);
+    console.log("💬 CHAT ID:", msg.chat?.id);
 
     /**
-     * 🔒 VALIDASI ADMIN (PALING PENTING)
-     * HANYA USER_ID ADMIN yang boleh reply
+     * 🔒 VALIDASI ADMIN (USER ID)
      */
     if (!ADMIN_USER_ID || msg.from?.id !== ADMIN_USER_ID) {
+      console.log("⛔ NOT ADMIN USER");
       return NextResponse.json({ ok: true });
     }
 
     /**
-     * 🔒 OPTIONAL: pastikan dari chat yang benar
+     * 🔒 VALIDASI CHAT ID (OPSIONAL)
      */
     if (ADMIN_CHAT_ID && String(msg.chat?.id) !== ADMIN_CHAT_ID) {
+      console.log("⛔ CHAT ID TIDAK COCOK");
       return NextResponse.json({ ok: true });
     }
 
     /**
-     * ❗ ADMIN HARUS REPLY PESAN BOT
+     * ❗ HARUS REPLY PESAN BOT
      */
     const repliedText =
       msg.reply_to_message?.text ||
       msg.reply_to_message?.caption ||
       null;
 
+    console.log("↩️ REPLIED TEXT:", repliedText);
+
     if (!repliedText) {
+      console.log("⚠️ BUKAN REPLY KE PESAN BOT");
       return NextResponse.json({ ok: true });
     }
 
     /**
-     * 🎯 Ambil sessionId
+     * 🎯 EXTRACT SESSION ID
      */
     const sessionId = extractSessionId(repliedText);
+    console.log("🆔 SESSION ID:", sessionId);
+
     if (!sessionId) {
-      console.warn("LIVECHAT: sessionId tidak ditemukan");
+      console.warn("⚠️ SESSION ID TIDAK DITEMUKAN");
       return NextResponse.json({ ok: true });
     }
 
     /**
-     * 💬 Pesan admin
+     * 💬 PESAN ADMIN
      */
     const text = msg.text?.trim();
+    console.log("✍️ ADMIN TEXT:", text);
+
     if (!text) {
+      console.log("⚠️ PESAN ADMIN KOSONG");
       return NextResponse.json({ ok: true });
     }
 
     /**
-     * 🧠 Simpan pesan admin
+     * 🧠 SIMPAN PESAN ADMIN
      */
     await addMessage(sessionId, {
       role: "admin",
@@ -93,15 +114,19 @@ export async function POST(req: NextRequest) {
       ts: Date.now(),
     });
 
+    console.log("✅ MESSAGE SAVED TO KV");
+
     /**
-     * 🟢 Update status admin
+     * 🟢 UPDATE STATUS ADMIN
      */
     await setAdminActive();
     await setAdminTyping(3000);
 
+    console.log("🟢 ADMIN STATUS UPDATED");
+
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("TELEGRAM WEBHOOK ERROR:", err);
+    console.error("❌ TELEGRAM WEBHOOK ERROR:", err);
     return NextResponse.json({ ok: true });
   }
 }
