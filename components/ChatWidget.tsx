@@ -34,7 +34,7 @@ function greeting(name: string): ChatMessage {
 
 Aku admin KOJE24.
 Silakan tulis pertanyaan kamu ya 😊`,
-    ts: 0,
+    ts: 0, // ❗ tidak ikut perhitungan polling
   };
 }
 
@@ -71,14 +71,13 @@ export default function ChatWidget() {
      OPEN / CLOSE EVENT
   ===================== */
   useEffect(() => {
-    const openEvent = () => setOpen(true);
-    const closeEvent = () => setOpen(false);
-
-    window.addEventListener("open-chat", openEvent);
-    window.addEventListener("close-chat", closeEvent);
+    const o = () => setOpen(true);
+    const c = () => setOpen(false);
+    window.addEventListener("open-chat", o);
+    window.addEventListener("close-chat", c);
     return () => {
-      window.removeEventListener("open-chat", openEvent);
-      window.removeEventListener("close-chat", closeEvent);
+      window.removeEventListener("open-chat", o);
+      window.removeEventListener("close-chat", c);
     };
   }, []);
 
@@ -109,21 +108,20 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     SEND MESSAGE
-  ===================== */
+     SEND MESSAGE (FIXED)
+===================== */
   const send = async () => {
     if (!msg.trim() || sending || closed) return;
 
     const text = msg.trim();
     const ts = Date.now();
 
-    // optimistic user message
+    // ✅ optimistic UI (USER ONLY)
     setMessages((p) => [
       ...p,
       { id: `local_${ts}`, sid, role: "user", text, ts },
     ]);
 
-    lastTsRef.current = Math.max(lastTsRef.current, ts);
     setMsg("");
     setSending(true);
 
@@ -144,7 +142,7 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     POLLING (CORE FIX)
+     POLLING (FINAL CORE)
   ===================== */
   useEffect(() => {
     if (!open || step !== "chat" || closed || !sid) return;
@@ -176,6 +174,7 @@ export default function ChatWidget() {
             return [...prev, ...incoming].sort((a, b) => a.ts - b.ts);
           });
 
+          // ✅ SATU-SATUNYA TEMPAT UPDATE TIMESTAMP
           lastTsRef.current = Math.max(
             lastTsRef.current,
             ...d.messages.map((m: ChatMessage) => m.ts)
