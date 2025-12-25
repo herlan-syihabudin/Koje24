@@ -1,9 +1,12 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
+import { addMessage } from "@/lib/livechatStore";
 
 const BOT_TOKEN = process.env.TELEGRAM_LIVECHAT_BOT_TOKEN!;
 const CHAT_ID = process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID!;
 
-// Escape HTML biar aman di Telegram
 function esc(input: string) {
   return String(input || "")
     .replace(/&/g, "&amp;")
@@ -28,6 +31,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
 
+    // ✅ 1️⃣ SIMPAN PESAN USER KE KV
+    await addMessage(sessionId, {
+      role: "user",
+      text: message,
+      ts: Date.now(),
+    });
+
+    // ✅ 2️⃣ KIRIM KE TELEGRAM
     const text = `
 📩 <b>LIVE CHAT WEBSITE - KOJE24</b>
 
@@ -53,12 +64,8 @@ ${esc(message)}
           chat_id: CHAT_ID,
           text,
           parse_mode: "HTML",
-          disable_web_page_preview: true,
-
-          // 🔥 INI KUNCI UTAMA
           reply_markup: {
             force_reply: true,
-            selective: true,
           },
         }),
       }
