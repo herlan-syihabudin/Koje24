@@ -13,7 +13,7 @@ type UserData = {
 };
 
 type ChatMessage = {
-  id: string;
+  id?: string;
   sid: string;
   role: "user" | "admin";
   text: string;
@@ -23,18 +23,15 @@ type ChatMessage = {
 const POLL_INTERVAL = 2000;
 
 /* =====================
-   LOCAL GREETING
+   GREETING (LOCAL ONLY)
 ===================== */
 function greeting(name: string): ChatMessage {
   return {
-    id: "greeting",
     sid: "local",
     role: "admin",
-    text: `👋 Hai ${name || "kak"}, selamat datang di KOJE24 🌿
-
-Aku admin KOJE24.
+    text: `👋 Hai ${name}, selamat datang di KOJE24 🌿  
 Silakan tulis pertanyaan kamu ya 😊`,
-    ts: 0, // ❗ tidak ikut perhitungan polling
+    ts: Date.now(),
   };
 }
 
@@ -52,7 +49,7 @@ export default function ChatWidget() {
   const [closed, setClosed] = useState(false);
 
   const [sid, setSid] = useState("");
-  const lastTsRef = useRef(0);
+  const lastAdminTsRef = useRef(0);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   /* =====================
@@ -71,13 +68,14 @@ export default function ChatWidget() {
      OPEN / CLOSE EVENT
   ===================== */
   useEffect(() => {
-    const o = () => setOpen(true);
-    const c = () => setOpen(false);
-    window.addEventListener("open-chat", o);
-    window.addEventListener("close-chat", c);
+    const openEvent = () => setOpen(true);
+    const closeEvent = () => setOpen(false);
+
+    window.addEventListener("open-chat", openEvent);
+    window.addEventListener("close-chat", closeEvent);
     return () => {
-      window.removeEventListener("open-chat", o);
-      window.removeEventListener("close-chat", c);
+      window.removeEventListener("open-chat", openEvent);
+      window.removeEventListener("close-chat", closeEvent);
     };
   }, []);
 
@@ -92,34 +90,27 @@ export default function ChatWidget() {
      START CHAT
   ===================== */
   const startChat = () => {
-    if (!userData.name?.trim()) return;
-
-    if (closed) {
-      const n = crypto.randomUUID();
-      localStorage.setItem("chat_session_id", n);
-      setSid(n);
-    }
-
-    setClosed(false);
-    lastTsRef.current = 0;
+    if (!userData.name.trim()) return;
 
     setMessages([greeting(userData.name)]);
+    setClosed(false);
+    lastAdminTsRef.current = 0;
     setStep("chat");
   };
 
   /* =====================
-     SEND MESSAGE (FIXED)
-===================== */
+     SEND MESSAGE (USER)
+  ===================== */
   const send = async () => {
     if (!msg.trim() || sending || closed) return;
 
     const text = msg.trim();
     const ts = Date.now();
 
-    // ✅ optimistic UI (USER ONLY)
+    // optimistic user message
     setMessages((p) => [
       ...p,
-      { id: `local_${ts}`, sid, role: "user", text, ts },
+      { sid, role: "user", text, ts },
     ]);
 
     setMsg("");
@@ -142,15 +133,15 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     POLLING (FINAL CORE)
+     POLLING (ADMIN ONLY)
   ===================== */
   useEffect(() => {
     if (!open || step !== "chat" || closed || !sid) return;
 
-    const i = setInterval(async () => {
+    const timer = setInterval(async () => {
       try {
         const r = await fetch(
-          `/api/chat/poll?sid=${sid}&after=${lastTsRef.current}`,
+          `/api/chat/poll?sid=${sid}&after=${lastAdminTsRef.current}`,
           { cache: "no-store" }
         );
         const d = await r.json();
@@ -165,25 +156,26 @@ export default function ChatWidget() {
         setAdminOnline(!!d.adminOnline);
         setAdminTyping(!!d.adminTyping);
 
-        if (Array.isArray(d.messages) && d.messages.length) {
-          setMessages((prev) => {
-            const ids = new Set(prev.map((m) => m.id));
-            const incoming = d.messages.filter(
-              (m: ChatMessage) => !ids.has(m.id)
-            );
-            return [...prev, ...incoming].sort((a, b) => a.ts - b.ts);
-          });
-
-          // ✅ SATU-SATUNYA TEMPAT UPDATE TIMESTAMP
-          lastTsRef.current = Math.max(
-            lastTsRef.current,
-            ...d.messages.map((m: ChatMessage) => m.ts)
+        if (Array.isArray(d.messages)) {
+          const incomingAdmin = d.messages.filter(
+            (m: ChatMessage) =>
+              m.role === "admin" && m.ts > lastAdminTsRef.current
           );
+
+          if (incomingAdmin.length) {
+            setMessages((prev) => [...prev, ...incomingAdmin]);
+            lastAdminTsRef.current = Math.max(
+              lastAdminTsRef.current,
+              ...incomingAdmin.map((m) => m.ts)
+            );
+          }
         }
-      } catch {}
+      } catch {
+        // silent
+      }
     }, POLL_INTERVAL);
 
-    return () => clearInterval(i);
+    return () => clearInterval(timer);
   }, [open, step, sid, closed]);
 
   /* =====================
@@ -195,7 +187,7 @@ export default function ChatWidget() {
     setMessages([]);
     setClosed(false);
     setMsg("");
-    lastTsRef.current = 0;
+    lastAdminTsRef.current = 0;
 
     const n = crypto.randomUUID();
     localStorage.setItem("chat_session_id", n);
@@ -244,9 +236,9 @@ export default function ChatWidget() {
             </>
           ) : (
             <>
-              {messages.map((m) => (
+              {messages.map((m, i) => (
                 <div
-                  key={m.id}
+                  key={i}
                   className={`mb-2 ${
                     m.role === "user" ? "text-right" : ""
                   }`}
