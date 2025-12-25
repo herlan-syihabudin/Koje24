@@ -51,8 +51,6 @@ export default function ChatWidget() {
      INIT SESSION ID
   ===================== */
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
     let v = localStorage.getItem("chat_session_id");
     if (!v) {
       v = crypto.randomUUID();
@@ -77,13 +75,6 @@ export default function ChatWidget() {
   }, []);
 
   /* =====================
-     BODY SCROLL LOCK
-  ===================== */
-  useEffect(() => {
-    document.body.classList.toggle("body-cart-lock", open);
-  }, [open]);
-
-  /* =====================
      AUTO SCROLL
   ===================== */
   useEffect(() => {
@@ -91,7 +82,7 @@ export default function ChatWidget() {
   }, [messages, adminTyping, closed]);
 
   /* =====================
-     START CHAT (AUTO RESET)
+     START CHAT
   ===================== */
   const startChat = () => {
     if (!userData.name.trim()) {
@@ -99,18 +90,8 @@ export default function ChatWidget() {
       return;
     }
 
-    if (closed) {
-      const newSid = crypto.randomUUID();
-      localStorage.setItem("chat_session_id", newSid);
-      setSid(newSid);
-    }
-
-    setClosed(false);
-    setMessages([]);
-    lastTsRef.current = 0;
     setErrorMsg("");
-
-    localStorage.setItem("chat_user_data", JSON.stringify(userData));
+    setClosed(false);
     setStep("chat");
   };
 
@@ -133,7 +114,7 @@ export default function ChatWidget() {
     setSending(true);
 
     try {
-      const res = await fetch("/api/chat/send", {
+      await fetch("/api/chat/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -143,8 +124,6 @@ export default function ChatWidget() {
           page: window.location.pathname,
         }),
       });
-
-      if (!res.ok) throw new Error("Send failed");
     } catch {
       setErrorMsg("Gagal mengirim pesan 🙏");
     } finally {
@@ -153,7 +132,7 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     POLLING
+     POLLING (STABLE)
   ===================== */
   useEffect(() => {
     if (!open || step !== "chat" || closed || !sid) return;
@@ -178,11 +157,16 @@ export default function ChatWidget() {
 
         if (Array.isArray(d.messages) && d.messages.length) {
           setMessages((prev) => {
-            const ids = new Set(prev.map((m) => m.id));
-            return [
-              ...prev,
-              ...d.messages.filter((m: ChatMessage) => !ids.has(m.id)),
-            ].sort((a, b) => a.ts - b.ts);
+            const exists = new Set(
+              prev.map((m) => `${m.role}-${m.ts}-${m.text}`)
+            );
+
+            const incoming = d.messages.filter(
+              (m: ChatMessage) =>
+                !exists.has(`${m.role}-${m.ts}-${m.text}`)
+            );
+
+            return [...prev, ...incoming].sort((a, b) => a.ts - b.ts);
           });
 
           lastTsRef.current = Math.max(
@@ -197,33 +181,27 @@ export default function ChatWidget() {
   }, [open, step, sid, closed]);
 
   /* =====================
-     CLOSE CHAT (USER)
+     CLOSE CHAT
   ===================== */
   const closeChat = () => {
     setOpen(false);
     setStep("form");
     setMessages([]);
-    lastTsRef.current = 0;
+    setClosed(false);
     setMsg("");
     setErrorMsg("");
-    setClosed(false);
+    lastTsRef.current = 0;
 
-    const newSid = crypto.randomUUID();
-    localStorage.setItem("chat_session_id", newSid);
-    setSid(newSid);
+    const n = crypto.randomUUID();
+    localStorage.setItem("chat_session_id", n);
+    setSid(n);
   };
 
   if (!open) return null;
 
   return (
-    <div
-      className="koje-modal-overlay"
-      onMouseDown={(e) => e.target === e.currentTarget && closeChat()}
-    >
-      <div
-        className="koje-modal-box w-[92%] sm:w-[380px] max-h-[85vh] flex flex-col"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
+    <div className="koje-modal-overlay">
+      <div className="koje-modal-box w-[92%] sm:w-[380px] max-h-[85vh] flex flex-col">
         {/* HEADER */}
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <div className="flex items-center gap-2">
@@ -246,7 +224,7 @@ export default function ChatWidget() {
             <div className="text-sm text-red-600 mb-2">{errorMsg}</div>
           )}
 
-          {step === "form" && (
+          {step === "form" ? (
             <>
               <input
                 value={userData.name}
@@ -254,28 +232,8 @@ export default function ChatWidget() {
                   setUserData({ ...userData, name: e.target.value })
                 }
                 placeholder="Nama"
-                className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
-              />
-              <input
-                value={userData.phone}
-                onChange={(e) =>
-                  setUserData({ ...userData, phone: e.target.value })
-                }
-                placeholder="No. WhatsApp (opsional)"
-                className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
-              />
-              <select
-                value={userData.topic}
-                onChange={(e) =>
-                  setUserData({ ...userData, topic: e.target.value })
-                }
                 className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
-              >
-                <option>Produk</option>
-                <option>Langganan</option>
-                <option>Pengiriman</option>
-                <option>Komplain</option>
-              </select>
+              />
               <button
                 onClick={startChat}
                 className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm"
@@ -283,13 +241,11 @@ export default function ChatWidget() {
                 Mulai Chat
               </button>
             </>
-          )}
-
-          {step === "chat" && (
+          ) : (
             <>
               {messages.map((m) => (
                 <div
-                  key={m.id}
+                  key={`${m.role}-${m.ts}-${m.text}`}
                   className={`mb-2 flex ${
                     m.role === "user" ? "justify-end" : "justify-start"
                   }`}
