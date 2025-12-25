@@ -24,7 +24,7 @@ const POLL_INTERVAL = 2000;
 const SEND_COOLDOWN = 800;
 
 /* =====================
-   LOCAL MESSAGES
+   LOCAL SYSTEM MESSAGES
 ===================== */
 function greeting(name: string): ChatMessage {
   return {
@@ -33,7 +33,7 @@ function greeting(name: string): ChatMessage {
     role: "admin",
     text: `👋 Hai ${name || "kak"}, selamat datang di KOJE24 🌿
 
-Aku admin KOJE24.
+Aku admin KOJE24.  
 Silakan tulis pertanyaan kamu ya 😊`,
     ts: 0,
   };
@@ -45,7 +45,7 @@ function offlineMessage(): ChatMessage {
     sid: "local",
     role: "admin",
     text: `🙏 Terima kasih sudah menghubungi KOJE24  
-Saat ini admin sedang offline  
+Saat ini admin sedang offline.  
 Silakan tulis pesan, kami akan membalas secepatnya 🌿`,
     ts: 0,
   };
@@ -85,13 +85,15 @@ export default function ChatWidget() {
      OPEN / CLOSE EVENT
   ===================== */
   useEffect(() => {
-    const o = () => setOpen(true);
-    const c = () => setOpen(false);
-    window.addEventListener("open-chat", o);
-    window.addEventListener("close-chat", c);
+    const openEvent = () => setOpen(true);
+    const closeEvent = () => setOpen(false);
+
+    window.addEventListener("open-chat", openEvent);
+    window.addEventListener("close-chat", closeEvent);
+
     return () => {
-      window.removeEventListener("open-chat", o);
-      window.removeEventListener("close-chat", c);
+      window.removeEventListener("open-chat", openEvent);
+      window.removeEventListener("close-chat", closeEvent);
     };
   }, []);
 
@@ -106,7 +108,7 @@ export default function ChatWidget() {
      START CHAT
   ===================== */
   const startChat = () => {
-    if (!userData.name?.trim()) return;
+    if (!userData.name.trim()) return;
 
     if (closed) {
       const n = crypto.randomUUID();
@@ -122,7 +124,7 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     SEND MESSAGE
+     SEND MESSAGE (USER)
   ===================== */
   const send = async () => {
     if (!msg.trim() || sending || closed) return;
@@ -134,6 +136,7 @@ export default function ChatWidget() {
     const text = msg.trim();
     const ts = Date.now();
 
+    // optimistic user message
     setMessages((p) => [
       ...p,
       { id: `local_${ts}`, sid, role: "user", text, ts },
@@ -155,14 +158,14 @@ export default function ChatWidget() {
         }),
       });
     } catch {
-      // silent fail-safe
+      // silent fail (UX tetap jalan)
     } finally {
       setSending(false);
     }
   };
 
   /* =====================
-     POLLING
+     POLLING (FIX UTAMA DI SINI)
   ===================== */
   useEffect(() => {
     if (!open || step !== "chat" || closed || !sid) return;
@@ -185,20 +188,25 @@ export default function ChatWidget() {
         setAdminOnline(!!d.adminOnline);
         setAdminTyping(!!d.adminTyping);
 
+        // tampilkan offline message sekali saja
         if (!d.adminOnline) {
           setMessages((p) =>
-            p.find((m) => m.id === "offline") ? p : [...p, offlineMessage()]
+            p.find((m) => m.id === "offline")
+              ? p
+              : [...p, offlineMessage()]
           );
         }
 
+        // 🔥 FIX: JANGAN FILTER ROLE DI POLLING
         if (Array.isArray(d.messages) && d.messages.length) {
           setMessages((prev) => {
             const ids = new Set(prev.map((m) => m.id));
-            const adminOnly = d.messages.filter(
-              (m: ChatMessage) =>
-                m.role === "admin" && !ids.has(m.id)
+
+            const incoming = d.messages.filter(
+              (m: ChatMessage) => !ids.has(m.id)
             );
-            return [...prev, ...adminOnly];
+
+            return [...prev, ...incoming].sort((a, b) => a.ts - b.ts);
           });
 
           lastTsRef.current = Math.max(
@@ -206,7 +214,9 @@ export default function ChatWidget() {
             ...d.messages.map((m: ChatMessage) => m.ts)
           );
         }
-      } catch {}
+      } catch {
+        // silent polling fail
+      }
     }, POLL_INTERVAL);
 
     return () => clearInterval(i);
