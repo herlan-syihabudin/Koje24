@@ -144,3 +144,32 @@ export async function getSessionStatus(
 
   return "INIT";
 }
+// ================= SESSION METADATA =================
+
+// 🔑 BUAT SESSION METADATA (FIRST MESSAGE ONLY)
+export async function initSession(
+  sid: string,
+  data: {
+    name: string;
+    phone?: string;
+    topic?: string;
+    page?: string;
+  }
+) {
+  if (!sid) return;
+
+  const exists = await kv.exists(`chat:session:${sid}`);
+  if (exists) return; // ❗ JANGAN OVERWRITE
+
+  await kv.hset(`chat:session:${sid}`, {
+    sid,
+    name: data.name || "Guest",
+    phone: data.phone || "-",
+    topic: data.topic || "-",
+    page: data.page || "-",
+    status: "active",
+    startedAt: Date.now(),
+  });
+
+  await kv.expire(`chat:session:${sid}`, 60 * 60 * 24); // 24 jam
+}
