@@ -22,6 +22,22 @@ type ChatMessage = {
 
 const POLL_INTERVAL = 2000;
 
+/* =====================
+   GREETING (LOCAL ONLY)
+===================== */
+function buildGreeting(name: string): ChatMessage {
+  return {
+    id: "greeting",
+    sid: "local",
+    role: "admin",
+    text: `👋 Hai ${name || "kak"}, selamat datang di KOJE24 🌿
+
+Aku admin KOJE24.  
+Silakan tulis pertanyaan kamu ya 😊`,
+    ts: 0, // ⛔ tidak ikut polling
+  };
+}
+
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"form" | "chat">("form");
@@ -51,8 +67,6 @@ export default function ChatWidget() {
      INIT SESSION ID
   ===================== */
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
     let v = localStorage.getItem("chat_session_id");
     if (!v) {
       v = crypto.randomUUID();
@@ -77,13 +91,6 @@ export default function ChatWidget() {
   }, []);
 
   /* =====================
-     BODY SCROLL LOCK
-  ===================== */
-  useEffect(() => {
-    document.body.classList.toggle("body-cart-lock", open);
-  }, [open]);
-
-  /* =====================
      AUTO SCROLL
   ===================== */
   useEffect(() => {
@@ -91,7 +98,7 @@ export default function ChatWidget() {
   }, [messages, adminTyping, closed]);
 
   /* =====================
-     START CHAT (AUTO RESET)
+     START CHAT (SAFE RESET)
   ===================== */
   const startChat = () => {
     if (!userData.name.trim()) {
@@ -106,16 +113,18 @@ export default function ChatWidget() {
     }
 
     setClosed(false);
-    setMessages([]);
-    lastTsRef.current = 0;
     setErrorMsg("");
+    lastTsRef.current = 0;
+
+    // ⭐ GREETING MASUK DI SINI
+    setMessages([buildGreeting(userData.name)]);
 
     localStorage.setItem("chat_user_data", JSON.stringify(userData));
     setStep("chat");
   };
 
   /* =====================
-     SEND MESSAGE (OPTIMISTIC)
+     SEND MESSAGE (USER)
   ===================== */
   const send = async () => {
     if (!msg.trim() || sending || closed) return;
@@ -123,16 +132,9 @@ export default function ChatWidget() {
     const text = msg.trim();
     const ts = Date.now();
 
-    // Optimistic UI (USER ONLY)
     setMessages((p) => [
       ...p,
-      {
-        id: `local_${ts}`,
-        sid,
-        role: "user",
-        text,
-        ts,
-      },
+      { id: `local_${ts}`, sid, role: "user", text, ts },
     ]);
 
     lastTsRef.current = Math.max(lastTsRef.current, ts);
@@ -140,7 +142,7 @@ export default function ChatWidget() {
     setSending(true);
 
     try {
-      const res = await fetch("/api/chat/send", {
+      await fetch("/api/chat/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -150,8 +152,6 @@ export default function ChatWidget() {
           page: window.location.pathname,
         }),
       });
-
-      if (!res.ok) throw new Error("Send failed");
     } catch {
       setErrorMsg("Gagal mengirim pesan 🙏");
     } finally {
@@ -183,17 +183,14 @@ export default function ChatWidget() {
         setAdminOnline(!!d.adminOnline);
         setAdminTyping(!!d.adminTyping);
 
-        // 🔥 FIX UTAMA: HANYA TERIMA PESAN ADMIN
         if (Array.isArray(d.messages) && d.messages.length) {
           setMessages((prev) => {
             const ids = new Set(prev.map((m) => m.id));
-
-            const incoming = d.messages.filter(
+            const adminOnly = d.messages.filter(
               (m: ChatMessage) =>
                 m.role === "admin" && !ids.has(m.id)
             );
-
-            return [...prev, ...incoming].sort((a, b) => a.ts - b.ts);
+            return [...prev, ...adminOnly];
           });
 
           lastTsRef.current = Math.max(
@@ -227,14 +224,8 @@ export default function ChatWidget() {
   if (!open) return null;
 
   return (
-    <div
-      className="koje-modal-overlay"
-      onMouseDown={(e) => e.target === e.currentTarget && closeChat()}
-    >
-      <div
-        className="koje-modal-box w-[92%] sm:w-[380px] max-h-[85vh] flex flex-col"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
+    <div className="koje-modal-overlay">
+      <div className="koje-modal-box w-[92%] sm:w-[380px] max-h-[85vh] flex flex-col">
         {/* HEADER */}
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <div className="flex items-center gap-2">
@@ -253,11 +244,7 @@ export default function ChatWidget() {
 
         {/* BODY */}
         <div className="flex-1 overflow-y-auto p-4">
-          {errorMsg && (
-            <div className="text-sm text-red-600 mb-2">{errorMsg}</div>
-          )}
-
-          {step === "form" && (
+          {step === "form" ? (
             <>
               <input
                 value={userData.name}
@@ -267,26 +254,6 @@ export default function ChatWidget() {
                 placeholder="Nama"
                 className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
               />
-              <input
-                value={userData.phone}
-                onChange={(e) =>
-                  setUserData({ ...userData, phone: e.target.value })
-                }
-                placeholder="No. WhatsApp (opsional)"
-                className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
-              />
-              <select
-                value={userData.topic}
-                onChange={(e) =>
-                  setUserData({ ...userData, topic: e.target.value })
-                }
-                className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
-              >
-                <option>Produk</option>
-                <option>Langganan</option>
-                <option>Pengiriman</option>
-                <option>Komplain</option>
-              </select>
               <button
                 onClick={startChat}
                 className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm"
@@ -294,43 +261,15 @@ export default function ChatWidget() {
                 Mulai Chat
               </button>
             </>
-          )}
-
-          {step === "chat" && (
+          ) : (
             <>
               {messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={`mb-2 flex ${
-                    m.role === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`px-3 py-2 rounded-xl text-sm max-w-[85%] ${
-                      m.role === "user"
-                        ? "bg-[#0FA3A8] text-white"
-                        : "bg-white border"
-                    }`}
-                  >
+                <div key={m.id} className={`mb-2 ${m.role === "user" ? "text-right" : ""}`}>
+                  <div className="inline-block px-3 py-2 rounded-xl text-sm border">
                     {m.text}
                   </div>
                 </div>
               ))}
-
-              {adminTyping && !closed && (
-                <div className="text-xs text-gray-400 mt-1">
-                  ✍️ Admin sedang mengetik...
-                </div>
-              )}
-
-              {closed && (
-                <div className="text-center text-xs text-gray-400 mt-3">
-                  🙏 Terima kasih sudah menghubungi KOJE24  
-                  <br />
-                  Silakan mulai chat baru jika masih ada pertanyaan 🌿
-                </div>
-              )}
-
               <div ref={bottomRef} />
             </>
           )}
@@ -342,17 +281,14 @@ export default function ChatWidget() {
             <textarea
               value={msg}
               onChange={(e) => setMsg(e.target.value)}
-              placeholder={closed ? "Chat telah ditutup" : "Tulis pesan…"}
               rows={2}
-              disabled={closed}
-              className="w-full border rounded-lg p-2 text-sm disabled:bg-gray-100"
+              className="w-full border rounded-lg p-2 text-sm"
             />
             <button
               onClick={send}
-              disabled={closed || !msg.trim() || sending}
-              className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm disabled:opacity-50"
+              className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm"
             >
-              {closed ? "Chat Ditutup" : sending ? "Mengirim…" : "Kirim"}
+              Kirim
             </button>
           </div>
         )}
