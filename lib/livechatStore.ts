@@ -72,3 +72,29 @@ export async function setAdminTyping(ttlMs = 5000) {
 export async function isAdminTyping() {
   return Boolean(await kv.get("admin:typing"));
 }
+// ================= SESSION STATUS (CLOSE CHAT) =================
+
+// 🔒 Tandai session sebagai CLOSED
+export async function closeSession(sid: string) {
+  if (!sid) return;
+
+  await kv.hset(`chat:session:${sid}`, {
+    status: "closed",
+    closedAt: Date.now(),
+  });
+
+  // expire biar KV bersih otomatis
+  await kv.expire(`chat:session:${sid}`, 60 * 60 * 24);
+}
+
+// 🔍 Cek apakah session sudah CLOSED
+export async function isSessionClosed(sid: string): Promise<boolean> {
+  if (!sid) return false;
+
+  const status = await kv.hget<string>(
+    `chat:session:${sid}`,
+    "status"
+  );
+
+  return status === "closed";
+}
