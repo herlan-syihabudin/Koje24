@@ -9,6 +9,7 @@ import {
   getSessionStatus,
   setSessionStatus,
 } from "@/lib/livechatStore";
+import { enqueueChat } from "@/lib/chatQueue"; // ⭐ IIB CONNECT
 
 const BOT_TOKEN = process.env.TELEGRAM_LIVECHAT_BOT_TOKEN!;
 const CHAT_ID = process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID!;
@@ -60,11 +61,12 @@ export async function POST(req: NextRequest) {
     });
 
     /* =====================
-       3️⃣ AKTIFKAN SESSION JIKA MASIH INIT
+       3️⃣ AKTIFKAN SESSION + MASUK QUEUE (⭐ IIB)
     ===================== */
     const status = await getSessionStatus(sessionId);
     if (status === "INIT") {
       await setSessionStatus(sessionId, "ACTIVE");
+      await enqueueChat(sessionId); // ⭐ MASUK ANTRIAN
     }
 
     /* =====================
