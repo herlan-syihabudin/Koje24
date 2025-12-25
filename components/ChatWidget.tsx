@@ -115,7 +115,7 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     SEND MESSAGE
+     SEND MESSAGE (OPTIMISTIC)
   ===================== */
   const send = async () => {
     if (!msg.trim() || sending || closed) return;
@@ -123,9 +123,16 @@ export default function ChatWidget() {
     const text = msg.trim();
     const ts = Date.now();
 
+    // Optimistic UI (USER ONLY)
     setMessages((p) => [
       ...p,
-      { id: `local_${ts}`, sid, role: "user", text, ts },
+      {
+        id: `local_${ts}`,
+        sid,
+        role: "user",
+        text,
+        ts,
+      },
     ]);
 
     lastTsRef.current = Math.max(lastTsRef.current, ts);
@@ -153,7 +160,7 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     POLLING
+     POLLING (ADMIN ONLY)
   ===================== */
   useEffect(() => {
     if (!open || step !== "chat" || closed || !sid) return;
@@ -176,13 +183,17 @@ export default function ChatWidget() {
         setAdminOnline(!!d.adminOnline);
         setAdminTyping(!!d.adminTyping);
 
+        // 🔥 FIX UTAMA: HANYA TERIMA PESAN ADMIN
         if (Array.isArray(d.messages) && d.messages.length) {
           setMessages((prev) => {
             const ids = new Set(prev.map((m) => m.id));
-            return [
-              ...prev,
-              ...d.messages.filter((m: ChatMessage) => !ids.has(m.id)),
-            ].sort((a, b) => a.ts - b.ts);
+
+            const incoming = d.messages.filter(
+              (m: ChatMessage) =>
+                m.role === "admin" && !ids.has(m.id)
+            );
+
+            return [...prev, ...incoming].sort((a, b) => a.ts - b.ts);
           });
 
           lastTsRef.current = Math.max(
@@ -314,7 +325,9 @@ export default function ChatWidget() {
 
               {closed && (
                 <div className="text-center text-xs text-gray-400 mt-3">
-                  🔒 Percakapan telah ditutup oleh admin
+                  🙏 Terima kasih sudah menghubungi KOJE24  
+                  <br />
+                  Silakan mulai chat baru jika masih ada pertanyaan 🌿
                 </div>
               )}
 
