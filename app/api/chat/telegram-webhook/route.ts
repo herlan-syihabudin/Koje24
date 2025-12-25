@@ -7,8 +7,29 @@ import {
   setAdminActive,
   setAdminTyping,
   getLastActiveSessionId,
-  closeSession, // 🔴 WAJIB UNTUK TUTUP CHAT
+  closeSession,
+  getAdminActiveSession,
+  setAdminActiveSession,
+  clearAdminActiveSession,
 } from "@/lib/livechatStore";
+
+import { dequeueChat, removeFromQueue } from "@/lib/chatQueue";
+
+async function resolveSessionForAdminReply() {
+  // 1) kalau admin sudah pegang 1 sid → pakai itu
+  const active = await getAdminActiveSession();
+  if (active) return active;
+
+  // 2) kalau belum, ambil dari queue (FIFO)
+  const fromQueue = await dequeueChat();
+  if (fromQueue) {
+    await setAdminActiveSession(fromQueue);
+    return fromQueue;
+  }
+
+  // 3) fallback: biar sistem lama tetap jalan
+  return await getLastActiveSessionId();
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,15 +39,24 @@ export async function POST(req: NextRequest) {
     // ❌ BUKAN PESAN TEKS
     if (!msg?.text) return NextResponse.json({ ok: true });
 
-    const text = msg.text.trim();
-    if (!text) return NextResponse.json({ ok: true });
+    const textRaw = String(msg.text || "").trim();
+    if (!textRaw) return NextResponse.json({ ok: true });
 
-    // 🔑 Ambil session user terakhir aktif
-    const sessionId = await getLastActiveSessionId();
-    if (!sessionId) return NextResponse.json({ ok: true });
+    const text = textRaw; // keep original
+    const textLower = textRaw.toLowerCase();
 
-    // 🔒 COMMAND TUTUP CHAT
-    if (text.toLowerCase() === "/tutup") {
+    // ✅ pilih session yang benar untuk dibalas admin
+    const sessionId = await resolveSessionForAdminReply();
+    if (!sessionId) {
+      console.warn("⚠️ NO SESSION AVAILABLE (queue kosong & lastSession kosong)");
+      return NextResponse.json({ ok: true });
+    }
+
+    // 🔒 COMMAND TUTUP CHAT (tutup session yang sedang di-handle)
+    if (textLower === "/tutup" || textLower === "/close" || textLower === "/klose") {
+      // (aman) kalau sid masih nongol di queue, buang
+      await removeFromQueue(sessionId);
+
       await closeSession(sessionId);
 
       // kirim pesan penutup ke user (via polling)
@@ -36,14 +66,17 @@ export async function POST(req: NextRequest) {
         ts: Date.now(),
       });
 
-      // ⭐ jaga konsistensi status
+      // reset status admin
       await setAdminActive();
-      await setAdminTyping(0); // hentikan indikator typing
+      await setAdminTyping(0);
+
+      // 🔑 lepas active session → siap ambil chat baru dari queue
+      await clearAdminActiveSession();
 
       return NextResponse.json({ ok: true });
     }
 
-    // 💬 PESAN ADMIN BIASA
+    // 💬 PESAN ADMIN BIASA → masuk ke session aktif
     await addMessage(sessionId, {
       role: "admin",
       text,
