@@ -9,7 +9,7 @@ import {
   getSessionStatus,
   setSessionStatus,
 } from "@/lib/livechatStore";
-import { enqueueChat } from "@/lib/chatQueue";
+import { enqueueChat, getQueueInfo } from "@/lib/chatQueue"; // ⬅️ TAMBAHAN
 
 const BOT_TOKEN = process.env.TELEGRAM_LIVECHAT_BOT_TOKEN!;
 const CHAT_ID = process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID!;
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     });
 
     /* =====================
-       3️⃣ GREETING SERVER-SIDE (🔥 FIX UTAMA)
+       3️⃣ GREETING SERVER-SIDE
     ===================== */
     const status = await getSessionStatus(sessionId);
     if (status === "INIT") {
@@ -75,7 +75,7 @@ Silakan tulis pertanyaan kamu ya 😊`,
       });
 
       await setSessionStatus(sessionId, "ACTIVE");
-      await enqueueChat(sessionId); // masuk antrian admin
+      await enqueueChat(sessionId); // masuk antrian
     }
 
     /* =====================
@@ -88,7 +88,16 @@ Silakan tulis pertanyaan kamu ya 😊`,
     });
 
     /* =====================
-       5️⃣ KIRIM KE TELEGRAM
+       5️⃣ AMBIL INFO ANTRIAN
+    ===================== */
+    const queue = await getQueueInfo(sessionId);
+
+    const queueText = queue.position
+      ? `⏳ <b>Antrian:</b> ${queue.position} dari ${queue.total} user`
+      : `🟢 <b>Status:</b> Tidak dalam antrian`;
+
+    /* =====================
+       6️⃣ KIRIM KE TELEGRAM
     ===================== */
     const text = `
 📩 <b>LIVE CHAT WEBSITE - KOJE24</b>
@@ -97,6 +106,8 @@ Silakan tulis pertanyaan kamu ya 😊`,
 📧 Email: ${esc(email)}
 📱 HP: ${esc(phone)}
 🏷️ Topik: ${esc(topic)}
+
+${queueText}
 
 🆔 Session:
 <code>${esc(sessionId)}</code>
