@@ -21,6 +21,7 @@ type ChatMessage = {
 };
 
 const POLL_INTERVAL = 2000;
+const IDLE_CLOSE_MS = 120000; // ⭐ 2 menit
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -37,37 +38,16 @@ export default function ChatWidget() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [lastTs, setLastTs] = useState(0);
+  const lastTsRef = useRef(0); // ⭐ aman dari race
 
   const [adminOnline, setAdminOnline] = useState(false);
   const [adminTyping, setAdminTyping] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const idleTimer = useRef<any>(null); // ⭐
 
   /* =====================
-     OPEN / CLOSE EVENT
-  ===================== */
-  useEffect(() => {
-    const openEvent = () => setOpen(true);
-    const closeEvent = () => setOpen(false);
-
-    window.addEventListener("open-chat", openEvent);
-    window.addEventListener("close-chat", closeEvent);
-    return () => {
-      window.removeEventListener("open-chat", openEvent);
-      window.removeEventListener("close-chat", closeEvent);
-    };
-  }, []);
-
-  /* =====================
-     BODY SCROLL LOCK (SAMA KAYAK CART)
-  ===================== */
-  useEffect(() => {
-    document.body.classList.toggle("body-cart-lock", open);
-  }, [open]);
-
-  /* =====================
-     SESSION ID
+     SESSION ID (PERSISTENT)
   ===================== */
   const sid = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -85,6 +65,20 @@ export default function ChatWidget() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, adminTyping]);
+
+  /* =====================
+     IDLE AUTO CLOSE
+  ===================== */
+  useEffect(() => {
+    if (!open || step !== "chat") return;
+
+    clearTimeout(idleTimer.current);
+    idleTimer.current = setTimeout(() => {
+      closeChat(true); // ⭐ idle close
+    }, IDLE_CLOSE_MS);
+
+    return () => clearTimeout(idleTimer.current);
+  }, [messages, msg, open, step]);
 
   /* =====================
      START CHAT
@@ -109,9 +103,12 @@ export default function ChatWidget() {
     setMsg("");
     setSending(true);
 
+    const ts = Date.now();
+    lastTsRef.current = Math.max(lastTsRef.current, ts); // ⭐
+
     setMessages((p) => [
       ...p,
-      { id: `local_${Date.now()}`, sid, role: "user", text, ts: Date.now() },
+      { id: `local_${ts}`, sid, role: "user", text, ts },
     ]);
 
     try {
@@ -133,16 +130,17 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     POLLING
+     POLLING (STABLE)
   ===================== */
   useEffect(() => {
     if (!open || step !== "chat") return;
 
     const i = setInterval(async () => {
       try {
-        const r = await fetch(`/api/chat/poll?sid=${sid}&after=${lastTs}`, {
-          cache: "no-store",
-        });
+        const r = await fetch(
+          `/api/chat/poll?sid=${sid}&after=${lastTsRef.current}`,
+          { cache: "no-store" }
+        );
         const d = await r.json();
         if (!d?.ok) return;
 
@@ -155,62 +153,55 @@ export default function ChatWidget() {
             return [...prev, ...d.messages.filter((m: ChatMessage) => !ids.has(m.id))]
               .sort((a, b) => a.ts - b.ts);
           });
-          setLastTs((p) => Math.max(p, ...d.messages.map((m: ChatMessage) => m.ts)));
+
+          lastTsRef.current = Math.max(
+            lastTsRef.current,
+            ...d.messages.map((m: ChatMessage) => m.ts)
+          );
         }
       } catch {}
     }, POLL_INTERVAL);
 
     return () => clearInterval(i);
-  }, [open, step, sid, lastTs]);
+  }, [open, step, sid]);
 
   /* =====================
      CLOSE CHAT
   ===================== */
-  const closeChat = () => {
+  const closeChat = (idle = false) => {
     setOpen(false);
     setStep("form");
     setMessages([]);
-    setLastTs(0);
     setMsg("");
     setErrorMsg("");
-    localStorage.removeItem("chat_session_id");
-    localStorage.removeItem("chat_user_data");
+
+    if (!idle) {
+      // ⭐ session TIDAK dihapus kecuali explicit nanti dari server
+      // localStorage.removeItem("chat_session_id");
+      // localStorage.removeItem("chat_user_data");
+    }
   };
 
   if (!open) return null;
 
   return (
-    <div
-      className="koje-modal-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Live Chat KOJE24"
-      onMouseDown={(e) => e.target === e.currentTarget && closeChat()}
-    >
-      <div
-        className="koje-modal-box w-[92%] sm:w-[380px] max-h-[85vh] flex flex-col"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
+    <div className="koje-modal-overlay">
+      <div className="koje-modal-box w-[92%] sm:w-[380px] max-h-[85vh] flex flex-col">
         {/* HEADER */}
         <div className="flex items-center justify-between px-4 py-3 border-b">
-          <div className="flex items-center gap-2">
-            <MessageCircle size={18} />
-            <div>
-              <div className="font-semibold text-sm">Chat Admin KOJE24</div>
-              <div className="text-xs text-gray-500">
-                {adminOnline ? "🟢 Admin online" : "⚪ Admin offline"}
-              </div>
+          <div>
+            <div className="font-semibold text-sm">Chat Admin KOJE24</div>
+            <div className="text-xs text-gray-500">
+              {adminOnline ? "🟢 Admin online" : "⚪ Admin offline"}
             </div>
           </div>
-          <button onClick={closeChat}>
-            <X size={20} />
+          <button onClick={() => closeChat(false)}>
+            <X size={18} />
           </button>
         </div>
 
         {/* BODY */}
         <div className="flex-1 overflow-y-auto p-4">
-          {errorMsg && <div className="text-sm text-red-600 mb-2">{errorMsg}</div>}
-
           {step === "form" && (
             <>
               <input
@@ -219,22 +210,6 @@ export default function ChatWidget() {
                 placeholder="Nama"
                 className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
               />
-              <input
-                value={userData.phone}
-                onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
-                placeholder="No. WhatsApp (opsional)"
-                className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
-              />
-              <select
-                value={userData.topic}
-                onChange={(e) => setUserData({ ...userData, topic: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
-              >
-                <option>Produk</option>
-                <option>Langganan</option>
-                <option>Pengiriman</option>
-                <option>Komplain</option>
-              </select>
               <button
                 onClick={startChat}
                 className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm"
