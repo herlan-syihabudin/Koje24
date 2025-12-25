@@ -1,12 +1,10 @@
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 import { NextRequest, NextResponse } from "next/server";
 import {
   addMessage,
   setAdminActive,
   setAdminTyping,
   getLastActiveSessionId,
+  closeSession, // 🔴 WAJIB
 } from "@/lib/livechatStore";
 
 export async function POST(req: NextRequest) {
@@ -19,14 +17,23 @@ export async function POST(req: NextRequest) {
     const text = msg.text.trim();
     if (!text) return NextResponse.json({ ok: true });
 
-    // 🔑 Ambil session user terakhir aktif
     const sessionId = await getLastActiveSessionId();
+    if (!sessionId) return NextResponse.json({ ok: true });
 
-    if (!sessionId) {
-      console.warn("⚠️ NO ACTIVE SESSION");
+    // 🔒 PERINTAH TUTUP CHAT
+    if (text.toLowerCase() === "/tutup") {
+      await closeSession(sessionId);
+
+      await addMessage(sessionId, {
+        role: "admin",
+        text: "Percakapan telah ditutup oleh admin 🙏",
+        ts: Date.now(),
+      });
+
       return NextResponse.json({ ok: true });
     }
 
+    // 💬 PESAN BIASA
     await addMessage(sessionId, {
       role: "admin",
       text,
@@ -37,8 +44,7 @@ export async function POST(req: NextRequest) {
     await setAdminTyping(3000);
 
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("❌ TELEGRAM WEBHOOK ERROR:", err);
+  } catch {
     return NextResponse.json({ ok: true });
   }
 }
