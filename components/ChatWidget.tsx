@@ -42,6 +42,9 @@ export default function ChatWidget() {
   const [adminOnline, setAdminOnline] = useState(false);
   const [adminTyping, setAdminTyping] = useState(false);
 
+  // 🔒 STATUS CHAT
+  const [closed, setClosed] = useState(false);
+
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   /* =====================
@@ -67,7 +70,7 @@ export default function ChatWidget() {
   }, [open]);
 
   /* =====================
-     SESSION ID (AMAN)
+     SESSION ID
   ===================== */
   const sid = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -100,15 +103,20 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     SEND MESSAGE (FIX UTAMA)
+     SEND MESSAGE
   ===================== */
   const send = async () => {
     if (!msg.trim() || sending) return;
 
+    // 🔒 JIKA CHAT SUDAH DITUTUP
+    if (closed) {
+      setErrorMsg("Percakapan telah ditutup oleh admin 🙏");
+      return;
+    }
+
     const text = msg.trim();
     const ts = Date.now();
 
-    // optimistic UI
     setMessages((p) => [
       ...p,
       { id: `local_${ts}`, sid, role: "user", text, ts },
@@ -120,7 +128,7 @@ export default function ChatWidget() {
 
     try {
       const res = await fetch("/api/chat/send", {
-        method: "POST", // 🔥 KUNCI UTAMA
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...userData,
@@ -130,9 +138,7 @@ export default function ChatWidget() {
         }),
       });
 
-      if (!res.ok) {
-        throw new Error("Send failed");
-      }
+      if (!res.ok) throw new Error("Send failed");
     } catch (err) {
       console.error("SEND ERROR:", err);
       setErrorMsg("Gagal mengirim pesan 🙏");
@@ -145,7 +151,7 @@ export default function ChatWidget() {
      POLLING
   ===================== */
   useEffect(() => {
-    if (!open || step !== "chat") return;
+    if (!open || step !== "chat" || closed) return;
 
     const i = setInterval(async () => {
       try {
@@ -155,6 +161,13 @@ export default function ChatWidget() {
         );
         const d = await r.json();
         if (!d?.ok) return;
+
+        // 🔒 CHAT DITUTUP ADMIN
+        if (d.closed) {
+          setClosed(true);
+          setAdminTyping(false);
+          return;
+        }
 
         setAdminOnline(!!d.adminOnline);
         setAdminTyping(!!d.adminTyping);
@@ -177,10 +190,10 @@ export default function ChatWidget() {
     }, POLL_INTERVAL);
 
     return () => clearInterval(i);
-  }, [open, step, sid]);
+  }, [open, step, sid, closed]);
 
   /* =====================
-     CLOSE CHAT
+     CLOSE CHAT (USER)
   ===================== */
   const closeChat = () => {
     setOpen(false);
@@ -189,22 +202,14 @@ export default function ChatWidget() {
     lastTsRef.current = 0;
     setMsg("");
     setErrorMsg("");
+    setClosed(false);
   };
 
   if (!open) return null;
 
   return (
-    <div
-      className="koje-modal-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Live Chat KOJE24"
-      onMouseDown={(e) => e.target === e.currentTarget && closeChat()}
-    >
-      <div
-        className="koje-modal-box w-[92%] sm:w-[380px] max-h-[85vh] flex flex-col"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
+    <div className="koje-modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && closeChat()}>
+      <div className="koje-modal-box w-[92%] sm:w-[380px] max-h-[85vh] flex flex-col" onMouseDown={(e) => e.stopPropagation()}>
         {/* HEADER */}
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <div className="flex items-center gap-2">
@@ -216,82 +221,47 @@ export default function ChatWidget() {
               </div>
             </div>
           </div>
-          <button onClick={closeChat}>
-            <X size={20} />
-          </button>
+          <button onClick={closeChat}><X size={20} /></button>
         </div>
 
         {/* BODY */}
         <div className="flex-1 overflow-y-auto p-4">
-          {errorMsg && (
-            <div className="text-sm text-red-600 mb-2">{errorMsg}</div>
-          )}
+          {errorMsg && <div className="text-sm text-red-600 mb-2">{errorMsg}</div>}
 
           {step === "form" && (
             <>
-              <input
-                value={userData.name}
-                onChange={(e) =>
-                  setUserData({ ...userData, name: e.target.value })
-                }
-                placeholder="Nama"
-                className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
-              />
-              <input
-                value={userData.phone}
-                onChange={(e) =>
-                  setUserData({ ...userData, phone: e.target.value })
-                }
-                placeholder="No. WhatsApp (opsional)"
-                className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
-              />
-              <select
-                value={userData.topic}
-                onChange={(e) =>
-                  setUserData({ ...userData, topic: e.target.value })
-                }
-                className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
-              >
+              <input value={userData.name} onChange={(e) => setUserData({ ...userData, name: e.target.value })} placeholder="Nama" className="w-full border rounded-lg px-3 py-2 text-sm mb-2" />
+              <input value={userData.phone} onChange={(e) => setUserData({ ...userData, phone: e.target.value })} placeholder="No. WhatsApp (opsional)" className="w-full border rounded-lg px-3 py-2 text-sm mb-2" />
+              <select value={userData.topic} onChange={(e) => setUserData({ ...userData, topic: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm mb-3">
                 <option>Produk</option>
                 <option>Langganan</option>
                 <option>Pengiriman</option>
                 <option>Komplain</option>
               </select>
-              <button
-                onClick={startChat}
-                className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm"
-              >
-                Mulai Chat
-              </button>
+              <button onClick={startChat} className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm">Mulai Chat</button>
             </>
           )}
 
           {step === "chat" && (
             <>
               {messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={`mb-2 flex ${
-                    m.role === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`px-3 py-2 rounded-xl text-sm max-w-[85%] ${
-                      m.role === "user"
-                        ? "bg-[#0FA3A8] text-white"
-                        : "bg-white border"
-                    }`}
-                  >
+                <div key={m.id} className={`mb-2 flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`px-3 py-2 rounded-xl text-sm max-w-[85%] ${m.role === "user" ? "bg-[#0FA3A8] text-white" : "bg-white border"}`}>
                     {m.text}
                   </div>
                 </div>
               ))}
 
-              {adminTyping && (
-                <div className="text-xs text-gray-400 mt-1">
-                  ✍️ Admin sedang mengetik...
+              {adminTyping && !closed && (
+                <div className="text-xs text-gray-400 mt-1">✍️ Admin sedang mengetik...</div>
+              )}
+
+              {closed && (
+                <div className="text-center text-xs text-gray-400 mt-3">
+                  🔒 Percakapan telah ditutup oleh admin
                 </div>
               )}
+
               <div ref={bottomRef} />
             </>
           )}
@@ -303,17 +273,17 @@ export default function ChatWidget() {
             <textarea
               value={msg}
               onChange={(e) => setMsg(e.target.value)}
-              placeholder="Tulis pesan…"
+              placeholder={closed ? "Chat telah ditutup" : "Tulis pesan…"}
               rows={2}
-              className="w-full border rounded-lg p-2 text-sm"
+              disabled={closed}
+              className="w-full border rounded-lg p-2 text-sm disabled:bg-gray-100"
             />
             <button
-              type="button"
               onClick={send}
-              disabled={!msg.trim() || sending}
+              disabled={closed || !msg.trim() || sending}
               className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm disabled:opacity-50"
             >
-              {sending ? "Mengirim…" : "Kirim"}
+              {closed ? "Chat Ditutup" : sending ? "Mengirim…" : "Kirim"}
             </button>
           </div>
         )}
