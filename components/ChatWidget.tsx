@@ -104,11 +104,6 @@ export default function ChatWidget() {
     const text = msg.trim();
     const ts = Date.now();
 
-    setMessages((p) => [
-      ...p,
-      { id: `local_${ts}`, sid, role: "user", text, ts },
-    ]);
-
     lastTsRef.current = Math.max(lastTsRef.current, ts);
     setMsg("");
     setSending(true);
