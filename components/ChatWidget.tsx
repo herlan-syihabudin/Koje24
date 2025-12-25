@@ -39,13 +39,16 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [lastTs, setLastTs] = useState(0);
 
+  // ⭐ upgrade aman: ref buat anti-duplikat polling
+  const lastTsRef = useRef(0);
+
   const [adminOnline, setAdminOnline] = useState(false);
   const [adminTyping, setAdminTyping] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   /* =====================
-     OPEN / CLOSE EVENT
+     OPEN / CLOSE EVENT (TIDAK DIUBAH)
   ===================== */
   useEffect(() => {
     const openEvent = () => setOpen(true);
@@ -60,14 +63,14 @@ export default function ChatWidget() {
   }, []);
 
   /* =====================
-     BODY SCROLL LOCK (SAMA KAYAK CART)
+     BODY SCROLL LOCK
   ===================== */
   useEffect(() => {
     document.body.classList.toggle("body-cart-lock", open);
   }, [open]);
 
   /* =====================
-     SESSION ID
+     SESSION ID (TETAP, TIDAK DIUBAH)
   ===================== */
   const sid = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -100,7 +103,7 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     SEND MESSAGE
+     SEND MESSAGE (LOGIC SAMA)
   ===================== */
   const send = async () => {
     if (!msg.trim() || sending) return;
@@ -109,10 +112,15 @@ export default function ChatWidget() {
     setMsg("");
     setSending(true);
 
+    const ts = Date.now();
+
     setMessages((p) => [
       ...p,
-      { id: `local_${Date.now()}`, sid, role: "user", text, ts: Date.now() },
+      { id: `local_${ts}`, sid, role: "user", text, ts },
     ]);
+
+    lastTsRef.current = Math.max(lastTsRef.current, ts);
+    setLastTs(lastTsRef.current);
 
     try {
       await fetch("/api/chat/send", {
@@ -133,16 +141,17 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     POLLING
+     POLLING (UPGRADE AMAN)
   ===================== */
   useEffect(() => {
     if (!open || step !== "chat") return;
 
     const i = setInterval(async () => {
       try {
-        const r = await fetch(`/api/chat/poll?sid=${sid}&after=${lastTs}`, {
-          cache: "no-store",
-        });
+        const r = await fetch(
+          `/api/chat/poll?sid=${sid}&after=${lastTsRef.current}`,
+          { cache: "no-store" }
+        );
         const d = await r.json();
         if (!d?.ok) return;
 
@@ -152,29 +161,37 @@ export default function ChatWidget() {
         if (Array.isArray(d.messages) && d.messages.length) {
           setMessages((prev) => {
             const ids = new Set(prev.map((m) => m.id));
-            return [...prev, ...d.messages.filter((m: ChatMessage) => !ids.has(m.id))]
-              .sort((a, b) => a.ts - b.ts);
+            return [
+              ...prev,
+              ...d.messages.filter((m: ChatMessage) => !ids.has(m.id)),
+            ].sort((a, b) => a.ts - b.ts);
           });
-          setLastTs((p) => Math.max(p, ...d.messages.map((m: ChatMessage) => m.ts)));
+
+          lastTsRef.current = Math.max(
+            lastTsRef.current,
+            ...d.messages.map((m: ChatMessage) => m.ts)
+          );
+          setLastTs(lastTsRef.current);
         }
       } catch {}
     }, POLL_INTERVAL);
 
     return () => clearInterval(i);
-  }, [open, step, sid, lastTs]);
+  }, [open, step, sid]);
 
   /* =====================
-     CLOSE CHAT
+     CLOSE CHAT (UPGRADE AMAN)
+     ❗ session_id TIDAK dihapus
   ===================== */
   const closeChat = () => {
     setOpen(false);
     setStep("form");
     setMessages([]);
     setLastTs(0);
+    lastTsRef.current = 0;
     setMsg("");
     setErrorMsg("");
-    localStorage.removeItem("chat_session_id");
-    localStorage.removeItem("chat_user_data");
+    // session_id & user_data dibiarkan (AMAN)
   };
 
   if (!open) return null;
@@ -209,25 +226,33 @@ export default function ChatWidget() {
 
         {/* BODY */}
         <div className="flex-1 overflow-y-auto p-4">
-          {errorMsg && <div className="text-sm text-red-600 mb-2">{errorMsg}</div>}
+          {errorMsg && (
+            <div className="text-sm text-red-600 mb-2">{errorMsg}</div>
+          )}
 
           {step === "form" && (
             <>
               <input
                 value={userData.name}
-                onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+                onChange={(e) =>
+                  setUserData({ ...userData, name: e.target.value })
+                }
                 placeholder="Nama"
                 className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
               />
               <input
                 value={userData.phone}
-                onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+                onChange={(e) =>
+                  setUserData({ ...userData, phone: e.target.value })
+                }
                 placeholder="No. WhatsApp (opsional)"
                 className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
               />
               <select
                 value={userData.topic}
-                onChange={(e) => setUserData({ ...userData, topic: e.target.value })}
+                onChange={(e) =>
+                  setUserData({ ...userData, topic: e.target.value })
+                }
                 className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
               >
                 <option>Produk</option>
