@@ -62,3 +62,14 @@ export async function getQueuePosition(
 
   return idx === -1 ? null : idx + 1;
 }
+// TAMBAHKAN DI FILE INI
+export async function getQueueInfo(sid: string) {
+  const list = await kv.lrange(QUEUE_KEY, 0, -1);
+  const total = list.length;
+  const position = list.indexOf(sid);
+
+  return {
+    position: position >= 0 ? position + 1 : null,
+    total,
+  };
+}
