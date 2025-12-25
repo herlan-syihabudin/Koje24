@@ -9,7 +9,7 @@ import {
   getSessionStatus,
   setSessionStatus,
 } from "@/lib/livechatStore";
-import { enqueueChat } from "@/lib/chatQueue"; // ⭐ IIB CONNECT
+import { enqueueChat } from "@/lib/chatQueue";
 
 const BOT_TOKEN = process.env.TELEGRAM_LIVECHAT_BOT_TOKEN!;
 const CHAT_ID = process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID!;
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       name = "Guest",
       phone = "-",
       topic = "-",
-      email = "-", // ⭐ future proof
+      email = "-",
       message,
       sessionId,
       page = "-",
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     /* =====================
-       2️⃣ INIT SESSION (FIRST TOUCH ONLY)
+       2️⃣ INIT SESSION (AMAN)
     ===================== */
     await initSession(sessionId, {
       name,
@@ -61,12 +61,21 @@ export async function POST(req: NextRequest) {
     });
 
     /* =====================
-       3️⃣ AKTIFKAN SESSION + MASUK QUEUE (⭐ IIB)
+       3️⃣ GREETING SERVER-SIDE (🔥 FIX UTAMA)
     ===================== */
     const status = await getSessionStatus(sessionId);
     if (status === "INIT") {
+      await addMessage(sessionId, {
+        role: "admin",
+        text: `👋 Hai ${name || "kak"}, selamat datang di KOJE24 🌿
+
+Aku admin KOJE24.
+Silakan tulis pertanyaan kamu ya 😊`,
+        ts: Date.now(),
+      });
+
       await setSessionStatus(sessionId, "ACTIVE");
-      await enqueueChat(sessionId); // ⭐ MASUK ANTRIAN
+      await enqueueChat(sessionId); // masuk antrian admin
     }
 
     /* =====================
