@@ -182,7 +182,7 @@ export async function initSession(
 
   await kv.expire(`chat:session:${sid}`, 60 * 60 * 24);
 }
-// ================= ADMIN ACTIVE SESSION (QUEUE MODE) =================
+// ================= ADMIN ACTIVE SESSION (QUEUE MODE) ================
 const ADMIN_ACTIVE_KEY = "admin:activeSession";
 
 /** Set admin sedang melayani sid ini */
