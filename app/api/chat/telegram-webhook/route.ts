@@ -86,11 +86,11 @@ export async function POST(req: NextRequest) {
       await closeSession(sessionId);
 
       await addMessage(sessionId, {
-        role: "admin",
-        text: "Percakapan telah ditutup oleh admin 🙏",
-        ts: Date.now(),
-      });
-
+  role: "admin",
+  text: `🙏 Terima kasih sudah menghubungi KOJE24  
+Jika masih ada pertanyaan, silakan mulai chat baru 🌿`,
+  ts: Date.now(),
+});
       await setAdminActive();
       await setAdminTyping(0);
       await clearAdminActiveSession();
