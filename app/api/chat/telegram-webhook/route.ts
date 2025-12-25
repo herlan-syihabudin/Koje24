@@ -19,11 +19,12 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const msg = body?.message;
+
     if (!msg) return NextResponse.json({ ok: true });
 
     console.log("👤 FROM:", msg.from?.id);
 
-    // 🔒 hanya admin
+    // 🔒 VALIDASI ADMIN
     if (!ADMIN_USER_ID || msg.from?.id !== ADMIN_USER_ID) {
       console.log("⛔ NOT ADMIN");
       return NextResponse.json({ ok: true });
@@ -32,13 +33,17 @@ export async function POST(req: NextRequest) {
     const text = msg.text?.trim();
     if (!text) return NextResponse.json({ ok: true });
 
-    // ✅ ambil session terakhir aktif (INI KUNCI)
+    // ⭐ AMBIL SESSION AKTIF TERAKHIR
     const sessionId = await getLastActiveSessionId();
+
+    console.log("🆔 LAST SESSION:", sessionId);
+
     if (!sessionId) {
-      console.log("⚠️ TIDAK ADA SESSION AKTIF");
+      console.warn("⚠️ NO ACTIVE SESSION");
       return NextResponse.json({ ok: true });
     }
 
+    // 💬 SIMPAN PESAN ADMIN
     await addMessage(sessionId, {
       role: "admin",
       text,
@@ -48,7 +53,7 @@ export async function POST(req: NextRequest) {
     await setAdminActive();
     await setAdminTyping(3000);
 
-    console.log("✅ ADMIN MESSAGE PUSHED", sessionId);
+    console.log("✅ ADMIN MESSAGE SAVED");
 
     return NextResponse.json({ ok: true });
   } catch (err) {
