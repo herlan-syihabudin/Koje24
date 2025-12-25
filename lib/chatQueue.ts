@@ -49,3 +49,16 @@ export async function removeFromQueue(sid: string) {
   if (!sid) return;
   await kv.lrem(QUEUE_KEY, 0, sid);
 }
+/**
+ * Ambil posisi sid di antrian (1-based)
+ */
+export async function getQueuePosition(
+  sid: string
+): Promise<number | null> {
+  if (!sid) return null;
+
+  const list = await kv.lrange(QUEUE_KEY, 0, -1);
+  const idx = list.findIndex((x) => x === sid);
+
+  return idx === -1 ? null : idx + 1;
+}
