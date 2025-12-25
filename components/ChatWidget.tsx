@@ -84,16 +84,32 @@ export default function ChatWidget() {
   /* =====================
      START CHAT
   ===================== */
-  const startChat = () => {
-    if (!userData.name.trim()) {
-      setErrorMsg("Nama wajib diisi ya kak 🙏");
-      return;
-    }
+  const startChat = async () => {
+  if (!userData.name.trim()) {
+    setErrorMsg("Nama wajib diisi ya kak 🙏");
+    return;
+  }
 
-    setErrorMsg("");
-    setClosed(false);
-    setStep("chat");
-  };
+  setErrorMsg("");
+  setClosed(false);
+  setStep("chat");
+
+  // 🔥 TRIGGER GREETING SERVER-SIDE (INI KUNCI)
+  try {
+    await fetch("/api/chat/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: sid,
+        name: userData.name,
+        page: window.location.pathname,
+      }),
+    });
+  } catch (e) {
+    // silent fail → jangan ganggu UX
+    console.error("start chat failed", e);
+  }
+};
 
   /* =====================
      SEND MESSAGE
