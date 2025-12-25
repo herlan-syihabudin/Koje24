@@ -37,9 +37,6 @@ export default function ChatWidget() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [lastTs, setLastTs] = useState(0);
-
-  // ⭐ upgrade aman: ref buat anti-duplikat polling
   const lastTsRef = useRef(0);
 
   const [adminOnline, setAdminOnline] = useState(false);
@@ -48,7 +45,7 @@ export default function ChatWidget() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   /* =====================
-     OPEN / CLOSE EVENT (TIDAK DIUBAH)
+     OPEN / CLOSE EVENT
   ===================== */
   useEffect(() => {
     const openEvent = () => setOpen(true);
@@ -70,7 +67,7 @@ export default function ChatWidget() {
   }, [open]);
 
   /* =====================
-     SESSION ID (TETAP, TIDAK DIUBAH)
+     SESSION ID (AMAN)
   ===================== */
   const sid = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -103,28 +100,27 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     SEND MESSAGE (LOGIC SAMA)
+     SEND MESSAGE (FIX UTAMA)
   ===================== */
   const send = async () => {
     if (!msg.trim() || sending) return;
 
     const text = msg.trim();
-    setMsg("");
-    setSending(true);
-
     const ts = Date.now();
 
+    // optimistic UI
     setMessages((p) => [
       ...p,
       { id: `local_${ts}`, sid, role: "user", text, ts },
     ]);
 
     lastTsRef.current = Math.max(lastTsRef.current, ts);
-    setLastTs(lastTsRef.current);
+    setMsg("");
+    setSending(true);
 
     try {
-      await fetch("/api/chat/send", {
-        method: "POST",
+      const res = await fetch("/api/chat/send", {
+        method: "POST", // 🔥 KUNCI UTAMA
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...userData,
@@ -133,7 +129,12 @@ export default function ChatWidget() {
           page: window.location.pathname,
         }),
       });
-    } catch {
+
+      if (!res.ok) {
+        throw new Error("Send failed");
+      }
+    } catch (err) {
+      console.error("SEND ERROR:", err);
       setErrorMsg("Gagal mengirim pesan 🙏");
     } finally {
       setSending(false);
@@ -141,7 +142,7 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     POLLING (UPGRADE AMAN)
+     POLLING
   ===================== */
   useEffect(() => {
     if (!open || step !== "chat") return;
@@ -171,7 +172,6 @@ export default function ChatWidget() {
             lastTsRef.current,
             ...d.messages.map((m: ChatMessage) => m.ts)
           );
-          setLastTs(lastTsRef.current);
         }
       } catch {}
     }, POLL_INTERVAL);
@@ -180,18 +180,15 @@ export default function ChatWidget() {
   }, [open, step, sid]);
 
   /* =====================
-     CLOSE CHAT (UPGRADE AMAN)
-     ❗ session_id TIDAK dihapus
+     CLOSE CHAT
   ===================== */
   const closeChat = () => {
     setOpen(false);
     setStep("form");
     setMessages([]);
-    setLastTs(0);
     lastTsRef.current = 0;
     setMsg("");
     setErrorMsg("");
-    // session_id & user_data dibiarkan (AMAN)
   };
 
   if (!open) return null;
@@ -311,6 +308,7 @@ export default function ChatWidget() {
               className="w-full border rounded-lg p-2 text-sm"
             />
             <button
+              type="button"
               onClick={send}
               disabled={!msg.trim() || sending}
               className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm disabled:opacity-50"
