@@ -5,8 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   addMessage,
   isSessionClosed,
-  getSessionStatus,
-  setSessionStatus,
+  initSession,
 } from "@/lib/livechatStore";
 
 const BOT_TOKEN = process.env.TELEGRAM_LIVECHAT_BOT_TOKEN!;
@@ -44,11 +43,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ⭐ STEP 2 — AKTIFKAN SESSION JIKA PERTAMA KALI
-    const status = await getSessionStatus(sessionId);
-    if (status === "INIT") {
-      await setSessionStatus(sessionId, "ACTIVE");
-    }
+    // ⭐ STEP 6.1 — SESSION METADATA (FIRST TOUCH)
+    await initSession(sessionId, {
+      name,
+      phone,
+      topic,
+      page,
+    });
 
     // ✅ SIMPAN PESAN USER
     await addMessage(sessionId, {
@@ -83,9 +84,7 @@ ${esc(message)}
           chat_id: CHAT_ID,
           text,
           parse_mode: "HTML",
-          reply_markup: {
-            force_reply: true,
-          },
+          reply_markup: { force_reply: true },
         }),
       }
     );
