@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { addMessage } from "@/lib/livechatStore";
+import { addMessage, isSessionClosed } from "@/lib/livechatStore";
 
 const BOT_TOKEN = process.env.TELEGRAM_LIVECHAT_BOT_TOKEN!;
 const CHAT_ID = process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID!;
@@ -31,14 +31,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
 
-    // ✅ 1️⃣ SIMPAN PESAN USER KE KV
+    // 🔒 CEK CHAT SUDAH DITUTUP ATAU BELUM
+    if (await isSessionClosed(sessionId)) {
+      return NextResponse.json({
+        ok: false,
+        message: "Percakapan telah ditutup oleh admin",
+      });
+    }
+
+    // ✅ SIMPAN PESAN USER
     await addMessage(sessionId, {
       role: "user",
       text: message,
       ts: Date.now(),
     });
 
-    // ✅ 2️⃣ KIRIM KE TELEGRAM
+    // ✅ KIRIM KE TELEGRAM
     const text = `
 📩 <b>LIVE CHAT WEBSITE - KOJE24</b>
 
