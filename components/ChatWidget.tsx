@@ -45,6 +45,12 @@ export default function ChatWidget() {
 
   const [sid, setSid] = useState<string>("");
 
+  // ✅ queue info
+  const [queueInfo, setQueueInfo] = useState<number | null>(null);
+
+  // ✅ trigger auto-poll greeting once after startChat
+  const [greetingTriggered, setGreetingTriggered] = useState(false);
+
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   /* =====================
@@ -85,31 +91,70 @@ export default function ChatWidget() {
      START CHAT
   ===================== */
   const startChat = async () => {
-  if (!userData.name.trim()) {
-    setErrorMsg("Nama wajib diisi ya kak 🙏");
-    return;
-  }
+    if (!userData.name.trim()) {
+      setErrorMsg("Nama wajib diisi ya kak 🙏");
+      return;
+    }
 
-  setErrorMsg("");
-  setClosed(false);
-  setStep("chat");
+    setErrorMsg("");
+    setClosed(false);
+    setStep("chat");
 
-  // 🔥 TRIGGER GREETING SERVER-SIDE (INI KUNCI)
-  try {
-    await fetch("/api/chat/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId: sid,
-        name: userData.name,
-        page: window.location.pathname,
-      }),
-    });
-  } catch (e) {
-    // silent fail → jangan ganggu UX
-    console.error("start chat failed", e);
-  }
-};
+    // 🔥 trigger greeting server side
+    try {
+      await fetch("/api/chat/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: sid,
+          name: userData.name,
+          phone: userData.phone,
+          topic: userData.topic,
+          page: window.location.pathname,
+        }),
+      });
+
+      // ✅ auto poll once to fetch greeting immediately
+      setGreetingTriggered(true);
+    } catch (e) {
+      console.error("start chat failed", e);
+      // tetep masuk chat, nanti polling interval yang ngangkat
+      setGreetingTriggered(true);
+    }
+  };
+
+  /* =====================
+     AUTO POLL ONCE (GREETING FAST)
+  ===================== */
+  useEffect(() => {
+    if (!open || step !== "chat" || !sid || !greetingTriggered) return;
+
+    const run = async () => {
+      try {
+        const r = await fetch(`/api/chat/poll?sid=${sid}&after=0`, {
+          cache: "no-store",
+        });
+        const d = await r.json();
+        if (!d?.ok) return;
+
+        setAdminOnline(!!d.adminOnline);
+        setAdminTyping(!!d.adminTyping);
+
+        if (Array.isArray(d.messages) && d.messages.length) {
+          // set full, biar greeting langsung keangkat
+          setMessages(d.messages);
+
+          lastTsRef.current = Math.max(
+            0,
+            ...d.messages.map((m: ChatMessage) => m.ts)
+          );
+        }
+      } catch {}
+      setGreetingTriggered(false);
+    };
+
+    run();
+  }, [open, step, sid, greetingTriggered]);
 
   /* =====================
      SEND MESSAGE
@@ -119,6 +164,18 @@ export default function ChatWidget() {
 
     const text = msg.trim();
     const ts = Date.now();
+
+    // optimistic UI (biar responsif)
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `local_${ts}`,
+        sid,
+        role: "user",
+        text,
+        ts,
+      },
+    ]);
 
     lastTsRef.current = Math.max(lastTsRef.current, ts);
     setMsg("");
@@ -143,66 +200,102 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     POLLING (STABLE)
+     START NEW SESSION (ONLY WHEN USER CLICKS)
+  ===================== */
+  const startNewSession = async () => {
+    const newSid = crypto.randomUUID();
+    localStorage.setItem("chat_session_id", newSid);
+    setSid(newSid);
+
+    setClosed(false);
+    setErrorMsg("");
+    setMessages([]);
+    lastTsRef.current = 0;
+
+    // tetap di chat, langsung trigger greeting
+    setStep("chat");
+
+    try {
+      await fetch("/api/chat/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: newSid,
+          name: userData.name || "Guest",
+          phone: userData.phone,
+          topic: userData.topic,
+          page: window.location.pathname,
+        }),
+      });
+      setGreetingTriggered(true);
+    } catch {
+      setGreetingTriggered(true);
+    }
+  };
+
+  /* =====================
+     POLLING (CHAT + QUEUE) ONE INTERVAL
   ===================== */
   useEffect(() => {
-    if (!open || step !== "chat" || closed || !sid) return;
+    if (!open || step !== "chat" || !sid) return;
 
     const i = setInterval(async () => {
       try {
+        // 1) poll messages
         const r = await fetch(
           `/api/chat/poll?sid=${sid}&after=${lastTsRef.current}`,
           { cache: "no-store" }
         );
         const d = await r.json();
-        if (!d?.ok) return;
+        if (d?.ok) {
+          if (d.closed) {
+            // ✅ DONT RESET SESSION HERE
+            setClosed(true);
+            setAdminTyping(false);
+          } else {
+            setClosed(false);
+          }
 
-        if (d.closed) {
-  setClosed(true);
-  setAdminTyping(false);
+          setAdminOnline(!!d.adminOnline);
+          setAdminTyping(!!d.adminTyping);
 
-  // 🔑 RESET SESSION BIAR BISA CHAT BARU
-  const newSid = crypto.randomUUID();
-  localStorage.setItem("chat_session_id", newSid);
-  setSid(newSid);
+          if (Array.isArray(d.messages) && d.messages.length) {
+            setMessages((prev) => {
+              const exists = new Set(prev.map((m) => m.id));
+              const incoming = d.messages.filter(
+                (m: ChatMessage) => !exists.has(m.id)
+              );
+              const merged = [...prev, ...incoming].sort((a, b) => a.ts - b.ts);
+              return merged;
+            });
 
-  // BALIK KE FORM
-  setStep("form");
-  setMessages([]);
-  lastTsRef.current = 0;
-
-  return;
-}
-        setAdminOnline(!!d.adminOnline);
-        setAdminTyping(!!d.adminTyping);
-
-        if (Array.isArray(d.messages) && d.messages.length) {
-          setMessages((prev) => {
-            const exists = new Set(
-              prev.map((m) => `${m.role}-${m.ts}-${m.text}`)
+            lastTsRef.current = Math.max(
+              lastTsRef.current,
+              ...d.messages.map((m: ChatMessage) => m.ts)
             );
-
-            const incoming = d.messages.filter(
-              (m: ChatMessage) =>
-                !exists.has(`${m.role}-${m.ts}-${m.text}`)
-            );
-
-            return [...prev, ...incoming].sort((a, b) => a.ts - b.ts);
-          });
-
-          lastTsRef.current = Math.max(
-            lastTsRef.current,
-            ...d.messages.map((m: ChatMessage) => m.ts)
-          );
+          }
         }
+
+        // 2) poll queue info (same interval)
+        try {
+          const qr = await fetch(`/api/chat/queue-info?sid=${sid}`, {
+            cache: "no-store",
+          });
+          const qd = await qr.json();
+          if (qd?.ok && typeof qd.position === "number") {
+            setQueueInfo(qd.position);
+          } else if (qd?.position === null) {
+            setQueueInfo(null);
+          }
+        } catch {}
       } catch {}
     }, POLL_INTERVAL);
 
     return () => clearInterval(i);
-  }, [open, step, sid, closed]);
+  }, [open, step, sid]);
 
   /* =====================
-     CLOSE CHAT
+     CLOSE CHAT (USER)
   ===================== */
   const closeChat = () => {
     setOpen(false);
@@ -213,9 +306,13 @@ export default function ChatWidget() {
     setErrorMsg("");
     lastTsRef.current = 0;
 
+    // reset SID only when user closes UI
     const n = crypto.randomUUID();
     localStorage.setItem("chat_session_id", n);
     setSid(n);
+
+    setQueueInfo(null);
+    setGreetingTriggered(false);
   };
 
   if (!open) return null;
@@ -223,7 +320,6 @@ export default function ChatWidget() {
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
       <div className="bg-white w-[92%] sm:w-[380px] max-h-[85vh] rounded-2xl shadow-xl flex flex-col overflow-hidden">
-
         {/* HEADER */}
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <div className="flex items-center gap-3">
@@ -242,15 +338,23 @@ export default function ChatWidget() {
               </div>
             </div>
           </div>
-          <button onClick={closeChat} className="text-gray-400 hover:text-gray-700">
+          <button
+            onClick={closeChat}
+            className="text-gray-400 hover:text-gray-700"
+          >
             <X size={18} />
           </button>
         </div>
 
         {/* BODY */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {errorMsg && (
-            <div className="text-sm text-red-600">{errorMsg}</div>
+          {errorMsg && <div className="text-sm text-red-600">{errorMsg}</div>}
+
+          {/* QUEUE BANNER */}
+          {step === "chat" && queueInfo !== null && queueInfo > 0 && !closed && (
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs rounded-xl px-3 py-2">
+              ⏳ Kamu berada di antrian <b>ke-{queueInfo}</b>. Mohon tunggu ya 🙏
+            </div>
           )}
 
           {step === "form" ? (
@@ -274,7 +378,7 @@ export default function ChatWidget() {
             <>
               {messages.map((m) => (
                 <div
-                  key={`${m.role}-${m.ts}-${m.text}`}
+                  key={m.id}
                   className={`flex ${
                     m.role === "user" ? "justify-end" : "justify-start"
                   }`}
@@ -298,8 +402,15 @@ export default function ChatWidget() {
               )}
 
               {closed && (
-                <div className="bg-gray-50 text-center text-xs text-gray-500 rounded-xl p-3">
-                  🔒 Percakapan telah ditutup oleh admin
+                <div className="bg-gray-50 border text-center text-xs text-gray-600 rounded-xl p-3 space-y-2">
+                  <div>🙏 Terima kasih sudah menghubungi KOJE24</div>
+                  <div>Jika masih ada pertanyaan, silakan mulai chat baru 🌿</div>
+                  <button
+                    onClick={startNewSession}
+                    className="w-full bg-[#0FA3A8] hover:bg-[#0d8e92] transition text-white py-2 rounded-xl text-sm font-medium"
+                  >
+                    Mulai Chat Baru
+                  </button>
                 </div>
               )}
 
@@ -314,10 +425,10 @@ export default function ChatWidget() {
             <textarea
               value={msg}
               onChange={(e) => setMsg(e.target.value)}
-              placeholder={closed ? "Chat telah ditutup" : "Tulis pesan…"}
+              placeholder={closed ? "Chat ditutup. Mulai chat baru ya 🙏" : "Tulis pesan…"}
               rows={2}
               disabled={closed}
-              className="w-full border rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-[#0FA3A8]/30"
+              className="w-full border rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-[#0FA3A8]/30 disabled:bg-gray-100"
             />
             <button
               onClick={send}
