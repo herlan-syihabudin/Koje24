@@ -3,6 +3,7 @@ import {
   getMessages,
   getAdminStatus,
   isAdminTyping,
+  isSessionClosed, // ⭐ TAMBAHAN
 } from "@/lib/livechatStore";
 
 export async function GET(req: NextRequest) {
@@ -18,6 +19,18 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // 🔒 CEK APAKAH CHAT SUDAH DITUTUP ADMIN
+    const closed = await isSessionClosed(sid);
+    if (closed) {
+      return NextResponse.json({
+        ok: true,
+        closed: true,      // ⭐ INI KUNCI UTAMA
+        messages: [],
+        adminOnline: false,
+        adminTyping: false,
+      });
+    }
+
     const messages = await getMessages(
       sid,
       after > 0 ? after : undefined
@@ -28,9 +41,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      messages, // ⬅️ JANGAN FILTER DI SINI
+      messages,           // ⬅️ TETAP TIDAK DIFILTER
       adminOnline: adminStatus === "online",
       adminTyping,
+      closed: false,      // ⭐ EXPLICIT
     });
   } catch (e) {
     console.error("LIVECHAT POLL ERROR:", e);
