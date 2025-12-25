@@ -1,42 +1,29 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
-import { dequeueChat } from "@/lib/chatQueue";
+import { closeSession } from "@/lib/livechatStore";
 
 export async function POST(req: NextRequest) {
   try {
     const { sessionId } = await req.json();
 
     if (!sessionId) {
-      return NextResponse.json({ ok: false }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, message: "sessionId required" },
+        { status: 400 }
+      );
     }
 
-    // tandai closed
-    await kv.hset(`chat:session:${sessionId}`, {
-      state: "closed",
-      closedAt: Date.now(),
-    });
-
-    // bebaskan admin
-    await kv.del("admin:active");
-
-    // ambil user berikutnya
-    const nextSid = await dequeueChat();
-
-    if (nextSid) {
-      await kv.set("admin:active", nextSid);
-      await kv.hset(`chat:session:${nextSid}`, { state: "active" });
-
-      // kirim ke Telegram admin
-      await fetch(`${process.env.APP_URL}/api/chat/telegram-push`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId: nextSid }),
-      });
-    }
+    // ✅ TUTUP SESSION (SINGLE SOURCE OF TRUTH)
+    await closeSession(sessionId);
 
     return NextResponse.json({ ok: true });
-  } catch (e) {
-    console.error("CHAT CLOSE ERROR:", e);
-    return NextResponse.json({ ok: false }, { status: 500 });
+  } catch (err) {
+    console.error("❌ CLOSE CHAT ERROR:", err);
+    return NextResponse.json(
+      { ok: false },
+      { status: 500 }
+    );
   }
 }
