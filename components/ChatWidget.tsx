@@ -8,8 +8,8 @@ import { MessageCircle, X } from "lucide-react";
 ===================== */
 type UserData = {
   name: string;
-  phone: string;
-  topic: string;
+  phone?: string;
+  topic?: string;
 };
 
 type ChatMessage = {
@@ -21,20 +21,33 @@ type ChatMessage = {
 };
 
 const POLL_INTERVAL = 2000;
+const SEND_COOLDOWN = 800;
 
 /* =====================
-   GREETING (LOCAL ONLY)
+   LOCAL MESSAGES
 ===================== */
-function buildGreeting(name: string): ChatMessage {
+function greeting(name: string): ChatMessage {
   return {
     id: "greeting",
     sid: "local",
     role: "admin",
     text: `👋 Hai ${name || "kak"}, selamat datang di KOJE24 🌿
 
-Aku admin KOJE24.  
+Aku admin KOJE24.
 Silakan tulis pertanyaan kamu ya 😊`,
-    ts: 0, // ⛔ tidak ikut polling
+    ts: 0,
+  };
+}
+
+function offlineMessage(): ChatMessage {
+  return {
+    id: "offline",
+    sid: "local",
+    role: "admin",
+    text: `🙏 Terima kasih sudah menghubungi KOJE24  
+Saat ini admin sedang offline  
+Silakan tulis pesan, kami akan membalas secepatnya 🌿`,
+    ts: 0,
   };
 }
 
@@ -42,29 +55,22 @@ export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"form" | "chat">("form");
 
-  const [userData, setUserData] = useState<UserData>({
-    name: "",
-    phone: "",
-    topic: "Produk",
-  });
-
+  const [userData, setUserData] = useState<UserData>({ name: "" });
   const [msg, setMsg] = useState("");
   const [sending, setSending] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const lastTsRef = useRef(0);
-
   const [adminOnline, setAdminOnline] = useState(false);
   const [adminTyping, setAdminTyping] = useState(false);
   const [closed, setClosed] = useState(false);
 
-  const [sid, setSid] = useState<string>("");
-
+  const [sid, setSid] = useState("");
+  const lastTsRef = useRef(0);
+  const lastSendRef = useRef(0);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   /* =====================
-     INIT SESSION ID
+     INIT SESSION
   ===================== */
   useEffect(() => {
     let v = localStorage.getItem("chat_session_id");
@@ -79,14 +85,13 @@ export default function ChatWidget() {
      OPEN / CLOSE EVENT
   ===================== */
   useEffect(() => {
-    const openEvent = () => setOpen(true);
-    const closeEvent = () => setOpen(false);
-
-    window.addEventListener("open-chat", openEvent);
-    window.addEventListener("close-chat", closeEvent);
+    const o = () => setOpen(true);
+    const c = () => setOpen(false);
+    window.addEventListener("open-chat", o);
+    window.addEventListener("close-chat", c);
     return () => {
-      window.removeEventListener("open-chat", openEvent);
-      window.removeEventListener("close-chat", closeEvent);
+      window.removeEventListener("open-chat", o);
+      window.removeEventListener("close-chat", c);
     };
   }, []);
 
@@ -98,36 +103,33 @@ export default function ChatWidget() {
   }, [messages, adminTyping, closed]);
 
   /* =====================
-     START CHAT (SAFE RESET)
+     START CHAT
   ===================== */
   const startChat = () => {
-    if (!userData.name.trim()) {
-      setErrorMsg("Nama wajib diisi ya kak 🙏");
-      return;
-    }
+    if (!userData.name?.trim()) return;
 
     if (closed) {
-      const newSid = crypto.randomUUID();
-      localStorage.setItem("chat_session_id", newSid);
-      setSid(newSid);
+      const n = crypto.randomUUID();
+      localStorage.setItem("chat_session_id", n);
+      setSid(n);
     }
 
     setClosed(false);
-    setErrorMsg("");
     lastTsRef.current = 0;
 
-    // ⭐ GREETING MASUK DI SINI
-    setMessages([buildGreeting(userData.name)]);
-
-    localStorage.setItem("chat_user_data", JSON.stringify(userData));
+    setMessages([greeting(userData.name)]);
     setStep("chat");
   };
 
   /* =====================
-     SEND MESSAGE (USER)
+     SEND MESSAGE
   ===================== */
   const send = async () => {
     if (!msg.trim() || sending || closed) return;
+
+    const now = Date.now();
+    if (now - lastSendRef.current < SEND_COOLDOWN) return;
+    lastSendRef.current = now;
 
     const text = msg.trim();
     const ts = Date.now();
@@ -153,14 +155,14 @@ export default function ChatWidget() {
         }),
       });
     } catch {
-      setErrorMsg("Gagal mengirim pesan 🙏");
+      // silent fail-safe
     } finally {
       setSending(false);
     }
   };
 
   /* =====================
-     POLLING (ADMIN ONLY)
+     POLLING
   ===================== */
   useEffect(() => {
     if (!open || step !== "chat" || closed || !sid) return;
@@ -182,6 +184,12 @@ export default function ChatWidget() {
 
         setAdminOnline(!!d.adminOnline);
         setAdminTyping(!!d.adminTyping);
+
+        if (!d.adminOnline) {
+          setMessages((p) =>
+            p.find((m) => m.id === "offline") ? p : [...p, offlineMessage()]
+          );
+        }
 
         if (Array.isArray(d.messages) && d.messages.length) {
           setMessages((prev) => {
@@ -205,20 +213,19 @@ export default function ChatWidget() {
   }, [open, step, sid, closed]);
 
   /* =====================
-     CLOSE CHAT (USER)
+     CLOSE CHAT
   ===================== */
   const closeChat = () => {
     setOpen(false);
     setStep("form");
     setMessages([]);
-    lastTsRef.current = 0;
-    setMsg("");
-    setErrorMsg("");
     setClosed(false);
+    setMsg("");
+    lastTsRef.current = 0;
 
-    const newSid = crypto.randomUUID();
-    localStorage.setItem("chat_session_id", newSid);
-    setSid(newSid);
+    const n = crypto.randomUUID();
+    localStorage.setItem("chat_session_id", n);
+    setSid(n);
   };
 
   if (!open) return null;
@@ -252,7 +259,7 @@ export default function ChatWidget() {
                   setUserData({ ...userData, name: e.target.value })
                 }
                 placeholder="Nama"
-                className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
+                className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
               />
               <button
                 onClick={startChat}
@@ -264,12 +271,32 @@ export default function ChatWidget() {
           ) : (
             <>
               {messages.map((m) => (
-                <div key={m.id} className={`mb-2 ${m.role === "user" ? "text-right" : ""}`}>
+                <div
+                  key={m.id}
+                  className={`mb-2 ${
+                    m.role === "user" ? "text-right" : ""
+                  }`}
+                >
                   <div className="inline-block px-3 py-2 rounded-xl text-sm border">
                     {m.text}
                   </div>
                 </div>
               ))}
+
+              {adminTyping && !closed && (
+                <div className="text-xs text-gray-400">
+                  ✍️ Admin sedang mengetik...
+                </div>
+              )}
+
+              {closed && (
+                <div className="text-center text-xs text-gray-400 mt-3">
+                  🙏 Terima kasih sudah menghubungi KOJE24  
+                  <br />
+                  Silakan mulai chat baru jika masih ada pertanyaan 🌿
+                </div>
+              )}
+
               <div ref={bottomRef} />
             </>
           )}
@@ -282,10 +309,12 @@ export default function ChatWidget() {
               value={msg}
               onChange={(e) => setMsg(e.target.value)}
               rows={2}
+              disabled={closed}
               className="w-full border rounded-lg p-2 text-sm"
             />
             <button
               onClick={send}
+              disabled={closed || sending}
               className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm"
             >
               Kirim
