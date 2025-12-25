@@ -6,6 +6,8 @@ import {
   addMessage,
   isSessionClosed,
   initSession,
+  getSessionStatus,
+  setSessionStatus,
 } from "@/lib/livechatStore";
 
 const BOT_TOKEN = process.env.TELEGRAM_LIVECHAT_BOT_TOKEN!;
@@ -26,6 +28,7 @@ export async function POST(req: NextRequest) {
       name = "Guest",
       phone = "-",
       topic = "-",
+      email = "-", // ⭐ future proof
       message,
       sessionId,
       page = "-",
@@ -35,7 +38,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
 
-    // 🔒 CEK CHAT SUDAH DITUTUP
+    /* =====================
+       1️⃣ CEK CHAT DITUTUP
+    ===================== */
     if (await isSessionClosed(sessionId)) {
       return NextResponse.json({
         ok: false,
@@ -43,26 +48,42 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ⭐ STEP 6.1 — SESSION METADATA (FIRST TOUCH)
+    /* =====================
+       2️⃣ INIT SESSION (FIRST TOUCH ONLY)
+    ===================== */
     await initSession(sessionId, {
       name,
       phone,
       topic,
       page,
+      email,
     });
 
-    // ✅ SIMPAN PESAN USER
+    /* =====================
+       3️⃣ AKTIFKAN SESSION JIKA MASIH INIT
+    ===================== */
+    const status = await getSessionStatus(sessionId);
+    if (status === "INIT") {
+      await setSessionStatus(sessionId, "ACTIVE");
+    }
+
+    /* =====================
+       4️⃣ SIMPAN PESAN USER
+    ===================== */
     await addMessage(sessionId, {
       role: "user",
-      text: message,
+      text: message.trim(),
       ts: Date.now(),
     });
 
-    // ✅ KIRIM KE TELEGRAM
+    /* =====================
+       5️⃣ KIRIM KE TELEGRAM
+    ===================== */
     const text = `
 📩 <b>LIVE CHAT WEBSITE - KOJE24</b>
 
 👤 Nama: ${esc(name)}
+📧 Email: ${esc(email)}
 📱 HP: ${esc(phone)}
 🏷️ Topik: ${esc(topic)}
 
