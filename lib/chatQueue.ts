@@ -49,32 +49,9 @@ export async function removeFromQueue(sid: string) {
   if (!sid) return;
   await kv.lrem(QUEUE_KEY, 0, sid);
 }
+
 /**
- * Ambil posisi sid di antrian (1-based)
- */
-export async function getQueuePosition(
-  sid: string
-): Promise<number | null> {
-  if (!sid) return null;
-
-  const list = await kv.lrange(QUEUE_KEY, 0, -1);
-  const idx = list.findIndex((x) => x === sid);
-
-  return idx === -1 ? null : idx + 1;
-}
-// TAMBAHKAN DI FILE INI
-export async function getQueueInfo(sid: string) {
-  const list = await kv.lrange(QUEUE_KEY, 0, -1);
-  const total = list.length;
-  const position = list.indexOf(sid);
-
-  return {
-    position: position >= 0 ? position + 1 : null,
-    total,
-  };
-}
-/**
- * Posisi sid di antrian (0 = paling depan)
+ * Posisi sid di antrian (1-based, PALING AMAN)
  */
 export async function getQueuePosition(
   sid: string
@@ -82,5 +59,20 @@ export async function getQueuePosition(
   if (!sid) return null;
 
   const idx = await kv.lpos(QUEUE_KEY, sid);
-  return typeof idx === "number" ? idx : null;
+  return typeof idx === "number" ? idx + 1 : null;
+}
+
+/**
+ * Info antrian lengkap (untuk UI & Telegram)
+ */
+export async function getQueueInfo(sid: string) {
+  const [position, total] = await Promise.all([
+    getQueuePosition(sid),
+    getQueueLength(),
+  ]);
+
+  return {
+    position,
+    total,
+  };
 }
