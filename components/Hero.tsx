@@ -44,11 +44,18 @@ export default function Hero() {
   return (
     <section className="relative min-h-screen w-full flex items-center bg-[#020507] overflow-hidden">
 
+      {/* ==================================================
+          SEO H1 (FOR GOOGLE & AI ONLY – NO VISUAL IMPACT)
+      ================================================== */}
+      <h1 className="sr-only">
+        Cold-Pressed Healthy Juice untuk Detox, Imunitas, dan Energi Harian
+      </h1>
+
       {/* ==== BACKGROUND IMAGE ==== */}
       <motion.div style={{ y, opacity }} className="absolute inset-0">
         <Image
           src="/image/hero2.png"
-          alt="KOJE24 Premium Juice"
+          alt="KOJE24 Cold Pressed Healthy Juice"
           fill
           priority
           quality={95}
@@ -124,7 +131,8 @@ export default function Hero() {
           NATURAL • COLD-PRESSED
         </motion.p>
 
-        <motion.h1
+        {/* VISUAL HEADLINE (BRAND – TETAP SAMA) */}
+        <motion.h2
           initial={{ opacity: 0, y: 35 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.1 }}
@@ -136,16 +144,18 @@ export default function Hero() {
         >
           Explore the Taste,
           <span className="block text-[#0FA3A8]">Explore the World</span>
-        </motion.h1>
+        </motion.h2>
 
+        {/* DESCRIPTION (SEO INJECTION – HALUS) */}
         <motion.p
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.15 }}
           className="font-inter text-white/80 max-w-xl text-[1rem] sm:text-[1.2rem] mt-6 leading-relaxed"
         >
-          Cold-pressed juice harian dari bahan alami terbaik. Tanpa gula tambahan
-          dan tanpa pengawet. Nutrisi tetap maksimal.
+          Cold-pressed juice harian dari bahan alami terbaik untuk detox,
+          daya tahan tubuh, dan energi. Tanpa gula tambahan dan tanpa
+          pengawet. Dibuat fresh setiap hari oleh KOJE24.
         </motion.p>
 
         {/* ==== CTA HERO ==== */}
