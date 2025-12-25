@@ -9,41 +9,24 @@ import {
   getLastActiveSessionId,
 } from "@/lib/livechatStore";
 
-const ADMIN_USER_ID = Number(
-  process.env.TELEGRAM_LIVECHAT_ADMIN_USER_ID || "0"
-);
-
 export async function POST(req: NextRequest) {
-  console.log("🔥 TELEGRAM WEBHOOK HIT");
-
   try {
     const body = await req.json();
     const msg = body?.message;
 
-    if (!msg) return NextResponse.json({ ok: true });
+    if (!msg?.text) return NextResponse.json({ ok: true });
 
-    console.log("👤 FROM:", msg.from?.id);
-
-    // 🔒 VALIDASI ADMIN
-    if (!ADMIN_USER_ID || msg.from?.id !== ADMIN_USER_ID) {
-      console.log("⛔ NOT ADMIN");
-      return NextResponse.json({ ok: true });
-    }
-
-    const text = msg.text?.trim();
+    const text = msg.text.trim();
     if (!text) return NextResponse.json({ ok: true });
 
-    // ⭐ AMBIL SESSION AKTIF TERAKHIR
+    // 🔑 Ambil session user terakhir aktif
     const sessionId = await getLastActiveSessionId();
-
-    console.log("🆔 LAST SESSION:", sessionId);
 
     if (!sessionId) {
       console.warn("⚠️ NO ACTIVE SESSION");
       return NextResponse.json({ ok: true });
     }
 
-    // 💬 SIMPAN PESAN ADMIN
     await addMessage(sessionId, {
       role: "admin",
       text,
@@ -53,11 +36,9 @@ export async function POST(req: NextRequest) {
     await setAdminActive();
     await setAdminTyping(3000);
 
-    console.log("✅ ADMIN MESSAGE SAVED");
-
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("❌ WEBHOOK ERROR:", err);
+    console.error("❌ TELEGRAM WEBHOOK ERROR:", err);
     return NextResponse.json({ ok: true });
   }
 }
