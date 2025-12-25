@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MessageCircle, X } from "lucide-react";
 
 /* =====================
@@ -41,11 +41,25 @@ export default function ChatWidget() {
 
   const [adminOnline, setAdminOnline] = useState(false);
   const [adminTyping, setAdminTyping] = useState(false);
-
-  // 🔒 STATUS CHAT
   const [closed, setClosed] = useState(false);
 
+  const [sid, setSid] = useState<string>("");
+
   const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  /* =====================
+     INIT SESSION ID
+  ===================== */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let v = localStorage.getItem("chat_session_id");
+    if (!v) {
+      v = crypto.randomUUID();
+      localStorage.setItem("chat_session_id", v);
+    }
+    setSid(v);
+  }, []);
 
   /* =====================
      OPEN / CLOSE EVENT
@@ -70,19 +84,6 @@ export default function ChatWidget() {
   }, [open]);
 
   /* =====================
-     SESSION ID
-  ===================== */
-  const sid = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    let v = localStorage.getItem("chat_session_id");
-    if (!v) {
-      v = crypto.randomUUID();
-      localStorage.setItem("chat_session_id", v);
-    }
-    return v;
-  }, []);
-
-  /* =====================
      AUTO SCROLL
   ===================== */
   useEffect(() => {
@@ -90,7 +91,7 @@ export default function ChatWidget() {
   }, [messages, adminTyping, closed]);
 
   /* =====================
-     START CHAT  (🔥 STEP 5 FIX)
+     START CHAT (AUTO RESET)
   ===================== */
   const startChat = () => {
     if (!userData.name.trim()) {
@@ -98,16 +99,12 @@ export default function ChatWidget() {
       return;
     }
 
-    /**
-     * 🔑 STEP 5 — AUTO RESET & NEW SESSION
-     * Jika chat sebelumnya CLOSED → buat session BARU
-     */
     if (closed) {
       const newSid = crypto.randomUUID();
       localStorage.setItem("chat_session_id", newSid);
+      setSid(newSid);
     }
 
-    // reset UI state (AMAN)
     setClosed(false);
     setMessages([]);
     lastTsRef.current = 0;
@@ -159,7 +156,7 @@ export default function ChatWidget() {
      POLLING
   ===================== */
   useEffect(() => {
-    if (!open || step !== "chat" || closed) return;
+    if (!open || step !== "chat" || closed || !sid) return;
 
     const i = setInterval(async () => {
       try {
@@ -210,6 +207,10 @@ export default function ChatWidget() {
     setMsg("");
     setErrorMsg("");
     setClosed(false);
+
+    const newSid = crypto.randomUUID();
+    localStorage.setItem("chat_session_id", newSid);
+    setSid(newSid);
   };
 
   if (!open) return null;
