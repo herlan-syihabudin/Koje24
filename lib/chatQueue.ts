@@ -73,3 +73,14 @@ export async function getQueueInfo(sid: string) {
     total,
   };
 }
+/**
+ * Posisi sid di antrian (0 = paling depan)
+ */
+export async function getQueuePosition(
+  sid: string
+): Promise<number | null> {
+  if (!sid) return null;
+
+  const idx = await kv.lpos(QUEUE_KEY, sid);
+  return typeof idx === "number" ? idx : null;
+}
