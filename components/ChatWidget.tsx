@@ -21,10 +21,9 @@ type ChatMessage = {
 };
 
 const POLL_INTERVAL = 2000;
-const SEND_COOLDOWN = 800;
 
 /* =====================
-   LOCAL SYSTEM MESSAGES
+   LOCAL GREETING
 ===================== */
 function greeting(name: string): ChatMessage {
   return {
@@ -33,20 +32,8 @@ function greeting(name: string): ChatMessage {
     role: "admin",
     text: `👋 Hai ${name || "kak"}, selamat datang di KOJE24 🌿
 
-Aku admin KOJE24.  
+Aku admin KOJE24.
 Silakan tulis pertanyaan kamu ya 😊`,
-    ts: 0,
-  };
-}
-
-function offlineMessage(): ChatMessage {
-  return {
-    id: "offline",
-    sid: "local",
-    role: "admin",
-    text: `🙏 Terima kasih sudah menghubungi KOJE24  
-Saat ini admin sedang offline.  
-Silakan tulis pesan, kami akan membalas secepatnya 🌿`,
     ts: 0,
   };
 }
@@ -66,11 +53,10 @@ export default function ChatWidget() {
 
   const [sid, setSid] = useState("");
   const lastTsRef = useRef(0);
-  const lastSendRef = useRef(0);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   /* =====================
-     INIT SESSION
+     INIT SESSION ID
   ===================== */
   useEffect(() => {
     let v = localStorage.getItem("chat_session_id");
@@ -90,7 +76,6 @@ export default function ChatWidget() {
 
     window.addEventListener("open-chat", openEvent);
     window.addEventListener("close-chat", closeEvent);
-
     return () => {
       window.removeEventListener("open-chat", openEvent);
       window.removeEventListener("close-chat", closeEvent);
@@ -108,7 +93,7 @@ export default function ChatWidget() {
      START CHAT
   ===================== */
   const startChat = () => {
-    if (!userData.name.trim()) return;
+    if (!userData.name?.trim()) return;
 
     if (closed) {
       const n = crypto.randomUUID();
@@ -124,14 +109,10 @@ export default function ChatWidget() {
   };
 
   /* =====================
-     SEND MESSAGE (USER)
+     SEND MESSAGE
   ===================== */
   const send = async () => {
     if (!msg.trim() || sending || closed) return;
-
-    const now = Date.now();
-    if (now - lastSendRef.current < SEND_COOLDOWN) return;
-    lastSendRef.current = now;
 
     const text = msg.trim();
     const ts = Date.now();
@@ -157,15 +138,13 @@ export default function ChatWidget() {
           page: window.location.pathname,
         }),
       });
-    } catch {
-      // silent fail (UX tetap jalan)
     } finally {
       setSending(false);
     }
   };
 
   /* =====================
-     POLLING (FIX UTAMA DI SINI)
+     POLLING (CORE FIX)
   ===================== */
   useEffect(() => {
     if (!open || step !== "chat" || closed || !sid) return;
@@ -188,24 +167,12 @@ export default function ChatWidget() {
         setAdminOnline(!!d.adminOnline);
         setAdminTyping(!!d.adminTyping);
 
-        // tampilkan offline message sekali saja
-        if (!d.adminOnline) {
-          setMessages((p) =>
-            p.find((m) => m.id === "offline")
-              ? p
-              : [...p, offlineMessage()]
-          );
-        }
-
-        // 🔥 FIX: JANGAN FILTER ROLE DI POLLING
         if (Array.isArray(d.messages) && d.messages.length) {
           setMessages((prev) => {
             const ids = new Set(prev.map((m) => m.id));
-
             const incoming = d.messages.filter(
               (m: ChatMessage) => !ids.has(m.id)
             );
-
             return [...prev, ...incoming].sort((a, b) => a.ts - b.ts);
           });
 
@@ -214,9 +181,7 @@ export default function ChatWidget() {
             ...d.messages.map((m: ChatMessage) => m.ts)
           );
         }
-      } catch {
-        // silent polling fail
-      }
+      } catch {}
     }, POLL_INTERVAL);
 
     return () => clearInterval(i);
