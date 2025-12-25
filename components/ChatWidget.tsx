@@ -195,28 +195,36 @@ export default function ChatWidget() {
   if (!open) return null;
 
   return (
-    <div className="koje-modal-overlay">
-      <div className="koje-modal-box w-[92%] sm:w-[380px] max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
+      <div className="bg-white w-[92%] sm:w-[380px] max-h-[85vh] rounded-2xl shadow-xl flex flex-col overflow-hidden">
+
         {/* HEADER */}
         <div className="flex items-center justify-between px-4 py-3 border-b">
-          <div className="flex items-center gap-2">
-            <MessageCircle size={18} />
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#0FA3A8]/10 flex items-center justify-center">
+              <MessageCircle size={18} className="text-[#0FA3A8]" />
+            </div>
             <div>
               <div className="font-semibold text-sm">Chat Admin KOJE24</div>
-              <div className="text-xs text-gray-500">
-                {adminOnline ? "🟢 Admin online" : "⚪ Admin offline"}
+              <div className="text-xs flex items-center gap-1 text-gray-500">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    adminOnline ? "bg-green-500" : "bg-gray-400"
+                  }`}
+                />
+                {adminOnline ? "Admin online" : "Admin offline"}
               </div>
             </div>
           </div>
-          <button onClick={closeChat}>
-            <X size={20} />
+          <button onClick={closeChat} className="text-gray-400 hover:text-gray-700">
+            <X size={18} />
           </button>
         </div>
 
         {/* BODY */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {errorMsg && (
-            <div className="text-sm text-red-600 mb-2">{errorMsg}</div>
+            <div className="text-sm text-red-600">{errorMsg}</div>
           )}
 
           {step === "form" ? (
@@ -227,11 +235,11 @@ export default function ChatWidget() {
                   setUserData({ ...userData, name: e.target.value })
                 }
                 placeholder="Nama"
-                className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
+                className="w-full border rounded-xl px-3 py-2 text-sm"
               />
               <button
                 onClick={startChat}
-                className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm"
+                className="w-full bg-[#0FA3A8] hover:bg-[#0d8e92] transition text-white py-2 rounded-xl text-sm font-medium"
               >
                 Mulai Chat
               </button>
@@ -241,15 +249,15 @@ export default function ChatWidget() {
               {messages.map((m) => (
                 <div
                   key={`${m.role}-${m.ts}-${m.text}`}
-                  className={`mb-2 flex ${
+                  className={`flex ${
                     m.role === "user" ? "justify-end" : "justify-start"
                   }`}
                 >
                   <div
-                    className={`px-3 py-2 rounded-xl text-sm max-w-[85%] ${
+                    className={`px-4 py-2 rounded-2xl text-sm max-w-[80%] shadow-sm ${
                       m.role === "user"
-                        ? "bg-[#0FA3A8] text-white"
-                        : "bg-white border"
+                        ? "bg-[#0FA3A8] text-white rounded-br-md"
+                        : "bg-gray-100 text-gray-800 rounded-bl-md"
                     }`}
                   >
                     {m.text}
@@ -258,13 +266,13 @@ export default function ChatWidget() {
               ))}
 
               {adminTyping && !closed && (
-                <div className="text-xs text-gray-400 mt-1">
-                  ✍️ Admin sedang mengetik...
+                <div className="text-xs text-gray-400 italic">
+                  ✍️ Admin sedang mengetik…
                 </div>
               )}
 
               {closed && (
-                <div className="text-center text-xs text-gray-400 mt-3">
+                <div className="bg-gray-50 text-center text-xs text-gray-500 rounded-xl p-3">
                   🔒 Percakapan telah ditutup oleh admin
                 </div>
               )}
@@ -283,14 +291,14 @@ export default function ChatWidget() {
               placeholder={closed ? "Chat telah ditutup" : "Tulis pesan…"}
               rows={2}
               disabled={closed}
-              className="w-full border rounded-lg p-2 text-sm disabled:bg-gray-100"
+              className="w-full border rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-[#0FA3A8]/30"
             />
             <button
               onClick={send}
               disabled={closed || !msg.trim() || sending}
-              className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm disabled:opacity-50"
+              className="mt-2 w-full bg-[#0FA3A8] hover:bg-[#0d8e92] transition text-white py-2 rounded-xl text-sm font-medium disabled:opacity-50"
             >
-              {closed ? "Chat Ditutup" : sending ? "Mengirim…" : "Kirim"}
+              {sending ? "Mengirim…" : "Kirim"}
             </button>
           </div>
         )}
