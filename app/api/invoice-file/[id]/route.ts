@@ -30,7 +30,7 @@ export async function GET(
       req.nextUrl.origin ||
       "https://webkoje-cacs.vercel.app";
 
-    const invoiceUrl = `${BASE_URL}/invoice/${invoiceId}`;
+    const invoiceUrl = `${BASE_URL}/invoice/${invoiceId}?pdf=1`;
 
     // 🟢 FIX: TANPA WAITFOR (INILAH YANG HARUS)
     const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}&url=${encodeURIComponent(
