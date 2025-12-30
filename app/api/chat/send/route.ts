@@ -12,6 +12,9 @@ import { getQueueInfo } from "@/lib/chatQueue";
 const BOT_TOKEN = process.env.TELEGRAM_LIVECHAT_BOT_TOKEN!;
 const CHAT_ID = process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID!;
 
+/* =====================
+   ESCAPE HTML (TELEGRAM SAFE)
+===================== */
 function esc(input: string) {
   return String(input || "")
     .replace(/&/g, "&amp;")
@@ -33,22 +36,31 @@ export async function POST(req: NextRequest) {
       page = "-",
     } = body || {};
 
-    if (!message?.trim() || !sessionId) {
-      return NextResponse.json({ ok: false }, { status: 400 });
+    /* =====================
+       VALIDASI DASAR
+    ===================== */
+    if (!sessionId || !message?.trim()) {
+      return NextResponse.json(
+        { ok: false, message: "Payload tidak valid" },
+        { status: 400 }
+      );
     }
 
     /* =====================
-       1️⃣ CEK CHAT DITUTUP
+       BLOKIR JIKA CHAT CLOSED
     ===================== */
-    if (await isSessionClosed(sessionId)) {
+    const closed = await isSessionClosed(sessionId);
+    if (closed) {
       return NextResponse.json({
         ok: false,
+        closed: true,
         message: "Percakapan telah ditutup oleh admin",
       });
     }
 
     /* =====================
-       2️⃣ INIT SESSION (AMAN, NO GREETING)
+       INIT SESSION (IDEMPOTENT)
+       ❗ TIDAK ADA GREETING DI SINI
     ===================== */
     await initSession(sessionId, {
       name,
@@ -59,7 +71,7 @@ export async function POST(req: NextRequest) {
     });
 
     /* =====================
-       3️⃣ SIMPAN PESAN USER (SATU-SATUNYA MESSAGE)
+       SIMPAN PESAN USER (SATU-SATUNYA)
     ===================== */
     const userMsg = await addMessage(sessionId, {
       role: "user",
@@ -68,19 +80,24 @@ export async function POST(req: NextRequest) {
     });
 
     /* =====================
-       4️⃣ INFO ANTRIAN (OPTIONAL)
+       INFO ANTRIAN (OPTIONAL)
     ===================== */
-    const queue = await getQueueInfo(sessionId);
-
-    const queueText =
-      queue?.position && queue.position > 0
-        ? `⏳ <b>Antrian:</b> ${queue.position} dari ${queue.total} user`
-        : `🟢 <b>Status:</b> Tidak dalam antrian`;
+    let queueText = "";
+    try {
+      const queue = await getQueueInfo(sessionId);
+      if (queue?.position && queue.position > 0) {
+        queueText = `⏳ <b>Antrian:</b> ${queue.position} dari ${queue.total} user`;
+      } else {
+        queueText = `🟢 <b>Status:</b> Tidak dalam antrian`;
+      }
+    } catch {
+      queueText = "";
+    }
 
     /* =====================
-       5️⃣ KIRIM KE TELEGRAM
+       FORMAT PESAN TELEGRAM
     ===================== */
-    const text = `
+    const telegramText = `
 📩 <b>LIVE CHAT WEBSITE - KOJE24</b>
 
 👤 Nama: ${esc(name)}
@@ -100,29 +117,41 @@ ${esc(page)}
 ${esc(userMsg.text)}
     `.trim();
 
-    const res = await fetch(
+    /* =====================
+       KIRIM KE TELEGRAM
+    ===================== */
+    const tgRes = await fetch(
       `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: CHAT_ID,
-          text,
+          text: telegramText,
           parse_mode: "HTML",
           reply_markup: { force_reply: true },
         }),
       }
     );
 
-    if (!res.ok) {
-      const err = await res.text();
+    if (!tgRes.ok) {
+      const err = await tgRes.text();
       console.error("TELEGRAM SEND ERROR:", err);
-      return NextResponse.json({ ok: false }, { status: 500 });
+      return NextResponse.json(
+        { ok: false, message: "Gagal kirim ke Telegram" },
+        { status: 500 }
+      );
     }
 
+    /* =====================
+       SUCCESS
+    ===================== */
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("LIVECHAT SEND ERROR:", err);
-    return NextResponse.json({ ok: false }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, message: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
