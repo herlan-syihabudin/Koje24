@@ -3,9 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
-/* =====================
-   TYPES
-===================== */
 type UserData = {
   name: string;
   phone: string;
@@ -42,9 +39,7 @@ export default function ChatWidget() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [sid, setSid] = useState("");
 
-  /* =====================
-     INIT SESSION
-  ===================== */
+  /* INIT SESSION */
   useEffect(() => {
     let v = localStorage.getItem("chat_session_id");
     if (!v) {
@@ -54,35 +49,26 @@ export default function ChatWidget() {
     setSid(v);
   }, []);
 
-  /* =====================
-     OPEN FROM NAVBAR
-  ===================== */
+  /* OPEN FROM NAVBAR */
   useEffect(() => {
     const openEvent = () => setOpen(true);
     const closeEvent = () => setOpen(false);
-
     window.addEventListener("open-chat", openEvent);
     window.addEventListener("close-chat", closeEvent);
-
     return () => {
       window.removeEventListener("open-chat", openEvent);
       window.removeEventListener("close-chat", closeEvent);
     };
   }, []);
 
-  /* =====================
-     AUTOSCROLL
-  ===================== */
+  /* AUTOSCROLL */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, adminTyping]);
 
-  /* =====================
-     START CHAT
-  ===================== */
+  /* START CHAT */
   const startChat = async () => {
     if (!userData.name.trim()) return;
-
     setStep("chat");
 
     await fetch("/api/chat/start", {
@@ -98,9 +84,7 @@ export default function ChatWidget() {
     });
   };
 
-  /* =====================
-     SEND MESSAGE
-  ===================== */
+  /* SEND MESSAGE */
   const send = async () => {
     if (!msg.trim() || sending || closed) return;
 
@@ -132,9 +116,7 @@ export default function ChatWidget() {
     }
   };
 
-  /* =====================
-     POLLING
-  ===================== */
+  /* POLLING */
   useEffect(() => {
     if (!open || step !== "chat") return;
 
@@ -173,20 +155,18 @@ export default function ChatWidget() {
 
   return (
     <div
-  className="
-    fixed right-0 bottom-[16px] z-50
-    w-screen sm:w-[380px]
-    h-[60vh] sm:h-[50vh]
-    max-h-[calc(100vh-88px)]
-    bg-white
-    shadow-2xl
-    border-l
-    flex flex-col
-    rounded-none sm:rounded-l-2xl
-  "
->
+      className="
+        fixed right-0 bottom-4 z-50
+        w-screen sm:w-[380px]
+        h-[60vh] sm:h-[50vh]
+        bg-white
+        shadow-2xl border-l
+        flex flex-col
+        rounded-none sm:rounded-l-2xl
+      "
+    >
       {/* HEADER */}
-      <div className="px-4 py-3 border-b flex justify-between items-center">
+      <div className="sticky top-0 bg-white px-4 py-3 border-b flex justify-between items-center">
         <div>
           <div className="font-semibold text-sm">Chat Admin KOJE24</div>
           <div className="text-xs text-gray-500">
@@ -199,11 +179,14 @@ export default function ChatWidget() {
       </div>
 
       {/* BODY */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-[#fafafa]">
         {step === "form" ? (
           <>
+            <p className="text-sm text-gray-600">
+              👋 Hai! Sebelum mulai, isi nama dulu ya
+            </p>
             <input
-              placeholder="Nama"
+              placeholder="Nama kamu"
               value={userData.name}
               onChange={(e) =>
                 setUserData({ ...userData, name: e.target.value })
@@ -212,7 +195,7 @@ export default function ChatWidget() {
             />
             <button
               onClick={startChat}
-              className="w-full bg-[#0FA3A8] text-white py-2 rounded-xl text-sm"
+              className="w-full bg-[#0FA3A8] text-white py-2 rounded-xl text-sm font-medium"
             >
               Mulai Chat
             </button>
@@ -227,10 +210,10 @@ export default function ChatWidget() {
                 }`}
               >
                 <div
-                  className={`px-4 py-2 rounded-2xl text-sm max-w-[80%] ${
+                  className={`px-4 py-2 text-sm leading-relaxed max-w-[78%] ${
                     m.role === "user"
-                      ? "bg-[#0FA3A8] text-white"
-                      : "bg-gray-100"
+                      ? "bg-[#0FA3A8] text-white rounded-2xl rounded-br-md"
+                      : "bg-white border rounded-2xl rounded-bl-md"
                   }`}
                 >
                   {m.text}
@@ -243,6 +226,7 @@ export default function ChatWidget() {
                 Admin sedang mengetik…
               </div>
             )}
+
             <div ref={bottomRef} />
           </>
         )}
@@ -250,18 +234,18 @@ export default function ChatWidget() {
 
       {/* INPUT */}
       {step === "chat" && (
-        <div className="border-t p-3">
+        <div className="sticky bottom-0 bg-white border-t p-3">
           <textarea
             value={msg}
             onChange={(e) => setMsg(e.target.value)}
             rows={2}
             placeholder="Tulis pesan…"
-            className="w-full border rounded-xl px-3 py-2 text-sm resize-none"
+            className="w-full border rounded-xl px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-[#0FA3A8]/30"
           />
           <button
             onClick={send}
-            disabled={!msg.trim()}
-            className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded-xl text-sm"
+            disabled={!msg.trim() || sending}
+            className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded-xl text-sm font-medium disabled:opacity-50"
           >
             Kirim
           </button>
