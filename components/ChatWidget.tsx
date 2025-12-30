@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, X } from "lucide-react";
+import { X } from "lucide-react";
 
 /* =====================
    TYPES
@@ -25,7 +25,6 @@ const POLL_INTERVAL = 2000;
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"form" | "chat">("form");
-
   const [userData, setUserData] = useState<UserData>({
     name: "",
     phone: "",
@@ -33,22 +32,18 @@ export default function ChatWidget() {
   });
 
   const [msg, setMsg] = useState("");
-  const [sending, setSending] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const lastTsRef = useRef(0);
-
   const [adminOnline, setAdminOnline] = useState(false);
   const [adminTyping, setAdminTyping] = useState(false);
+  const [sending, setSending] = useState(false);
   const [closed, setClosed] = useState(false);
 
-  const [sid, setSid] = useState<string>("");
-
+  const lastTsRef = useRef(0);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [sid, setSid] = useState("");
 
   /* =====================
-     INIT SESSION ID
+     INIT SESSION
   ===================== */
   useEffect(() => {
     let v = localStorage.getItem("chat_session_id");
@@ -60,7 +55,7 @@ export default function ChatWidget() {
   }, []);
 
   /* =====================
-     OPEN / CLOSE EVENT
+     OPEN FROM NAVBAR
   ===================== */
   useEffect(() => {
     const openEvent = () => setOpen(true);
@@ -76,7 +71,7 @@ export default function ChatWidget() {
   }, []);
 
   /* =====================
-     AUTO SCROLL
+     AUTOSCROLL
   ===================== */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -86,12 +81,8 @@ export default function ChatWidget() {
      START CHAT
   ===================== */
   const startChat = async () => {
-    if (!userData.name.trim()) {
-      setErrorMsg("Nama wajib diisi 🙏");
-      return;
-    }
+    if (!userData.name.trim()) return;
 
-    setErrorMsg("");
     setStep("chat");
 
     await fetch("/api/chat/start", {
@@ -121,7 +112,7 @@ export default function ChatWidget() {
       { id: `local_${ts}`, sid, role: "user", text, ts },
     ]);
 
-    lastTsRef.current = Math.max(lastTsRef.current, ts);
+    lastTsRef.current = ts;
     setMsg("");
     setSending(true);
 
@@ -181,104 +172,102 @@ export default function ChatWidget() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex">
-      <div
-        className="
+    <div
+      className="
+        fixed right-0 z-50
+        top-[72px] bottom-[16px]
+        w-screen sm:w-[380px]
+        h-[60vh] sm:h-[50vh]
+        max-h-[calc(100vh-88px)]
         bg-white
-        w-[360px]
-        max-w-[100vw]
-        h-full
-        sm:h-[92vh]
-        sm:my-auto
-        rounded-l-2xl
         shadow-2xl
-        flex
-        flex-col
+        border-l
+        flex flex-col
+        rounded-none sm:rounded-l-2xl
       "
-      >
-        {/* HEADER */}
-        <div className="flex items-center justify-between px-4 py-3 border-b">
-          <div>
-            <div className="font-semibold text-sm">Chat Admin KOJE24</div>
-            <div className="text-xs text-gray-500">
-              {adminOnline ? "Admin online" : "Admin offline"}
-            </div>
+    >
+      {/* HEADER */}
+      <div className="px-4 py-3 border-b flex justify-between items-center">
+        <div>
+          <div className="font-semibold text-sm">Chat Admin KOJE24</div>
+          <div className="text-xs text-gray-500">
+            {adminOnline ? "Admin online" : "Admin offline"}
           </div>
-          <button onClick={() => setOpen(false)}>
-            <X size={18} />
-          </button>
         </div>
+        <button onClick={() => setOpen(false)}>
+          <X size={18} />
+        </button>
+      </div>
 
-        {/* BODY */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {step === "form" ? (
-            <>
-              <input
-                placeholder="Nama"
-                value={userData.name}
-                onChange={(e) =>
-                  setUserData({ ...userData, name: e.target.value })
-                }
-                className="w-full border rounded-xl px-3 py-2 text-sm"
-              />
-              <button
-                onClick={startChat}
-                className="w-full bg-[#0FA3A8] text-white py-2 rounded-xl text-sm"
-              >
-                Mulai Chat
-              </button>
-            </>
-          ) : (
-            <>
-              {messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={`flex ${
-                    m.role === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`px-4 py-2 rounded-2xl text-sm max-w-[80%] ${
-                      m.role === "user"
-                        ? "bg-[#0FA3A8] text-white"
-                        : "bg-gray-100"
-                    }`}
-                  >
-                    {m.text}
-                  </div>
-                </div>
-              ))}
-
-              {adminTyping && (
-                <div className="text-xs text-gray-400 italic">
-                  Admin sedang mengetik…
-                </div>
-              )}
-              <div ref={bottomRef} />
-            </>
-          )}
-        </div>
-
-        {/* INPUT */}
-        {step === "chat" && (
-          <div className="border-t p-3">
-            <textarea
-              value={msg}
-              onChange={(e) => setMsg(e.target.value)}
-              rows={2}
-              placeholder="Tulis pesan…"
-              className="w-full border rounded-xl px-3 py-2 text-sm resize-none"
+      {/* BODY */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        {step === "form" ? (
+          <>
+            <input
+              placeholder="Nama"
+              value={userData.name}
+              onChange={(e) =>
+                setUserData({ ...userData, name: e.target.value })
+              }
+              className="w-full border rounded-xl px-3 py-2 text-sm"
             />
             <button
-              onClick={send}
-              disabled={!msg.trim()}
-              className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded-xl text-sm"
+              onClick={startChat}
+              className="w-full bg-[#0FA3A8] text-white py-2 rounded-xl text-sm"
             >
-              Kirim
+              Mulai Chat
             </button>
-          </div>
+          </>
+        ) : (
+          <>
+            {messages.map((m) => (
+              <div
+                key={m.id}
+                className={`flex ${
+                  m.role === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`px-4 py-2 rounded-2xl text-sm max-w-[80%] ${
+                    m.role === "user"
+                      ? "bg-[#0FA3A8] text-white"
+                      : "bg-gray-100"
+                  }`}
+                >
+                  {m.text}
+                </div>
+              </div>
+            ))}
+
+            {adminTyping && (
+              <div className="text-xs text-gray-400 italic">
+                Admin sedang mengetik…
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </>
         )}
       </div>
+
+      {/* INPUT */}
+      {step === "chat" && (
+        <div className="border-t p-3">
+          <textarea
+            value={msg}
+            onChange={(e) => setMsg(e.target.value)}
+            rows={2}
+            placeholder="Tulis pesan…"
+            className="w-full border rounded-xl px-3 py-2 text-sm resize-none"
+          />
+          <button
+            onClick={send}
+            disabled={!msg.trim()}
+            className="mt-2 w-full bg-[#0FA3A8] text-white py-2 rounded-xl text-sm"
+          >
+            Kirim
+          </button>
+        </div>
+      )}
     </div>
   );
 }
