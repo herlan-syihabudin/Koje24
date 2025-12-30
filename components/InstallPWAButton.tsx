@@ -1,32 +1,57 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 export default function InstallPWAButton() {
+  const pathname = usePathname();
+
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [visible, setVisible] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [hidden, setHidden] = useState(false);
 
-  // ===============================
-  // INIT
-  // ===============================
+  /* =====================
+     BLOCK DI PAGE TERTENTU
+  ===================== */
+  const BLOCKED_PATHS = [
+    "/invoice",
+    "/checkout",
+    "/success",
+    "/print",
+  ];
+
   useEffect(() => {
-    // jika user sudah tutup manual
-    if (localStorage.getItem("hidePWA") === "1") {
-      setHidden(true);
-      return;
-    }
+    if (BLOCKED_PATHS.some(p => pathname.startsWith(p))) return;
 
-    // jika sudah terinstall (standalone mode)
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setHidden(true);
-      return;
-    }
+    // sudah di hide sebelumnya
+    if (localStorage.getItem("pwa_hide") === "1") return;
+
+    // sudah terinstall
+    if (window.matchMedia("(display-mode: standalone)").matches) return;
 
     const ua = navigator.userAgent.toLowerCase();
-    setIsIOS(/iphone|ipad|ipod/.test(ua));
+    const ios = /iphone|ipad|ipod/.test(ua);
+    setIsIOS(ios);
 
-    // tangkap beforeinstallprompt
+    /* =====================
+       SCROLL TRIGGER
+    ===================== */
+    const onScroll = () => {
+      const scrolled =
+        window.scrollY /
+        (document.body.scrollHeight - window.innerHeight);
+
+      if (scrolled > 0.4) {
+        setVisible(true);
+        window.removeEventListener("scroll", onScroll);
+      }
+    };
+
+    window.addEventListener("scroll", onScroll);
+
+    /* =====================
+       ANDROID INSTALL PROMPT
+    ===================== */
     const handler = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -34,89 +59,61 @@ export default function InstallPWAButton() {
 
     window.addEventListener("beforeinstallprompt", handler);
 
-    // tangkap event INSTALLED (tracking)
-    const onInstalled = () => {
-      // anti double count
-      if (localStorage.getItem("pwaInstalled") === "1") return;
-      localStorage.setItem("pwaInstalled", "1");
-
-      fetch("/api/pwa-installed", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          platform: getPlatform(),
-          ua: navigator.userAgent,
-        }),
-      });
-
-      setHidden(true);
-    };
-
-    window.addEventListener("appinstalled", onInstalled);
+    window.addEventListener("appinstalled", () => {
+      localStorage.setItem("pwa_installed", "1");
+      setVisible(false);
+    });
 
     return () => {
+      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("beforeinstallprompt", handler);
-      window.removeEventListener("appinstalled", onInstalled);
     };
-  }, []);
+  }, [pathname]);
 
-  // ===============================
-  // INSTALL HANDLER
-  // ===============================
+  if (!visible) return null;
+
+  /* =====================
+     INSTALL ACTION
+  ===================== */
   const install = async () => {
-    if (!deferredPrompt) {
-      alert(
-        isIOS
-          ? "Di iPhone: tekan Share → Add to Home Screen"
-          : "Install belum tersedia sekarang. Coba sebentar lagi."
-      );
+    if (isIOS) {
+      alert("📲 iPhone: tekan Share → Add to Home Screen");
       return;
     }
+
+    if (!deferredPrompt) return;
 
     deferredPrompt.prompt();
     await deferredPrompt.userChoice;
     setDeferredPrompt(null);
+    setVisible(false);
   };
 
-  // ===============================
-  // CLOSE BUTTON
-  // ===============================
   const close = () => {
-    localStorage.setItem("hidePWA", "1");
-    setHidden(true);
+    localStorage.setItem("pwa_hide", "1");
+    setVisible(false);
   };
-
-  if (hidden) return null;
 
   return (
-    <div className="fixed right-4 bottom-[96px] md:bottom-6 z-[9999]">
-      <div className="relative bg-[#0FA3A8] text-white px-5 py-3 rounded-full shadow-lg flex items-center gap-2">
-        {/* CLOSE */}
+    <div className="fixed bottom-20 right-4 z-[9999]">
+      <div className="relative bg-[#0FA3A8] text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 max-w-[260px]">
         <button
           onClick={close}
-          className="absolute -top-2 -right-2 bg-white text-gray-600 w-6 h-6 rounded-full text-xs font-bold shadow"
-          aria-label="Close"
+          className="absolute -top-2 -right-2 bg-white text-gray-600 w-6 h-6 rounded-full text-xs font-bold"
         >
           ✕
         </button>
 
         <button
           onClick={install}
-          className="font-semibold active:scale-95 transition"
+          className="text-sm font-semibold leading-tight"
         >
-          📲 Install KOJE24
+          📲 Install KOJE24  
+          <div className="text-xs opacity-80">
+            Akses lebih cepat & offline
+          </div>
         </button>
       </div>
     </div>
   );
-}
-
-// ===============================
-// HELPER
-// ===============================
-function getPlatform() {
-  const ua = navigator.userAgent.toLowerCase();
-  if (/iphone|ipad|ipod/.test(ua)) return "iOS";
-  if (/android/.test(ua)) return "Android";
-  return "Desktop";
 }
