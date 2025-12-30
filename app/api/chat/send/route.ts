@@ -6,10 +6,8 @@ import {
   addMessage,
   isSessionClosed,
   initSession,
-  getSessionStatus,
-  setSessionStatus,
 } from "@/lib/livechatStore";
-import { enqueueChat, getQueueInfo } from "@/lib/chatQueue"; // ⬅️ TAMBAHAN
+import { getQueueInfo } from "@/lib/chatQueue";
 
 const BOT_TOKEN = process.env.TELEGRAM_LIVECHAT_BOT_TOKEN!;
 const CHAT_ID = process.env.TELEGRAM_LIVECHAT_ADMIN_CHAT_ID!;
@@ -50,7 +48,7 @@ export async function POST(req: NextRequest) {
     }
 
     /* =====================
-       2️⃣ INIT SESSION (AMAN)
+       2️⃣ INIT SESSION (AMAN, NO GREETING)
     ===================== */
     await initSession(sessionId, {
       name,
@@ -61,43 +59,26 @@ export async function POST(req: NextRequest) {
     });
 
     /* =====================
-       3️⃣ GREETING SERVER-SIDE
+       3️⃣ SIMPAN PESAN USER (SATU-SATUNYA MESSAGE)
     ===================== */
-    const status = await getSessionStatus(sessionId);
-    if (status === "INIT") {
-      await addMessage(sessionId, {
-        role: "admin",
-        text: `👋 Hai ${name || "kak"}, selamat datang di KOJE24 🌿
-
-Aku admin KOJE24.
-Silakan tulis pertanyaan kamu ya 😊`,
-        ts: Date.now(),
-      });
-
-      await setSessionStatus(sessionId, "ACTIVE");
-      await enqueueChat(sessionId); // masuk antrian
-    }
-
-    /* =====================
-       4️⃣ SIMPAN PESAN USER
-    ===================== */
-    await addMessage(sessionId, {
+    const userMsg = await addMessage(sessionId, {
       role: "user",
       text: message.trim(),
       ts: Date.now(),
     });
 
     /* =====================
-       5️⃣ AMBIL INFO ANTRIAN
+       4️⃣ INFO ANTRIAN (OPTIONAL)
     ===================== */
     const queue = await getQueueInfo(sessionId);
 
-    const queueText = queue.position
-      ? `⏳ <b>Antrian:</b> ${queue.position} dari ${queue.total} user`
-      : `🟢 <b>Status:</b> Tidak dalam antrian`;
+    const queueText =
+      queue?.position && queue.position > 0
+        ? `⏳ <b>Antrian:</b> ${queue.position} dari ${queue.total} user`
+        : `🟢 <b>Status:</b> Tidak dalam antrian`;
 
     /* =====================
-       6️⃣ KIRIM KE TELEGRAM
+       5️⃣ KIRIM KE TELEGRAM
     ===================== */
     const text = `
 📩 <b>LIVE CHAT WEBSITE - KOJE24</b>
@@ -112,10 +93,11 @@ ${queueText}
 🆔 Session:
 <code>${esc(sessionId)}</code>
 
-🌐 Page: ${esc(page)}
+🌐 Page:
+${esc(page)}
 
 💬 <b>Pesan:</b>
-${esc(message)}
+${esc(userMsg.text)}
     `.trim();
 
     const res = await fetch(
