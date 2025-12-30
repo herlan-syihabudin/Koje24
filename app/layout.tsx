@@ -3,15 +3,17 @@ import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 
-import { CartProvider } from "@/components/CartContext";
 import StickyCartBar from "@/components/StickyCartBar";
 import PromoPopup from "@/components/PromoPopup";
 import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO";
 import InstallPWAButton from "@/components/InstallPWAButton";
-import ChatWidget from "@/components/ChatWidget"; // 🔥 CHAT WIDGET GLOBAL
+import ChatWidget from "@/components/ChatWidget";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
+/* =====================
+   FONTS
+===================== */
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -24,6 +26,9 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
+/* =====================
+   METADATA
+===================== */
 export const metadata: Metadata = {
   title: {
     default: "KOJE24 • Natural Cold-Pressed Juice",
@@ -46,6 +51,9 @@ export const viewport: Viewport = {
   themeColor: "#0FA3A8",
 };
 
+/* =====================
+   ROOT LAYOUT
+===================== */
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
@@ -64,14 +72,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* ⭐ SEO: Aggregate Rating & Review Schema */}
         <TestimonialSchemaSEO />
 
-        <CartProvider>
-          {children}
-        </CartProvider>
+        {/* 🔥 APP CONTENT */}
+        {children}
 
-        {/* 🔥 CHAT WIDGET (GLOBAL, AMAN) */}
+        {/* 🔥 GLOBAL FEATURES */}
         <ChatWidget />
-
-        {/* EXISTING GLOBAL COMPONENTS */}
         <InstallPWAButton />
         <StickyCartBar />
         <PromoPopup />
@@ -80,7 +85,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* smooth scroll fallback */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try { document.documentElement.style.scrollBehavior = "smooth"; } catch(e){}`
+            __html: `try { document.documentElement.style.scrollBehavior = "smooth"; } catch(e){}`,
           }}
         />
       </body>
