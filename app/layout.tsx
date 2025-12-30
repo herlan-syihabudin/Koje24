@@ -27,7 +27,7 @@ const playfair = Playfair_Display({
 });
 
 /* =====================
-   METADATA
+   METADATA (PWA SOURCE OF TRUTH)
 ===================== */
 export const metadata: Metadata = {
   title: {
@@ -62,9 +62,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <head>
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* ⚡ Preconnect fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+
+        {/* 🍎 Apple Touch Icon */}
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
 
