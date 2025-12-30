@@ -173,19 +173,18 @@ export default function ChatWidget() {
 
   return (
     <div
-      className="
-        fixed right-0 z-50
-        top-[72px] bottom-[16px]
-        w-screen sm:w-[380px]
-        h-[60vh] sm:h-[50vh]
-        max-h-[calc(100vh-88px)]
-        bg-white
-        shadow-2xl
-        border-l
-        flex flex-col
-        rounded-none sm:rounded-l-2xl
-      "
-    >
+  className="
+    fixed right-0 bottom-[16px] z-50
+    w-screen sm:w-[380px]
+    h-[60vh] sm:h-[50vh]
+    max-h-[calc(100vh-88px)]
+    bg-white
+    shadow-2xl
+    border-l
+    flex flex-col
+    rounded-none sm:rounded-l-2xl
+  "
+>
       {/* HEADER */}
       <div className="px-4 py-3 border-b flex justify-between items-center">
         <div>
