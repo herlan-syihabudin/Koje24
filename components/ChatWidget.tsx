@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
+/* =====================
+   TYPES
+===================== */
 type UserData = {
   name: string;
   phone: string;
@@ -22,6 +25,7 @@ const POLL_INTERVAL = 2000;
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"form" | "chat">("form");
+
   const [userData, setUserData] = useState<UserData>({
     name: "",
     phone: "",
@@ -39,7 +43,9 @@ export default function ChatWidget() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [sid, setSid] = useState("");
 
-  /* INIT SESSION */
+  /* =====================
+     INIT SESSION
+  ===================== */
   useEffect(() => {
     let v = localStorage.getItem("chat_session_id");
     if (!v) {
@@ -49,27 +55,37 @@ export default function ChatWidget() {
     setSid(v);
   }, []);
 
-  /* OPEN FROM NAVBAR */
+  /* =====================
+     OPEN FROM NAVBAR
+  ===================== */
   useEffect(() => {
     const openEvent = () => setOpen(true);
     const closeEvent = () => setOpen(false);
+
     window.addEventListener("open-chat", openEvent);
     window.addEventListener("close-chat", closeEvent);
+
     return () => {
       window.removeEventListener("open-chat", openEvent);
       window.removeEventListener("close-chat", closeEvent);
     };
   }, []);
 
-  /* AUTOSCROLL */
+  /* =====================
+     AUTOSCROLL
+  ===================== */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, adminTyping]);
+  }, [messages, adminTyping, closed]);
 
-  /* START CHAT */
+  /* =====================
+     START CHAT
+  ===================== */
   const startChat = async () => {
     if (!userData.name.trim()) return;
+
     setStep("chat");
+    setClosed(false);
 
     await fetch("/api/chat/start", {
       method: "POST",
@@ -84,7 +100,36 @@ export default function ChatWidget() {
     });
   };
 
-  /* SEND MESSAGE */
+  /* =====================
+     START NEW SESSION (HYBRID MODE)
+  ===================== */
+  const startNewSession = async () => {
+    const newSid = crypto.randomUUID();
+    localStorage.setItem("chat_session_id", newSid);
+    setSid(newSid);
+
+    setMessages([]);
+    lastTsRef.current = 0;
+    setMsg("");
+    setClosed(false);
+    setStep("chat");
+
+    await fetch("/api/chat/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: newSid,
+        name: userData.name || "Guest",
+        phone: userData.phone,
+        topic: userData.topic,
+        page: window.location.pathname,
+      }),
+    });
+  };
+
+  /* =====================
+     SEND MESSAGE
+  ===================== */
   const send = async () => {
     if (!msg.trim() || sending || closed) return;
 
@@ -116,7 +161,9 @@ export default function ChatWidget() {
     }
   };
 
-  /* POLLING */
+  /* =====================
+     POLLING
+  ===================== */
   useEffect(() => {
     if (!open || step !== "chat") return;
 
@@ -156,19 +203,19 @@ export default function ChatWidget() {
   return (
     <div
       className="
-        fixed right-0 bottom-4 z-50
-        w-screen sm:w-[380px]
-        h-[60vh] sm:h-[50vh]
+        fixed right-0 bottom-0 z-50
+        w-full sm:w-[380px]
+        h-[65vh] sm:h-[50vh]
         bg-white
         shadow-2xl border-l
         flex flex-col
-        rounded-none sm:rounded-l-2xl
+        rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none
       "
     >
       {/* HEADER */}
       <div className="sticky top-0 bg-white px-4 py-3 border-b flex justify-between items-center">
         <div>
-          <div className="font-semibold text-sm">Chat Admin KOJE24</div>
+          <div className="font-semibold text-sm">Live Chat KOJE24</div>
           <div className="text-xs text-gray-500">
             {adminOnline ? "Admin online" : "Admin offline"}
           </div>
@@ -221,9 +268,26 @@ export default function ChatWidget() {
               </div>
             ))}
 
-            {adminTyping && (
+            {adminTyping && !closed && (
               <div className="text-xs text-gray-400 italic">
                 Admin sedang mengetik…
+              </div>
+            )}
+
+            {closed && (
+              <div className="mt-4 bg-white border rounded-xl p-4 text-center text-sm">
+                <div className="mb-1 font-medium">
+                  🙏 Chat ini telah ditutup
+                </div>
+                <div className="text-gray-500 mb-3">
+                  Kamu bisa mulai chat baru jika masih ada pertanyaan
+                </div>
+                <button
+                  onClick={startNewSession}
+                  className="w-full bg-[#0FA3A8] hover:bg-[#0d8e92] transition text-white py-2 rounded-xl font-medium"
+                >
+                  Mulai Chat Baru
+                </button>
               </div>
             )}
 
@@ -233,7 +297,7 @@ export default function ChatWidget() {
       </div>
 
       {/* INPUT */}
-      {step === "chat" && (
+      {step === "chat" && !closed && (
         <div className="sticky bottom-0 bg-white border-t p-3">
           <textarea
             value={msg}
