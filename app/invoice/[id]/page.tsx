@@ -299,7 +299,7 @@ export default function InvoicePage() {
 ===================== */}
 <div className="mt-6 flex flex-col items-center text-[9px] text-gray-500">
   <img
-    src="/image/halal.png"
+    src="/image/halal-black.png"
     alt="Sertifikasi Halal Indonesia"
     style={{
       height: 28,
