@@ -302,8 +302,8 @@ export default function InvoicePage() {
     src="/image/halal-black.png"
     alt="Sertifikasi Halal Indonesia"
     style={{
-      height: 28,
-      opacity: 0.75,
+      height: 44,
+      opacity: 0.9,
       marginBottom: 4,
     }}
   />
