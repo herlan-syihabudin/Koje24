@@ -1,4 +1,17 @@
-export const helpCategories = {
+export type HelpItem = {
+  slug: string
+  title: string
+  keywords: string[]
+  summary: string
+  content: string
+}
+
+export type HelpCategory = {
+  title: string
+  items: HelpItem[]
+}
+
+export const helpCategories: Record<string, HelpCategory> = {
   akun: {
     title: "Akun & Keamanan",
     items: [
@@ -16,7 +29,8 @@ export const helpCategories = {
 4. Cek email dan klik link reset.
 5. Buat password baru dan login kembali.
 
-Jika email tidak masuk, cek folder spam atau kirim ulang.`
+Jika email tidak masuk, cek folder spam atau kirim ulang.
+        `.trim(),
       },
       {
         slug: "ubah-data-akun",
@@ -29,7 +43,8 @@ Jika email tidak masuk, cek folder spam atau kirim ulang.`
 1. Login ke akun KOJE24.
 2. Masuk ke menu **Profil Saya**.
 3. Edit data yang diperlukan.
-4. Klik **Simpan**.`
+4. Klik **Simpan**.
+        `.trim(),
       },
       {
         slug: "keamanan-akun",
@@ -41,7 +56,8 @@ Jika email tidak masuk, cek folder spam atau kirim ulang.`
 
 - Jangan bagikan OTP.
 - Gunakan password unik.
-- Logout di perangkat umum.`
+- Logout di perangkat umum.
+        `.trim(),
       },
       {
         slug: "hapus-akun",
@@ -52,9 +68,10 @@ Jika email tidak masuk, cek folder spam atau kirim ulang.`
 ## Menghapus Akun KOJE24
 
 Hubungi Admin KOJE24 dan sertakan email terdaftar.
-Penghapusan bersifat permanen.`
-      }
-    ]
+Penghapusan bersifat permanen.
+        `.trim(),
+      },
+    ],
   },
 
   pesanan: {
@@ -70,7 +87,8 @@ Penghapusan bersifat permanen.`
 
 1. Login ke akun.
 2. Masuk ke menu **Pesanan Saya**.
-3. Lihat status pesanan aktif.`
+3. Lihat status pesanan aktif.
+        `.trim(),
       },
       {
         slug: "ubah-pesanan",
@@ -81,7 +99,8 @@ Penghapusan bersifat permanen.`
 ## Mengubah Pesanan
 
 Pesanan hanya bisa diubah sebelum status **Diproses**.
-Hubungi admin secepatnya.`
+Hubungi admin secepatnya.
+        `.trim(),
       },
       {
         slug: "pesanan-dibatalkan",
@@ -94,9 +113,10 @@ Hubungi admin secepatnya.`
 Pesanan bisa dibatalkan karena:
 - Pembayaran tidak masuk
 - Stok habis
-- Permintaan pelanggan`
-      }
-    ]
+- Permintaan pelanggan
+        `.trim(),
+      },
+    ],
   },
 
   pembayaran: {
@@ -112,7 +132,8 @@ Pesanan bisa dibatalkan karena:
 
 - Transfer Bank
 - QRIS
-- E-wallet`
+- E-wallet
+        `.trim(),
       },
       {
         slug: "pembayaran-gagal",
@@ -123,9 +144,10 @@ Pesanan bisa dibatalkan karena:
 ## Pembayaran Gagal
 
 Cek saldo dan ulangi transaksi.
-Jika saldo terpotong, hubungi admin.`
-      }
-    ]
+Jika saldo terpotong, hubungi admin.
+        `.trim(),
+      },
+    ],
   },
 
   pengiriman: {
@@ -139,7 +161,8 @@ Jika saldo terpotong, hubungi admin.`
         content: `
 ## Jadwal Pengiriman
 
-Pengiriman dilakukan setiap hari sesuai slot yang dipilih.`
+Pengiriman dilakukan setiap hari sesuai slot yang dipilih.
+        `.trim(),
       },
       {
         slug: "resi-pengiriman",
@@ -149,9 +172,10 @@ Pengiriman dilakukan setiap hari sesuai slot yang dipilih.`
         content: `
 ## Cek Resi
 
-Resi akan dikirim via WhatsApp setelah pesanan dikirim.`
-      }
-    ]
+Resi akan dikirim via WhatsApp setelah pesanan dikirim.
+        `.trim(),
+      },
+    ],
   },
 
   refund: {
@@ -167,7 +191,8 @@ Resi akan dikirim via WhatsApp setelah pesanan dikirim.`
 
 Refund berlaku jika:
 - Produk rusak
-- Pesanan salah kirim`
+- Pesanan salah kirim
+        `.trim(),
       },
       {
         slug: "proses-refund",
@@ -179,9 +204,10 @@ Refund berlaku jika:
 
 1. Hubungi admin
 2. Kirim bukti
-3. Refund diproses 1×24 jam`
-      }
-    ]
+3. Refund diproses 1×24 jam
+        `.trim(),
+      },
+    ],
   },
 
   komplain: {
@@ -195,7 +221,8 @@ Refund berlaku jika:
         content: `
 ## Produk Rusak
 
-Segera foto produk dan kirim ke admin.`
+Segera foto produk dan kirim ke admin.
+        `.trim(),
       },
       {
         slug: "produk-kurang",
@@ -205,9 +232,10 @@ Segera foto produk dan kirim ke admin.`
         content: `
 ## Produk Kurang
 
-Laporkan ke admin maksimal 1 jam setelah terima.`
-      }
-    ]
+Laporkan ke admin maksimal 1 jam setelah terima.
+        `.trim(),
+      },
+    ],
   },
 
   promo: {
@@ -221,7 +249,8 @@ Laporkan ke admin maksimal 1 jam setelah terima.`
         content: `
 ## Cara Pakai Kode Promo
 
-Masukkan kode promo saat checkout.`
+Masukkan kode promo saat checkout.
+        `.trim(),
       },
       {
         slug: "promo-tidak-berlaku",
@@ -231,9 +260,10 @@ Masukkan kode promo saat checkout.`
         content: `
 ## Promo Tidak Berlaku
 
-Pastikan syarat & masa berlaku promo masih aktif.`
-      }
-    ]
+Pastikan syarat & masa berlaku promo masih aktif.
+        `.trim(),
+      },
+    ],
   },
 
   lainnya: {
@@ -247,7 +277,8 @@ Pastikan syarat & masa berlaku promo masih aktif.`
         content: `
 ## Tentang KOJE24
 
-KOJE24 adalah cold-pressed juice alami tanpa pengawet.`
+KOJE24 adalah cold-pressed juice alami tanpa pengawet.
+        `.trim(),
       },
       {
         slug: "kontak-admin",
@@ -257,8 +288,9 @@ KOJE24 adalah cold-pressed juice alami tanpa pengawet.`
         content: `
 ## Kontak Admin
 
-Hubungi kami via WhatsApp resmi KOJE24.`
-      }
-    ]
-  }
+Hubungi kami via WhatsApp resmi KOJE24.
+        `.trim(),
+      },
+    ],
+  },
 }
