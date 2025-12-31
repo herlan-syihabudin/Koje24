@@ -140,6 +140,39 @@ export async function POST(req: NextRequest) {
         invoiceUrl,
       }),
     });
+
+    /* =====================================================
+   📲 WHATSAPP NOTIFICATION (NON-BLOCKING)
+   - Tidak boleh menggagalkan order
+   - Jika WA error → order tetap sukses
+===================================================== */
+fetch(`${baseUrl}/api/whatsapp`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    invoiceId,
+    invoiceUrl,
+    name: nama,
+    phone: hp,
+    address: alamat,
+    note,
+    order: cart,
+    subtotal: subtotalCalc,
+    ongkir: effectiveOngkir,
+    promoLabel,
+    promoAmount: safePromoAmount,
+    grandTotal: effectiveGrandTotal,
+    paymentLabel,
+  }),
+})
+  .then(() => {
+    console.log("✅ WhatsApp trigger sent");
+  })
+  .catch((err) => {
+    console.error("⚠️ WhatsApp failed (ignored):", err);
+  });
     
 // 🔔 AUTO SUBSCRIBE (NON-BLOCKING, TIDAK BOLEH GAGALKAN ORDER)
 fetch(`${baseUrl}/api/subscribe`, {
