@@ -130,18 +130,18 @@ export default function Footer() {
         </div>
 
         {/* ✅ HALAL CERTIFICATION (TRUST ZONE) */}
-        <div className="flex flex-col items-center justify-center gap-2 mt-14 mb-6 text-gray-300 text-[11px] md:text-xs">
-          <Image
-            src="/image/halal.png"
-            alt="Halal Certified"
-            width={42}
-            height={42}
-            className="opacity-80"
-          />
-          <span>
-            Diproduksi sesuai standar <b>Sertifikasi Halal Indonesia</b>
-          </span>
-        </div>
+<div className="flex flex-col items-center justify-center gap-2 mt-14 mb-6 text-gray-300 text-[11px] md:text-xs">
+  <Image
+    src="/image/halal.png"
+    alt="Sertifikasi Halal Indonesia"
+    width={120} // untuk ketajaman retina
+    height={42}
+    className="h-[34px] md:h-[42px] w-auto opacity-80"
+  />
+  <span className="text-center leading-relaxed">
+    Diproduksi sesuai standar <b>Sertifikasi Halal Indonesia</b>
+  </span>
+</div>
 
         {/* FOOTER LINE */}
         <div className="border-t border-white/10 pt-6 text-center text-gray-400 text-xs md:text-sm">
