@@ -294,6 +294,23 @@ export default function InvoicePage() {
     setelah pesanan diterima.
   </p>
 </div>
+         {/* =====================
+    HALAL CERTIFICATION
+===================== */}
+<div className="mt-6 flex flex-col items-center text-[9px] text-gray-500">
+  <img
+    src="/image/halal.png"
+    alt="Sertifikasi Halal Indonesia"
+    style={{
+      height: 28,
+      opacity: 0.75,
+      marginBottom: 4,
+    }}
+  />
+  <span className="text-center">
+    Diproduksi sesuai standar <b>Sertifikasi Halal Indonesia</b>
+  </span>
+</div>
 
         {/* =====================
             PRINT SAFETY
