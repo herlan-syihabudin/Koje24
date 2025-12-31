@@ -35,9 +35,9 @@ export default function Footer() {
               <Image
                 src="/image/logo-koje24-putih-removebg-preview.png"
                 alt="KOJE24"
-                width={52}
-                height={52}
-                className="object-contain md:w-[82px] md:h-[82px] w-[52px] h-[52px]"
+                width={82}
+                height={82}
+                className="object-contain"
               />
             </div>
 
@@ -86,7 +86,6 @@ export default function Footer() {
           <div>
             <h5 className="font-semibold text-white mb-4 text-lg">Hubungi Kami</h5>
             <ul className="space-y-3 text-sm">
-
               <li>
                 <a
                   href="https://wa.me/6282213139580"
@@ -126,13 +125,26 @@ export default function Footer() {
                   info@koje24.id
                 </a>
               </li>
-
             </ul>
           </div>
         </div>
 
+        {/* ✅ HALAL CERTIFICATION (TRUST ZONE) */}
+        <div className="flex flex-col items-center justify-center gap-2 mt-14 mb-6 text-gray-300 text-[11px] md:text-xs">
+          <Image
+            src="/image/halal.png"
+            alt="Halal Certified"
+            width={42}
+            height={42}
+            className="opacity-80"
+          />
+          <span>
+            Diproduksi sesuai standar <b>Sertifikasi Halal Indonesia</b>
+          </span>
+        </div>
+
         {/* FOOTER LINE */}
-        <div className="border-t border-white/10 mt-14 pt-6 text-center text-gray-400 text-xs md:text-sm">
+        <div className="border-t border-white/10 pt-6 text-center text-gray-400 text-xs md:text-sm">
           © 2025 <span className="text-[#E8C46B] font-semibold">KOJE24</span> • All Rights Reserved  
           <br className="md:hidden" />
           <span className="text-[#0FA3A8] ml-1">Natural Cold-Pressed Juice Indonesia</span>
