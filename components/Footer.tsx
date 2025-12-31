@@ -134,9 +134,9 @@ export default function Footer() {
   <Image
     src="/image/halal.png"
     alt="Sertifikasi Halal Indonesia"
-    width={120} // untuk ketajaman retina
-    height={42}
-    className="h-[34px] md:h-[42px] w-auto opacity-80"
+    width={160}   // retina sharp
+height={56}
+className="h-[40px] md:h-[52px] w-auto opacity-85"
   />
   <span className="text-center leading-relaxed">
     Diproduksi sesuai standar <b>Sertifikasi Halal Indonesia</b>
