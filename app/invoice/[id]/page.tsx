@@ -153,7 +153,7 @@ export default function InvoicePage() {
       </span>
       <br />
       <span className="font-medium">
-        WhatsApp: 0812-3456-7890
+        WhatsApp: 0822-1313-9580
       </span>
     </p>
   </div>
