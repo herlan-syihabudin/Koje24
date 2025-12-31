@@ -5,21 +5,15 @@ import { ArrowLeft, MessageCircle } from "lucide-react"
 import { helpCategories } from "../../helpCategories"
 
 /* ===============================
-   STATIC PARAMS (WAJIB)
+   STATIC PARAMS (WAJIB DI VERCEL)
 ================================ */
 export function generateStaticParams() {
-  const params: { category: string; slug: string }[] = []
-
-  Object.entries(helpCategories).forEach(([category, data]) => {
-    data.items.forEach((item) => {
-      params.push({
-        category,
-        slug: item.slug,
-      })
-    })
-  })
-
-  return params
+  return Object.entries(helpCategories).flatMap(([category, data]) =>
+    data.items.map((item) => ({
+      category,
+      slug: item.slug,
+    }))
+  )
 }
 
 /* ===============================
@@ -37,7 +31,7 @@ export function generateMetadata({
     (it) => it.slug === params.slug
   )
 
-  if (!item) {
+  if (!categoryData || !item) {
     return {
       title: "Pusat Bantuan KOJE24",
       description:
@@ -64,11 +58,15 @@ export default function HelpDetailPage({
   const categoryData =
     helpCategories[category as keyof typeof helpCategories]
 
-  const item = categoryData?.items.find(
+  if (!categoryData) {
+    notFound()
+  }
+
+  const item = categoryData.items.find(
     (it) => it.slug === slug
   )
 
-  if (!categoryData || !item) {
+  if (!item) {
     notFound()
   }
 
@@ -86,7 +84,7 @@ export default function HelpDetailPage({
         </Link>
 
         {/* HEADER */}
-        <div className="mb-6">
+        <header className="mb-6">
           <p className="text-[11px] uppercase tracking-[0.25em] text-[#0FA3A8] mb-2">
             PANDUAN PUSAT BANTUAN
           </p>
@@ -100,7 +98,7 @@ export default function HelpDetailPage({
           </p>
 
           <div className="w-24 h-[2px] bg-gradient-to-r from-[#0FA3A8] via-[#E8C46B] to-[#0FA3A8] rounded-full mt-4" />
-        </div>
+        </header>
 
         {/* CONTENT */}
         <section
