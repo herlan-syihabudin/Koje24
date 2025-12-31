@@ -47,12 +47,13 @@ export async function GET(
     const pdf = await result.arrayBuffer();
 
     return new NextResponse(pdf, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="invoice-${invoiceId}.pdf"`,
-      },
-    });
+  status: 200,
+  headers: {
+    "Content-Type": "application/pdf",
+    "Content-Disposition": `attachment; filename="invoice-${invoiceId}.pdf"`,
+    "Cache-Control": "no-store",
+  },
+});
 
   } catch (err: any) {
     console.error("❌ INVOICE PDF ERROR:", err);
