@@ -145,12 +145,18 @@ export default function InvoicePage() {
               alt="KOJE24"
               className="h-16 w-auto mb-1"
             />
-            <p className="text-sm leading-tight">
-              <strong>Healthy Juice for Everyday Energy</strong>
-              <br />
-              Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi
-            </p>
-          </div>
+            <p className="text-sm leading-tight select-none pointer-events-none">
+      <strong>Healthy Juice for Everyday Energy</strong>
+      <br />
+      <span className="not-address">
+        Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi
+      </span>
+      <br />
+      <span className="font-medium">
+        WhatsApp: 0812-3456-7890
+      </span>
+    </p>
+  </div>
 
           <div className="text-right">
             <p className="text-3xl font-bold">INVOICE</p>
@@ -270,11 +276,24 @@ export default function InvoicePage() {
         </div>
 
         {/* =====================
-            FOOTER
-        ===================== */}
-        <div className="text-[10px] text-gray-600 mt-6">
-          Invoice ini sah tanpa tanda tangan.
-        </div>
+    FOOTER
+===================== */}
+<div className="text-[10px] text-gray-600 mt-6 leading-relaxed">
+  <p>
+    Invoice ini dibuat secara otomatis oleh sistem KOJE24 dan sah tanpa tanda
+    tangan maupun stempel.
+  </p>
+
+  <p className="mt-1">
+    Terima kasih telah memilih hidup sehat bersama <strong>KOJE24</strong>.
+    Jangan lupa simpan produk di lemari pendingin untuk menjaga kualitas.
+  </p>
+
+  <p className="mt-1">
+    Untuk komplain produk, harap sertakan video unboxing maksimal 1x24 jam
+    setelah pesanan diterima.
+  </p>
+</div>
 
         {/* =====================
             PRINT SAFETY
