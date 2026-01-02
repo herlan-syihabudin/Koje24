@@ -147,25 +147,24 @@ export default function InvoicePage() {
     />
 
     <p className="text-sm leading-tight select-none pointer-events-none">
-      <strong>KOJE24</strong>
-      <br />
-      <span className="text-xs text-gray-700 font-medium">
+      <span className="text-xs text-gray-800 font-semibold tracking-wide">
         PT KOJE NATURAL INDONESIA
       </span>
       <br />
-      <span className="italic text-xs">
+      <span className="italic text-xs text-gray-600">
         Healthy Juice for Everyday Energy
       </span>
       <br />
-      <span className="not-address">
+      <span className="not-address text-xs">
         Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi
       </span>
       <br />
-      <span className="font-medium">
+      <span className="font-medium text-xs">
         WhatsApp: 0822-1313-9580
       </span>
     </p>
   </div>
+</div>
 
           <div className="text-right">
             <p className="text-3xl font-bold">INVOICE</p>
