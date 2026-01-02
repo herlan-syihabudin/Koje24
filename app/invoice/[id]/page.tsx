@@ -136,17 +136,26 @@ export default function InvoicePage() {
         )}
 
         {/* =====================
-            HEADER
-        ===================== */}
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <img
-              src="/image/logo-koje24.png"
-              alt="KOJE24"
-              className="h-16 w-auto mb-1"
-            />
-            <p className="text-sm leading-tight select-none pointer-events-none">
-      <strong>Healthy Juice for Everyday Energy</strong>
+    HEADER
+===================== */}
+<div className="flex justify-between items-start mb-4">
+  <div>
+    <img
+      src="/image/logo-koje24.png"
+      alt="KOJE24"
+      className="h-16 w-auto mb-1"
+    />
+
+    <p className="text-sm leading-tight select-none pointer-events-none">
+      <strong>KOJE24</strong>
+      <br />
+      <span className="text-xs text-gray-700 font-medium">
+        PT KOJE NATURAL INDONESIA
+      </span>
+      <br />
+      <span className="italic text-xs">
+        Healthy Juice for Everyday Energy
+      </span>
       <br />
       <span className="not-address">
         Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi
