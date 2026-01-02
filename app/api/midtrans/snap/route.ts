@@ -8,6 +8,18 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
+    if (
+      !body?.total ||
+      !body?.nama ||
+      !body?.email ||
+      !body?.hp
+    ) {
+      return NextResponse.json(
+        { success: false, message: "Payload tidak lengkap" },
+        { status: 400 }
+      );
+    }
+
     const snap = new Midtrans.Snap({
       isProduction: process.env.MIDTRANS_ENV === "production",
       serverKey: process.env.MIDTRANS_SERVER_KEY!,
@@ -15,27 +27,24 @@ export async function POST(req: Request) {
 
     const orderId = "KOJE-" + Date.now();
 
-    const parameter = {
+    const transaction = await snap.createTransaction({
       transaction_details: {
         order_id: orderId,
-        gross_amount: body.total,
+        gross_amount: Number(body.total),
       },
       customer_details: {
         first_name: body.nama,
         email: body.email,
         phone: body.hp,
         shipping_address: {
-          address: body.alamat,
+          address: body.alamat || "",
         },
       },
-    };
-
-    const transaction = await snap.createTransaction(parameter);
+    });
 
     return NextResponse.json({
       success: true,
       token: transaction.token,
-      redirect_url: transaction.redirect_url,
       orderId,
     });
   } catch (err) {
