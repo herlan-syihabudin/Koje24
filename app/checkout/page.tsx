@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useCartStore } from "@/stores/cartStore";
 
-declare const google: any;
 declare global {
   interface Window {
-    snap: any;
+    google: any;
   }
 }
 
@@ -97,6 +96,7 @@ export default function CheckoutPage() {
 
   const el = alamatRef.current;
   if (!el) return;
+
   if ((el as any)._auto) return;
   (el as any)._auto = true;
 
