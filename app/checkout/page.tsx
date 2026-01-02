@@ -5,8 +5,12 @@ import { useRouter } from "next/navigation";
 import { useCartStore } from "@/stores/cartStore";
 import Script from "next/script";
 
-declare const google: any;
-declare const window: any;
+declare global {
+  interface Window {
+    google?: any;
+    snap?: any;
+  }
+}
 
 type CheckoutState = "idle" | "submitting" | "error";
 
@@ -37,9 +41,6 @@ function calcOngkir(distanceKm: number | null) {
   return Math.max(10000, rounded);
 }
 
-/* =====================
-   COMPONENT
-===================== */
 export default function CheckoutPage() {
   const router = useRouter();
 
@@ -56,9 +57,9 @@ export default function CheckoutPage() {
   const [alamat, setAlamat] = useState("");
   const [catatan, setCatatan] = useState("");
 
-  const [payment, setPayment] = useState<
-    "transfer" | "qris" | "midtrans" | "cod"
-  >("transfer");
+  const [payment, setPayment] = useState<"transfer" | "qris" | "midtrans" | "cod">(
+    "transfer"
+  );
 
   const [status, setStatus] = useState<CheckoutState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -77,10 +78,11 @@ export default function CheckoutPage() {
   ===================== */
   useEffect(() => {
     setHydrated(true);
-    setTimeout(() => {
+    const t = setTimeout(() => {
       alamatRef.current?.focus();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }, 200);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
@@ -92,40 +94,61 @@ export default function CheckoutPage() {
   }, [items.length, hydrated, router]);
 
   /* =====================
-     GOOGLE AUTOCOMPLETE
+     GOOGLE AUTOCOMPLETE (SAFE)
   ===================== */
   useEffect(() => {
     const el = alamatRef.current;
-    if (!el || !google?.maps?.places) return;
+    if (!el) return;
     if ((el as any)._done) return;
-    (el as any)._done = true;
 
-    const auto = new google.maps.places.Autocomplete(el, {
-      componentRestrictions: { country: "id" },
-      fields: ["formatted_address", "geometry"],
-    });
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries++;
 
-    auto.addListener("place_changed", () => {
-      const place = auto.getPlace();
-      if (!place?.geometry?.location) return;
-      const lat = place.geometry.location.lat();
-      const lng = place.geometry.location.lng();
-      const dKm = haversine(BASE_LAT, BASE_LNG, lat, lng);
-      setDistanceKm(dKm);
-      setOngkir(calcOngkir(dKm));
-      setAlamat(place.formatted_address || "");
-    });
+      const g = window.google;
+      if (!g?.maps?.places) {
+        if (tries > 20) clearInterval(timer); // stop setelah ~4 detik
+        return;
+      }
+
+      (el as any)._done = true;
+      clearInterval(timer);
+
+      try {
+        const auto = new g.maps.places.Autocomplete(el, {
+          componentRestrictions: { country: "id" },
+          fields: ["formatted_address", "geometry"],
+        });
+
+        auto.addListener("place_changed", () => {
+          const place = auto.getPlace();
+          if (!place?.geometry?.location) return;
+
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
+          const dKm = haversine(BASE_LAT, BASE_LNG, lat, lng);
+
+          setDistanceKm(dKm);
+          setOngkir(calcOngkir(dKm));
+          setAlamat(place.formatted_address || "");
+        });
+      } catch {
+        // ignore
+      }
+    }, 200);
+
+    return () => clearInterval(timer);
   }, []);
 
   const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Perangkat tidak mendukung GPS.");
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const dKm = haversine(
-          BASE_LAT,
-          BASE_LNG,
-          pos.coords.latitude,
-          pos.coords.longitude
-        );
+        const dKm = haversine(BASE_LAT, BASE_LNG, pos.coords.latitude, pos.coords.longitude);
         setDistanceKm(dKm);
         setOngkir(calcOngkir(dKm));
         alert("📍 Lokasi terdeteksi, ongkir dihitung");
@@ -142,10 +165,13 @@ export default function CheckoutPage() {
     e.preventDefault();
     if (status === "submitting") return;
 
-    if (!nama || !hp || !alamat || !email.includes("@")) {
+    if (!nama.trim() || !hp.trim() || !alamat.trim() || !email.includes("@")) {
       setErrorMsg("Lengkapi data (nama, WA, email, alamat)");
       return;
     }
+
+    // Reset error
+    setErrorMsg("");
 
     /* =====================
        MIDTRANS FLOW
@@ -153,6 +179,13 @@ export default function CheckoutPage() {
     if (payment === "midtrans") {
       try {
         setStatus("submitting");
+
+        // Pastikan snap.js sudah loaded
+        if (!window.snap) {
+          setStatus("error");
+          setErrorMsg("Midtrans belum siap. Refresh halaman lalu coba lagi.");
+          return;
+        }
 
         const res = await fetch("/api/midtrans/snap", {
           method: "POST",
@@ -167,24 +200,34 @@ export default function CheckoutPage() {
             promoAmount,
             promoLabel,
             total,
+            note: catatan,
           }),
         });
 
         const data = await res.json();
-        if (!data?.token) throw new Error("Snap token error");
+        if (!res.ok || !data?.token) throw new Error("Snap token error");
 
         window.snap.pay(data.token, {
           onSuccess: () => {
             clearCart();
-            router.push("/");
+            router.push("/"); // nanti bisa ganti ke /thank-you
           },
-          onPending: () => alert("Menunggu pembayaran"),
-          onError: () => alert("Pembayaran gagal"),
-          onClose: () => setStatus("idle"),
+          onPending: () => {
+            setStatus("idle");
+            alert("Menunggu pembayaran (pending). Kamu bisa selesaikan pembayarannya ya.");
+          },
+          onError: () => {
+            setStatus("error");
+            setErrorMsg("Pembayaran gagal. Silakan coba lagi.");
+          },
+          onClose: () => {
+            setStatus("idle");
+          },
         });
 
         return;
-      } catch {
+      } catch (err) {
+        console.error(err);
         setStatus("error");
         setErrorMsg("Gagal memproses pembayaran online");
         return;
@@ -194,10 +237,7 @@ export default function CheckoutPage() {
     /* =====================
        TRANSFER / QRIS / COD
     ===================== */
-    if (
-      (payment === "transfer" || payment === "qris") &&
-      !buktiBayarFile
-    ) {
+    if ((payment === "transfer" || payment === "qris") && !buktiBayarFile) {
       setErrorMsg("Upload bukti pembayaran");
       return;
     }
@@ -218,12 +258,14 @@ export default function CheckoutPage() {
       fd.append("grandTotal", String(total));
       fd.append(
         "cart",
-        JSON.stringify(items.map((x) => ({
-          id: x.id,
-          name: x.name,
-          qty: x.qty,
-          price: x.price,
-        })))
+        JSON.stringify(
+          items.map((x) => ({
+            id: x.id,
+            name: x.name,
+            qty: x.qty,
+            price: x.price,
+          }))
+        )
       );
 
       if (buktiBayarFile) fd.append("buktiBayar", buktiBayarFile);
@@ -242,9 +284,6 @@ export default function CheckoutPage() {
     }
   };
 
-  /* =====================
-     RENDER
-  ===================== */
   return (
     <>
       {/* GOOGLE MAPS */}
@@ -262,15 +301,9 @@ export default function CheckoutPage() {
 
       <main className="min-h-screen bg-[#F4FAFA] py-10 px-4 flex justify-center">
         <div className="w-full max-w-6xl space-y-6">
-          <h1 className="text-3xl font-playfair font-semibold">
-            Selesaikan Pesanan
-          </h1>
+          <h1 className="text-3xl font-playfair font-semibold">Selesaikan Pesanan</h1>
 
-          <form
-            onSubmit={handleSubmit}
-            className="grid gap-8 md:grid-cols-[1.2fr_0.8fr]"
-          >
-            {/* FORM */}
+          <form onSubmit={handleSubmit} className="grid gap-8 md:grid-cols-[1.2fr_0.8fr]">
             <section className="bg-white border rounded-3xl p-6 space-y-4">
               <input
                 className="border rounded-lg px-3 py-2 w-full"
@@ -287,6 +320,7 @@ export default function CheckoutPage() {
               <input
                 className="border rounded-lg px-3 py-2 w-full"
                 placeholder="Email"
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -314,20 +348,15 @@ export default function CheckoutPage() {
               />
 
               <h2 className="font-semibold">Metode Pembayaran</h2>
-
               {(["transfer", "qris", "midtrans", "cod"] as const).map((p) => (
-                <label key={p} className="flex gap-2">
-                  <input
-                    type="radio"
-                    checked={payment === p}
-                    onChange={() => setPayment(p)}
-                  />
+                <label key={p} className="flex gap-2 items-center">
+                  <input type="radio" checked={payment === p} onChange={() => setPayment(p)} />
                   <span>
                     {p === "midtrans"
                       ? "Online Payment (Midtrans)"
                       : p === "cod"
                       ? "COD"
-                      : p}
+                      : p.toUpperCase()}
                   </span>
                 </label>
               ))}
@@ -336,27 +365,20 @@ export default function CheckoutPage() {
                 <input
                   type="file"
                   accept="image/*,.pdf"
-                  onChange={(e) =>
-                    setBuktiBayarFile(e.target.files?.[0] || null)
-                  }
+                  onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)}
                 />
               )}
 
-              {errorMsg && (
-                <p className="text-red-600 text-sm">{errorMsg}</p>
-              )}
+              {errorMsg && <p className="text-red-600 text-sm">{errorMsg}</p>}
 
               <button
                 disabled={status === "submitting"}
-                className="bg-[#0FA3A8] text-white py-3 rounded-full font-semibold"
+                className="bg-[#0FA3A8] text-white py-3 rounded-full font-semibold disabled:opacity-60"
               >
-                {status === "submitting"
-                  ? "Memproses..."
-                  : "Buat Pesanan"}
+                {status === "submitting" ? "Memproses..." : "Buat Pesanan"}
               </button>
             </section>
 
-            {/* SUMMARY */}
             <aside className="bg-white border rounded-3xl p-6 space-y-3">
               <h2 className="font-semibold">Ringkasan</h2>
               <div>Subtotal: Rp{subtotal.toLocaleString("id-ID")}</div>
@@ -366,9 +388,7 @@ export default function CheckoutPage() {
                   {promoLabel}: -Rp{promoAmount.toLocaleString("id-ID")}
                 </div>
               )}
-              <div className="font-bold text-lg">
-                Total: Rp{total.toLocaleString("id-ID")}
-              </div>
+              <div className="font-bold text-lg">Total: Rp{total.toLocaleString("id-ID")}</div>
             </aside>
           </form>
         </div>
