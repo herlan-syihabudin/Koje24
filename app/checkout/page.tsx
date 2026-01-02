@@ -92,27 +92,31 @@ export default function CheckoutPage() {
   }, [hydrated, items.length, router]);
 
   useEffect(() => {
-    const el = alamatRef.current;
-    if (!el || !window.google?.maps?.places) return;
-    if ((el as any)._auto) return;
-    (el as any)._auto = true;
+  const el = alamatRef.current;
+  const w = window as any;
 
-    const auto = new google.maps.places.Autocomplete(el, {
-      componentRestrictions: { country: "id" },
-      fields: ["formatted_address", "geometry"],
-    });
+  if (!el || !w.google?.maps?.places) return;
+  if ((el as any)._auto) return;
+  (el as any)._auto = true;
 
-    auto.addListener("place_changed", () => {
-      const place = auto.getPlace();
-      if (!place?.geometry?.location) return;
-      const lat = place.geometry.location.lat();
-      const lng = place.geometry.location.lng();
-      const d = haversine(BASE_LAT, BASE_LNG, lat, lng);
-      setDistanceKm(d);
-      setOngkir(calcOngkir(d));
-      setAlamat(place.formatted_address);
-    });
-  }, []);
+  const auto = new w.google.maps.places.Autocomplete(el, {
+    componentRestrictions: { country: "id" },
+    fields: ["formatted_address", "geometry"],
+  });
+
+  auto.addListener("place_changed", () => {
+    const place = auto.getPlace();
+    if (!place?.geometry?.location) return;
+
+    const lat = place.geometry.location.lat();
+    const lng = place.geometry.location.lng();
+    const d = haversine(BASE_LAT, BASE_LNG, lat, lng);
+
+    setDistanceKm(d);
+    setOngkir(calcOngkir(d));
+    setAlamat(place.formatted_address);
+  });
+}, []);
 
   const detectLocation = () => {
     navigator.geolocation.getCurrentPosition(
