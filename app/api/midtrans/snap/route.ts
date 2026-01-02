@@ -1,66 +1,35 @@
 import { NextResponse } from "next/server";
+import Midtrans from "midtrans-client";
 
 export async function POST(req: Request) {
-  try {
-    const body = await req.json();
+  const body = await req.json();
 
-    const {
-      order_id,
-      gross_amount,
-      customer_name,
-      customer_email,
-      customer_phone,
-    } = body;
+  const snap = new Midtrans.Snap({
+    isProduction: process.env.MIDTRANS_ENV === "production",
+    serverKey: process.env.MIDTRANS_SERVER_KEY!,
+  });
 
-    if (!order_id || !gross_amount) {
-      return NextResponse.json(
-        { error: "Invalid payload" },
-        { status: 400 }
-      );
-    }
+  const orderId = "KOJE-" + Date.now();
 
-    const serverKey = process.env.MIDTRANS_SERVER_KEY!;
-    const auth = Buffer.from(serverKey + ":").toString("base64");
-
-    const snapUrl =
-      process.env.MIDTRANS_ENV === "production"
-        ? "https://app.midtrans.com/snap/v1/transactions"
-        : "https://app.sandbox.midtrans.com/snap/v1/transactions";
-
-    const res = await fetch(snapUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${auth}`,
+  const parameter = {
+    transaction_details: {
+      order_id: orderId,
+      gross_amount: body.total,
+    },
+    customer_details: {
+      first_name: body.nama,
+      email: body.email,
+      phone: body.hp,
+      shipping_address: {
+        address: body.alamat,
       },
-      body: JSON.stringify({
-        transaction_details: {
-          order_id,
-          gross_amount,
-        },
-        customer_details: {
-          first_name: customer_name,
-          email: customer_email,
-          phone: customer_phone,
-        },
-      }),
-    });
+    },
+  };
 
-    const data = await res.json();
+  const transaction = await snap.createTransaction(parameter);
 
-    if (!res.ok) {
-      return NextResponse.json(data, { status: res.status });
-    }
-
-    return NextResponse.json({
-      token: data.token,
-      redirect_url: data.redirect_url,
-    });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json(
-      { error: "Midtrans error" },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json({
+    token: transaction.token,
+    orderId,
+  });
 }
