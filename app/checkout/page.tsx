@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useCartStore } from "@/stores/cartStore";
@@ -53,6 +53,7 @@ export default function CheckoutPage() {
   const getDiscount = useCartStore((s) => s.getDiscount);
 
   const [hydrated, setHydrated] = useState(false);
+
   const [nama, setNama] = useState("");
   const [hp, setHp] = useState("");
   const [email, setEmail] = useState("");
@@ -72,7 +73,15 @@ export default function CheckoutPage() {
 
   const alamatRef = useRef<HTMLInputElement | null>(null);
 
-  const subtotal = items.reduce((a, b) => a + b.price * b.qty, 0);
+  // ✅ READY FLAGS (anti blank)
+  const [mapsReady, setMapsReady] = useState(false);
+  const [snapReady, setSnapReady] = useState(false);
+
+  const subtotal = useMemo(
+    () => items.reduce((a, b) => a + b.price * b.qty, 0),
+    [items]
+  );
+
   const promoAmount = getDiscount();
   const promoLabel = promo?.kode ?? "";
   const total = Math.max(0, subtotal + ongkir - promoAmount);
@@ -82,45 +91,61 @@ export default function CheckoutPage() {
   ======================= */
   useEffect(() => {
     setHydrated(true);
-    setTimeout(() => alamatRef.current?.focus(), 300);
+    const t = setTimeout(() => alamatRef.current?.focus(), 300);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
-    if (hydrated && items.length === 0) {
-      setTimeout(() => router.push("/#produk"), 1200);
-    }
+    if (!hydrated) return;
+    if (items.length !== 0) return;
+    const t = setTimeout(() => router.push("/#produk"), 1200);
+    return () => clearTimeout(t);
   }, [hydrated, items.length, router]);
 
+  /**
+   * ✅ GOOGLE AUTOCOMPLETE (SAFE)
+   * - hanya jalan setelah script onLoad → mapsReady true
+   */
   useEffect(() => {
-  if (typeof window === "undefined") return;
-  if (!window.google?.maps?.places) return;
+    if (!mapsReady) return;
 
-  const el = alamatRef.current;
-  if (!el) return;
+    const el = alamatRef.current;
+    if (!el) return;
 
-  if ((el as any)._auto) return;
-  (el as any)._auto = true;
+    if ((el as any)._auto) return;
+    (el as any)._auto = true;
 
-  const auto = new window.google.maps.places.Autocomplete(el, {
-    componentRestrictions: { country: "id" },
-    fields: ["formatted_address", "geometry"],
-  });
+    try {
+      const auto = new window.google.maps.places.Autocomplete(el, {
+        componentRestrictions: { country: "id" },
+        fields: ["formatted_address", "geometry"],
+      });
 
-  auto.addListener("place_changed", () => {
-    const place = auto.getPlace();
-    if (!place?.geometry?.location) return;
+      auto.addListener("place_changed", () => {
+        const place = auto.getPlace();
+        if (!place?.geometry?.location) return;
 
-    const lat = place.geometry.location.lat();
-    const lng = place.geometry.location.lng();
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
 
-    const dKm = haversine(BASE_LAT, BASE_LNG, lat, lng);
-    setDistanceKm(dKm);
-    setOngkir(calcOngkir(dKm));
-    setAlamat(place.formatted_address || "");
-  });
-}, []);
+        const dKm = haversine(BASE_LAT, BASE_LNG, lat, lng);
+        setDistanceKm(dKm);
+        setOngkir(calcOngkir(dKm));
+        setAlamat(place.formatted_address || "");
+      });
+    } catch {
+      // kalau error, biarkan user input manual
+    }
+  }, [mapsReady]);
 
   const detectLocation = () => {
+    if (typeof window === "undefined") return;
+
+    if (!navigator.geolocation) {
+      alert("Perangkat tidak mendukung GPS.");
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
       (p) => {
         const d = haversine(
@@ -145,8 +170,13 @@ export default function CheckoutPage() {
     e.preventDefault();
     if (status === "submitting") return;
 
-    if (!nama || !hp || !alamat || !email.includes("@")) {
-      setErrorMsg("Lengkapi data dengan benar ya 🙏");
+    // basic validation
+    if (!nama.trim() || !hp.trim() || !alamat.trim()) {
+      setErrorMsg("Lengkapi nama, nomor WhatsApp, dan alamat ya 🙏");
+      return;
+    }
+    if (!email.trim() || !email.includes("@")) {
+      setErrorMsg("Masukkan email yang valid ya 🙏");
       return;
     }
 
@@ -156,6 +186,12 @@ export default function CheckoutPage() {
     try {
       /* ========= MIDTRANS ========= */
       if (payment === "midtrans") {
+        if (!snapReady || !window.snap) {
+          setStatus("idle");
+          setErrorMsg("Sistem pembayaran belum siap. Coba refresh ya 🙏");
+          return;
+        }
+
         const res = await fetch("/api/midtrans", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -165,24 +201,33 @@ export default function CheckoutPage() {
             email,
             alamat,
             total,
-            cart: items,
+            cart: items.map((x) => ({
+              id: x.id,
+              name: x.name,
+              qty: x.qty,
+              price: x.price,
+            })),
           }),
         });
 
         const data = await res.json();
-        if (!data?.token) throw new Error("Midtrans gagal");
+        if (!res.ok || !data?.token) throw new Error("Midtrans gagal");
 
         window.snap.pay(data.token, {
           onSuccess: () => {
             clearCart();
             router.push("/?payment=success");
           },
-          onPending: () => router.push("/?payment=pending"),
+          onPending: () => {
+            router.push("/?payment=pending");
+          },
           onError: () => {
             setErrorMsg("Pembayaran gagal 🙏");
             setStatus("idle");
           },
-          onClose: () => setStatus("idle"),
+          onClose: () => {
+            setStatus("idle");
+          },
         });
 
         return;
@@ -206,11 +251,21 @@ export default function CheckoutPage() {
       fd.append("promoAmount", String(promoAmount));
       fd.append("promoLabel", promoLabel);
       fd.append("grandTotal", String(total));
-      fd.append("cart", JSON.stringify(items));
+      fd.append(
+        "cart",
+        JSON.stringify(
+          items.map((x) => ({
+            id: x.id,
+            name: x.name,
+            qty: x.qty,
+            price: x.price,
+          }))
+        )
+      );
       if (buktiBayarFile) fd.append("buktiBayar", buktiBayarFile);
 
-      const res = await fetch("/api/order", { method: "POST", body: fd });
-      if (!res.ok) throw new Error();
+      const res2 = await fetch("/api/order", { method: "POST", body: fd });
+      if (!res2.ok) throw new Error("Order gagal");
 
       clearCart();
       router.push("/");
@@ -220,6 +275,8 @@ export default function CheckoutPage() {
     }
   };
 
+  const disabled = status === "submitting";
+
   /* =======================
      RENDER
   ======================= */
@@ -228,7 +285,9 @@ export default function CheckoutPage() {
       {/* Google Maps */}
       <Script
         src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
-        strategy="lazyOnload"
+        strategy="afterInteractive"
+        onLoad={() => setMapsReady(true)}
+        onError={() => setMapsReady(false)}
       />
 
       {/* MIDTRANS */}
@@ -236,11 +295,56 @@ export default function CheckoutPage() {
         src="https://app.midtrans.com/snap/snap.js"
         data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
         strategy="afterInteractive"
+        onLoad={() => setSnapReady(true)}
+        onError={() => setSnapReady(false)}
       />
 
-      {/* ===== UI ASLI TIDAK DIUBAH ===== */}
-      {/* (layout checkout kamu PERSIS seperti sebelumnya) */}
-      {/* tombol, form, ringkasan tetap sama */}
+      {/* =========================
+          ✅ UI KAMU TARO DI SINI
+          (layout checkout sebelumnya)
+          - input pakai state: nama, hp, email, alamat, catatan
+          - alamat input kasih ref={alamatRef}
+          - tombol submit pakai onSubmit={handleSubmit}
+          - tombol detect location pakai onClick={detectLocation}
+          - radio payment include "midtrans"
+          - disable submit: disabled
+          - tampilkan errorMsg
+         ========================= */}
+
+      {/* Contoh minimal biar gak blank */}
+      <main className="min-h-screen p-6">
+        <form onSubmit={handleSubmit} className="space-y-3 max-w-lg">
+          <input
+            ref={alamatRef}
+            value={alamat}
+            onChange={(e) => setAlamat(e.target.value)}
+            placeholder="Alamat"
+            className="border p-2 w-full"
+          />
+
+          <button
+            type="button"
+            onClick={detectLocation}
+            className="border px-3 py-2"
+          >
+            Hitung ongkir pakai GPS
+          </button>
+
+          <div className="text-sm">
+            Ongkir: Rp{ongkir.toLocaleString("id-ID")} • Total: Rp
+            {total.toLocaleString("id-ID")}
+          </div>
+
+          {errorMsg && <p className="text-red-600 text-sm">{errorMsg}</p>}
+
+          <button
+            disabled={disabled}
+            className="bg-black text-white px-4 py-2 disabled:opacity-50"
+          >
+            {status === "submitting" ? "Memproses..." : "Buat Pesanan"}
+          </button>
+        </form>
+      </main>
     </>
   );
 }
