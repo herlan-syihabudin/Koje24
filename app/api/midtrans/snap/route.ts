@@ -1,38 +1,31 @@
 import { NextResponse } from "next/server";
 import Midtrans from "midtrans-client";
 
-export const runtime = "nodejs";        // ⬅️ WAJIB
-export const dynamic = "force-dynamic"; // ⬅️ WAJIB
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    if (!body?.total || !body?.nama || !body?.email) {
-      return NextResponse.json(
-        { message: "Payload tidak lengkap" },
-        { status: 400 }
-      );
-    }
-
     const snap = new Midtrans.Snap({
-      isProduction: false, // 🔥 ganti true kalau LIVE
+      isProduction: process.env.MIDTRANS_ENV === "production",
       serverKey: process.env.MIDTRANS_SERVER_KEY!,
     });
 
-    const orderId = `KOJE-${Date.now()}`;
+    const orderId = "KOJE-" + Date.now();
 
     const parameter = {
       transaction_details: {
         order_id: orderId,
-        gross_amount: Math.round(Number(body.total)), // 🔥 WAJIB integer
+        gross_amount: body.total,
       },
       customer_details: {
         first_name: body.nama,
         email: body.email,
-        phone: body.hp || "",
+        phone: body.hp,
         shipping_address: {
-          address: body.alamat || "",
+          address: body.alamat,
         },
       },
     };
@@ -40,13 +33,15 @@ export async function POST(req: Request) {
     const transaction = await snap.createTransaction(parameter);
 
     return NextResponse.json({
+      success: true,
       token: transaction.token,
+      redirect_url: transaction.redirect_url,
       orderId,
     });
-  } catch (err: any) {
-    console.error("❌ MIDTRANS SNAP ERROR:", err);
+  } catch (err) {
+    console.error("MIDTRANS ERROR:", err);
     return NextResponse.json(
-      { message: "Gagal membuat transaksi Midtrans" },
+      { success: false, message: "Midtrans error" },
       { status: 500 }
     );
   }
