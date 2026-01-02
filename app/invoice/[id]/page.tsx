@@ -135,10 +135,11 @@ export default function InvoicePage() {
           </div>
         )}
 
-        {/* =====================
+       {/* =====================
     HEADER
 ===================== */}
 <div className="flex justify-between items-start mb-4">
+  {/* LEFT */}
   <div>
     <img
       src="/image/logo-koje24.png"
@@ -164,20 +165,20 @@ export default function InvoicePage() {
       </span>
     </p>
   </div>
-</div>
 
-          <div className="text-right">
-            <p className="text-3xl font-bold">INVOICE</p>
-            <img
-              src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
-              alt="barcode"
-              className="h-14 w-auto mx-auto"
-            />
-            <p className="text-xs mt-1">
-              Tanggal: {invoice.timestamp.replace(",", " — ")}
-            </p>
-          </div>
-        </div>
+  {/* RIGHT */}
+  <div className="text-right">
+    <p className="text-3xl font-bold">INVOICE</p>
+    <img
+      src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
+      alt="barcode"
+      className="h-14 w-auto ml-auto"
+    />
+    <p className="text-xs mt-1">
+      Tanggal: {invoice.timestamp.replace(",", " — ")}
+    </p>
+  </div>
+</div>
 
         <div className="border-t border-black mb-4" />
 
