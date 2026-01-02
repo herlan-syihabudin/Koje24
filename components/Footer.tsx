@@ -135,11 +135,17 @@ export default function Footer() {
     src="/image/halal.png"
     alt="Sertifikasi Halal Indonesia"
     width={160}   // retina sharp
-height={56}
-className="h-[40px] md:h-[52px] w-auto opacity-85"
+    height={56}
+    className="h-[40px] md:h-[52px] w-auto opacity-85"
   />
+
   <span className="text-center leading-relaxed">
     Diproduksi sesuai standar <b>Sertifikasi Halal Indonesia</b>
+  </span>
+
+  {/* ✅ LEGAL ENTITY */}
+  <span className="text-center text-[10px] md:text-[11px] text-gray-400 tracking-wide">
+    Diproduksi oleh <b className="text-gray-300">PT KOJE NATURAL INDONESIA</b>
   </span>
 </div>
 
