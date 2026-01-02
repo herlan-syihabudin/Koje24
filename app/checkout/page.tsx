@@ -8,6 +8,7 @@ import { useCartStore } from "@/stores/cartStore";
 declare global {
   interface Window {
     google: any;
+    snap: any;
   }
 }
 
