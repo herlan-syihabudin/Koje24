@@ -45,11 +45,14 @@ export async function POST(req: NextRequest) {
           <tr>
             <td style="padding:22px 28px;background:#0FA3A8;color:#ffffff;">
               <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:0.5px;">
-                KOJE24
-              </h1>
-              <p style="margin:4px 0 0;font-size:13px;opacity:0.95;">
-                Natural Cold-Pressed Juice
-              </p>
+  KOJE24
+</h1>
+<p style="margin:4px 0 0;font-size:12px;opacity:0.95;">
+  PT KOJE NATURAL INDONESIA
+</p>
+<p style="margin:2px 0 0;font-size:13px;opacity:0.9;">
+  Natural Cold-Pressed Juice
+</p>
             </td>
           </tr>
 
