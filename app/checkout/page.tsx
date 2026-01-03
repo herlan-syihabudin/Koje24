@@ -14,6 +14,9 @@ declare global {
 
 type CheckoutState = "idle" | "submitting" | "error";
 
+// ✅ Payment UI (tanpa kata midtrans)
+type PaymentMethod = "transfer" | "qris" | "ewallet" | "cod";
+
 const BASE_LAT = -6.2903238;
 const BASE_LNG = 107.087373;
 
@@ -55,9 +58,8 @@ export default function CheckoutPage() {
   const [alamat, setAlamat] = useState("");
   const [catatan, setCatatan] = useState("");
 
-  const [payment, setPayment] = useState<"transfer" | "qris" | "midtrans" | "cod">(
-    "transfer"
-  );
+  // ✅ UI Payment methods (no "midtrans")
+  const [payment, setPayment] = useState<PaymentMethod>("transfer");
 
   const [status, setStatus] = useState<CheckoutState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -79,7 +81,7 @@ export default function CheckoutPage() {
     email: string;
     alamat: string;
     note: string;
-    payment: string;
+    payment: PaymentMethod;
     distanceKm: number;
     shippingCost: number;
     promoAmount: number;
@@ -139,7 +141,6 @@ export default function CheckoutPage() {
         setDistanceKm(dKm);
         setOngkir(calcOngkir(dKm));
 
-        // kalau user belum ngetik alamat manual, isi dari hasil autocomplete
         setAlamat((prev) => (prev?.trim() ? prev : place.formatted_address || ""));
       });
     } catch {}
@@ -180,7 +181,6 @@ export default function CheckoutPage() {
     fd.append("grandTotal", String(p.grandTotal));
     fd.append("cart", JSON.stringify(p.cart));
 
-    // penting: midtrans gak ada bukti bayar
     await fetch(`${window.location.origin}/api/order`, {
       method: "POST",
       body: fd,
@@ -204,10 +204,11 @@ export default function CheckoutPage() {
 
     const safeDistance = distanceKm || 3;
     const safeOngkir = distanceKm ? ongkir : calcOngkir(3);
+    const grandTotal = Math.max(0, subtotal + safeOngkir - promoAmount);
 
-    // validasi manual upload bukti
-    if (["transfer", "qris"].includes(payment) && !buktiBayarFile) {
-      setErrorMsg("Upload bukti pembayaran dulu 🙏");
+    // ✅ bukti bayar hanya untuk transfer manual
+    if (payment === "transfer" && !buktiBayarFile) {
+      setErrorMsg("Upload bukti transfer dulu 🙏");
       return;
     }
 
@@ -215,7 +216,6 @@ export default function CheckoutPage() {
       setStatus("submitting");
       setErrorMsg("");
 
-      // simpan payload untuk dipakai setelah pembayaran sukses (khusus midtrans)
       lastPayloadRef.current = {
         nama,
         hp,
@@ -227,17 +227,17 @@ export default function CheckoutPage() {
         shippingCost: safeOngkir,
         promoAmount,
         promoLabel,
-        grandTotal: Math.max(0, subtotal + safeOngkir - promoAmount),
+        grandTotal,
         cart: items.map((x) => ({ id: x.id, name: x.name, qty: x.qty, price: x.price })),
       };
 
       // =========================
-      // MIDTRANS
+      // ✅ ONLINE INSTAN (QRIS / E-WALLET) via Snap (tanpa sebut Midtrans)
       // =========================
-      if (payment === "midtrans") {
+      if (payment === "qris" || payment === "ewallet") {
         if (!snapReady || !window.snap) {
           setStatus("idle");
-          setErrorMsg("Midtrans belum siap. Refresh dulu ya 🙏");
+          setErrorMsg("Pembayaran online belum siap. Refresh dulu ya 🙏");
           return;
         }
 
@@ -249,17 +249,17 @@ export default function CheckoutPage() {
             hp,
             email,
             alamat,
-            total: Math.max(0, subtotal + safeOngkir - promoAmount),
+            total: grandTotal,
+            payment, // ✅ penting utk mapping
             cart: items.map((x) => ({ id: x.id, name: x.name, qty: x.qty, price: x.price })),
           }),
         });
 
         const data = await res.json();
         if (!res.ok || !data?.token) {
-          throw new Error("Midtrans token gagal");
+          throw new Error("Token pembayaran gagal");
         }
 
-        // buka popup snap
         window.snap.pay(data.token, {
           onSuccess: async () => {
             try {
@@ -281,12 +281,11 @@ export default function CheckoutPage() {
           },
         });
 
-        // jangan lanjut ke manual order
-        return;
+        return; // stop, jangan masuk manual order
       }
 
       // =========================
-      // MANUAL (TRANSFER / QRIS / COD)
+      // ✅ MANUAL (TRANSFER / COD) tetap seperti sekarang
       // =========================
       const fd = new FormData();
       fd.append("nama", nama);
@@ -300,14 +299,15 @@ export default function CheckoutPage() {
 
       fd.append("promoAmount", String(promoAmount));
       fd.append("promoLabel", promoLabel);
-
-      fd.append("grandTotal", String(Math.max(0, subtotal + safeOngkir - promoAmount)));
+      fd.append("grandTotal", String(grandTotal));
       fd.append(
         "cart",
         JSON.stringify(items.map((x) => ({ id: x.id, name: x.name, qty: x.qty, price: x.price })))
       );
 
-      if (buktiBayarFile) fd.append("buktiBayar", buktiBayarFile);
+      if (payment === "transfer" && buktiBayarFile) {
+        fd.append("buktiBayar", buktiBayarFile);
+      }
 
       const res2 = await fetch(`${window.location.origin}/api/order`, {
         method: "POST",
@@ -339,7 +339,7 @@ export default function CheckoutPage() {
         onLoad={() => setMapsReady(true)}
       />
 
-      {/* Midtrans Snap */}
+      {/* Midtrans Snap (tetap production URL seperti kode lo sekarang) */}
       <Script
         src="https://app.midtrans.com/snap/snap.js"
         data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
@@ -419,7 +419,7 @@ export default function CheckoutPage() {
                   <h2 className="font-playfair text-xl">Metode Pembayaran</h2>
 
                   <div className="rounded-xl bg-[#f7fbfb] border p-4 space-y-3">
-                    {/* Transfer */}
+                    {/* Transfer Bank (manual) */}
                     <label
                       className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 ${
                         payment === "transfer" ? "bg-white border border-[#0FA3A8]" : ""
@@ -430,10 +430,10 @@ export default function CheckoutPage() {
                         checked={payment === "transfer"}
                         onChange={() => setPayment("transfer")}
                       />
-                      <span>Transfer</span>
+                      <span>Transfer Bank</span>
                     </label>
 
-                    {/* QRIS */}
+                    {/* QRIS (instan) */}
                     <label
                       className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 ${
                         payment === "qris" ? "bg-white border border-[#0FA3A8]" : ""
@@ -445,20 +445,23 @@ export default function CheckoutPage() {
                         onChange={() => setPayment("qris")}
                       />
                       <span>QRIS</span>
+                      {!snapReady && (
+                        <span className="text-xs text-gray-500 ml-auto">loading…</span>
+                      )}
                     </label>
 
-                    {/* Midtrans */}
+                    {/* E-Wallet (instan) */}
                     <label
                       className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 ${
-                        payment === "midtrans" ? "bg-white border border-[#0FA3A8]" : ""
+                        payment === "ewallet" ? "bg-white border border-[#0FA3A8]" : ""
                       }`}
                     >
                       <input
                         type="radio"
-                        checked={payment === "midtrans"}
-                        onChange={() => setPayment("midtrans")}
+                        checked={payment === "ewallet"}
+                        onChange={() => setPayment("ewallet")}
                       />
-                      <span>Bayar Online (Midtrans)</span>
+                      <span>E-Wallet</span>
                       {!snapReady && (
                         <span className="text-xs text-gray-500 ml-auto">loading…</span>
                       )}
@@ -503,29 +506,14 @@ export default function CheckoutPage() {
                       </div>
                     )}
 
-                    {/* Detail QRIS */}
-                    {payment === "qris" && (
-                      <div className="bg-white border rounded-xl p-4 mt-3 space-y-3">
-                        <p className="text-sm font-medium">Scan QRIS untuk pembayaran:</p>
-                        <img src="/qris-static.jpg" className="w-full rounded-lg" alt="QRIS" />
-                        <label className="block text-sm font-medium">Upload Bukti Pembayaran</label>
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)}
-                          className="border rounded-lg px-3 py-2 w-full text-sm cursor-pointer"
-                        />
-                      </div>
-                    )}
-
-                    {/* Midtrans info kecil */}
-                    {payment === "midtrans" && (
+                    {/* Info kecil utk online (tanpa sebut midtrans) */}
+                    {(payment === "qris" || payment === "ewallet") && (
                       <div className="bg-white border rounded-xl p-4 mt-3 space-y-2">
                         <p className="text-sm">
-                          Kamu akan diarahkan ke popup pembayaran (VA / e-wallet / kartu) via Midtrans.
+                          Pembayaran akan dibuka lewat popup aman. Pastikan popup tidak diblok browser.
                         </p>
                         <p className="text-xs text-gray-500">
-                          Pastikan popup tidak diblok browser.
+                          Jika popup tidak muncul, coba refresh halaman.
                         </p>
                       </div>
                     )}
