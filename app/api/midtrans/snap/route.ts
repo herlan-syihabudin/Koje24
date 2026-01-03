@@ -10,23 +10,36 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    if (!body?.total || !body?.nama || !body?.email || !body?.hp || !body?.payment) {
+    // =====================
+    // VALIDASI PAYLOAD
+    // =====================
+    if (
+      !body?.total ||
+      !body?.nama ||
+      !body?.email ||
+      !body?.hp ||
+      !body?.payment
+    ) {
       return NextResponse.json(
         { success: false, message: "Payload tidak lengkap" },
         { status: 400 }
       );
     }
 
+    // =====================
+    // INIT MIDTRANS SNAP
+    // =====================
     const snap = new Midtrans.Snap({
       isProduction: process.env.MIDTRANS_ENV === "production",
       serverKey: process.env.MIDTRANS_SERVER_KEY!,
     });
 
     const orderId = "KOJE-" + Date.now();
-
     const payment = String(body.payment) as PaymentMethod;
 
-    // ✅ Mapping metode supaya user langsung ke pilihan (tanpa pilih ulang)
+    // =====================
+    // MAPPING PAYMENT (INTI)
+    // =====================
     let enabledPayments: string[];
 
     if (payment === "bank") {
@@ -39,6 +52,9 @@ export async function POST(req: Request) {
       enabledPayments = ["bank_transfer"];
     }
 
+    // =====================
+    // CREATE TRANSACTION
+    // =====================
     const transaction = await snap.createTransaction({
       transaction_details: {
         order_id: orderId,
@@ -53,16 +69,11 @@ export async function POST(req: Request) {
           address: body.alamat || "",
         },
       },
-
-      // (opsional) Kalau mau detail item tampil di dashboard payment:
-      // item_details: (body.cart || []).map((x: any) => ({
-      //   id: String(x.id),
-      //   name: String(x.name).slice(0, 50),
-      //   quantity: Number(x.qty || 1),
-      //   price: Number(x.price || 0),
-      // })),
     });
 
+    // =====================
+    // RESPONSE
+    // =====================
     return NextResponse.json({
       success: true,
       token: transaction.token,
