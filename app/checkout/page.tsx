@@ -210,9 +210,13 @@ export default function CheckoutPage() {
   alamat: finalAlamat,
   total: grandTotal,
   payment,
-  cart: ...
+  cart: items.map((x) => ({
+    id: x.id,
+    name: x.name,
+    qty: x.qty,
+    price: x.price,
+  })),
 }),
-        });
 
         const data = await res.json();
         if (!res.ok || !data?.token) {
