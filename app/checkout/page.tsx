@@ -49,7 +49,7 @@ export default function CheckoutPage() {
   const [alamat, setAlamat] = useState("");
   const [catatan, setCatatan] = useState("");
 
-  const [payment, setPayment] = useState<"transfer" | "qris" | "cod">("transfer");
+  const [payment, setPayment] = useState<"bank" | "ewallet" | "cod">("bank");
   const [status, setStatus] = useState<CheckoutState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
@@ -270,19 +270,23 @@ export default function CheckoutPage() {
 
                   <h2 className="font-playfair text-xl">Metode Pembayaran</h2>
                   <div className="rounded-xl bg-[#f7fbfb] border p-4 space-y-3">
-                    {(["transfer", "qris", "cod"] as const).map((p) => (
-                      <label
-                        key={p}
-                        className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 ${
-                          payment === p ? "bg-white border border-[#0FA3A8]" : ""
-                        }`}
-                      >
-                        <input type="radio" checked={payment === p} onChange={() => setPayment(p)} />
-                        <span className="capitalize">{p === "cod" ? "COD (Bayar di tempat)" : p}</span>
-                      </label>
-                    ))}
+                    {(["bank", "ewallet", "cod"] as const).map((p) => (
+  <label
+    key={p}
+    className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 ${
+      payment === p ? "bg-white border border-[#0FA3A8]" : ""
+    }`}
+  >
+    <input type="radio" checked={payment === p} onChange={() => setPayment(p)} />
+    <span>
+      {p === "bank" && "Transfer Bank"}
+      {p === "ewallet" && "E-Wallet"}
+      {p === "cod" && "COD (Bayar di tempat)"}
+    </span>
+  </label>
+))}
 
-                    {payment === "transfer" && (
+                    {payment === "bank" && (
                       <div className="bg-white border rounded-xl p-4 mt-3 space-y-3">
                         <p className="text-sm font-medium">Rekening Transfer:</p>
                         <div className="text-sm flex justify-between">
@@ -305,7 +309,7 @@ export default function CheckoutPage() {
                       </div>
                     )}
 
-                    {payment === "qris" && (
+                    {payment === "ewallet" && (
                       <div className="bg-white border rounded-xl p-4 mt-3 space-y-3">
                         <p className="text-sm font-medium">Scan QRIS untuk pembayaran:</p>
                         <img src="/qris-static.jpg" className="w-full rounded-lg" alt="QRIS" />
