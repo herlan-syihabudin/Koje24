@@ -146,10 +146,10 @@ export default function CheckoutPage() {
       setDistanceKm(3);
       setOngkir(calcOngkir(3));
     }
-    if (["transfer", "qris"].includes(payment) && !buktiBayarFile) {
-      setErrorMsg("Upload bukti pembayaran dulu 🙏");
-      return;
-    }
+    if (["bank", "ewallet"].includes(payment) && !buktiBayarFile) {
+  setErrorMsg("Upload bukti pembayaran dulu 🙏");
+  return;
+}
 
     try {
       setStatus("submitting");
