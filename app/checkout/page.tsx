@@ -1,16 +1,10 @@
 "use client";
-
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Script from "next/script";
 import { useCartStore } from "@/stores/cartStore";
+import Script from "next/script";
 
-declare global {
-  interface Window {
-    google?: any;
-    snap?: any;
-  }
-}
+declare const google: any;
 
 type CheckoutState = "idle" | "submitting" | "error";
 
@@ -44,55 +38,32 @@ export default function CheckoutPage() {
   const items = useCartStore((s) => s.items);
   const clearCart = useCartStore((s) => s.clearCart);
 
+  // ✅ PROMO (baru)
   const promo = useCartStore((s) => s.promo);
   const getDiscount = useCartStore((s) => s.getDiscount);
 
   const [hydrated, setHydrated] = useState(false);
-
   const [nama, setNama] = useState("");
   const [hp, setHp] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(""); // <-- NEW
   const [alamat, setAlamat] = useState("");
   const [catatan, setCatatan] = useState("");
 
-  const [payment, setPayment] = useState<"transfer" | "qris" | "midtrans" | "cod">(
-    "transfer"
-  );
-
+  const [payment, setPayment] = useState<"transfer" | "qris" | "cod">("transfer");
   const [status, setStatus] = useState<CheckoutState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
-
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [ongkir, setOngkir] = useState<number>(15000);
-
   const [buktiBayarFile, setBuktiBayarFile] = useState<File | null>(null);
-
   const alamatRef = useRef<HTMLInputElement | null>(null);
-
-  const [mapsReady, setMapsReady] = useState(false);
-  const [snapReady, setSnapReady] = useState(false);
-
-  // cache payload untuk dipakai setelah pembayaran sukses
-  const lastPayloadRef = useRef<{
-    nama: string;
-    hp: string;
-    email: string;
-    alamat: string;
-    note: string;
-    payment: string;
-    distanceKm: number;
-    shippingCost: number;
-    promoAmount: number;
-    promoLabel: string;
-    grandTotal: number;
-    cart: any[];
-  } | null>(null);
 
   const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0);
 
+  // ✅ Diskon realtime dari store
   const promoAmount = getDiscount();
   const promoLabel = promo?.kode ?? "";
 
+  // ✅ Total final (subtotal + ongkir - diskon)
   const total = Math.max(0, subtotal + ongkir - promoAmount);
 
   useEffect(() => {
@@ -106,24 +77,20 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!hydrated) return;
     if (items.length === 0) {
-      const t = setTimeout(() => router.push("/#produk"), 1200);
+      const t = setTimeout(() => router.push("/#produk"), 1500);
       return () => clearTimeout(t);
     }
   }, [items.length, hydrated, router]);
 
-  // init autocomplete setelah script maps ready
   useEffect(() => {
-    if (!mapsReady) return;
-    if (typeof window === "undefined") return;
-
     const el = alamatRef.current;
-    if (!el) return;
-
+    const w = window as any;
+    if (!el || !w.google?.maps?.places) return;
     if ((el as any)._autocomplete_done) return;
     (el as any)._autocomplete_done = true;
 
     try {
-      const auto = new window.google.maps.places.Autocomplete(el, {
+      const auto = new google.maps.places.Autocomplete(el, {
         componentRestrictions: { country: "id" },
         fields: ["formatted_address", "geometry"],
       });
@@ -131,19 +98,16 @@ export default function CheckoutPage() {
       auto.addListener("place_changed", () => {
         const place = auto.getPlace();
         if (!place?.geometry?.location) return;
-
         const lat = place.geometry.location.lat();
         const lng = place.geometry.location.lng();
-
         const dKm = haversine(BASE_LAT, BASE_LNG, lat, lng);
+
         setDistanceKm(dKm);
         setOngkir(calcOngkir(dKm));
-
-        // kalau user belum ngetik alamat manual, isi dari hasil autocomplete
-        setAlamat((prev) => (prev?.trim() ? prev : place.formatted_address || ""));
+        setAlamat((prev) => prev || place.formatted_address);
       });
     } catch {}
-  }, [mapsReady]);
+  }, []);
 
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
@@ -162,31 +126,6 @@ export default function CheckoutPage() {
     );
   };
 
-  const createOrderAfterSuccess = async () => {
-    const p = lastPayloadRef.current;
-    if (!p) return;
-
-    const fd = new FormData();
-    fd.append("nama", p.nama);
-    fd.append("hp", p.hp);
-    fd.append("email", p.email);
-    fd.append("alamat", p.alamat);
-    fd.append("note", p.note);
-    fd.append("payment", p.payment);
-    fd.append("distanceKm", String(p.distanceKm || 0));
-    fd.append("shippingCost", String(p.shippingCost));
-    fd.append("promoAmount", String(p.promoAmount));
-    fd.append("promoLabel", p.promoLabel);
-    fd.append("grandTotal", String(p.grandTotal));
-    fd.append("cart", JSON.stringify(p.cart));
-
-    // penting: midtrans gak ada bukti bayar
-    await fetch(`${window.location.origin}/api/order`, {
-      method: "POST",
-      body: fd,
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (status === "submitting") return;
@@ -197,15 +136,16 @@ export default function CheckoutPage() {
       return;
     }
 
+    // 🔥 NEW VALIDASI EMAIL
     if (!email.trim() || !email.includes("@")) {
       setErrorMsg("Masukkan email yang valid ya 🙏");
       return;
     }
 
-    const safeDistance = distanceKm || 3;
-    const safeOngkir = distanceKm ? ongkir : calcOngkir(3);
-
-    // validasi manual upload bukti
+    if (!distanceKm) {
+      setDistanceKm(3);
+      setOngkir(calcOngkir(3));
+    }
     if (["transfer", "qris"].includes(payment) && !buktiBayarFile) {
       setErrorMsg("Upload bukti pembayaran dulu 🙏");
       return;
@@ -215,116 +155,42 @@ export default function CheckoutPage() {
       setStatus("submitting");
       setErrorMsg("");
 
-      // simpan payload untuk dipakai setelah pembayaran sukses (khusus midtrans)
-      lastPayloadRef.current = {
-        nama,
-        hp,
-        email,
-        alamat,
-        note: catatan,
-        payment,
-        distanceKm: safeDistance,
-        shippingCost: safeOngkir,
-        promoAmount,
-        promoLabel,
-        grandTotal: Math.max(0, subtotal + safeOngkir - promoAmount),
-        cart: items.map((x) => ({ id: x.id, name: x.name, qty: x.qty, price: x.price })),
-      };
-
-      // =========================
-      // MIDTRANS
-      // =========================
-      if (payment === "midtrans") {
-        if (!snapReady || !window.snap) {
-          setStatus("idle");
-          setErrorMsg("Midtrans belum siap. Refresh dulu ya 🙏");
-          return;
-        }
-
-        const res = await fetch(`${window.location.origin}/api/midtrans`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nama,
-            hp,
-            email,
-            alamat,
-            total: Math.max(0, subtotal + safeOngkir - promoAmount),
-            cart: items.map((x) => ({ id: x.id, name: x.name, qty: x.qty, price: x.price })),
-          }),
-        });
-
-        const data = await res.json();
-        if (!res.ok || !data?.token) {
-          throw new Error("Midtrans token gagal");
-        }
-
-        // buka popup snap
-        window.snap.pay(data.token, {
-          onSuccess: async () => {
-            try {
-              await createOrderAfterSuccess();
-            } catch {}
-            clearCart();
-            router.push("/?payment=success");
-          },
-          onPending: () => {
-            setStatus("idle");
-            router.push("/?payment=pending");
-          },
-          onError: () => {
-            setStatus("idle");
-            setErrorMsg("Pembayaran gagal 🙏");
-          },
-          onClose: () => {
-            setStatus("idle");
-          },
-        });
-
-        // jangan lanjut ke manual order
-        return;
-      }
-
-      // =========================
-      // MANUAL (TRANSFER / QRIS / COD)
-      // =========================
       const fd = new FormData();
       fd.append("nama", nama);
       fd.append("hp", hp);
-      fd.append("email", email);
+      fd.append("email", email); // <-- NEW
       fd.append("alamat", alamat);
       fd.append("note", catatan);
       fd.append("payment", payment);
-      fd.append("distanceKm", String(safeDistance));
-      fd.append("shippingCost", String(safeOngkir));
+      fd.append("distanceKm", String(distanceKm || 0));
+      fd.append("shippingCost", String(ongkir));
 
+      // ✅ tetap kirim format lama biar API / sheet / invoice tidak rusak
       fd.append("promoAmount", String(promoAmount));
       fd.append("promoLabel", promoLabel);
 
-      fd.append("grandTotal", String(Math.max(0, subtotal + safeOngkir - promoAmount)));
+      fd.append("grandTotal", String(total));
       fd.append(
         "cart",
         JSON.stringify(items.map((x) => ({ id: x.id, name: x.name, qty: x.qty, price: x.price })))
       );
-
       if (buktiBayarFile) fd.append("buktiBayar", buktiBayarFile);
 
-      const res2 = await fetch(`${window.location.origin}/api/order`, {
+      const res = await fetch(`${window.location.origin}/api/order`, {
         method: "POST",
         body: fd,
       });
 
-      if (!res2.ok) throw new Error("Order gagal");
-      const out = await res2.json();
-      if (!out?.success) throw new Error("API order gagal");
+      if (!res.ok) throw new Error("Bad response");
+      const data = await res.json();
+      if (!data?.success) throw new Error("API failed");
 
+      // nanti kalau mau, data.invoiceUrl / data.invoicePdfUrl bisa dipakai di popup
       clearCart();
-      router.push("/");
-    } catch (err) {
-      console.error(err);
+      router.push("/"); // balik ke homepage, tidak 404 lagi
+    } catch {
       setStatus("error");
       setErrorMsg("Ada gangguan sistem — coba sebentar lagi 🙏");
-      setStatus("idle");
     }
   };
 
@@ -332,28 +198,16 @@ export default function CheckoutPage() {
 
   return (
     <>
-      {/* Google Maps Places */}
       <Script
         src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
-        strategy="afterInteractive"
-        onLoad={() => setMapsReady(true)}
-      />
-
-      {/* Midtrans Snap */}
-      <Script
-        src="https://app.midtrans.com/snap/snap.js"
-        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
-        strategy="afterInteractive"
-        onLoad={() => setSnapReady(true)}
+        strategy="lazyOnload"
       />
 
       <main className="min-h-screen bg-[#F4FAFA] text-[#0B4B50] py-10 px-4 flex justify-center">
         <div className="w-full max-w-6xl space-y-6">
           <div>
             <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24 • CHECKOUT</p>
-            <h1 className="text-3xl md:text-4xl font-playfair font-semibold">
-              Selesaikan Pesanan Kamu
-            </h1>
+            <h1 className="text-3xl md:text-4xl font-playfair font-semibold">Selesaikan Pesanan Kamu</h1>
           </div>
 
           {hydrated && items.length === 0 ? (
@@ -369,22 +223,20 @@ export default function CheckoutPage() {
                     value={nama}
                     onChange={(e) => setNama(e.target.value)}
                   />
-
                   <input
                     className="border rounded-lg px-3 py-2 w-full"
                     placeholder="Nomor WhatsApp"
                     value={hp}
                     onChange={(e) => setHp(e.target.value)}
                   />
-
                   <input
                     className="border rounded-lg px-3 py-2 w-full"
                     placeholder="Email (untuk menerima invoice)"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                  />
-
+                  />{" "}
+                  {/* NEW */}
                   <input
                     ref={alamatRef}
                     className="border rounded-lg px-3 py-2 w-full"
@@ -417,82 +269,32 @@ export default function CheckoutPage() {
                   />
 
                   <h2 className="font-playfair text-xl">Metode Pembayaran</h2>
-
                   <div className="rounded-xl bg-[#f7fbfb] border p-4 space-y-3">
-                    {/* Transfer */}
-                    <label
-                      className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 ${
-                        payment === "transfer" ? "bg-white border border-[#0FA3A8]" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        checked={payment === "transfer"}
-                        onChange={() => setPayment("transfer")}
-                      />
-                      <span>Transfer</span>
-                    </label>
+                    {(["transfer", "qris", "cod"] as const).map((p) => (
+                      <label
+                        key={p}
+                        className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 ${
+                          payment === p ? "bg-white border border-[#0FA3A8]" : ""
+                        }`}
+                      >
+                        <input type="radio" checked={payment === p} onChange={() => setPayment(p)} />
+                        <span className="capitalize">{p === "cod" ? "COD (Bayar di tempat)" : p}</span>
+                      </label>
+                    ))}
 
-                    {/* QRIS */}
-                    <label
-                      className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 ${
-                        payment === "qris" ? "bg-white border border-[#0FA3A8]" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        checked={payment === "qris"}
-                        onChange={() => setPayment("qris")}
-                      />
-                      <span>QRIS</span>
-                    </label>
-
-                    {/* Midtrans */}
-                    <label
-                      className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 ${
-                        payment === "midtrans" ? "bg-white border border-[#0FA3A8]" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        checked={payment === "midtrans"}
-                        onChange={() => setPayment("midtrans")}
-                      />
-                      <span>Bayar Online (Midtrans)</span>
-                      {!snapReady && (
-                        <span className="text-xs text-gray-500 ml-auto">loading…</span>
-                      )}
-                    </label>
-
-                    {/* COD */}
-                    <label
-                      className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 ${
-                        payment === "cod" ? "bg-white border border-[#0FA3A8]" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        checked={payment === "cod"}
-                        onChange={() => setPayment("cod")}
-                      />
-                      <span>COD (Bayar di tempat)</span>
-                    </label>
-
-                    {/* Detail transfer */}
                     {payment === "transfer" && (
                       <div className="bg-white border rounded-xl p-4 mt-3 space-y-3">
                         <p className="text-sm font-medium">Rekening Transfer:</p>
-                        <div className="text-sm flex justify-between gap-3">
+                        <div className="text-sm flex justify-between">
                           <span>BCA — 5350429695 (KOJE)</span>
                           <button
                             type="button"
                             onClick={() => navigator.clipboard.writeText("5350429695")}
-                            className="text-[#0FA3A8] text-xs whitespace-nowrap"
+                            className="text-[#0FA3A8] text-xs"
                           >
                             Copy
                           </button>
                         </div>
-
                         <label className="block text-sm font-medium">Upload Bukti Transfer</label>
                         <input
                           type="file"
@@ -503,7 +305,6 @@ export default function CheckoutPage() {
                       </div>
                     )}
 
-                    {/* Detail QRIS */}
                     {payment === "qris" && (
                       <div className="bg-white border rounded-xl p-4 mt-3 space-y-3">
                         <p className="text-sm font-medium">Scan QRIS untuk pembayaran:</p>
@@ -515,18 +316,6 @@ export default function CheckoutPage() {
                           onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)}
                           className="border rounded-lg px-3 py-2 w-full text-sm cursor-pointer"
                         />
-                      </div>
-                    )}
-
-                    {/* Midtrans info kecil */}
-                    {payment === "midtrans" && (
-                      <div className="bg-white border rounded-xl p-4 mt-3 space-y-2">
-                        <p className="text-sm">
-                          Kamu akan diarahkan ke popup pembayaran (VA / e-wallet / kartu) via Midtrans.
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Pastikan popup tidak diblok browser.
-                        </p>
                       </div>
                     )}
                   </div>
@@ -548,10 +337,7 @@ export default function CheckoutPage() {
 
                 <div className="max-h-[260px] overflow-y-auto space-y-3 pr-1">
                   {items.map((it) => (
-                    <div
-                      key={it.id}
-                      className="flex justify-between items-start border-b pb-2 text-sm gap-3"
-                    >
+                    <div key={it.id} className="flex justify-between items-start border-b pb-2 text-sm gap-3">
                       <div className="flex-1">
                         <p className="font-medium">{it.name}</p>
                         <p className="text-[12px] text-gray-500">
@@ -570,7 +356,6 @@ export default function CheckoutPage() {
                     <span>Subtotal</span>
                     <span>Rp{subtotal.toLocaleString("id-ID")}</span>
                   </div>
-
                   <div className="flex justify-between">
                     <span>Ongkir</span>
                     <span>Rp{ongkir.toLocaleString("id-ID")}</span>
