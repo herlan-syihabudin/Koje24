@@ -4,6 +4,8 @@ import Midtrans from "midtrans-client";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type PaymentMethod = "bank" | "qris" | "ewallet";
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -22,17 +24,19 @@ export async function POST(req: Request) {
 
     const orderId = "KOJE-" + Date.now();
 
-    // ✅ Mapping metode bayar (user tidak lihat midtrans)
-    let enabledPayments: string[] | undefined;
+    const payment = String(body.payment) as PaymentMethod;
 
-    if (body.payment === "qris") {
+    // ✅ Mapping metode supaya user langsung ke pilihan (tanpa pilih ulang)
+    let enabledPayments: string[];
+
+    if (payment === "bank") {
+      enabledPayments = ["bank_transfer"];
+    } else if (payment === "qris") {
       enabledPayments = ["qris"];
-    } else if (body.payment === "ewallet") {
-      // bisa tambah/kurang sesuai yang aktif di midtrans account lo
+    } else if (payment === "ewallet") {
       enabledPayments = ["gopay", "shopeepay"];
     } else {
-      // fallback: biarin midtrans tampil semua metode (harusnya ga kepakai karena UI kita cuma qris/ewallet)
-      enabledPayments = undefined;
+      enabledPayments = ["bank_transfer"];
     }
 
     const transaction = await snap.createTransaction({
@@ -49,7 +53,8 @@ export async function POST(req: Request) {
           address: body.alamat || "",
         },
       },
-      // (opsional) kalau mau rapi di dashboard midtrans:
+
+      // (opsional) Kalau mau detail item tampil di dashboard payment:
       // item_details: (body.cart || []).map((x: any) => ({
       //   id: String(x.id),
       //   name: String(x.name).slice(0, 50),
