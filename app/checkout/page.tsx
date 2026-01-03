@@ -1,22 +1,18 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/stores/cartStore";
 import Script from "next/script";
-
-declare const google: any;
-declare global {
-  interface Window {
-    snap: any;
-  }
-}
 
 type CheckoutState = "idle" | "submitting" | "error";
 
 const BASE_LAT = -6.2903238;
 const BASE_LNG = 107.087373;
 
-/* ================= UTIL ================= */
+/* =========================
+   UTILS
+========================= */
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -37,7 +33,9 @@ function calcOngkir(distanceKm: number | null) {
   return Math.max(10000, Math.round(raw / 100) * 100);
 }
 
-/* ================= PAGE ================= */
+/* =========================
+   PAGE
+========================= */
 export default function CheckoutPage() {
   const router = useRouter();
   const items = useCartStore((s) => s.items);
@@ -51,59 +49,57 @@ export default function CheckoutPage() {
   const [email, setEmail] = useState("");
   const [alamat, setAlamat] = useState("");
   const [catatan, setCatatan] = useState("");
+
   const [payment, setPayment] = useState<"bank" | "ewallet" | "cod">("bank");
   const [status, setStatus] = useState<CheckoutState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
+
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [ongkir, setOngkir] = useState<number>(15000);
 
   const alamatRef = useRef<HTMLInputElement | null>(null);
 
-  const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0);
+  const subtotal = items.reduce((a, b) => a + b.price * b.qty, 0);
   const promoAmount = getDiscount();
   const promoLabel = promo?.kode ?? "";
   const total = Math.max(0, subtotal + ongkir - promoAmount);
 
-  /* ================= EFFECT ================= */
+  /* =========================
+     HYDRATE
+  ========================= */
   useEffect(() => {
     setHydrated(true);
-    setTimeout(() => alamatRef.current?.focus(), 200);
   }, []);
 
   useEffect(() => {
     if (hydrated && items.length === 0) {
-      setTimeout(() => router.push("/#produk"), 1200);
+      router.push("/#produk");
     }
-  }, [hydrated, items.length]);
+  }, [hydrated, items.length, router]);
 
-  useEffect(() => {
-    const el = alamatRef.current;
-    const w = window as any;
-    if (!el || !w.google?.maps?.places) return;
-    if ((el as any)._done) return;
-    (el as any)._done = true;
+  /* =========================
+     GPS ONGKIR
+  ========================= */
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const dKm = haversine(
+          BASE_LAT,
+          BASE_LNG,
+          pos.coords.latitude,
+          pos.coords.longitude
+        );
+        setDistanceKm(dKm);
+        setOngkir(calcOngkir(dKm));
+      },
+      () => alert("Izin lokasi ditolak")
+    );
+  };
 
-    const auto = new google.maps.places.Autocomplete(el, {
-      componentRestrictions: { country: "id" },
-      fields: ["formatted_address", "geometry"],
-    });
-
-    auto.addListener("place_changed", () => {
-      const place = auto.getPlace();
-      if (!place?.geometry?.location) return;
-      const dKm = haversine(
-        BASE_LAT,
-        BASE_LNG,
-        place.geometry.location.lat(),
-        place.geometry.location.lng()
-      );
-      setDistanceKm(dKm);
-      setOngkir(calcOngkir(dKm));
-      setAlamat(place.formatted_address || "");
-    });
-  }, []);
-
-  /* ================= ORDER FINAL ================= */
+  /* =========================
+     SUBMIT FINAL (SHEET)
+  ========================= */
   const submitOrderFinal = async () => {
     const fd = new FormData();
     fd.append("nama", nama);
@@ -119,15 +115,21 @@ export default function CheckoutPage() {
     fd.append("grandTotal", String(total));
     fd.append(
       "cart",
-      JSON.stringify(items.map((x) => ({
-        id: x.id,
-        name: x.name,
-        qty: x.qty,
-        price: x.price,
-      })))
+      JSON.stringify(
+        items.map((x) => ({
+          id: x.id,
+          name: x.name,
+          qty: x.qty,
+          price: x.price,
+        }))
+      )
     );
 
-    const res = await fetch("/api/order", { method: "POST", body: fd });
+    const res = await fetch("/api/order", {
+      method: "POST",
+      body: fd,
+    });
+
     const data = await res.json();
     if (!data?.success) throw new Error("Order gagal");
 
@@ -135,25 +137,19 @@ export default function CheckoutPage() {
     router.push("/");
   };
 
-  /* ================= SUBMIT ================= */
+  /* =========================
+     HANDLE SUBMIT
+  ========================= */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (status === "submitting") return;
-
-    if (!nama || !hp || !alamat || !email.includes("@")) {
-      setErrorMsg("Lengkapi data dengan benar 🙏");
+    if (!nama || !hp || !alamat || !email) {
+      setErrorMsg("Lengkapi data terlebih dahulu");
       return;
     }
 
-    if (!distanceKm) {
-      setDistanceKm(3);
-      setOngkir(calcOngkir(3));
-    }
-
-    /* ===== MIDTRANS ===== */
+    // 🔥 MIDTRANS
     if (payment === "bank" || payment === "ewallet") {
       try {
-        setStatus("submitting");
         const res = await fetch("/api/midtrans", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -168,51 +164,62 @@ export default function CheckoutPage() {
         });
 
         const data = await res.json();
-        if (!data?.token) throw new Error("Midtrans gagal");
+        if (!data?.token) throw new Error("Midtrans error");
 
-        window.snap.pay(data.token, {
-          onSuccess: async () => await submitOrderFinal(),
-          onPending: () => setStatus("idle"),
-          onError: () => {
-            setErrorMsg("Pembayaran gagal 🙏");
-            setStatus("idle");
+        (window as any).snap.pay(data.token, {
+          onSuccess: async () => {
+            await submitOrderFinal();
           },
-          onClose: () => setStatus("idle"),
+          onError: () => setErrorMsg("Pembayaran gagal"),
         });
-
-        return;
       } catch {
         setErrorMsg("Gagal membuka pembayaran");
-        setStatus("idle");
-        return;
       }
+      return;
     }
 
-    /* ===== COD ===== */
-    try {
-      setStatus("submitting");
-      await submitOrderFinal();
-    } catch {
-      setErrorMsg("Gagal memproses pesanan");
-      setStatus("idle");
-    }
+    // COD
+    await submitOrderFinal();
   };
 
-  /* ================= RENDER ================= */
+  /* =========================
+     RENDER
+  ========================= */
   return (
     <>
-      <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
-        strategy="lazyOnload"
-      />
       <Script
         src="https://app.midtrans.com/snap/snap.js"
         data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
         strategy="afterInteractive"
       />
 
-      {/* ⛔️ UI TIDAK DIUBAH ⛔️ */}
-      {/* ————————— (render JSX kamu PERSIS seperti sebelumnya) ————————— */}
+      <main className="min-h-screen bg-[#F4FAFA] py-10 px-4">
+        <form
+          onSubmit={handleSubmit}
+          className="max-w-xl mx-auto bg-white p-6 rounded-2xl space-y-4"
+        >
+          <input className="border p-2 w-full" placeholder="Nama" value={nama} onChange={(e) => setNama(e.target.value)} />
+          <input className="border p-2 w-full" placeholder="WhatsApp" value={hp} onChange={(e) => setHp(e.target.value)} />
+          <input className="border p-2 w-full" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input className="border p-2 w-full" placeholder="Alamat" value={alamat} onChange={(e) => setAlamat(e.target.value)} />
+
+          <button type="button" onClick={handleDetectLocation} className="bg-teal-500 text-white w-full py-2 rounded">
+            Hitung Ongkir GPS
+          </button>
+
+          <div className="space-y-2">
+            <label><input type="radio" checked={payment==="bank"} onChange={()=>setPayment("bank")} /> Transfer Bank</label><br/>
+            <label><input type="radio" checked={payment==="ewallet"} onChange={()=>setPayment("ewallet")} /> E-Wallet</label><br/>
+            <label><input type="radio" checked={payment==="cod"} onChange={()=>setPayment("cod")} /> COD</label>
+          </div>
+
+          {errorMsg && <p className="text-red-500">{errorMsg}</p>}
+
+          <button className="bg-[#0FA3A8] text-white w-full py-3 rounded-full">
+            Bayar Sekarang
+          </button>
+        </form>
+      </main>
     </>
   );
 }
