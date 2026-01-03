@@ -111,36 +111,35 @@ export default function CheckoutPage() {
 
   // init autocomplete setelah script maps ready
   useEffect(() => {
-    if (!mapsReady) return;
-    if (typeof window === "undefined") return;
+  if (!mapsReady) return;
+  if (!window.google?.maps?.places) return;
 
-    const el = alamatRef.current;
-    if (!el) return;
+  const el = alamatRef.current;
+  if (!el) return;
 
-    if ((el as any)._autocomplete_done) return;
-    (el as any)._autocomplete_done = true;
+  if ((el as any)._autocomplete_done) return;
+  (el as any)._autocomplete_done = true;
 
-    try {
-      const auto = new window.google.maps.places.Autocomplete(el, {
-        componentRestrictions: { country: "id" },
-        fields: ["formatted_address", "geometry"],
-      });
+  const auto = new window.google.maps.places.Autocomplete(el, {
+    componentRestrictions: { country: "id" },
+    fields: ["formatted_address", "geometry"],
+  });
 
-      auto.addListener("place_changed", () => {
-        const place = auto.getPlace();
-        if (!place?.geometry?.location) return;
+  auto.addListener("place_changed", () => {
+    const place = auto.getPlace();
+    if (!place?.geometry?.location) return;
 
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
+    const lat = place.geometry.location.lat();
+    const lng = place.geometry.location.lng();
 
-        const dKm = haversine(BASE_LAT, BASE_LNG, lat, lng);
-        setDistanceKm(dKm);
-        setOngkir(calcOngkir(dKm));
+    const dKm = haversine(BASE_LAT, BASE_LNG, lat, lng);
+    setDistanceKm(dKm);
+    setOngkir(calcOngkir(dKm));
 
-        setAlamat((prev) => (prev?.trim() ? prev : place.formatted_address || ""));
-      });
-    } catch {}
-  }, [mapsReady]);
+    // 🔥 SET STATE DI SINI SAJA
+    setAlamat(place.formatted_address || el.value || "");
+  });
+}, [mapsReady]);
 
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
@@ -183,11 +182,12 @@ export default function CheckoutPage() {
     });
   };
 
+  const finalAlamat = alamat || alamatRef.current?.value || "";
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (status === "submitting") return;
 
-    if (!nama.trim() || !hp.trim() || !alamat.trim()) {
+    if (!nama.trim() || !hp.trim() || !finalAlamat.trim()) {
       setErrorMsg("Lengkapi nama, nomor WhatsApp, dan alamat ya 🙏");
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -346,13 +346,10 @@ export default function CheckoutPage() {
                   />
 
                   <input
-                    ref={alamatRef}
-                    className="border rounded-lg px-3 py-2 w-full"
-                    placeholder="Alamat lengkap"
-                    value={alamat}
-                    onChange={(e) => setAlamat(e.target.value)}
-                  />
-
+  ref={alamatRef}
+  className="border rounded-lg px-3 py-2 w-full"
+  placeholder="Alamat lengkap"
+/>
                   <button
                     type="button"
                     onClick={handleDetectLocation}
