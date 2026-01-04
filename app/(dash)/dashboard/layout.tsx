@@ -72,72 +72,52 @@ export default function DashboardShellLayout({
   ];
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans">
+    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
+      {/* SIDEBAR */}
       <aside className={`${sidebarOpen ? "w-64" : "w-20"} bg-[#0B4B50] text-white transition-all duration-300 flex flex-col`}>
+        {/* logo */}
         <div className="p-6 flex items-center gap-3">
           <div className="w-8 h-8 bg-[#0FA3A8] rounded-lg flex items-center justify-center font-bold">K</div>
-          {sidebarOpen && <span className="text-xl font-bold tracking-tight">KOJE ADMIN</span>}
+          {sidebarOpen && <span className="text-xl font-bold">KOJE ADMIN</span>}
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-4">
-          {nav.map((section, idx) => (
-            <div key={idx} className="mb-6">
-              {sidebarOpen && (
-                <p className="text-[10px] font-bold text-white/40 mb-2 px-2 tracking-widest">
-                  {section.title}
-                </p>
-              )}
-              <div className="space-y-1">
-                {section.items.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="w-full flex items-center gap-3 p-2 rounded-xl transition-all text-white/70 hover:bg-white/5 hover:text-white"
-                  >
-                    <item.icon size={20} />
-                    {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
-                  </Link>
-                ))}
-              </div>
+        {/* menu */}
+        <nav className="flex-1 px-4 overflow-y-auto">
+          {nav.map((section, i) => (
+            <div key={i} className="mb-6">
+              {sidebarOpen && <p className="text-[10px] text-white/40 mb-2 px-2">{section.title}</p>}
+              {section.items.map((item) => (
+                <Link key={item.href} href={item.href} className="flex items-center gap-3 p-2 rounded-xl text-white/70 hover:bg-white/10">
+                  <item.icon size={18} />
+                  {sidebarOpen && item.label}
+                </Link>
+              ))}
             </div>
           ))}
         </nav>
 
+        {/* logout */}
         <div className="p-4 border-t border-white/10">
-          <Link
-            href="/api/dashboard/logout"
-            className="w-full flex items-center gap-3 p-2 text-red-300 hover:bg-red-500/10 rounded-xl transition-all"
-          >
-            <LogOut size={20} />
-            {sidebarOpen && <span className="text-sm font-medium">Logout</span>}
+          <Link href="/api/dashboard/logout" className="flex items-center gap-3 text-red-300">
+            <LogOut size={18} /> {sidebarOpen && "Logout"}
           </Link>
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500">
+      {/* CONTENT */}
+      <main className="flex-1 flex flex-col">
+        <header className="h-16 bg-white border-b flex items-center justify-between px-8">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)}>
             <LayoutDashboard size={20} />
           </button>
 
-          <div className="flex items-center gap-6">
-            <div className="hidden md:flex items-center bg-gray-100 px-3 py-1.5 rounded-lg gap-2 text-gray-400">
-              <Search size={18} />
-              <input
-                type="text"
-                placeholder="Cari order, produk..."
-                className="bg-transparent outline-none text-sm text-gray-600 w-48"
-              />
-            </div>
-
-            <div className="relative">
-              <Bell size={20} className="text-gray-500" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-            </div>
+          <div className="flex items-center gap-4">
+            <Search size={18} />
+            <Bell size={18} />
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-8">{children}</div>
+        <div className="flex-1 overflow-y-auto p-8">{children}</div>
       </main>
     </div>
   );
