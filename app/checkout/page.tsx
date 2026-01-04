@@ -214,6 +214,7 @@ export default function CheckoutPage() {
             <p className="text-center text-gray-500">Keranjang kosong. Mengarahkan kembali…</p>
           ) : (
             <div className="grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
+              
   {/* RINGKASAN PESANAN */}
 <aside className="bg-white border rounded-3xl shadow p-6 space-y-4 h-fit">
   <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
@@ -224,10 +225,10 @@ export default function CheckoutPage() {
         key={it.id}
         className="flex justify-between items-start border-b pb-2 text-sm gap-3"
       >
-        {/* THUMBNAIL (BARU, AMAN) */}
+        {/* THUMBNAIL */}
         <div className="w-11 h-11 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
           <img
-            src={it.image || "/placeholder-product.jpg"}
+            src={it.img || "/placeholder-product.jpg"}
             alt={it.name}
             className="w-full h-full object-cover"
           />
