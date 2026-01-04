@@ -3,13 +3,13 @@ import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/dashboardAuth";
 import Link from "next/link";
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // ✅ WAJIB await (biar bukan Promise)
-  const cookieStore = await cookies();
+  // ✅ JANGAN pakai await
+  const cookieStore = cookies();
   const token = cookieStore.get("dashboard_token")?.value;
 
   if (!token || !verifySession(token)) {
@@ -22,7 +22,7 @@ export default async function DashboardLayout({
       <aside className="w-64 bg-white border-r px-5 py-6 flex flex-col">
         <div className="mb-8">
           <p className="text-xs tracking-[0.3em] text-[#0FA3A8]">ADMIN</p>
-          <h2 className="font-playfair text-xl font-semibold">KOJE24</h2>
+          <h2 className="text-xl font-semibold">KOJE24</h2>
         </div>
 
         <nav className="flex-1 space-y-1 text-sm">
@@ -44,14 +44,19 @@ export default async function DashboardLayout({
       </aside>
 
       {/* CONTENT */}
-      <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+      <main className="flex-1 p-6 overflow-y-auto">
+        {children}
+      </main>
     </div>
   );
 }
 
 function SidebarItem({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} className="block px-3 py-2 rounded-lg hover:bg-[#EAF6F6]">
+    <Link
+      href={href}
+      className="block px-3 py-2 rounded-lg hover:bg-[#EAF6F6]"
+    >
       {label}
     </Link>
   );
