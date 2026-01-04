@@ -8,7 +8,8 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = cookies();
+  // ✅ WAJIB await (biar bukan Promise)
+  const cookieStore = await cookies();
   const token = cookieStore.get("dashboard_token")?.value;
 
   if (!token || !verifySession(token)) {
@@ -43,25 +44,14 @@ export default async function DashboardLayout({
       </aside>
 
       {/* CONTENT */}
-      <main className="flex-1 p-6 overflow-y-auto">
-        {children}
-      </main>
+      <main className="flex-1 p-6 overflow-y-auto">{children}</main>
     </div>
   );
 }
 
-function SidebarItem({
-  href,
-  label,
-}: {
-  href: string;
-  label: string;
-}) {
+function SidebarItem({ href, label }: { href: string; label: string }) {
   return (
-    <Link
-      href={href}
-      className="block px-3 py-2 rounded-lg hover:bg-[#EAF6F6]"
-    >
+    <Link href={href} className="block px-3 py-2 rounded-lg hover:bg-[#EAF6F6]">
       {label}
     </Link>
   );
