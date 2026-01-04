@@ -224,12 +224,24 @@ export default function CheckoutPage() {
         key={it.id}
         className="flex justify-between items-start border-b pb-2 text-sm gap-3"
       >
+        {/* THUMBNAIL (BARU, AMAN) */}
+        <div className="w-11 h-11 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+          <img
+            src={it.image || "/placeholder-product.jpg"}
+            alt={it.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        {/* INFO */}
         <div className="flex-1">
           <p className="font-medium">{it.name}</p>
           <p className="text-[12px] text-gray-500">
             {it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs
           </p>
         </div>
+
+        {/* TOTAL */}
         <div className="font-semibold whitespace-nowrap">
           Rp{(it.qty * it.price).toLocaleString("id-ID")}
         </div>
