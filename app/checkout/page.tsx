@@ -213,7 +213,7 @@ export default function CheckoutPage() {
           {hydrated && items.length === 0 ? (
             <p className="text-center text-gray-500">Keranjang kosong. Mengarahkan kembali…</p>
           ) : (
-            <div className="grid gap-8 md:grid-cols-[1.15fr_0.85fr]">
+            <div className="grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
   {/* RINGKASAN PESANAN */}
 <aside className="bg-white border rounded-3xl shadow p-6 space-y-4 h-fit">
   <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
