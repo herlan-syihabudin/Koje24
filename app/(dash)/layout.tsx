@@ -2,12 +2,14 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifySession, getCookieName } from "@/lib/dashboardAuth";
 
-export default function DashGroupLayout({
+export default async function DashGroupLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const token = cookies().get(getCookieName())?.value;
+  const cookieStore = cookies(); // ✅ boleh tanpa await
+  const token = cookieStore.get(getCookieName())?.value;
+
   const v = verifySession(token);
 
   if (!v.ok) {
