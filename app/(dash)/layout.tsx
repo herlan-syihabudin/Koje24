@@ -7,11 +7,10 @@ export default async function DashGroupLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = cookies(); // ✅ boleh tanpa await
+  const cookieStore = await cookies(); // ✅ WAJIB await
   const token = cookieStore.get(getCookieName())?.value;
 
   const v = verifySession(token);
-
   if (!v.ok) {
     redirect("/dashboard/login");
   }
