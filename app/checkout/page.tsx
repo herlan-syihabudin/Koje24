@@ -214,50 +214,52 @@ export default function CheckoutPage() {
             <p className="text-center text-gray-500">Keranjang kosong. Mengarahkan kembali…</p>
           ) : (
             <div className="grid gap-8 md:grid-cols-[1.15fr_0.85fr]">
-              {/* RINGKASAN */}
-              <aside className="bg-white border rounded-3xl shadow p-6 space-y-4 h-fit sticky top-6">
-                <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
+  {/* RINGKASAN */}
+  <aside className="bg-white border rounded-3xl shadow p-6 space-y-4 h-fit">
+    <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
 
-                <div className="max-h-[260px] overflow-y-auto space-y-3 pr-1">
-                  {items.map((it) => (
-                    <div key={it.id} className="flex justify-between items-start border-b pb-2 text-sm gap-3">
-                      <div className="flex-1">
-                        <p className="font-medium">{it.name}</p>
-                        <p className="text-[12px] text-gray-500">
-                          {it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs
-                        </p>
-                      </div>
-                      <div className="font-semibold whitespace-nowrap">
-                        Rp{(it.qty * it.price).toLocaleString("id-ID")}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+    <div className="max-h-[260px] overflow-y-auto space-y-3 pr-1">
+      {items.map((it) => (
+        <div
+          key={it.id}
+          className="flex justify-between items-start border-b pb-2 text-sm gap-3"
+        >
+          <div className="flex-1">
+            <p className="font-medium">{it.name}</p>
+            <p className="text-[12px] text-gray-500">
+              {it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs
+            </p>
+          </div>
+          <div className="font-semibold whitespace-nowrap">
+            Rp{(it.qty * it.price).toLocaleString("id-ID")}
+          </div>
+        </div>
+      ))}
+    </div>
 
-                <div className="border-t pt-3 space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>Rp{subtotal.toLocaleString("id-ID")}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Ongkir</span>
-                    <span>Rp{ongkir.toLocaleString("id-ID")}</span>
-                  </div>
+    <div className="border-t pt-3 space-y-1 text-sm">
+      <div className="flex justify-between">
+        <span>Subtotal</span>
+        <span>Rp{subtotal.toLocaleString("id-ID")}</span>
+      </div>
+      <div className="flex justify-between">
+        <span>Ongkir</span>
+        <span>Rp{ongkir.toLocaleString("id-ID")}</span>
+      </div>
 
-                  {promoAmount > 0 && promoLabel && (
-                    <div className="flex justify-between text-green-600 font-medium">
-                      <span>{promoLabel}</span>
-                      <span>- Rp{promoAmount.toLocaleString("id-ID")}</span>
-                    </div>
-                  )}
+      {promoAmount > 0 && promoLabel && (
+        <div className="flex justify-between text-green-600 font-medium">
+          <span>{promoLabel}</span>
+          <span>- Rp{promoAmount.toLocaleString("id-ID")}</span>
+        </div>
+      )}
 
-                  <div className="flex justify-between font-semibold text-lg pt-1">
-                    <span>Total</span>
-                    <span>Rp{total.toLocaleString("id-ID")}</span>
-                  </div>
-                </div>
-              </aside>
-              
+      <div className="flex justify-between font-semibold text-lg pt-1">
+        <span>Total</span>
+        <span>Rp{total.toLocaleString("id-ID")}</span>
+      </div>
+    </div>
+  </aside> 
               {/* FORM */}
               <section className="bg-white border rounded-3xl shadow p-6 md:p-8 space-y-5">
                 <form onSubmit={handleSubmit} className="space-y-5">
