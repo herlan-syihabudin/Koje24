@@ -1,16 +1,27 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 /* =====================
    KPI CARD
 ===================== */
-function StatCard({ title }: { title: string }) {
+function StatCard({
+  title,
+  value,
+}: {
+  title: string;
+  value?: number | null;
+}) {
   return (
     <div className="rounded-2xl border bg-white p-6 shadow-sm">
       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
         {title}
       </p>
 
-      <div className="mt-4 h-9 w-24 rounded bg-gray-100" />
+      <p className="mt-4 text-3xl font-semibold text-gray-900">
+        {value === null || value === undefined ? "—" : value}
+      </p>
 
       <p className="text-xs text-gray-400 mt-3">
         Belum ada data
@@ -79,15 +90,33 @@ function PreviewCard({
    DASHBOARD HOME
 ===================== */
 export default function DashboardHome() {
+  // KPI state (mulai 1 dulu, aman)
+  const [orderToday, setOrderToday] = useState<number | null>(null);
+
+  /* =====================
+     FETCH DATA (TAHAP AWAL)
+  ===================== */
+  useEffect(() => {
+    fetch("/api/dashboard/stats")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success) {
+          setOrderToday(data.totalOrders);
+        } else {
+          setOrderToday(null);
+        }
+      })
+      .catch(() => {
+        setOrderToday(null);
+      });
+  }, []);
+
   return (
     <div className="max-w-7xl mx-auto space-y-10">
 
       {/* PAGE HEADER */}
       <section>
-        <p className="text-xs tracking-[0.3em] text-[#0FA3A8] font-semibold">
-          OVERVIEW
-        </p>
-        <h1 className="text-3xl font-semibold text-gray-900 mt-1">
+        <h1 className="text-3xl font-semibold text-gray-900">
           Ringkasan KOJE24
         </h1>
         <p className="text-sm text-gray-600 mt-2 max-w-2xl">
@@ -97,7 +126,7 @@ export default function DashboardHome() {
 
       {/* KPI */}
       <section className="grid gap-5 md:grid-cols-3">
-        <StatCard title="Order Hari Ini" />
+        <StatCard title="Order Hari Ini" value={orderToday} />
         <StatCard title="Total Order Bulan Ini" />
         <StatCard title="Total Pendapatan" />
       </section>
@@ -145,8 +174,8 @@ export default function DashboardHome() {
           Catatan Sistem
         </p>
         <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-          Dashboard saat ini berada pada Tahap UI Final. Seluruh struktur,
-          navigasi, dan layout telah dikunci sebelum integrasi data dimulai.
+          Dashboard berada pada tahap integrasi awal data. Penarikan data dilakukan
+          bertahap untuk menjaga stabilitas sistem.
         </p>
       </section>
     </div>
