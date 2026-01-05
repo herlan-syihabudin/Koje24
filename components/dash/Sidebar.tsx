@@ -20,7 +20,9 @@ export default function Sidebar() {
       <div className="mb-6">
         <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24</p>
         <h2 className="text-lg font-semibold">Dashboard</h2>
-        <p className="text-xs text-gray-500 mt-1">Internal panel operasional</p>
+        <p className="text-xs text-gray-500 mt-1">
+          Internal panel operasional
+        </p>
       </div>
 
       <nav className="space-y-1">
@@ -46,7 +48,9 @@ export default function Sidebar() {
       <div className="mt-8 border rounded-2xl p-4 bg-[#F7FBFB]">
         <p className="text-xs text-gray-500">Status</p>
         <p className="text-sm font-medium mt-1">UI: Stabil ✅</p>
-        <p className="text-xs text-gray-500 mt-1">Data: Belum diaktifkan</p>
+        <p className="text-xs text-gray-500 mt-1">
+          Data: Belum diaktifkan
+        </p>
       </div>
     </div>
   );
