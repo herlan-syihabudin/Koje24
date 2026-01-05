@@ -3,21 +3,62 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const nav = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Order", href: "/dashboard/orders" },
-  { label: "Produk", href: "/dashboard/products" },
-  { label: "Pelanggan", href: "/dashboard/customers" },
-  { label: "Keuangan", href: "/dashboard/finance" },
-  { label: "Pengaturan", href: "/dashboard/settings" },
+const NAV = [
+  {
+    title: "OVERVIEW",
+    items: [{ label: "Dashboard", href: "/dashboard" }],
+  },
+  {
+    title: "ORDER",
+    items: [
+      { label: "Semua Order", href: "/dashboard/orders" },
+      { label: "Pending", href: "/dashboard/orders/pending" },
+      { label: "Diproses", href: "/dashboard/orders/process" },
+      { label: "Dikirim", href: "/dashboard/orders/shipped" },
+      { label: "Selesai", href: "/dashboard/orders/completed" },
+    ],
+  },
+  {
+    title: "PRODUK",
+    items: [
+      { label: "Daftar Produk", href: "/dashboard/products" },
+      { label: "Stok & Inventory", href: "/dashboard/products/stock" },
+      { label: "Harga & Promo", href: "/dashboard/products/pricing" },
+    ],
+  },
+  {
+    title: "PELANGGAN",
+    items: [
+      { label: "Pelanggan", href: "/dashboard/customers" },
+      { label: "Riwayat Order", href: "/dashboard/customers/orders" },
+    ],
+  },
+  {
+    title: "KEUANGAN",
+    items: [
+      { label: "Ringkasan", href: "/dashboard/finance" },
+      { label: "Pembayaran", href: "/dashboard/finance/payments" },
+      { label: "Ongkir & Kurir", href: "/dashboard/finance/shipping" },
+      { label: "Invoice", href: "/dashboard/finance/invoices" },
+    ],
+  },
+  {
+    title: "PENGATURAN",
+    items: [
+      { label: "Metode Pembayaran", href: "/dashboard/settings/payment" },
+      { label: "Pengiriman", href: "/dashboard/settings/shipping" },
+      { label: "Admin & Akses", href: "/dashboard/settings/admin" },
+      { label: "System Status", href: "/dashboard/settings/system" },
+    ],
+  },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="p-5">
-      <div className="mb-6">
+    <aside className="p-5 space-y-6">
+      <div>
         <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24</p>
         <h2 className="text-lg font-semibold">Dashboard</h2>
         <p className="text-xs text-gray-500 mt-1">
@@ -25,33 +66,37 @@ export default function Sidebar() {
         </p>
       </div>
 
-      <nav className="space-y-1">
-        {nav.map((item) => {
-          const active = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={[
-                "block rounded-xl px-3 py-2 text-sm transition",
-                active
-                  ? "bg-[#F7FBFB] text-gray-900 font-semibold border"
-                  : "text-gray-600 hover:bg-gray-50",
-              ].join(" ")}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+      {NAV.map((section) => (
+        <div key={section.title}>
+          <p className="text-[10px] font-semibold text-gray-400 mb-2 tracking-widest">
+            {section.title}
+          </p>
+          <nav className="space-y-1">
+            {section.items.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`block rounded-xl px-3 py-2 text-sm transition ${
+                    active
+                      ? "bg-[#F7FBFB] font-semibold border"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      ))}
 
-      <div className="mt-8 border rounded-2xl p-4 bg-[#F7FBFB]">
+      <div className="pt-4 border-t">
         <p className="text-xs text-gray-500">Status</p>
         <p className="text-sm font-medium mt-1">UI: Stabil ✅</p>
-        <p className="text-xs text-gray-500 mt-1">
-          Data: Belum diaktifkan
-        </p>
+        <p className="text-xs text-gray-500">Data: Belum diaktifkan</p>
       </div>
-    </div>
+    </aside>
   );
 }
