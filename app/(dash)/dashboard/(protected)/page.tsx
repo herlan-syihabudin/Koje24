@@ -1,3 +1,13 @@
+function StatCard({ title }: { title: string }) {
+  return (
+    <div className="rounded-2xl border bg-white p-5 shadow-sm">
+      <p className="text-xs text-gray-500">{title}</p>
+      <p className="text-3xl font-semibold mt-2 text-gray-900">—</p>
+      <p className="text-xs text-gray-500 mt-1">Belum tarik data</p>
+    </div>
+  );
+}
+
 export default function DashboardHome() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
