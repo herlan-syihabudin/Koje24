@@ -97,19 +97,19 @@ export default function DashboardHome() {
      FETCH DATA (TAHAP AWAL)
   ===================== */
   useEffect(() => {
-    fetch("/api/dashboard/stats")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.success) {
-          setOrderToday(data.totalOrders);
-        } else {
-          setOrderToday(null);
-        }
-      })
-      .catch(() => {
+  fetch("/api/dashboard/stats")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.success) {
+        setOrderToday(data.todayOrders); // ⬅️ FIX DI SINI
+      } else {
         setOrderToday(null);
-      });
-  }, []);
+      }
+    })
+    .catch(() => {
+      setOrderToday(null);
+    });
+}, []);
 
   return (
     <div className="max-w-7xl mx-auto space-y-10">
