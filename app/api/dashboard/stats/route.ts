@@ -5,36 +5,18 @@ export async function GET() {
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Transaksi!A2:O",
+      range: "Transaksi!A2:A", // pastikan nama sheet benar
     });
 
-    const rows = res.data.values || [];
-
-    // format hari ini -> DD/MM/YYYY
-    const now = new Date();
-    const today =
-      String(now.getDate()).padStart(2, "0") +
-      "/" +
-      String(now.getMonth() + 1).padStart(2, "0") +
-      "/" +
-      now.getFullYear();
-
-    const todayOrders = rows.filter((row) => {
-      const tanggal = row[1]; // kolom B
-      const status = row[12]; // kolom M
-
-      if (!tanggal || !status) return false;
-
-      return tanggal.startsWith(today) && status === "PAID";
-    }).length;
+    const totalOrders = res.data.values?.length || 0;
 
     return NextResponse.json({
       success: true,
-      todayOrders,
+      totalOrders,
     });
-  } catch (error: any) {
+  } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: error.message },
+      { success: false, message: err.message },
       { status: 500 }
     );
   }
