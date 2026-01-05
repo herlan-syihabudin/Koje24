@@ -3,8 +3,12 @@ export default function Topbar() {
     <div className="border-b bg-white">
       <div className="px-4 md:px-8 py-4 flex items-center justify-between">
         <div>
-          <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">OVERVIEW</p>
-          <h1 className="text-xl md:text-2xl font-semibold">Ringkasan KOJE24</h1>
+          <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">
+            OVERVIEW
+          </p>
+          <h1 className="text-xl md:text-2xl font-semibold">
+            Ringkasan KOJE24
+          </h1>
           <p className="text-sm text-gray-600 mt-1">
             Ini dashboard internal untuk pantau order & operasional.
           </p>
