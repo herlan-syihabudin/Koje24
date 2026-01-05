@@ -5,10 +5,11 @@ export async function GET() {
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Orders!A2:A", // asumsi kolom A = Order ID
+      range: "Orders!A2:A",
     });
 
-    const totalOrders = res.data.values?.length || 0;
+    const rows = res.data.values || [];
+    const totalOrders = rows.filter(row => row[0]).length;
 
     return NextResponse.json({
       success: true,
@@ -16,7 +17,10 @@ export async function GET() {
     });
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: err.message },
+      {
+        success: false,
+        message: "Gagal mengambil data order",
+      },
       { status: 500 }
     );
   }
