@@ -5,22 +5,36 @@ export async function GET() {
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Orders!A2:A",
+      range: "Transaksi!A2:O",
     });
 
     const rows = res.data.values || [];
-    const totalOrders = rows.filter(row => row[0]).length;
+
+    // format hari ini -> DD/MM/YYYY
+    const now = new Date();
+    const today =
+      String(now.getDate()).padStart(2, "0") +
+      "/" +
+      String(now.getMonth() + 1).padStart(2, "0") +
+      "/" +
+      now.getFullYear();
+
+    const todayOrders = rows.filter((row) => {
+      const tanggal = row[1]; // kolom B
+      const status = row[12]; // kolom M
+
+      if (!tanggal || !status) return false;
+
+      return tanggal.startsWith(today) && status === "PAID";
+    }).length;
 
     return NextResponse.json({
       success: true,
-      totalOrders,
+      todayOrders,
     });
-  } catch (err: any) {
+  } catch (error: any) {
     return NextResponse.json(
-      {
-        success: false,
-        message: "Gagal mengambil data order",
-      },
+      { success: false, message: error.message },
       { status: 500 }
     );
   }
