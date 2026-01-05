@@ -73,7 +73,6 @@ export default function SettingsPage() {
 }
 
 /* --- COMPONENTS --- */
-
 function Section({
   title,
   children,
