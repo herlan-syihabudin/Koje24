@@ -1,56 +1,115 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+const STATUSES = ["ALL", "PENDING", "PAID", "DIKIRIM", "SELESAI"];
+
+function formatRupiah(v: number) {
+  return "Rp " + v.toLocaleString("id-ID");
+}
+
 export default function OrdersPage() {
+  const [status, setStatus] = useState("ALL");
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/dashboard/orders?status=${status}`, {
+      cache: "no-store",
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setOrders(d.orders);
+      })
+      .finally(() => setLoading(false));
+  }, [status]);
+
   return (
-    <div className="space-y-6">
-      {/* HEADER */}
+    <div className="space-y-6 max-w-7xl mx-auto">
       <div>
-        <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">ORDERS</p>
-        <h1 className="text-2xl md:text-3xl font-playfair font-semibold">
-          Manajemen Order
-        </h1>
-        <p className="text-sm text-gray-600 mt-1">
-          Daftar dan status pesanan pelanggan.
+        <h1 className="text-2xl font-semibold">Semua Order</h1>
+        <p className="text-sm text-gray-500">
+          Daftar seluruh transaksi KOJE24
         </p>
       </div>
 
-      {/* TABS STATUS */}
-      <div className="flex flex-wrap gap-2">
-        {[
-          "Semua",
-          "Pending",
-          "Diproses",
-          "Dikirim",
-          "Selesai",
-        ].map((tab) => (
+      {/* FILTER */}
+      <div className="flex gap-2">
+        {STATUSES.map((s) => (
           <button
-            key={tab}
-            className="px-4 py-2 rounded-full text-sm border bg-white hover:bg-[#F7FBFB] transition"
+            key={s}
+            onClick={() => setStatus(s)}
+            className={`px-4 py-1 rounded-full text-xs border ${
+              status === s
+                ? "bg-[#0FA3A8] text-white"
+                : "text-gray-600"
+            }`}
           >
-            {tab}
+            {s}
           </button>
         ))}
       </div>
 
-      {/* TABLE PLACEHOLDER */}
-      <div className="border rounded-2xl bg-white overflow-hidden">
-        <div className="px-5 py-4 border-b">
-          <p className="text-sm font-semibold">Tabel Order (Tahap UI)</p>
-          <p className="text-xs text-gray-500 mt-1">
-            Data akan diaktifkan pada Tahap berikutnya.
-          </p>
-        </div>
+      {/* TABLE */}
+      <div className="overflow-auto rounded-2xl border bg-white">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50 text-gray-500">
+            <tr>
+              <th className="px-4 py-3 text-left">Tanggal</th>
+              <th className="px-4 py-3 text-left">Nama</th>
+              <th className="px-4 py-3 text-left">Produk</th>
+              <th className="px-4 py-3 text-right">Qty</th>
+              <th className="px-4 py-3 text-right">Total</th>
+              <th className="px-4 py-3 text-center">Metode</th>
+              <th className="px-4 py-3 text-center">Status</th>
+            </tr>
+          </thead>
 
-        <div className="p-10 text-center text-gray-400 text-sm">
-          Belum ada data order.
-        </div>
-      </div>
+          <tbody>
+            {loading && (
+              <tr>
+                <td colSpan={7} className="p-6 text-center text-gray-400">
+                  Memuat data...
+                </td>
+              </tr>
+            )}
 
-      {/* NOTE */}
-      <div className="border rounded-2xl p-5 bg-[#F7FBFB]">
-        <p className="text-sm font-semibold">Catatan Tahap C1</p>
-        <p className="text-sm text-gray-600 mt-1">
-          Ini masih tampilan UI. Fokus tahap ini adalah memastikan navigasi,
-          layout, dan struktur halaman Order sudah final sebelum data diaktifkan.
-        </p>
+            {!loading && orders.length === 0 && (
+              <tr>
+                <td colSpan={7} className="p-6 text-center text-gray-400">
+                  Tidak ada order
+                </td>
+              </tr>
+            )}
+
+            {orders.map((o, i) => (
+              <tr key={i} className="border-t">
+                <td className="px-4 py-3">{o.tanggal}</td>
+                <td className="px-4 py-3 font-medium">{o.nama}</td>
+                <td className="px-4 py-3">{o.produk}</td>
+                <td className="px-4 py-3 text-right">{o.qty}</td>
+                <td className="px-4 py-3 text-right">
+                  {formatRupiah(o.totalBayar)}
+                </td>
+                <td className="px-4 py-3 text-center">{o.metode}</td>
+                <td className="px-4 py-3 text-center">
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      o.status === "PAID"
+                        ? "bg-green-100 text-green-700"
+                        : o.status === "PENDING"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {o.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
