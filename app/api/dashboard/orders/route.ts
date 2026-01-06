@@ -4,7 +4,10 @@ import { sheets, SHEET_ID } from "@/lib/googleSheets";
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const statusFilter = searchParams.get("status"); // ALL | PENDING | PAID ...
+
+    const status = (searchParams.get("status") || "ALL").toUpperCase();
+    const page = Math.max(1, Number(searchParams.get("page") || 1));
+    const limit = Math.min(100, Math.max(5, Number(searchParams.get("limit") || 25)));
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
@@ -13,40 +16,64 @@ export async function GET(req: Request) {
 
     const rows = res.data.values || [];
 
-    const orders = rows
-      .map((row, i) => {
-        const status = String(row[12] || "")
-          .trim()
-          .toUpperCase(); // 🔥 KUNCI UTAMA
+    // ✅ mapping rows -> orders
+    const allOrders = rows
+      .map((row) => {
+        const invoice = String(row[0] || "").trim(); // A
+        const tanggal = String(row[1] || "").trim(); // B
+        const nama = String(row[2] || "").trim(); // C
+        const produk = String(row[5] || "").trim(); // F
+        const qty = Number(row[6] || 0); // G
+        const totalBayar = Number(row[9] || 0); // J
+        const metode = String(row[11] || "").trim(); // L
+        const st = String(row[12] || "").toUpperCase().trim(); // M
+
+        if (!invoice) return null;
 
         return {
-          rowIndex: i + 2,
-          invoice: row[0],
-          tanggal: row[1],
-          nama: row[2],
-          hp: row[3],
-          alamat: row[4],
-          produk: row[5],
-          qty: Number(row[6] || 0),
-          totalBayar: Number(row[9] || 0),
-          metode: row[11],
-          status,
+          invoice,
+          tanggal,
+          nama,
+          produk,
+          qty,
+          totalBayar,
+          metode,
+          status: st || "PENDING",
         };
       })
-      .filter((o) =>
-        statusFilter && statusFilter !== "ALL"
-          ? o.status === statusFilter
-          : true
-      )
-      .reverse();
+      .filter(Boolean) as any[];
+
+    // ✅ filter status
+    const filtered =
+      status === "ALL" ? allOrders : allOrders.filter((o) => o.status === status);
+
+    // ✅ sort terbaru di atas (opsional)
+    // kalau tanggal format kamu konsisten, aman. kalau nggak, tetap OK.
+    filtered.sort((a, b) => (b.tanggal || "").localeCompare(a.tanggal || ""));
+
+    // ✅ pagination
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const safePage = Math.min(page, totalPages);
+    const start = (safePage - 1) * limit;
+    const end = start + limit;
+
+    const orders = filtered.slice(start, end);
 
     return NextResponse.json({
       success: true,
+      meta: {
+        status,
+        page: safePage,
+        limit,
+        total,
+        totalPages,
+      },
       orders,
     });
-  } catch (e: any) {
+  } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: e.message },
+      { success: false, message: err.message },
       { status: 500 }
     );
   }
