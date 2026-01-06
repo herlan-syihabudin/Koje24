@@ -9,6 +9,10 @@ const ALLOWED_STATUS = [
   "SELESAI",
 ];
 
+function now() {
+  return new Date().toISOString().replace("T", " ").slice(0, 19);
+}
+
 export async function POST(req: Request) {
   try {
     const { invoice, status } = await req.json();
@@ -21,7 +25,6 @@ export async function POST(req: Request) {
     }
 
     const cleanStatus = String(status).trim().toUpperCase();
-
     if (!ALLOWED_STATUS.includes(cleanStatus)) {
       return NextResponse.json(
         { success: false, message: "Status tidak valid" },
@@ -29,13 +32,13 @@ export async function POST(req: Request) {
       );
     }
 
+    // 1️⃣ Ambil data transaksi
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: "Transaksi!A2:O",
     });
 
     const rows = res.data.values || [];
-
     const rowIndex = rows.findIndex(
       (row) => String(row[0]).trim() === String(invoice).trim()
     );
@@ -48,14 +51,32 @@ export async function POST(req: Request) {
     }
 
     const sheetRow = rowIndex + 2;
+    const oldStatus = String(rows[rowIndex][12] || "").toUpperCase(); // kolom M
 
-    // Kolom M = STATUS ORDER
+    // 2️⃣ Update STATUS (kolom M)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `Transaksi!M${sheetRow}`,
       valueInputOption: "RAW",
       requestBody: {
         values: [[cleanStatus]],
+      },
+    });
+
+    // 3️⃣ TULIS AUDIT LOG 🔥
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: "Audit_Log!A:F",
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [[
+          now(),
+          invoice,
+          "UPDATE_STATUS",
+          oldStatus,
+          cleanStatus,
+          "dashboard"
+        ]],
       },
     });
 
