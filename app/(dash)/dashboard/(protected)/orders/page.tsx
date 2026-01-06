@@ -22,13 +22,22 @@ const STATUS_STYLE: Record<string, string> = {
   SELESAI: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
+/* 🔒 FLOW STATUS (INI KUNCI) */
+const STATUS_FLOW: Record<string, string[]> = {
+  PENDING: ["PAID"],
+  PAID: ["DIPROSES"],
+  DIPROSES: ["DIKIRIM"],
+  DIKIRIM: ["SELESAI"],
+  SELESAI: [],
+};
+
 /* =====================
    PAGE
 ===================== */
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeStatus, setActiveStatus] = useState<string>("ALL");
+  const [activeStatus, setActiveStatus] = useState("ALL");
 
   /* =====================
      FETCH ORDERS
@@ -43,7 +52,6 @@ export default function OrdersPage() {
 
       const res = await fetch(url, { cache: "no-store" });
       const data = await res.json();
-
       setOrders(data?.success ? data.orders : []);
     } catch (err) {
       console.error(err);
@@ -61,21 +69,23 @@ export default function OrdersPage() {
      UPDATE STATUS
   ===================== */
   async function updateStatus(invoice: string, status: string) {
-  const res = await fetch("/api/dashboard/orders/update-status", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ invoice, status }),
-  });
+    if (!confirm(`Ubah status invoice ${invoice} menjadi ${status}?`)) return;
 
-  const data = await res.json();
+    const res = await fetch("/api/dashboard/orders/update-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ invoice, status }),
+    });
 
-  if (!data.success) {
-    alert(data.message || "Gagal update status");
-    return;
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.message || "Gagal update status");
+      return;
+    }
+
+    fetchOrders(activeStatus);
   }
-
-  fetchOrders(activeStatus);
-}
 
   /* =====================
      RENDER
@@ -85,11 +95,11 @@ export default function OrdersPage() {
       {/* HEADER */}
       <div>
         <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">ORDERS</p>
-        <h1 className="text-2xl md:text-3xl font-playfair font-semibold">
+        <h1 className="text-2xl md:text-3xl font-semibold">
           Manajemen Order
         </h1>
         <p className="text-sm text-gray-600 mt-1">
-          Filter & update status pesanan pelanggan.
+          Update status pesanan sesuai alur operasional.
         </p>
       </div>
 
@@ -101,7 +111,7 @@ export default function OrdersPage() {
             onClick={() => setActiveStatus(tab.value)}
             className={`px-4 py-2 rounded-full text-sm border transition ${
               activeStatus === tab.value
-                ? "bg-[#0FA3A8] text-white border-[#0FA3A8]"
+                ? "bg-[#0FA3A8] text-white"
                 : "bg-white hover:bg-[#F7FBFB]"
             }`}
           >
@@ -142,41 +152,44 @@ export default function OrdersPage() {
             )}
 
             {!loading &&
-              orders.map((o, i) => (
+              orders.map((o) => (
                 <tr key={o.invoice} className="border-b last:border-0">
                   <td className="p-3 font-medium">{o.invoice}</td>
                   <td className="p-3">{o.nama}</td>
-                  <td className="p-3 max-w-md">{o.produk}</td>
+                  <td className="p-3">{o.produk}</td>
                   <td className="p-3 text-center">{o.qty}</td>
                   <td className="p-3 text-right font-semibold">
                     Rp {o.totalBayar.toLocaleString("id-ID")}
                   </td>
 
-                  {/* STATUS BADGE + SELECT */}
+                  {/* STATUS */}
                   <td className="p-3 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <span
                         className={`px-2 py-1 text-xs rounded-full border ${
-                          STATUS_STYLE[o.status] || "bg-gray-100"
+                          STATUS_STYLE[o.status]
                         }`}
                       >
                         {o.status}
                       </span>
 
                       <select
+                        disabled={o.status === "SELESAI"}
                         value={o.status}
                         onChange={(e) =>
-  updateStatus(o.invoice, e.target.value)
-}
-                        className="border rounded-lg px-2 py-1 text-xs"
+                          updateStatus(o.invoice, e.target.value)
+                        }
+                        className="border rounded-lg px-2 py-1 text-xs disabled:opacity-50"
                       >
-                        {STATUS_TABS.filter((s) => s.value !== "ALL").map(
-                          (s) => (
-                            <option key={s.value} value={s.value}>
-                              {s.label.toUpperCase()}
-                            </option>
-                          )
-                        )}
+                        {/* status sekarang */}
+                        <option value={o.status}>{o.status}</option>
+
+                        {/* hanya status berikutnya */}
+                        {(STATUS_FLOW[o.status] || []).map((next) => (
+                          <option key={next} value={next}>
+                            {next}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </td>
@@ -184,15 +197,6 @@ export default function OrdersPage() {
               ))}
           </tbody>
         </table>
-      </div>
-
-      {/* INFO */}
-      <div className="border rounded-2xl p-5 bg-[#F7FBFB]">
-        <p className="text-sm font-semibold">Status Filter Aktif</p>
-        <p className="text-sm text-gray-600 mt-1">
-          Menampilkan order dengan status:{" "}
-          <strong>{activeStatus}</strong>
-        </p>
       </div>
     </div>
   );
