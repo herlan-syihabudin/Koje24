@@ -9,6 +9,8 @@ function parseTanggal(tanggalRaw: string) {
   return new Date(y, m - 1, d);
 }
 
+type ProductAgg = { qty: number; revenue: number };
+
 export async function GET() {
   try {
     const res = await sheets.spreadsheets.values.get({
@@ -19,46 +21,44 @@ export async function GET() {
     const rows = res.data.values || [];
     const now = new Date();
 
-    const productMap: Record<
-      string,
-      { qty: number; revenue: number }
-    > = {};
+    const productMap: Record<string, ProductAgg> = {};
 
     rows.forEach((row) => {
       const tanggal = row[1]; // B
       const produkRaw = row[5]; // F
       const qty = Number(row[6] || 1); // G
       const totalBayar = Number(row[9] || 0); // J
-      const status = String(row[12] || "").toUpperCase();
+      const status = String(row[12] || "").toUpperCase(); // M
 
       if (!tanggal || !produkRaw) return;
       if (status !== "PAID") return;
 
-      const dt = parseTanggal(tanggal);
+      const dt = parseTanggal(String(tanggal));
       if (!dt) return;
 
       // filter bulan ini
       if (
         dt.getMonth() !== now.getMonth() ||
         dt.getFullYear() !== now.getFullYear()
-      ) return;
+      )
+        return;
 
-      // 🔥 SPLIT PRODUK
-      const products = produkRaw
+      // 🔥 split produk (kalau 1 order berisi beberapa produk)
+      const products: string[] = String(produkRaw)
         .split(",")
-        .map((p: string) =>
-          p.replace(/\(.*?\)/g, "").trim()
-        )
-        .filter(Boolean);
+        .map((p: string) => p.replace(/\(.*?\)/g, "").trim())
+        .filter((p: string) => p.length > 0);
 
+      if (products.length === 0) return;
+
+      // bagi rata qty & revenue ke tiap item dalam paket
       const qtyPerProduct = qty / products.length;
       const revenuePerProduct = totalBayar / products.length;
 
-      products.forEach((productName) => {
+      products.forEach((productName: string) => {
         if (!productMap[productName]) {
           productMap[productName] = { qty: 0, revenue: 0 };
         }
-
         productMap[productName].qty += qtyPerProduct;
         productMap[productName].revenue += revenuePerProduct;
       });
