@@ -4,9 +4,23 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 /* =====================
+   HELPER
+===================== */
+function formatRupiah(value?: number | null) {
+  if (value === null || value === undefined) return "—";
+  return "Rp " + value.toLocaleString("id-ID");
+}
+
+/* =====================
    KPI CARD
 ===================== */
-function StatCard({ title, value }: { title: string; value?: number | null }) {
+function StatCard({
+  title,
+  value,
+}: {
+  title: string;
+  value?: number | string | null;
+}) {
   return (
     <div className="rounded-2xl border bg-white p-6 shadow-sm">
       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -65,6 +79,7 @@ function PreviewCard({ title, desc }: { title: string; desc: string }) {
 export default function DashboardHome() {
   const [todayOrders, setTodayOrders] = useState<number | null>(null);
   const [monthOrders, setMonthOrders] = useState<number | null>(null);
+  const [totalRevenue, setTotalRevenue] = useState<number | null>(null);
 
   useEffect(() => {
     fetch("/api/dashboard/stats", { cache: "no-store" })
@@ -73,14 +88,17 @@ export default function DashboardHome() {
         if (data?.success) {
           setTodayOrders(data.todayOrders ?? 0);
           setMonthOrders(data.monthOrders ?? 0);
+          setTotalRevenue(data.totalRevenue ?? 0);
         } else {
           setTodayOrders(null);
           setMonthOrders(null);
+          setTotalRevenue(null);
         }
       })
       .catch(() => {
         setTodayOrders(null);
         setMonthOrders(null);
+        setTotalRevenue(null);
       });
   }, []);
 
@@ -92,7 +110,8 @@ export default function DashboardHome() {
           Ringkasan KOJE24
         </h1>
         <p className="text-sm text-gray-600 mt-2 max-w-2xl">
-          Dashboard internal untuk memantau order, produk, dan operasional KOJE24 secara terpusat.
+          Dashboard internal untuk memantau order, produk, dan operasional KOJE24
+          secara terpusat.
         </p>
       </section>
 
@@ -100,7 +119,10 @@ export default function DashboardHome() {
       <section className="grid gap-5 md:grid-cols-3">
         <StatCard title="Order Hari Ini" value={todayOrders} />
         <StatCard title="Total Order Bulan Ini" value={monthOrders} />
-        <StatCard title="Total Pendapatan" value={null} />
+        <StatCard
+          title="Total Pendapatan"
+          value={formatRupiah(totalRevenue)}
+        />
       </section>
 
       {/* QUICK ACTION */}
@@ -145,8 +167,8 @@ export default function DashboardHome() {
           Catatan Sistem
         </p>
         <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-          Tahap integrasi data berjalan bertahap. Step 2 mengaktifkan KPI total
-          order bulan ini.
+          Tahap integrasi data berjalan bertahap. Saat ini KPI Order Harian,
+          Bulanan, dan Total Pendapatan sudah aktif.
         </p>
       </section>
     </div>
