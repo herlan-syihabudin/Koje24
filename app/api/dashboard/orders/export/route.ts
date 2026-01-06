@@ -3,13 +3,21 @@ import { sheets, SHEET_ID } from "@/lib/googleSheets";
 import * as XLSX from "xlsx";
 
 /* =====================
+   RUNTIME (WAJIB)
+===================== */
+export const runtime = "nodejs";
+
+/* =====================
    UTIL
 ===================== */
 function parseTanggal(tanggalRaw: string) {
   if (!tanggalRaw) return null;
+
   const datePart = String(tanggalRaw).split(",")[0];
   const [d, m, y] = datePart.split("/").map(Number);
+
   if (!d || !m || !y) return null;
+
   return new Date(y, m - 1, d);
 }
 
@@ -18,21 +26,22 @@ function formatDateISO(d: Date) {
 }
 
 /* =====================
-   GET EXPORT
+   EXPORT EXCEL
 ===================== */
 export async function POST(req: Request) {
   try {
-    const { startDate, endDate, status } = await req.json();
+    const { from, to, status } = await req.json();
 
-    if (!startDate || !endDate || !status) {
+    if (!from || !to || !status) {
       return NextResponse.json(
         { success: false, message: "Parameter tidak lengkap" },
         { status: 400 }
       );
     }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = new Date(from);
+    const end = new Date(to);
+    end.setHours(23, 59, 59, 999); // ✅ INCLUDE HARI TERAKHIR
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
@@ -90,7 +99,7 @@ export async function POST(req: Request) {
       bookType: "xlsx",
     });
 
-    const filename = `Closing_${status}_${startDate}_to_${endDate}.xlsx`;
+    const filename = `Closing_${status}_${from}_to_${to}.xlsx`;
 
     return new NextResponse(buffer, {
       headers: {
