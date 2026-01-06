@@ -22,14 +22,6 @@ const STATUS_STYLE: Record<string, string> = {
   SELESAI: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
-const STATUS_FLOW: Record<string, string[]> = {
-  PENDING: ["PAID"],
-  PAID: ["DIPROSES"],
-  DIPROSES: ["DIKIRIM"],
-  DIKIRIM: ["SELESAI"],
-  SELESAI: [],
-};
-
 type Order = {
   invoice: string;
   nama: string;
@@ -40,7 +32,6 @@ type Order = {
 };
 
 type Meta = {
-  status: string;
   page: number;
   limit: number;
   total: number;
@@ -65,6 +56,7 @@ export default function OrdersPage() {
   const [toDate, setToDate] = useState(today);
   const [closingStatus, setClosingStatus] = useState("PAID");
   const [closingLoading, setClosingLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
 
   /* =====================
      FETCH ORDERS
@@ -107,21 +99,46 @@ export default function OrdersPage() {
   }, [page]);
 
   /* =====================
-     UPDATE STATUS
+     EXPORT EXCEL
   ===================== */
-  async function updateStatus(invoice: string, status: string) {
-    if (!confirm(`Ubah status ${invoice} → ${status}?`)) return;
+  async function handleExport() {
+    if (
+      !confirm(
+        `Export order ${closingStatus}\n${fromDate} → ${toDate}\n\nLanjutkan?`
+      )
+    )
+      return;
 
-    const res = await fetch("/api/dashboard/orders/update-status", {
+    setExportLoading(true);
+
+    const res = await fetch("/api/dashboard/orders/export", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ invoice, status }),
+      body: JSON.stringify({
+        startDate: fromDate,
+        endDate: toDate,
+        status: closingStatus,
+      }),
     });
 
-    const data = await res.json();
-    if (!data.success) alert(data.message || "Gagal update");
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.message || "Gagal export");
+      setExportLoading(false);
+      return;
+    }
 
-    fetchOrders(activeStatus, page);
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Closing_${closingStatus}_${fromDate}_${toDate}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setExportLoading(false);
   }
 
   /* =====================
@@ -203,7 +220,7 @@ export default function OrdersPage() {
       <div className="border rounded-2xl bg-white p-6 space-y-4">
         <p className="font-semibold">Export & Closing Order</p>
 
-        <div className="grid md:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-5 gap-4">
           <input
             type="date"
             value={fromDate}
@@ -226,6 +243,14 @@ export default function OrdersPage() {
           </select>
 
           <button
+            onClick={handleExport}
+            disabled={exportLoading}
+            className="bg-[#0FA3A8] text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
+          >
+            {exportLoading ? "Exporting..." : "Export Excel"}
+          </button>
+
+          <button
             onClick={handleClosing}
             disabled={closingLoading}
             className="bg-red-500 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
@@ -235,11 +260,10 @@ export default function OrdersPage() {
         </div>
 
         <p className="text-xs text-yellow-600">
-          ⚠️ Setelah closing, order tidak ikut dashboard & export berikutnya.
+          ⚠️ Export dulu sebelum closing. Closing akan mengunci data.
         </p>
       </div>
 
-      {/* PAGINATION INFO */}
       <p className="text-xs text-gray-500">{paginationText}</p>
 
       {/* TABLE */}
