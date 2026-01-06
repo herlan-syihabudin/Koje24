@@ -14,6 +14,14 @@ const STATUS_TABS = [
   { label: "Selesai", value: "SELESAI" },
 ];
 
+const STATUS_STYLE: Record<string, string> = {
+  PENDING: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  PAID: "bg-green-100 text-green-700 border-green-200",
+  DIPROSES: "bg-blue-100 text-blue-700 border-blue-200",
+  DIKIRIM: "bg-purple-100 text-purple-700 border-purple-200",
+  SELESAI: "bg-gray-100 text-gray-700 border-gray-200",
+};
+
 /* =====================
    PAGE
 ===================== */
@@ -27,7 +35,6 @@ export default function OrdersPage() {
   ===================== */
   const fetchOrders = async (status: string) => {
     setLoading(true);
-
     try {
       const url =
         status === "ALL"
@@ -37,22 +44,15 @@ export default function OrdersPage() {
       const res = await fetch(url, { cache: "no-store" });
       const data = await res.json();
 
-      if (data?.success) {
-        setOrders(data.orders);
-      } else {
-        setOrders([]);
-      }
+      setOrders(data?.success ? data.orders : []);
     } catch (err) {
-      console.error("Fetch orders error:", err);
+      console.error(err);
       setOrders([]);
     } finally {
       setLoading(false);
     }
   };
 
-  /* =====================
-     LOAD ON STATUS CHANGE
-  ===================== */
   useEffect(() => {
     fetchOrders(activeStatus);
   }, [activeStatus]);
@@ -61,18 +61,13 @@ export default function OrdersPage() {
      UPDATE STATUS
   ===================== */
   async function updateStatus(rowIndex: number, status: string) {
-    try {
-      await fetch("/api/dashboard/orders/update-status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rowIndex, status }),
-      });
+    await fetch("/api/dashboard/orders/update-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rowIndex, status }),
+    });
 
-      // 🔥 reload sesuai filter aktif
-      fetchOrders(activeStatus);
-    } catch (err) {
-      console.error("Update status error:", err);
-    }
+    fetchOrders(activeStatus);
   }
 
   /* =====================
@@ -91,7 +86,7 @@ export default function OrdersPage() {
         </p>
       </div>
 
-      {/* FILTER TABS */}
+      {/* FILTER */}
       <div className="flex flex-wrap gap-2">
         {STATUS_TABS.map((tab) => (
           <button
@@ -123,7 +118,6 @@ export default function OrdersPage() {
           </thead>
 
           <tbody>
-            {/* LOADING */}
             {loading && (
               <tr>
                 <td colSpan={6} className="p-6 text-center text-gray-400">
@@ -132,7 +126,6 @@ export default function OrdersPage() {
               </tr>
             )}
 
-            {/* EMPTY */}
             {!loading && orders.length === 0 && (
               <tr>
                 <td colSpan={6} className="p-6 text-center text-gray-400">
@@ -141,7 +134,6 @@ export default function OrdersPage() {
               </tr>
             )}
 
-            {/* DATA */}
             {!loading &&
               orders.map((o, i) => (
                 <tr key={i} className="border-b last:border-0">
@@ -152,22 +144,34 @@ export default function OrdersPage() {
                   <td className="p-3 text-right font-semibold">
                     Rp {o.totalBayar.toLocaleString("id-ID")}
                   </td>
+
+                  {/* STATUS BADGE + SELECT */}
                   <td className="p-3 text-center">
-                    <select
-                      value={o.status}
-                      onChange={(e) =>
-                        updateStatus(o.rowIndex, e.target.value)
-                      }
-                      className="border rounded-lg px-2 py-1 text-xs"
-                    >
-                      {STATUS_TABS.filter((s) => s.value !== "ALL").map(
-                        (s) => (
-                          <option key={s.value} value={s.value}>
-                            {s.label.toUpperCase()}
-                          </option>
-                        )
-                      )}
-                    </select>
+                    <div className="flex items-center justify-center gap-2">
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full border ${
+                          STATUS_STYLE[o.status] || "bg-gray-100"
+                        }`}
+                      >
+                        {o.status}
+                      </span>
+
+                      <select
+                        value={o.status}
+                        onChange={(e) =>
+                          updateStatus(o.rowIndex, e.target.value)
+                        }
+                        className="border rounded-lg px-2 py-1 text-xs"
+                      >
+                        {STATUS_TABS.filter((s) => s.value !== "ALL").map(
+                          (s) => (
+                            <option key={s.value} value={s.value}>
+                              {s.label.toUpperCase()}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </div>
                   </td>
                 </tr>
               ))}
