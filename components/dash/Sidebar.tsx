@@ -10,13 +10,7 @@ const NAV = [
   },
   {
     title: "ORDER",
-    items: [
-      { label: "Semua Order", href: "/dashboard/orders" },
-      { label: "Pending", href: "/dashboard/orders/pending" },
-      { label: "Diproses", href: "/dashboard/orders/process" },
-      { label: "Dikirim", href: "/dashboard/orders/shipped" },
-      { label: "Selesai", href: "/dashboard/orders/completed" },
-    ],
+    items: [{ label: "Semua Order", href: "/dashboard/orders" }],
   },
   {
     title: "PRODUK",
@@ -58,6 +52,7 @@ export default function Sidebar() {
 
   return (
     <aside className="p-5 space-y-6">
+      {/* HEADER */}
       <div>
         <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24</p>
         <h2 className="text-lg font-semibold">Dashboard</h2>
@@ -66,6 +61,7 @@ export default function Sidebar() {
         </p>
       </div>
 
+      {/* NAV */}
       {NAV.map((section) => (
         <div key={section.title}>
           <p className="text-[10px] font-semibold text-gray-400 mb-2 tracking-widest">
@@ -73,7 +69,10 @@ export default function Sidebar() {
           </p>
           <nav className="space-y-1">
             {section.items.map((item) => {
-              const active = pathname === item.href;
+              const active =
+                pathname === item.href ||
+                pathname.startsWith(item.href + "/");
+
               return (
                 <Link
                   key={item.href}
@@ -92,10 +91,11 @@ export default function Sidebar() {
         </div>
       ))}
 
+      {/* FOOTER */}
       <div className="pt-4 border-t">
         <p className="text-xs text-gray-500">Status</p>
         <p className="text-sm font-medium mt-1">UI: Stabil ✅</p>
-        <p className="text-xs text-gray-500">Data: Belum diaktifkan</p>
+        <p className="text-xs text-gray-500">Data: Aktif (Orders)</p>
       </div>
     </aside>
   );
