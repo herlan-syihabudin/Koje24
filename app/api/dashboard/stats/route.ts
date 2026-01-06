@@ -11,24 +11,19 @@ export async function GET() {
     const rows = res.data.values || [];
 
     const now = new Date();
+    const todayDay = now.getDate();
+    const todayMonth = now.getMonth() + 1;
+    const todayYear = now.getFullYear();
 
     const todayOrders = rows.filter((row) => {
-      const tanggalRaw = row[1]; // kolom B (Tanggal)
+      const tanggalRaw = row[1]; // kolom B
       if (!tanggalRaw) return false;
 
-      // contoh: "5/1/2026, 12.24.38"
-      const [datePart] = tanggalRaw.split(",");
+      // contoh: "9/12/2025, 14.19.00"
+      const datePart = tanggalRaw.split(",")[0]; // "9/12/2025"
       const [d, m, y] = datePart.split("/").map(Number);
 
-      if (!d || !m || !y) return false;
-
-      const orderDate = new Date(y, m - 1, d);
-
-      return (
-        orderDate.getDate() === now.getDate() &&
-        orderDate.getMonth() === now.getMonth() &&
-        orderDate.getFullYear() === now.getFullYear()
-      );
+      return d === todayDay && m === todayMonth && y === todayYear;
     }).length;
 
     return NextResponse.json({
