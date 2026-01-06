@@ -61,12 +61,13 @@ export default function Sidebar() {
         </p>
       </div>
 
-      {/* NAV */}
+      {/* NAVIGATION */}
       {NAV.map((section) => (
         <div key={section.title}>
           <p className="text-[10px] font-semibold text-gray-400 mb-2 tracking-widest">
             {section.title}
           </p>
+
           <nav className="space-y-1">
             {section.items.map((item) => {
               const active =
@@ -91,9 +92,9 @@ export default function Sidebar() {
         </div>
       ))}
 
-      {/* FOOTER */}
+      {/* FOOTER STATUS */}
       <div className="pt-4 border-t">
-        <p className="text-xs text-gray-500">Status</p>
+        <p className="text-xs text-gray-500">Status Sistem</p>
         <p className="text-sm font-medium mt-1">UI: Stabil ✅</p>
         <p className="text-xs text-gray-500">Data: Aktif (Orders)</p>
       </div>
