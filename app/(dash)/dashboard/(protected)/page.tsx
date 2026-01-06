@@ -65,9 +65,13 @@ export default function DashboardHome() {
   const [todayOrders, setTodayOrders] = useState<number | null>(null);
   const [monthOrders, setMonthOrders] = useState<number | null>(null);
   const [totalRevenue, setTotalRevenue] = useState<number | null>(null);
-  const [latestOrders, setLatestOrders] = useState<any[]>([]);
 
-  /* KPI */
+  const [latestOrders, setLatestOrders] = useState<any[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+
+  /* =====================
+     KPI
+  ===================== */
   useEffect(() => {
     fetch("/api/dashboard/stats", { cache: "no-store" })
       .then((res) => res.json())
@@ -85,13 +89,28 @@ export default function DashboardHome() {
       });
   }, []);
 
-  /* ORDER TERBARU */
+  /* =====================
+     ORDER TERBARU
+  ===================== */
   useEffect(() => {
     fetch("/api/dashboard/orders-latest", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data?.success) {
           setLatestOrders(data.orders);
+        }
+      });
+  }, []);
+
+  /* =====================
+     PRODUK TERLARIS
+  ===================== */
+  useEffect(() => {
+    fetch("/api/dashboard/products-top", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success) {
+          setTopProducts(data.products);
         }
       });
   }, []);
@@ -143,8 +162,9 @@ export default function DashboardHome() {
         </div>
       </section>
 
-      {/* ORDER TERBARU */}
+      {/* ORDER TERBARU + PRODUK TERLARIS */}
       <section className="grid gap-5 md:grid-cols-2">
+        {/* ORDER TERBARU */}
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <p className="text-sm font-semibold text-gray-900">
             Order Terbaru
@@ -155,9 +175,7 @@ export default function DashboardHome() {
 
           <div className="mt-5 space-y-3">
             {latestOrders.length === 0 && (
-              <p className="text-xs text-gray-400">
-                Belum ada order
-              </p>
+              <p className="text-xs text-gray-400">Belum ada order</p>
             )}
 
             {latestOrders.map((o, i) => (
@@ -166,9 +184,7 @@ export default function DashboardHome() {
                 className="flex items-center justify-between border-b pb-2 text-sm"
               >
                 <div>
-                  <p className="font-medium text-gray-900">
-                    {o.nama}
-                  </p>
+                  <p className="font-medium text-gray-900">{o.nama}</p>
                   <p className="text-xs text-gray-500">
                     {o.produk} • {o.qty} pcs
                   </p>
@@ -178,25 +194,46 @@ export default function DashboardHome() {
                   <p className="font-semibold">
                     {formatRupiah(o.totalBayar)}
                   </p>
-                  <p className="text-xs text-green-600">
-                    {o.status}
-                  </p>
+                  <p className="text-xs text-green-600">{o.status}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* PRODUK TERLARIS (NEXT STEP) */}
+        {/* PRODUK TERLARIS */}
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <p className="text-sm font-semibold text-gray-900">
             Produk Terlaris
           </p>
           <p className="text-sm text-gray-500 mt-1">
-            Ranking produk terlaris berdasarkan penjualan
+            Berdasarkan qty terjual (bulan ini)
           </p>
-          <div className="mt-5 h-28 rounded-xl border border-dashed bg-gray-50 flex items-center justify-center text-xs text-gray-400">
-            Placeholder (Next Step)
+
+          <div className="mt-5 space-y-3">
+            {topProducts.length === 0 && (
+              <p className="text-xs text-gray-400">Belum ada data</p>
+            )}
+
+            {topProducts.map((p, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between border-b pb-2 text-sm"
+              >
+                <div>
+                  <p className="font-medium text-gray-900">
+                    #{i + 1} {p.produk}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Terjual {p.totalQty} pcs
+                  </p>
+                </div>
+
+                <p className="font-semibold">
+                  {formatRupiah(p.totalRevenue)}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -207,8 +244,8 @@ export default function DashboardHome() {
           Catatan Sistem
         </p>
         <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-          KPI dan Order Terbaru sudah terhubung ke data Google Sheet
-          dan hanya menghitung order berstatus PAID.
+          KPI, Order Terbaru, dan Produk Terlaris terhubung langsung ke Google
+          Sheet dan hanya menghitung order berstatus PAID.
         </p>
       </section>
     </div>
