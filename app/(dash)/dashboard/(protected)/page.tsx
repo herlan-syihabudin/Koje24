@@ -6,26 +6,16 @@ import Link from "next/link";
 /* =====================
    KPI CARD
 ===================== */
-function StatCard({
-  title,
-  value,
-}: {
-  title: string;
-  value?: number | null;
-}) {
+function StatCard({ title, value }: { title: string; value?: number | null }) {
   return (
     <div className="rounded-2xl border bg-white p-6 shadow-sm">
       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
         {title}
       </p>
-
       <p className="mt-4 text-3xl font-semibold text-gray-900">
         {value === null || value === undefined ? "—" : value}
       </p>
-
-      <p className="text-xs text-gray-400 mt-3">
-        Belum ada data
-      </p>
+      <p className="text-xs text-gray-400 mt-3">Belum ada data</p>
     </div>
   );
 }
@@ -47,15 +37,9 @@ function QuickAction({
       href={href}
       className="rounded-2xl border bg-[#F7FBFB] p-5 transition hover:bg-[#EEF9F9] block"
     >
-      <p className="text-sm font-semibold text-gray-900">
-        {title}
-      </p>
-      <p className="text-xs text-gray-500 mt-1">
-        {desc}
-      </p>
-      <p className="text-xs font-semibold text-[#0FA3A8] mt-4">
-        Buka →
-      </p>
+      <p className="text-sm font-semibold text-gray-900">{title}</p>
+      <p className="text-xs text-gray-500 mt-1">{desc}</p>
+      <p className="text-xs font-semibold text-[#0FA3A8] mt-4">Buka →</p>
     </Link>
   );
 }
@@ -63,22 +47,11 @@ function QuickAction({
 /* =====================
    PREVIEW CARD
 ===================== */
-function PreviewCard({
-  title,
-  desc,
-}: {
-  title: string;
-  desc: string;
-}) {
+function PreviewCard({ title, desc }: { title: string; desc: string }) {
   return (
     <div className="rounded-2xl border bg-white p-6 shadow-sm">
-      <p className="text-sm font-semibold text-gray-900">
-        {title}
-      </p>
-      <p className="text-sm text-gray-500 mt-1">
-        {desc}
-      </p>
-
+      <p className="text-sm font-semibold text-gray-900">{title}</p>
+      <p className="text-sm text-gray-500 mt-1">{desc}</p>
       <div className="mt-5 h-28 rounded-xl border border-dashed bg-gray-50 flex items-center justify-center text-xs text-gray-400">
         Placeholder (Tahap UI)
       </div>
@@ -90,31 +63,30 @@ function PreviewCard({
    DASHBOARD HOME
 ===================== */
 export default function DashboardHome() {
-  // KPI state (mulai 1 dulu, aman)
-  const [orderToday, setOrderToday] = useState<number | null>(null);
+  const [todayOrders, setTodayOrders] = useState<number | null>(null);
+  const [monthOrders, setMonthOrders] = useState<number | null>(null);
 
-  /* =====================
-     FETCH DATA (TAHAP AWAL)
-  ===================== */
   useEffect(() => {
-  fetch("/api/dashboard/stats")
-    .then((res) => res.json())
-    .then((data) => {
-      if (data?.success) {
-        setOrderToday(data.todayOrders); // ⬅️ FIX DI SINI
-      } else {
-        setOrderToday(null);
-      }
-    })
-    .catch(() => {
-      setOrderToday(null);
-    });
-}, []);
+    fetch("/api/dashboard/stats", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success) {
+          setTodayOrders(data.todayOrders ?? 0);
+          setMonthOrders(data.monthOrders ?? 0);
+        } else {
+          setTodayOrders(null);
+          setMonthOrders(null);
+        }
+      })
+      .catch(() => {
+        setTodayOrders(null);
+        setMonthOrders(null);
+      });
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto space-y-10">
-
-      {/* PAGE HEADER */}
+      {/* HEADER */}
       <section>
         <h1 className="text-3xl font-semibold text-gray-900">
           Ringkasan KOJE24
@@ -126,9 +98,9 @@ export default function DashboardHome() {
 
       {/* KPI */}
       <section className="grid gap-5 md:grid-cols-3">
-        <StatCard title="Order Hari Ini" value={orderToday} />
-        <StatCard title="Total Order Bulan Ini" />
-        <StatCard title="Total Pendapatan" />
+        <StatCard title="Order Hari Ini" value={todayOrders} />
+        <StatCard title="Total Order Bulan Ini" value={monthOrders} />
+        <StatCard title="Total Pendapatan" value={null} />
       </section>
 
       {/* QUICK ACTION */}
@@ -136,7 +108,6 @@ export default function DashboardHome() {
         <p className="text-sm font-semibold text-gray-900 mb-4">
           Akses Cepat
         </p>
-
         <div className="grid gap-5 md:grid-cols-3">
           <QuickAction
             title="Kelola Order"
@@ -168,14 +139,14 @@ export default function DashboardHome() {
         />
       </section>
 
-      {/* SYSTEM NOTE */}
+      {/* NOTE */}
       <section className="rounded-2xl border bg-[#F7FBFB] p-6">
         <p className="text-sm font-semibold text-gray-900">
           Catatan Sistem
         </p>
         <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-          Dashboard berada pada tahap integrasi awal data. Penarikan data dilakukan
-          bertahap untuk menjaga stabilitas sistem.
+          Tahap integrasi data berjalan bertahap. Step 2 mengaktifkan KPI total
+          order bulan ini.
         </p>
       </section>
     </div>
