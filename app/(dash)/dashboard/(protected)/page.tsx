@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import SalesChart from "@/components/dash/SalesChart";
+import FinanceChart from "@/components/dash/FinanceChart";
 
 /* =====================
    HELPER
@@ -183,6 +184,11 @@ export default function DashboardHome() {
           </div>
         </div>
       </section>
+
+       {/* 📊 FINANCE CHART (COD vs TRANSFER) */}
+<section>
+  <FinanceChart />
+</section>
 
       {/* QUICK ACTION */}
       <section>
