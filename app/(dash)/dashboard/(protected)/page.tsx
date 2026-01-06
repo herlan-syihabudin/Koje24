@@ -210,6 +210,43 @@ export default function DashboardHome() {
           />
         </div>
       </section>
+       
+       {/* 🔥 PRODUK TERLARIS */}
+<section>
+  <p className="text-sm font-semibold text-gray-900 mb-4">
+    Produk Terlaris Bulan Ini
+  </p>
+
+  <div className="rounded-2xl border bg-white p-6 shadow-sm">
+    {topProducts.length === 0 ? (
+      <p className="text-sm text-gray-400 text-center py-8">
+        Belum ada produk terjual bulan ini
+      </p>
+    ) : (
+      <div className="space-y-3">
+        {topProducts.map((p, i) => (
+          <div
+            key={i}
+            className="flex items-center justify-between border-b pb-2 text-sm"
+          >
+            <div>
+              <p className="font-medium text-gray-900">
+                #{i + 1} {p.produk}
+              </p>
+              <p className="text-xs text-gray-500">
+                Terjual {p.totalQty} pcs
+              </p>
+            </div>
+
+            <p className="font-semibold">
+              {formatRupiah(p.totalRevenue)}
+            </p>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</section>
     </div>
   );
 }
