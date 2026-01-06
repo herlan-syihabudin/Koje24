@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       range: `Transaksi!M${sheetRow}`,
       valueInputOption: "RAW",
       requestBody: {
-        values: [[status.toUpperCase()]],
+        values: [[status]],
       },
     });
 
