@@ -1,6 +1,24 @@
 import { NextResponse } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 
+function parseTanggalToDate(tanggalRaw: string) {
+  // contoh di sheet: "6/1/2026, 01.29.49" atau "9/12/2025, 13.20.21"
+  if (!tanggalRaw) return null;
+
+  const datePart = String(tanggalRaw).split(",")[0]?.trim(); // "6/1/2026"
+  const parts = datePart.split("/").map((x) => x.trim()); // ["6","1","2026"]
+  if (parts.length !== 3) return null;
+
+  const d = Number(parts[0]);
+  const m = Number(parts[1]);
+  const y = Number(parts[2]);
+
+  if (!d || !m || !y) return null;
+
+  // JS month 0-based
+  return new Date(y, m - 1, d);
+}
+
 export async function GET() {
   try {
     const res = await sheets.spreadsheets.values.get({
@@ -11,28 +29,50 @@ export async function GET() {
     const rows = res.data.values || [];
 
     const now = new Date();
-    const todayDay = now.getDate();
-    const todayMonth = now.getMonth() + 1;
-    const todayYear = now.getFullYear();
+    const thisMonth = now.getMonth(); // 0-based
+    const thisYear = now.getFullYear();
 
-    const todayOrders = rows.filter((row) => {
-      const tanggalRaw = row[1]; // kolom B
-      if (!tanggalRaw) return false;
+    let todayOrders = 0;
+    let monthOrders = 0;
 
-      // contoh: "9/12/2025, 14.19.00"
-      const datePart = tanggalRaw.split(",")[0]; // "9/12/2025"
-      const [d, m, y] = datePart.split("/").map(Number);
+    for (const row of rows) {
+      const tanggalRaw = row[1]; // kolom B = Tanggal
+      const status = row[12];    // kolom M = Status (sesuaikan kalau beda)
 
-      return d === todayDay && m === todayMonth && y === todayYear;
-    }).length;
+      if (!tanggalRaw) continue;
+
+      const dt = parseTanggalToDate(tanggalRaw);
+      if (!dt) continue;
+
+      // kalau mau hanya PAID, aktifkan filter ini:
+      // if (status !== "PAID") continue;
+
+      // hitung bulan ini
+      if (dt.getFullYear() === thisYear && dt.getMonth() === thisMonth) {
+        monthOrders += 1;
+
+        // hitung hari ini (bulan ini sekalian)
+        const isToday =
+          dt.getDate() === now.getDate() &&
+          dt.getMonth() === now.getMonth() &&
+          dt.getFullYear() === now.getFullYear();
+
+        // optional: kalau hari ini harus PAID baru dihitung
+        if (isToday) {
+          // kalau kamu mau wajib PAID: if (status === "PAID") todayOrders++;
+          todayOrders += 1;
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,
       todayOrders,
+      monthOrders,
     });
   } catch (error: any) {
     return NextResponse.json(
-      { success: false, message: error.message },
+      { success: false, message: error?.message || "Unknown error" },
       { status: 500 }
     );
   }
