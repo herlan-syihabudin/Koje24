@@ -35,10 +35,10 @@ export async function POST(req: Request) {
     // ⬇️ PASTIKAN KOLOM STATUS BENAR (INI CONTOH KOLOM L)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `Transaksi!L${sheetRow}`,
+      range: `Transaksi!M${sheetRow}`,
       valueInputOption: "RAW",
       requestBody: {
-        values: [[status]],
+        values: [[status.toUpperCase()]],
       },
     });
 
