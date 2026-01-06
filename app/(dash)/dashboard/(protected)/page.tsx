@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import SalesChart from "@/components/dashboard/SalesChart";
 
 /* =====================
    HELPER
@@ -69,9 +70,7 @@ export default function DashboardHome() {
   const [latestOrders, setLatestOrders] = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
 
-  /* =====================
-     KPI
-  ===================== */
+  /* KPI */
   useEffect(() => {
     fetch("/api/dashboard/stats", { cache: "no-store" })
       .then((res) => res.json())
@@ -81,37 +80,24 @@ export default function DashboardHome() {
           setMonthOrders(data.monthOrders ?? 0);
           setTotalRevenue(data.totalRevenue ?? 0);
         }
-      })
-      .catch(() => {
-        setTodayOrders(null);
-        setMonthOrders(null);
-        setTotalRevenue(null);
       });
   }, []);
 
-  /* =====================
-     ORDER TERBARU
-  ===================== */
+  /* ORDER TERBARU */
   useEffect(() => {
     fetch("/api/dashboard/orders-latest", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        if (data?.success) {
-          setLatestOrders(data.orders);
-        }
+        if (data?.success) setLatestOrders(data.orders);
       });
   }, []);
 
-  /* =====================
-     PRODUK TERLARIS
-  ===================== */
+  /* PRODUK TERLARIS */
   useEffect(() => {
     fetch("/api/dashboard/products-top", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        if (data?.success) {
-          setTopProducts(data.products);
-        }
+        if (data?.success) setTopProducts(data.products);
       });
   }, []);
 
@@ -136,6 +122,11 @@ export default function DashboardHome() {
           title="Total Pendapatan"
           value={formatRupiah(totalRevenue)}
         />
+      </section>
+
+      {/* 🔥 GRAFIK PENJUALAN */}
+      <section>
+        <SalesChart />
       </section>
 
       {/* QUICK ACTION */}
@@ -174,10 +165,6 @@ export default function DashboardHome() {
           </p>
 
           <div className="mt-5 space-y-3">
-            {latestOrders.length === 0 && (
-              <p className="text-xs text-gray-400">Belum ada order</p>
-            )}
-
             {latestOrders.map((o, i) => (
               <div
                 key={i}
@@ -211,10 +198,6 @@ export default function DashboardHome() {
           </p>
 
           <div className="mt-5 space-y-3">
-            {topProducts.length === 0 && (
-              <p className="text-xs text-gray-400">Belum ada data</p>
-            )}
-
             {topProducts.map((p, i) => (
               <div
                 key={i}
@@ -236,17 +219,6 @@ export default function DashboardHome() {
             ))}
           </div>
         </div>
-      </section>
-
-      {/* NOTE */}
-      <section className="rounded-2xl border bg-[#F7FBFB] p-6">
-        <p className="text-sm font-semibold text-gray-900">
-          Catatan Sistem
-        </p>
-        <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-          KPI, Order Terbaru, dan Produk Terlaris terhubung langsung ke Google
-          Sheet dan hanya menghitung order berstatus PAID.
-        </p>
       </section>
     </div>
   );
