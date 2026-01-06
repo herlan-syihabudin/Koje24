@@ -46,22 +46,23 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(false);
   const [activeStatus, setActiveStatus] = useState("ALL");
 
+  /* pagination */
   const [page, setPage] = useState(1);
-  const [limit] = useState(25);
+  const limit = 25;
   const [meta, setMeta] = useState<Meta | null>(null);
 
-  /* 🔐 CLOSING STATE */
+  /* export & closing */
   const today = new Date().toISOString().slice(0, 10);
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
   const [closingStatus, setClosingStatus] = useState("PAID");
-  const [closingLoading, setClosingLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [closingLoading, setClosingLoading] = useState(false);
 
   /* =====================
      FETCH ORDERS
   ===================== */
-  const fetchOrders = async (status: string, pageNum: number) => {
+  async function fetchOrders(status: string, pageNum: number) {
     setLoading(true);
     try {
       const qs = new URLSearchParams();
@@ -85,7 +86,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   useEffect(() => {
     setPage(1);
@@ -115,8 +116,8 @@ export default function OrdersPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        startDate: fromDate,
-        endDate: toDate,
+        from: fromDate,
+        to: toDate,
         status: closingStatus,
       }),
     });
@@ -193,9 +194,11 @@ export default function OrdersPage() {
       {/* HEADER */}
       <div>
         <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">ORDERS</p>
-        <h1 className="text-2xl md:text-3xl font-semibold">Manajemen Order</h1>
+        <h1 className="text-2xl md:text-3xl font-semibold">
+          Manajemen Order
+        </h1>
         <p className="text-sm text-gray-600 mt-1">
-          Update status & closing order harian / mingguan
+          Update status, export & closing order harian / mingguan
         </p>
       </div>
 
@@ -216,7 +219,7 @@ export default function OrdersPage() {
         ))}
       </div>
 
-      {/* 🔐 EXPORT & CLOSING */}
+      {/* EXPORT & CLOSING */}
       <div className="border rounded-2xl bg-white p-6 space-y-4">
         <p className="font-semibold">Export & Closing Order</p>
 
