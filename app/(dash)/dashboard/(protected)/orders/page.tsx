@@ -60,15 +60,22 @@ export default function OrdersPage() {
   /* =====================
      UPDATE STATUS
   ===================== */
-  async function updateStatus(rowIndex: number, status: string) {
-    await fetch("/api/dashboard/orders/update-status", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rowIndex, status }),
-    });
+  async function updateStatus(invoice: string, status: string) {
+  const res = await fetch("/api/dashboard/orders/update-status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ invoice, status }),
+  });
 
-    fetchOrders(activeStatus);
+  const data = await res.json();
+
+  if (!data.success) {
+    alert(data.message || "Gagal update status");
+    return;
   }
+
+  fetchOrders(activeStatus);
+}
 
   /* =====================
      RENDER
@@ -159,8 +166,8 @@ export default function OrdersPage() {
                       <select
                         value={o.status}
                         onChange={(e) =>
-                          updateStatus(o.rowIndex, e.target.value)
-                        }
+  updateStatus(o.invoice, e.target.value)
+}
                         className="border rounded-lg px-2 py-1 text-xs"
                       >
                         {STATUS_TABS.filter((s) => s.value !== "ALL").map(
