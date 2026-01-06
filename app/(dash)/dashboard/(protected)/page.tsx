@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import SalesChart from "@/components/dashboard/SalesChart";
+import SalesChart from "@/components/dash/SalesChart";
 
 /* =====================
    HELPER
