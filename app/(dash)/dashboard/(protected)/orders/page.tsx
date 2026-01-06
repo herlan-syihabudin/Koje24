@@ -70,7 +70,7 @@ export default function OrdersPage() {
       qs.set("page", String(pageNum));
       qs.set("limit", String(limit));
 
-      const res = await fetch(`/api/dashboard/orders?${qs}`, {
+      const res = await fetch(`/api/dashboard/orders?${qs.toString()}`, {
         cache: "no-store",
       });
       const data = await res.json();
@@ -98,6 +98,28 @@ export default function OrdersPage() {
     fetchOrders(activeStatus, page);
     // eslint-disable-next-line
   }, [page]);
+
+  /* =====================
+     UPDATE STATUS (INI KUNCI)
+  ===================== */
+  async function updateStatus(invoice: string, status: string) {
+    if (!confirm(`Ubah status ${invoice} → ${status}?`)) return;
+
+    const res = await fetch("/api/dashboard/orders/update-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ invoice, status }),
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.message || "Gagal update status");
+      return;
+    }
+
+    fetchOrders(activeStatus, page);
+  }
 
   /* =====================
      EXPORT EXCEL
@@ -224,40 +246,19 @@ export default function OrdersPage() {
         <p className="font-semibold">Export & Closing Order</p>
 
         <div className="grid md:grid-cols-5 gap-4">
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            className="border rounded-xl px-4 py-2 text-sm"
-          />
-          <input
-            type="date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            className="border rounded-xl px-4 py-2 text-sm"
-          />
-          <select
-            value={closingStatus}
-            onChange={(e) => setClosingStatus(e.target.value)}
-            className="border rounded-xl px-4 py-2 text-sm"
-          >
+          <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="border rounded-xl px-4 py-2 text-sm" />
+          <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="border rounded-xl px-4 py-2 text-sm" />
+
+          <select value={closingStatus} onChange={(e) => setClosingStatus(e.target.value)} className="border rounded-xl px-4 py-2 text-sm">
             <option value="PAID">PAID</option>
             <option value="SELESAI">SELESAI</option>
           </select>
 
-          <button
-            onClick={handleExport}
-            disabled={exportLoading}
-            className="bg-[#0FA3A8] text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
-          >
+          <button onClick={handleExport} disabled={exportLoading} className="bg-[#0FA3A8] text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50">
             {exportLoading ? "Exporting..." : "Export Excel"}
           </button>
 
-          <button
-            onClick={handleClosing}
-            disabled={closingLoading}
-            className="bg-red-500 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
-          >
+          <button onClick={handleClosing} disabled={closingLoading} className="bg-red-500 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50">
             {closingLoading ? "Processing..." : "Closing Order"}
           </button>
         </div>
@@ -302,14 +303,27 @@ export default function OrdersPage() {
                   <td className="p-3 text-right font-semibold">
                     Rp {o.totalBayar.toLocaleString("id-ID")}
                   </td>
+
+                  {/* STATUS EDITABLE */}
                   <td className="p-3 text-center">
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full border ${
-                        STATUS_STYLE[o.status]
-                      }`}
-                    >
-                      {o.status}
-                    </span>
+                    <div className="flex items-center justify-center gap-2">
+                      <span className={`px-2 py-1 text-xs rounded-full border ${STATUS_STYLE[o.status]}`}>
+                        {o.status}
+                      </span>
+
+                      <select
+                        value={o.status}
+                        disabled={o.status === "SELESAI"}
+                        onChange={(e) => updateStatus(o.invoice, e.target.value)}
+                        className="border rounded-lg px-2 py-1 text-xs disabled:opacity-50"
+                      >
+                        <option value="PENDING">PENDING</option>
+                        <option value="PAID">PAID</option>
+                        <option value="DIPROSES">DIPROSES</option>
+                        <option value="DIKIRIM">DIKIRIM</option>
+                        <option value="SELESAI">SELESAI</option>
+                      </select>
+                    </div>
                   </td>
                 </tr>
               ))}
