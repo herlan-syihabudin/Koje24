@@ -5,18 +5,18 @@ export async function GET() {
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Transaksi!A2:A", // pastikan nama sheet benar
+      range: "Transaksi!A2:O",
     });
 
-    const totalOrders = res.data.values?.length || 0;
+    const rows = res.data.values || [];
 
     return NextResponse.json({
       success: true,
-      totalOrders,
+      totalOrders: rows.length,
     });
-  } catch (err: any) {
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, message: err.message },
+      { success: false, message: error.message },
       { status: 500 }
     );
   }
