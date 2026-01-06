@@ -22,7 +22,7 @@ const STATUS_STYLE: Record<string, string> = {
   SELESAI: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
-/* 🔒 FLOW STATUS (INI KUNCI) */
+/* 🔒 FLOW STATUS (TIDAK BISA LOMPAT) */
 const STATUS_FLOW: Record<string, string[]> = {
   PENDING: ["PAID"],
   PAID: ["DIPROSES"],
@@ -38,6 +38,11 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeStatus, setActiveStatus] = useState("ALL");
+
+  /* EXPORT STATE */
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [exportStatus, setExportStatus] = useState("PAID");
 
   /* =====================
      FETCH ORDERS
@@ -99,11 +104,11 @@ export default function OrdersPage() {
           Manajemen Order
         </h1>
         <p className="text-sm text-gray-600 mt-1">
-          Update status pesanan sesuai alur operasional.
+          Update status & closing order harian / mingguan
         </p>
       </div>
 
-      {/* FILTER */}
+      {/* FILTER STATUS */}
       <div className="flex flex-wrap gap-2">
         {STATUS_TABS.map((tab) => (
           <button
@@ -118,6 +123,64 @@ export default function OrdersPage() {
             {tab.label}
           </button>
         ))}
+      </div>
+
+      {/* 🔥 EXPORT & CLOSING PANEL */}
+      <div className="rounded-2xl border bg-white p-6 shadow-sm">
+        <p className="text-sm font-semibold text-gray-900">
+          Export & Closing Order
+        </p>
+        <p className="text-xs text-gray-500 mt-1">
+          Digunakan untuk closing laporan (harian / mingguan)
+        </p>
+
+        <div className="grid md:grid-cols-4 gap-4 mt-5">
+          <div>
+            <label className="text-xs text-gray-500">Dari Tanggal</label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="w-full mt-1 border rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-500">Sampai Tanggal</label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="w-full mt-1 border rounded-xl px-3 py-2 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-500">Status</label>
+            <select
+              value={exportStatus}
+              onChange={(e) => setExportStatus(e.target.value)}
+              className="w-full mt-1 border rounded-xl px-3 py-2 text-sm"
+            >
+              <option value="PAID">Paid</option>
+              <option value="ALL">Semua</option>
+              <option value="PENDING">Pending</option>
+            </select>
+          </div>
+
+          <div className="flex items-end">
+            <button
+              disabled={!fromDate || !toDate}
+              className="w-full px-4 py-2 rounded-xl bg-gray-200 text-gray-500 text-sm font-semibold disabled:cursor-not-allowed"
+            >
+              Export Excel
+            </button>
+          </div>
+        </div>
+
+        <p className="text-[11px] text-gray-400 mt-3">
+          ⚠️ Setelah closing, data aman untuk arsip & laporan keuangan
+        </p>
       </div>
 
       {/* TABLE */}
@@ -162,7 +225,6 @@ export default function OrdersPage() {
                     Rp {o.totalBayar.toLocaleString("id-ID")}
                   </td>
 
-                  {/* STATUS */}
                   <td className="p-3 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <span
@@ -181,10 +243,7 @@ export default function OrdersPage() {
                         }
                         className="border rounded-lg px-2 py-1 text-xs disabled:opacity-50"
                       >
-                        {/* status sekarang */}
                         <option value={o.status}>{o.status}</option>
-
-                        {/* hanya status berikutnya */}
                         {(STATUS_FLOW[o.status] || []).map((next) => (
                           <option key={next} value={next}>
                             {next}
