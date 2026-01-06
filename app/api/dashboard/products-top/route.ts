@@ -27,9 +27,9 @@ export async function GET() {
     rows.forEach((row) => {
       const tanggal = row[1]; // B
       const produkRaw = row[5]; // F
-      const qty = Number(row[6] || 0); // G
+      const qty = Number(row[6] || 1); // G
       const totalBayar = Number(row[9] || 0); // J
-      const status = row[12]; // M
+      const status = String(row[12] || "").toUpperCase();
 
       if (!tanggal || !produkRaw) return;
       if (status !== "PAID") return;
@@ -41,25 +41,34 @@ export async function GET() {
       if (
         dt.getMonth() !== now.getMonth() ||
         dt.getFullYear() !== now.getFullYear()
-      )
-        return;
+      ) return;
 
-      // contoh produk: "Golden Detox (1x)"
-      const productName = produkRaw.replace(/\(.*?\)/g, "").trim();
+      // 🔥 SPLIT PRODUK
+      const products = produkRaw
+        .split(",")
+        .map((p: string) =>
+          p.replace(/\(.*?\)/g, "").trim()
+        )
+        .filter(Boolean);
 
-      if (!productMap[productName]) {
-        productMap[productName] = { qty: 0, revenue: 0 };
-      }
+      const qtyPerProduct = qty / products.length;
+      const revenuePerProduct = totalBayar / products.length;
 
-      productMap[productName].qty += qty;
-      productMap[productName].revenue += totalBayar;
+      products.forEach((productName) => {
+        if (!productMap[productName]) {
+          productMap[productName] = { qty: 0, revenue: 0 };
+        }
+
+        productMap[productName].qty += qtyPerProduct;
+        productMap[productName].revenue += revenuePerProduct;
+      });
     });
 
     const result = Object.entries(productMap)
       .map(([produk, data]) => ({
         produk,
-        totalQty: data.qty,
-        totalRevenue: data.revenue,
+        totalQty: Math.round(data.qty),
+        totalRevenue: Math.round(data.revenue),
       }))
       .sort((a, b) => b.totalQty - a.totalQty)
       .slice(0, 5);
