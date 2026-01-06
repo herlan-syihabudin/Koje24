@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 /* =====================
    CONSTANT
@@ -22,7 +22,7 @@ const STATUS_STYLE: Record<string, string> = {
   SELESAI: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
-/* 🔒 FLOW STATUS (TIDAK BISA LOMPAT) */
+/* 🔒 FLOW STATUS (INI KUNCI) */
 const STATUS_FLOW: Record<string, string[]> = {
   PENDING: ["PAID"],
   PAID: ["DIPROSES"],
@@ -31,44 +31,81 @@ const STATUS_FLOW: Record<string, string[]> = {
   SELESAI: [],
 };
 
+type Order = {
+  invoice: string;
+  nama: string;
+  produk: string;
+  qty: number;
+  totalBayar: number;
+  status: string;
+};
+
+type Meta = {
+  status: string;
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 /* =====================
    PAGE
 ===================== */
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeStatus, setActiveStatus] = useState("ALL");
 
-  /* EXPORT STATE */
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [exportStatus, setExportStatus] = useState("PAID");
+  // ✅ pagination state
+  const [page, setPage] = useState(1);
+  const [limit] = useState(25);
+  const [meta, setMeta] = useState<Meta | null>(null);
 
   /* =====================
      FETCH ORDERS
   ===================== */
-  const fetchOrders = async (status: string) => {
+  const fetchOrders = async (status: string, pageNum: number) => {
     setLoading(true);
     try {
-      const url =
-        status === "ALL"
-          ? "/api/dashboard/orders"
-          : `/api/dashboard/orders?status=${status}`;
+      const qs = new URLSearchParams();
+      if (status && status !== "ALL") qs.set("status", status);
+      qs.set("page", String(pageNum));
+      qs.set("limit", String(limit));
+
+      const url = `/api/dashboard/orders?${qs.toString()}`;
 
       const res = await fetch(url, { cache: "no-store" });
       const data = await res.json();
-      setOrders(data?.success ? data.orders : []);
+
+      if (data?.success) {
+        setOrders(data.orders || []);
+        setMeta(data.meta || null);
+        setPage(data?.meta?.page || pageNum);
+      } else {
+        setOrders([]);
+        setMeta(null);
+      }
     } catch (err) {
       console.error(err);
       setOrders([]);
+      setMeta(null);
     } finally {
       setLoading(false);
     }
   };
 
+  // reset page saat ganti tab
   useEffect(() => {
-    fetchOrders(activeStatus);
+    setPage(1);
+    fetchOrders(activeStatus, 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeStatus]);
+
+  // fetch saat page berubah
+  useEffect(() => {
+    fetchOrders(activeStatus, page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   /* =====================
      UPDATE STATUS
@@ -89,8 +126,19 @@ export default function OrdersPage() {
       return;
     }
 
-    fetchOrders(activeStatus);
+    // refresh page aktif
+    fetchOrders(activeStatus, page);
   }
+
+  const paginationText = useMemo(() => {
+    if (!meta) return "";
+    const start = (meta.page - 1) * meta.limit + 1;
+    const end = Math.min(meta.page * meta.limit, meta.total);
+    return `Menampilkan ${start}-${end} dari ${meta.total} order`;
+  }, [meta]);
+
+  const canPrev = meta ? meta.page > 1 : false;
+  const canNext = meta ? meta.page < meta.totalPages : false;
 
   /* =====================
      RENDER
@@ -100,15 +148,13 @@ export default function OrdersPage() {
       {/* HEADER */}
       <div>
         <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">ORDERS</p>
-        <h1 className="text-2xl md:text-3xl font-semibold">
-          Manajemen Order
-        </h1>
+        <h1 className="text-2xl md:text-3xl font-semibold">Manajemen Order</h1>
         <p className="text-sm text-gray-600 mt-1">
-          Update status & closing order harian / mingguan
+          Update status pesanan sesuai alur operasional.
         </p>
       </div>
 
-      {/* FILTER STATUS */}
+      {/* FILTER */}
       <div className="flex flex-wrap gap-2">
         {STATUS_TABS.map((tab) => (
           <button
@@ -125,62 +171,31 @@ export default function OrdersPage() {
         ))}
       </div>
 
-      {/* 🔥 EXPORT & CLOSING PANEL */}
-      <div className="rounded-2xl border bg-white p-6 shadow-sm">
-        <p className="text-sm font-semibold text-gray-900">
-          Export & Closing Order
-        </p>
-        <p className="text-xs text-gray-500 mt-1">
-          Digunakan untuk closing laporan (harian / mingguan)
-        </p>
+      {/* PAGINATION BAR */}
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-gray-500">{paginationText}</p>
 
-        <div className="grid md:grid-cols-4 gap-4 mt-5">
-          <div>
-            <label className="text-xs text-gray-500">Dari Tanggal</label>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="w-full mt-1 border rounded-xl px-3 py-2 text-sm"
-            />
+        <div className="flex items-center gap-2">
+          <button
+            disabled={!canPrev || loading}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="px-3 py-2 text-sm rounded-xl border bg-white disabled:opacity-50"
+          >
+            ← Prev
+          </button>
+
+          <div className="text-xs text-gray-600 px-3">
+            Page <b>{meta?.page || page}</b> / {meta?.totalPages || 1}
           </div>
 
-          <div>
-            <label className="text-xs text-gray-500">Sampai Tanggal</label>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="w-full mt-1 border rounded-xl px-3 py-2 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs text-gray-500">Status</label>
-            <select
-              value={exportStatus}
-              onChange={(e) => setExportStatus(e.target.value)}
-              className="w-full mt-1 border rounded-xl px-3 py-2 text-sm"
-            >
-              <option value="PAID">Paid</option>
-              <option value="ALL">Semua</option>
-              <option value="PENDING">Pending</option>
-            </select>
-          </div>
-
-          <div className="flex items-end">
-            <button
-              disabled={!fromDate || !toDate}
-              className="w-full px-4 py-2 rounded-xl bg-gray-200 text-gray-500 text-sm font-semibold disabled:cursor-not-allowed"
-            >
-              Export Excel
-            </button>
-          </div>
+          <button
+            disabled={!canNext || loading}
+            onClick={() => setPage((p) => p + 1)}
+            className="px-3 py-2 text-sm rounded-xl border bg-white disabled:opacity-50"
+          >
+            Next →
+          </button>
         </div>
-
-        <p className="text-[11px] text-gray-400 mt-3">
-          ⚠️ Setelah closing, data aman untuk arsip & laporan keuangan
-        </p>
       </div>
 
       {/* TABLE */}
@@ -222,14 +237,16 @@ export default function OrdersPage() {
                   <td className="p-3">{o.produk}</td>
                   <td className="p-3 text-center">{o.qty}</td>
                   <td className="p-3 text-right font-semibold">
-                    Rp {o.totalBayar.toLocaleString("id-ID")}
+                    Rp {Number(o.totalBayar || 0).toLocaleString("id-ID")}
                   </td>
 
+                  {/* STATUS */}
                   <td className="p-3 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <span
                         className={`px-2 py-1 text-xs rounded-full border ${
-                          STATUS_STYLE[o.status]
+                          STATUS_STYLE[o.status] ||
+                          "bg-gray-100 text-gray-700 border-gray-200"
                         }`}
                       >
                         {o.status}
@@ -238,9 +255,7 @@ export default function OrdersPage() {
                       <select
                         disabled={o.status === "SELESAI"}
                         value={o.status}
-                        onChange={(e) =>
-                          updateStatus(o.invoice, e.target.value)
-                        }
+                        onChange={(e) => updateStatus(o.invoice, e.target.value)}
                         className="border rounded-lg px-2 py-1 text-xs disabled:opacity-50"
                       >
                         <option value={o.status}>{o.status}</option>
