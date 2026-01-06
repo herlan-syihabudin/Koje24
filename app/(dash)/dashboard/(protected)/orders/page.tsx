@@ -15,29 +15,6 @@ const STATUS_TABS = [
 ];
 
 /* =====================
-   STATUS BADGE (STEP 4C)
-===================== */
-function StatusBadge({ status }: { status: string }) {
-  const s = String(status || "").toUpperCase();
-
-  const map: Record<string, string> = {
-    PENDING: "bg-yellow-100 text-yellow-700 border-yellow-300",
-    PAID: "bg-green-100 text-green-700 border-green-300",
-    DIPROSES: "bg-blue-100 text-blue-700 border-blue-300",
-    DIKIRIM: "bg-purple-100 text-purple-700 border-purple-300",
-    SELESAI: "bg-gray-200 text-gray-700 border-gray-300",
-  };
-
-  const cls = map[s] || "bg-gray-100 text-gray-500 border-gray-300";
-
-  return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${cls}`}>
-      {s || "—"}
-    </span>
-  );
-}
-
-/* =====================
    PAGE
 ===================== */
 export default function OrdersPage() {
@@ -55,13 +32,16 @@ export default function OrdersPage() {
       const url =
         status === "ALL"
           ? "/api/dashboard/orders"
-          : `/api/dashboard/orders?status=${encodeURIComponent(status)}`;
+          : `/api/dashboard/orders?status=${status}`;
 
       const res = await fetch(url, { cache: "no-store" });
       const data = await res.json();
 
-      if (data?.success) setOrders(data.orders || []);
-      else setOrders([]);
+      if (data?.success) {
+        setOrders(data.orders);
+      } else {
+        setOrders([]);
+      }
     } catch (err) {
       console.error("Fetch orders error:", err);
       setOrders([]);
@@ -75,7 +55,6 @@ export default function OrdersPage() {
   ===================== */
   useEffect(() => {
     fetchOrders(activeStatus);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeStatus]);
 
   /* =====================
@@ -89,7 +68,7 @@ export default function OrdersPage() {
         body: JSON.stringify({ rowIndex, status }),
       });
 
-      // reload sesuai filter aktif
+      // 🔥 reload sesuai filter aktif
       fetchOrders(activeStatus);
     } catch (err) {
       console.error("Update status error:", err);
@@ -171,30 +150,24 @@ export default function OrdersPage() {
                   <td className="p-3 max-w-md">{o.produk}</td>
                   <td className="p-3 text-center">{o.qty}</td>
                   <td className="p-3 text-right font-semibold">
-                    Rp {Number(o.totalBayar || 0).toLocaleString("id-ID")}
+                    Rp {o.totalBayar.toLocaleString("id-ID")}
                   </td>
-
-                  {/* ✅ BADGE + SELECT */}
                   <td className="p-3 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <StatusBadge status={o.status} />
-
-                      <select
-                        value={String(o.status || "").toUpperCase()}
-                        onChange={(e) =>
-                          updateStatus(o.rowIndex, e.target.value)
-                        }
-                        className="border rounded-lg px-2 py-1 text-xs"
-                      >
-                        {STATUS_TABS.filter((s) => s.value !== "ALL").map(
-                          (s) => (
-                            <option key={s.value} value={s.value}>
-                              {s.label.toUpperCase()}
-                            </option>
-                          )
-                        )}
-                      </select>
-                    </div>
+                    <select
+                      value={o.status}
+                      onChange={(e) =>
+                        updateStatus(o.rowIndex, e.target.value)
+                      }
+                      className="border rounded-lg px-2 py-1 text-xs"
+                    >
+                      {STATUS_TABS.filter((s) => s.value !== "ALL").map(
+                        (s) => (
+                          <option key={s.value} value={s.value}>
+                            {s.label.toUpperCase()}
+                          </option>
+                        )
+                      )}
+                    </select>
                   </td>
                 </tr>
               ))}
@@ -206,7 +179,8 @@ export default function OrdersPage() {
       <div className="border rounded-2xl p-5 bg-[#F7FBFB]">
         <p className="text-sm font-semibold">Status Filter Aktif</p>
         <p className="text-sm text-gray-600 mt-1">
-          Menampilkan order dengan status: <strong>{activeStatus}</strong>
+          Menampilkan order dengan status:{" "}
+          <strong>{activeStatus}</strong>
         </p>
       </div>
     </div>
