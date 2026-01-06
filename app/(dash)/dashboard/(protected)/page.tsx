@@ -59,28 +59,15 @@ function QuickAction({
 }
 
 /* =====================
-   PREVIEW CARD
-===================== */
-function PreviewCard({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div className="rounded-2xl border bg-white p-6 shadow-sm">
-      <p className="text-sm font-semibold text-gray-900">{title}</p>
-      <p className="text-sm text-gray-500 mt-1">{desc}</p>
-      <div className="mt-5 h-28 rounded-xl border border-dashed bg-gray-50 flex items-center justify-center text-xs text-gray-400">
-        Placeholder (Tahap UI)
-      </div>
-    </div>
-  );
-}
-
-/* =====================
    DASHBOARD HOME
 ===================== */
 export default function DashboardHome() {
   const [todayOrders, setTodayOrders] = useState<number | null>(null);
   const [monthOrders, setMonthOrders] = useState<number | null>(null);
   const [totalRevenue, setTotalRevenue] = useState<number | null>(null);
+  const [latestOrders, setLatestOrders] = useState<any[]>([]);
 
+  /* KPI */
   useEffect(() => {
     fetch("/api/dashboard/stats", { cache: "no-store" })
       .then((res) => res.json())
@@ -89,16 +76,23 @@ export default function DashboardHome() {
           setTodayOrders(data.todayOrders ?? 0);
           setMonthOrders(data.monthOrders ?? 0);
           setTotalRevenue(data.totalRevenue ?? 0);
-        } else {
-          setTodayOrders(null);
-          setMonthOrders(null);
-          setTotalRevenue(null);
         }
       })
       .catch(() => {
         setTodayOrders(null);
         setMonthOrders(null);
         setTotalRevenue(null);
+      });
+  }, []);
+
+  /* ORDER TERBARU */
+  useEffect(() => {
+    fetch("/api/dashboard/orders-latest", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success) {
+          setLatestOrders(data.orders);
+        }
       });
   }, []);
 
@@ -149,16 +143,62 @@ export default function DashboardHome() {
         </div>
       </section>
 
-      {/* PREVIEW */}
+      {/* ORDER TERBARU */}
       <section className="grid gap-5 md:grid-cols-2">
-        <PreviewCard
-          title="Order Terbaru"
-          desc="Ringkasan 5 order terakhir akan tampil di sini."
-        />
-        <PreviewCard
-          title="Produk Terlaris"
-          desc="Ranking produk terlaris berdasarkan penjualan."
-        />
+        <div className="rounded-2xl border bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold text-gray-900">
+            Order Terbaru
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            5 order terakhir (PAID)
+          </p>
+
+          <div className="mt-5 space-y-3">
+            {latestOrders.length === 0 && (
+              <p className="text-xs text-gray-400">
+                Belum ada order
+              </p>
+            )}
+
+            {latestOrders.map((o, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between border-b pb-2 text-sm"
+              >
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {o.nama}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {o.produk} • {o.qty} pcs
+                  </p>
+                </div>
+
+                <div className="text-right">
+                  <p className="font-semibold">
+                    {formatRupiah(o.totalBayar)}
+                  </p>
+                  <p className="text-xs text-green-600">
+                    {o.status}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* PRODUK TERLARIS (NEXT STEP) */}
+        <div className="rounded-2xl border bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold text-gray-900">
+            Produk Terlaris
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            Ranking produk terlaris berdasarkan penjualan
+          </p>
+          <div className="mt-5 h-28 rounded-xl border border-dashed bg-gray-50 flex items-center justify-center text-xs text-gray-400">
+            Placeholder (Next Step)
+          </div>
+        </div>
       </section>
 
       {/* NOTE */}
@@ -167,8 +207,8 @@ export default function DashboardHome() {
           Catatan Sistem
         </p>
         <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-          Tahap integrasi data berjalan bertahap. Saat ini KPI Order Harian,
-          Bulanan, dan Total Pendapatan sudah aktif.
+          KPI dan Order Terbaru sudah terhubung ke data Google Sheet
+          dan hanya menghitung order berstatus PAID.
         </p>
       </section>
     </div>
