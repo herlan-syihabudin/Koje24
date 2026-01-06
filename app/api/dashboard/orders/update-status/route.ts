@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 
+const ALLOWED_STATUS = [
+  "PENDING",
+  "PAID",
+  "DIPROSES",
+  "DIKIRIM",
+  "SELESAI",
+];
+
 export async function POST(req: Request) {
   try {
     const { invoice, status } = await req.json();
@@ -8,6 +16,15 @@ export async function POST(req: Request) {
     if (!invoice || !status) {
       return NextResponse.json(
         { success: false, message: "invoice & status wajib diisi" },
+        { status: 400 }
+      );
+    }
+
+    const cleanStatus = String(status).trim().toUpperCase();
+
+    if (!ALLOWED_STATUS.includes(cleanStatus)) {
+      return NextResponse.json(
+        { success: false, message: "Status tidak valid" },
         { status: 400 }
       );
     }
@@ -32,13 +49,13 @@ export async function POST(req: Request) {
 
     const sheetRow = rowIndex + 2;
 
-    // ⬇️ PASTIKAN KOLOM STATUS BENAR (INI CONTOH KOLOM L)
+    // Kolom M = STATUS ORDER
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `Transaksi!M${sheetRow}`,
       valueInputOption: "RAW",
       requestBody: {
-        values: [[status]],
+        values: [[cleanStatus]],
       },
     });
 
