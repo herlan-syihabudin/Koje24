@@ -2,31 +2,38 @@
 
 import { useEffect, useState } from "react";
 
-const STATUS_LIST = [
-  "PENDING",
-  "DIPROSES",
-  "DIKIRIM",
-  "SELESAI",
-  "PAID",
+const STATUS_TABS = [
+  { label: "Semua", value: "ALL" },
+  { label: "Pending", value: "PENDING" },
+  { label: "Paid", value: "PAID" },
+  { label: "Diproses", value: "DIPROSES" },
+  { label: "Dikirim", value: "DIKIRIM" },
+  { label: "Selesai", value: "SELESAI" },
 ];
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [activeStatus, setActiveStatus] = useState("ALL");
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (status = "ALL") => {
     setLoading(true);
-    const res = await fetch("/api/dashboard/orders", {
-      cache: "no-store",
-    });
+
+    const url =
+      status === "ALL"
+        ? "/api/dashboard/orders"
+        : `/api/dashboard/orders?status=${status}`;
+
+    const res = await fetch(url, { cache: "no-store" });
     const data = await res.json();
+
     if (data.success) setOrders(data.orders);
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(activeStatus);
+  }, [activeStatus]);
 
   async function updateStatus(rowIndex: number, status: string) {
     await fetch("/api/dashboard/orders/update-status", {
@@ -35,7 +42,7 @@ export default function OrdersPage() {
       body: JSON.stringify({ rowIndex, status }),
     });
 
-    fetchOrders(); // refresh data
+    fetchOrders(activeStatus);
   }
 
   return (
@@ -47,8 +54,25 @@ export default function OrdersPage() {
           Manajemen Order
         </h1>
         <p className="text-sm text-gray-600 mt-1">
-          Kelola dan update status pesanan pelanggan.
+          Filter & update status pesanan pelanggan.
         </p>
+      </div>
+
+      {/* FILTER TABS */}
+      <div className="flex flex-wrap gap-2">
+        {STATUS_TABS.map((tab) => (
+          <button
+            key={tab.value}
+            onClick={() => setActiveStatus(tab.value)}
+            className={`px-4 py-2 rounded-full text-sm border transition ${
+              activeStatus === tab.value
+                ? "bg-[#0FA3A8] text-white border-[#0FA3A8]"
+                : "bg-white hover:bg-[#F7FBFB]"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* TABLE */}
@@ -77,7 +101,7 @@ export default function OrdersPage() {
             {!loading && orders.length === 0 && (
               <tr>
                 <td colSpan={6} className="p-6 text-center text-gray-400">
-                  Belum ada order
+                  Tidak ada order
                 </td>
               </tr>
             )}
@@ -99,11 +123,13 @@ export default function OrdersPage() {
                     }
                     className="border rounded-lg px-2 py-1 text-xs"
                   >
-                    {STATUS_LIST.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
+                    {STATUS_TABS.filter((s) => s.value !== "ALL").map(
+                      (s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label.toUpperCase()}
+                        </option>
+                      )
+                    )}
                   </select>
                 </td>
               </tr>
@@ -114,9 +140,10 @@ export default function OrdersPage() {
 
       {/* NOTE */}
       <div className="border rounded-2xl p-5 bg-[#F7FBFB]">
-        <p className="text-sm font-semibold">Catatan</p>
+        <p className="text-sm font-semibold">Status Filter Aktif</p>
         <p className="text-sm text-gray-600 mt-1">
-          Update status langsung tersimpan ke Google Sheet tanpa reload halaman.
+          Menampilkan order dengan status:{" "}
+          <strong>{activeStatus}</strong>
         </p>
       </div>
     </div>
