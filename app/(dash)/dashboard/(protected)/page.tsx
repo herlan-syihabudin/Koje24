@@ -29,9 +29,8 @@ function StatCard({
         {title}
       </p>
       <p className="mt-4 text-3xl font-semibold text-gray-900">
-        {value === null || value === undefined ? "—" : value}
+        {value ?? "—"}
       </p>
-      <p className="text-xs text-gray-400 mt-3">Belum ada data</p>
     </div>
   );
 }
@@ -71,12 +70,8 @@ export default function DashboardHome() {
   const [latestOrders, setLatestOrders] = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
 
-  // 🔥 FINANCE SUMMARY (4A-2)
-  const [finance, setFinance] = useState<{
-    totalRevenue: number;
-    transfer: { count: number; amount: number };
-    cod: { count: number; amount: number };
-  } | null>(null);
+  // 🔥 SATU SUMBER KEUANGAN
+  const [finance, setFinance] = useState<any | null>(null);
 
   /* KPI */
   useEffect(() => {
@@ -91,9 +86,9 @@ export default function DashboardHome() {
       });
   }, []);
 
-  /* FINANCE SUMMARY */
+  /* 🔥 FINANCE (SUMBER TUNGGAL) */
   useEffect(() => {
-    fetch("/api/dashboard/finance-summary", { cache: "no-store" })
+    fetch("/api/dashboard/finance", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data?.success) setFinance(data);
@@ -127,7 +122,6 @@ export default function DashboardHome() {
         </h1>
         <p className="text-sm text-gray-600 mt-2 max-w-2xl">
           Dashboard internal untuk memantau order, produk, dan operasional KOJE24
-          secara terpusat.
         </p>
       </section>
 
@@ -135,15 +129,18 @@ export default function DashboardHome() {
       <section className="grid gap-5 md:grid-cols-3">
         <StatCard title="Order Hari Ini" value={todayOrders} />
         <StatCard title="Total Order Bulan Ini" value={monthOrders} />
-        <StatCard title="Total Pendapatan" value={formatRupiah(totalRevenue)} />
+        <StatCard
+          title="Total Pendapatan"
+          value={formatRupiah(finance?.summary.totalRevenue)}
+        />
       </section>
 
-      {/* 🔥 GRAFIK PENJUALAN */}
+      {/* SALES CHART */}
       <section>
         <SalesChart />
       </section>
 
-      {/* 💰 FINANCE SUMMARY (4A-2) */}
+      {/* 💰 RINGKASAN KEUANGAN */}
       <section>
         <p className="text-sm font-semibold text-gray-900 mb-4">
           Ringkasan Keuangan
@@ -154,41 +151,41 @@ export default function DashboardHome() {
             <p className="text-xs text-gray-500 uppercase tracking-wide">
               Total Pendapatan
             </p>
-            <p className="mt-3 text-2xl font-semibold text-gray-900">
-              {formatRupiah(finance?.totalRevenue)}
+            <p className="mt-3 text-2xl font-semibold">
+              {formatRupiah(finance?.summary.totalRevenue)}
             </p>
           </div>
 
           <div className="rounded-2xl border bg-white p-6 shadow-sm">
             <p className="text-xs text-gray-500 uppercase tracking-wide">
-              Transfer / VA / QRIS
+              Transfer / QRIS
             </p>
-            <p className="mt-3 text-xl font-semibold text-gray-900">
-              {formatRupiah(finance?.transfer.amount)}
+            <p className="mt-3 text-xl font-semibold">
+              {formatRupiah(finance?.methods.transfer.amount)}
             </p>
-            <p className="text-xs text-gray-400 mt-1">
-              {finance?.transfer.count || 0} transaksi
+            <p className="text-xs text-gray-400">
+              {finance?.methods.transfer.count || 0} transaksi
             </p>
           </div>
 
           <div className="rounded-2xl border bg-white p-6 shadow-sm">
             <p className="text-xs text-gray-500 uppercase tracking-wide">
-              Cash On Delivery
+              COD
             </p>
-            <p className="mt-3 text-xl font-semibold text-gray-900">
-              {formatRupiah(finance?.cod.amount)}
+            <p className="mt-3 text-xl font-semibold">
+              {formatRupiah(finance?.methods.cod.amount)}
             </p>
-            <p className="text-xs text-gray-400 mt-1">
-              {finance?.cod.count || 0} transaksi
+            <p className="text-xs text-gray-400">
+              {finance?.methods.cod.count || 0} transaksi
             </p>
           </div>
         </div>
       </section>
 
-       {/* 📊 FINANCE CHART (COD vs TRANSFER) */}
-<section>
-  <FinanceChart />
-</section>
+      {/* 📊 FINANCE CHART */}
+      <section>
+        <FinanceChart data={finance?.chart || []} />
+      </section>
 
       {/* QUICK ACTION */}
       <section>
@@ -203,72 +200,14 @@ export default function DashboardHome() {
           />
           <QuickAction
             title="Kelola Produk"
-            desc="Atur stok, harga, dan visibilitas produk"
+            desc="Atur stok & harga produk"
             href="/dashboard/products"
           />
           <QuickAction
             title="Cek Keuangan"
-            desc="Pantau pembayaran, invoice, dan laporan"
+            desc="Pantau pembayaran & laporan"
             href="/dashboard/finance"
           />
-        </div>
-      </section>
-
-      {/* ORDER TERBARU + PRODUK TERLARIS */}
-      <section className="grid gap-5 md:grid-cols-2">
-        {/* ORDER TERBARU */}
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold text-gray-900">Order Terbaru</p>
-
-          <div className="mt-5 space-y-3">
-            {latestOrders.map((o, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between border-b pb-2 text-sm"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">{o.nama}</p>
-                  <p className="text-xs text-gray-500">
-                    {o.produk} • {o.qty} pcs
-                  </p>
-                </div>
-
-                <div className="text-right">
-                  <p className="font-semibold">
-                    {formatRupiah(o.totalBayar)}
-                  </p>
-                  <p className="text-xs text-green-600">{o.status}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* PRODUK TERLARIS */}
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold text-gray-900">Produk Terlaris</p>
-
-          <div className="mt-5 space-y-3">
-            {topProducts.map((p, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between border-b pb-2 text-sm"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">
-                    #{i + 1} {p.produk}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Terjual {p.totalQty} pcs
-                  </p>
-                </div>
-
-                <p className="font-semibold">
-                  {formatRupiah(p.totalRevenue)}
-                </p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
     </div>
