@@ -22,7 +22,6 @@ const STATUS_STYLE: Record<string, string> = {
   SELESAI: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
-/* 🔒 FLOW STATUS (INI KUNCI) */
 const STATUS_FLOW: Record<string, string[]> = {
   PENDING: ["PAID"],
   PAID: ["DIPROSES"],
@@ -56,10 +55,16 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(false);
   const [activeStatus, setActiveStatus] = useState("ALL");
 
-  // ✅ pagination state
   const [page, setPage] = useState(1);
   const [limit] = useState(25);
   const [meta, setMeta] = useState<Meta | null>(null);
+
+  /* 🔐 CLOSING STATE */
+  const today = new Date().toISOString().slice(0, 10);
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
+  const [closingStatus, setClosingStatus] = useState("PAID");
+  const [closingLoading, setClosingLoading] = useState(false);
 
   /* =====================
      FETCH ORDERS
@@ -68,50 +73,44 @@ export default function OrdersPage() {
     setLoading(true);
     try {
       const qs = new URLSearchParams();
-      if (status && status !== "ALL") qs.set("status", status);
+      if (status !== "ALL") qs.set("status", status);
       qs.set("page", String(pageNum));
       qs.set("limit", String(limit));
 
-      const url = `/api/dashboard/orders?${qs.toString()}`;
-
-      const res = await fetch(url, { cache: "no-store" });
+      const res = await fetch(`/api/dashboard/orders?${qs}`, {
+        cache: "no-store",
+      });
       const data = await res.json();
 
       if (data?.success) {
         setOrders(data.orders || []);
         setMeta(data.meta || null);
-        setPage(data?.meta?.page || pageNum);
+        setPage(data.meta?.page || pageNum);
       } else {
         setOrders([]);
         setMeta(null);
       }
-    } catch (err) {
-      console.error(err);
-      setOrders([]);
-      setMeta(null);
     } finally {
       setLoading(false);
     }
   };
 
-  // reset page saat ganti tab
   useEffect(() => {
     setPage(1);
     fetchOrders(activeStatus, 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line
   }, [activeStatus]);
 
-  // fetch saat page berubah
   useEffect(() => {
     fetchOrders(activeStatus, page);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line
   }, [page]);
 
   /* =====================
      UPDATE STATUS
   ===================== */
   async function updateStatus(invoice: string, status: string) {
-    if (!confirm(`Ubah status invoice ${invoice} menjadi ${status}?`)) return;
+    if (!confirm(`Ubah status ${invoice} → ${status}?`)) return;
 
     const res = await fetch("/api/dashboard/orders/update-status", {
       method: "POST",
@@ -120,25 +119,54 @@ export default function OrdersPage() {
     });
 
     const data = await res.json();
+    if (!data.success) alert(data.message || "Gagal update");
 
-    if (!data.success) {
-      alert(data.message || "Gagal update status");
-      return;
-    }
-
-    // refresh page aktif
     fetchOrders(activeStatus, page);
   }
 
+  /* =====================
+     CLOSING ORDER
+  ===================== */
+  async function handleClosing() {
+    if (
+      !confirm(
+        `CLOSING order ${closingStatus}\n${fromDate} → ${toDate}\n\nData akan dikunci. Lanjutkan?`
+      )
+    )
+      return;
+
+    setClosingLoading(true);
+
+    const res = await fetch("/api/dashboard/orders/close", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: fromDate,
+        to: toDate,
+        status: closingStatus,
+      }),
+    });
+
+    const data = await res.json();
+    alert(
+      data.success
+        ? `Closing berhasil (${data.closedCount} order)`
+        : data.message
+    );
+
+    setClosingLoading(false);
+    fetchOrders(activeStatus, page);
+  }
+
+  /* =====================
+     PAGINATION TEXT
+  ===================== */
   const paginationText = useMemo(() => {
     if (!meta) return "";
     const start = (meta.page - 1) * meta.limit + 1;
     const end = Math.min(meta.page * meta.limit, meta.total);
     return `Menampilkan ${start}-${end} dari ${meta.total} order`;
   }, [meta]);
-
-  const canPrev = meta ? meta.page > 1 : false;
-  const canNext = meta ? meta.page < meta.totalPages : false;
 
   /* =====================
      RENDER
@@ -150,7 +178,7 @@ export default function OrdersPage() {
         <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">ORDERS</p>
         <h1 className="text-2xl md:text-3xl font-semibold">Manajemen Order</h1>
         <p className="text-sm text-gray-600 mt-1">
-          Update status pesanan sesuai alur operasional.
+          Update status & closing order harian / mingguan
         </p>
       </div>
 
@@ -160,7 +188,7 @@ export default function OrdersPage() {
           <button
             key={tab.value}
             onClick={() => setActiveStatus(tab.value)}
-            className={`px-4 py-2 rounded-full text-sm border transition ${
+            className={`px-4 py-2 rounded-full text-sm border ${
               activeStatus === tab.value
                 ? "bg-[#0FA3A8] text-white"
                 : "bg-white hover:bg-[#F7FBFB]"
@@ -171,32 +199,48 @@ export default function OrdersPage() {
         ))}
       </div>
 
-      {/* PAGINATION BAR */}
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-gray-500">{paginationText}</p>
+      {/* 🔐 EXPORT & CLOSING */}
+      <div className="border rounded-2xl bg-white p-6 space-y-4">
+        <p className="font-semibold">Export & Closing Order</p>
 
-        <div className="flex items-center gap-2">
-          <button
-            disabled={!canPrev || loading}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="px-3 py-2 text-sm rounded-xl border bg-white disabled:opacity-50"
+        <div className="grid md:grid-cols-4 gap-4">
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            className="border rounded-xl px-4 py-2 text-sm"
+          />
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            className="border rounded-xl px-4 py-2 text-sm"
+          />
+          <select
+            value={closingStatus}
+            onChange={(e) => setClosingStatus(e.target.value)}
+            className="border rounded-xl px-4 py-2 text-sm"
           >
-            ← Prev
-          </button>
-
-          <div className="text-xs text-gray-600 px-3">
-            Page <b>{meta?.page || page}</b> / {meta?.totalPages || 1}
-          </div>
+            <option value="PAID">PAID</option>
+            <option value="SELESAI">SELESAI</option>
+          </select>
 
           <button
-            disabled={!canNext || loading}
-            onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-2 text-sm rounded-xl border bg-white disabled:opacity-50"
+            onClick={handleClosing}
+            disabled={closingLoading}
+            className="bg-red-500 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
           >
-            Next →
+            {closingLoading ? "Processing..." : "Closing Order"}
           </button>
         </div>
+
+        <p className="text-xs text-yellow-600">
+          ⚠️ Setelah closing, order tidak ikut dashboard & export berikutnya.
+        </p>
       </div>
+
+      {/* PAGINATION INFO */}
+      <p className="text-xs text-gray-500">{paginationText}</p>
 
       {/* TABLE */}
       <div className="border rounded-2xl bg-white overflow-x-auto">
@@ -221,51 +265,24 @@ export default function OrdersPage() {
               </tr>
             )}
 
-            {!loading && orders.length === 0 && (
-              <tr>
-                <td colSpan={6} className="p-6 text-center text-gray-400">
-                  Tidak ada order
-                </td>
-              </tr>
-            )}
-
             {!loading &&
               orders.map((o) => (
-                <tr key={o.invoice} className="border-b last:border-0">
+                <tr key={o.invoice} className="border-b">
                   <td className="p-3 font-medium">{o.invoice}</td>
                   <td className="p-3">{o.nama}</td>
                   <td className="p-3">{o.produk}</td>
                   <td className="p-3 text-center">{o.qty}</td>
                   <td className="p-3 text-right font-semibold">
-                    Rp {Number(o.totalBayar || 0).toLocaleString("id-ID")}
+                    Rp {o.totalBayar.toLocaleString("id-ID")}
                   </td>
-
-                  {/* STATUS */}
                   <td className="p-3 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full border ${
-                          STATUS_STYLE[o.status] ||
-                          "bg-gray-100 text-gray-700 border-gray-200"
-                        }`}
-                      >
-                        {o.status}
-                      </span>
-
-                      <select
-                        disabled={o.status === "SELESAI"}
-                        value={o.status}
-                        onChange={(e) => updateStatus(o.invoice, e.target.value)}
-                        className="border rounded-lg px-2 py-1 text-xs disabled:opacity-50"
-                      >
-                        <option value={o.status}>{o.status}</option>
-                        {(STATUS_FLOW[o.status] || []).map((next) => (
-                          <option key={next} value={next}>
-                            {next}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full border ${
+                        STATUS_STYLE[o.status]
+                      }`}
+                    >
+                      {o.status}
+                    </span>
                   </td>
                 </tr>
               ))}
