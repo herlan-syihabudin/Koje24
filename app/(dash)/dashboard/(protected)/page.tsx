@@ -70,6 +70,13 @@ export default function DashboardHome() {
   const [latestOrders, setLatestOrders] = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
 
+  // 🔥 FINANCE SUMMARY (4A-2)
+  const [finance, setFinance] = useState<{
+    totalRevenue: number;
+    transfer: { count: number; amount: number };
+    cod: { count: number; amount: number };
+  } | null>(null);
+
   /* KPI */
   useEffect(() => {
     fetch("/api/dashboard/stats", { cache: "no-store" })
@@ -80,6 +87,15 @@ export default function DashboardHome() {
           setMonthOrders(data.monthOrders ?? 0);
           setTotalRevenue(data.totalRevenue ?? 0);
         }
+      });
+  }, []);
+
+  /* FINANCE SUMMARY */
+  useEffect(() => {
+    fetch("/api/dashboard/finance-summary", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success) setFinance(data);
       });
   }, []);
 
@@ -118,15 +134,54 @@ export default function DashboardHome() {
       <section className="grid gap-5 md:grid-cols-3">
         <StatCard title="Order Hari Ini" value={todayOrders} />
         <StatCard title="Total Order Bulan Ini" value={monthOrders} />
-        <StatCard
-          title="Total Pendapatan"
-          value={formatRupiah(totalRevenue)}
-        />
+        <StatCard title="Total Pendapatan" value={formatRupiah(totalRevenue)} />
       </section>
 
       {/* 🔥 GRAFIK PENJUALAN */}
       <section>
         <SalesChart />
+      </section>
+
+      {/* 💰 FINANCE SUMMARY (4A-2) */}
+      <section>
+        <p className="text-sm font-semibold text-gray-900 mb-4">
+          Ringkasan Keuangan
+        </p>
+
+        <div className="grid gap-5 md:grid-cols-3">
+          <div className="rounded-2xl border bg-white p-6 shadow-sm">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">
+              Total Pendapatan
+            </p>
+            <p className="mt-3 text-2xl font-semibold text-gray-900">
+              {formatRupiah(finance?.totalRevenue)}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border bg-white p-6 shadow-sm">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">
+              Transfer / VA / QRIS
+            </p>
+            <p className="mt-3 text-xl font-semibold text-gray-900">
+              {formatRupiah(finance?.transfer.amount)}
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              {finance?.transfer.count || 0} transaksi
+            </p>
+          </div>
+
+          <div className="rounded-2xl border bg-white p-6 shadow-sm">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">
+              Cash On Delivery
+            </p>
+            <p className="mt-3 text-xl font-semibold text-gray-900">
+              {formatRupiah(finance?.cod.amount)}
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              {finance?.cod.count || 0} transaksi
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* QUICK ACTION */}
@@ -157,12 +212,7 @@ export default function DashboardHome() {
       <section className="grid gap-5 md:grid-cols-2">
         {/* ORDER TERBARU */}
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold text-gray-900">
-            Order Terbaru
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            5 order terakhir (PAID)
-          </p>
+          <p className="text-sm font-semibold text-gray-900">Order Terbaru</p>
 
           <div className="mt-5 space-y-3">
             {latestOrders.map((o, i) => (
@@ -190,12 +240,7 @@ export default function DashboardHome() {
 
         {/* PRODUK TERLARIS */}
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold text-gray-900">
-            Produk Terlaris
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            Berdasarkan qty terjual (bulan ini)
-          </p>
+          <p className="text-sm font-semibold text-gray-900">Produk Terlaris</p>
 
           <div className="mt-5 space-y-3">
             {topProducts.map((p, i) => (
