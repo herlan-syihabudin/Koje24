@@ -135,6 +135,46 @@ export default function DashboardHome() {
         />
       </section>
 
+       {/* 🔥 INSIGHT OTOMATIS */}
+{finance?.insights && (
+  <section className="rounded-2xl border bg-[#F7FBFB] p-5 space-y-2">
+    <p className="text-sm text-gray-800">
+      {finance.insights.revenueTrend.status === "up" && "📈"}
+      {finance.insights.revenueTrend.status === "down" && "📉"}
+      {finance.insights.revenueTrend.status === "flat" && "➖"}
+      {" "}
+      Pendapatan{" "}
+      <strong>
+        {finance.insights.revenueTrend.status === "up"
+          ? "meningkat"
+          : finance.insights.revenueTrend.status === "down"
+          ? "menurun"
+          : "stabil"}
+      </strong>{" "}
+      sebesar{" "}
+      <strong>{finance.insights.revenueTrend.percent}%</strong>{" "}
+      dibanding 7 hari sebelumnya
+    </p>
+
+    {finance.insights.topProduct?.name && (
+      <p className="text-sm text-gray-800">
+        🔥 Produk dominan bulan ini:{" "}
+        <strong>{finance.insights.topProduct.name}</strong>{" "}
+        (kontribusi{" "}
+        <strong>{finance.insights.topProduct.contribution}%</strong>{" "}
+        dari total penjualan)
+      </p>
+    )}
+
+    {finance.insights.paymentRisk.warning && (
+      <p className="text-sm text-orange-600">
+        ⚠️ <strong>{finance.insights.paymentRisk.codRatio}%</strong>{" "}
+        transaksi masih COD — pertimbangkan promo Transfer / QRIS
+      </p>
+    )}
+  </section>
+)}
+
       {/* SALES CHART */}
       <section>
         <SalesChart />
