@@ -143,7 +143,7 @@ export default function OrdersPage() {
 
             {!loading &&
               orders.map((o, i) => (
-                <tr key={i} className="border-b last:border-0">
+                <tr key={o.invoice} className="border-b last:border-0">
                   <td className="p-3 font-medium">{o.invoice}</td>
                   <td className="p-3">{o.nama}</td>
                   <td className="p-3 max-w-md">{o.produk}</td>
