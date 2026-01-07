@@ -21,9 +21,7 @@ export default function SalesChart() {
   const [data, setData] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch(`/api/dashboard/sales-chart?mode=${mode}`, {
-      cache: "no-store",
-    })
+    fetch(`/api/dashboard/sales-chart?mode=${mode}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((res) => {
         if (res.success) setData(res.data);
@@ -31,21 +29,22 @@ export default function SalesChart() {
   }, [mode]);
 
   return (
-    <div className="rounded-2xl border bg-white p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-2xl border bg-white p-4 shadow-sm">
+      {/* HEADER */}
+      <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-semibold text-gray-900">
           Grafik Penjualan
         </p>
 
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           {MODES.map((m) => (
             <button
               key={m.key}
               onClick={() => setMode(m.key)}
-              className={`text-xs px-3 py-1 rounded-full border ${
+              className={`text-[11px] px-2 py-0.5 rounded-full border transition ${
                 mode === m.key
-                  ? "bg-[#0FA3A8] text-white"
-                  : "text-gray-500"
+                  ? "bg-[#0FA3A8] text-white border-[#0FA3A8]"
+                  : "text-gray-500 hover:bg-gray-100"
               }`}
             >
               {m.label}
@@ -54,7 +53,8 @@ export default function SalesChart() {
         </div>
       </div>
 
-      <div className="h-64">
+      {/* CHART */}
+      <div className="h-[240px]">
         {data.length === 0 ? (
           <div className="h-full flex items-center justify-center text-xs text-gray-400">
             Belum ada data
@@ -62,14 +62,30 @@ export default function SalesChart() {
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data}>
-              <XAxis dataKey="label" />
-              <YAxis />
-              <Tooltip />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11, fill: "#6B7280" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: "#6B7280" }}
+                axisLine={false}
+                tickLine={false}
+                width={40}
+              />
+              <Tooltip
+                contentStyle={{
+                  fontSize: "12px",
+                  borderRadius: "8px",
+                }}
+              />
               <Line
                 type="monotone"
                 dataKey="total"
                 stroke="#0FA3A8"
-                strokeWidth={3}
+                strokeWidth={2.5}
+                dot={false}
               />
             </LineChart>
           </ResponsiveContainer>
