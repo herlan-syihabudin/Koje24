@@ -26,7 +26,7 @@ export default async function ProtectedLayout({
       {/* CONTENT */}
       <main className="flex-1">
         <Topbar />
-        <div className="p-6">{children}</div>
+        <div className="px-6 py-4">{children}</div>
       </main>
     </div>
   );
