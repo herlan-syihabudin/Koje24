@@ -61,21 +61,28 @@ export default function SalesChart() {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-  <LineChart
+  <AreaChart
     data={data}
-    margin={{ top: 10, right: 20, left: 30, bottom: 10 }}
+    margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
   >
+    <defs>
+      <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#0FA3A8" stopOpacity={0.35} />
+        <stop offset="100%" stopColor="#0FA3A8" stopOpacity={0.05} />
+      </linearGradient>
+    </defs>
+
     <XAxis
       dataKey="label"
       tick={{ fontSize: 11 }}
     />
 
     <YAxis
-      width={70}
+      width={90}
       tick={{ fontSize: 11 }}
-      tickFormatter={(v) =>
-        `Rp ${Number(v).toLocaleString("id-ID")}`
-      }
+      tickFormatter={(v) => `Rp ${v / 1000}k`}
+      axisLine={false}
+      tickLine={false}
     />
 
     <Tooltip
@@ -84,15 +91,16 @@ export default function SalesChart() {
       }
     />
 
-    <Line
+    <Area
       type="monotone"
       dataKey="total"
       stroke="#0FA3A8"
       strokeWidth={3}
+      fill="url(#salesGradient)"
       dot={{ r: 3 }}
-      activeDot={{ r: 5 }}
+      activeDot={{ r: 6 }}
     />
-  </LineChart>
+  </AreaChart>
 </ResponsiveContainer>
         )}
       </div>
