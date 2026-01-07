@@ -162,41 +162,37 @@ export default function DashboardHome() {
   )}
 </section>
 
-      {/* SALES + FINANCE (SEJAJAR & COMPACT) */}
-<section className="grid gap-6 lg:grid-cols-[2fr_1fr] items-stretch">
+      {/* SALES + FINANCE */}
+<section className="grid gap-5 lg:grid-cols-[2fr_1fr] items-start">
 
-  {/* 🔵 SALES CHART – 65% */}
-  <div className="h-full">
+  {/* LEFT – SALES */}
+  <div className="rounded-2xl border bg-white p-6 shadow-sm">
     <SalesChart />
   </div>
 
-  {/* 🟢 FINANCE SIDE – 35% */}
-  <div className="flex flex-col gap-4 h-full">
+  {/* RIGHT – FINANCE */}
+  <div className="flex flex-col gap-5">
 
     {/* 💰 RINGKASAN KEUANGAN */}
     <div className="rounded-2xl border bg-white p-5 shadow-sm">
-      <p className="text-sm font-semibold text-gray-900 mb-3">
-        Ringkasan Keuangan
-      </p>
+      <p className="text-sm font-semibold mb-3">Ringkasan Keuangan</p>
 
-      <div className="space-y-3">
+      <div className="space-y-2 text-sm">
         <div>
-          <p className="text-xs text-gray-500 uppercase">
-            Total Pendapatan
-          </p>
+          <p className="text-xs text-gray-500">Total Pendapatan</p>
           <p className="text-xl font-semibold">
             {formatRupiah(finance?.summary.totalRevenue)}
           </p>
         </div>
 
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between">
           <span className="text-gray-500">Transfer / QRIS</span>
           <span className="font-semibold">
             {formatRupiah(finance?.methods.transfer.amount)}
           </span>
         </div>
 
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between">
           <span className="text-gray-500">COD</span>
           <span className="font-semibold">
             {formatRupiah(finance?.methods.cod.amount)}
@@ -205,8 +201,8 @@ export default function DashboardHome() {
       </div>
     </div>
 
-    {/* 🍩 DONUT CHART */}
-    <div className="flex-1">
+    {/* 🍩 DONUT CHART (PAKE CONTAINER, BIAR SOPAN) */}
+    <div className="rounded-2xl border bg-white p-5 shadow-sm">
       <FinanceChart data={finance?.chart || []} />
     </div>
 
