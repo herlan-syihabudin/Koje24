@@ -163,9 +163,6 @@ export default function DashboardHome() {
 </section>
 
       {/* SALES + FINANCE (SEJAJAR & COMPACT) */}
-<section className="grid gap-5 md:grid-cols-[2fr_1fr] items-stretch">
-
-  {/* 📈 SALES & FINANCE – SIDE BY SIDE */}
 <section className="grid gap-6 lg:grid-cols-[2fr_1fr] items-stretch">
 
   {/* 🔵 SALES CHART – 65% */}
@@ -208,7 +205,7 @@ export default function DashboardHome() {
       </div>
     </div>
 
-    {/* 🍩 DONUT CHART (NO EXTRA CONTAINER) */}
+    {/* 🍩 DONUT CHART */}
     <div className="flex-1">
       <FinanceChart data={finance?.chart || []} />
     </div>
