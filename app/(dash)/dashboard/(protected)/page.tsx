@@ -165,13 +165,16 @@ export default function DashboardHome() {
       {/* SALES + FINANCE (SEJAJAR & COMPACT) */}
 <section className="grid gap-5 md:grid-cols-[2fr_1fr] items-stretch">
 
+  {/* 📈 SALES & FINANCE – SIDE BY SIDE */}
+<section className="grid gap-6 lg:grid-cols-[2fr_1fr] items-stretch">
+
   {/* 🔵 SALES CHART – 65% */}
   <div className="h-full">
     <SalesChart />
   </div>
 
   {/* 🟢 FINANCE SIDE – 35% */}
-  <div className="space-y-4 h-full">
+  <div className="flex flex-col gap-4 h-full">
 
     {/* 💰 RINGKASAN KEUANGAN */}
     <div className="rounded-2xl border bg-white p-5 shadow-sm">
@@ -181,7 +184,9 @@ export default function DashboardHome() {
 
       <div className="space-y-3">
         <div>
-          <p className="text-xs text-gray-500 uppercase">Total Pendapatan</p>
+          <p className="text-xs text-gray-500 uppercase">
+            Total Pendapatan
+          </p>
           <p className="text-xl font-semibold">
             {formatRupiah(finance?.summary.totalRevenue)}
           </p>
@@ -203,8 +208,11 @@ export default function DashboardHome() {
       </div>
     </div>
 
-    {/* 📊 DONUT CHART */}
-    <FinanceChart data={finance?.chart || []} />
+    {/* 🍩 DONUT CHART (NO EXTRA CONTAINER) */}
+    <div className="flex-1">
+      <FinanceChart data={finance?.chart || []} />
+    </div>
+
   </div>
 </section>
 
