@@ -7,28 +7,34 @@ export async function GET(req: Request) {
 
     const status = (searchParams.get("status") || "ALL").toUpperCase();
     const page = Math.max(1, Number(searchParams.get("page") || 1));
-    const limit = Math.min(100, Math.max(5, Number(searchParams.get("limit") || 25)));
+    const limit = Math.min(
+      100,
+      Math.max(5, Number(searchParams.get("limit") || 25))
+    );
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Transaksi!A2:O",
+      range: "Transaksi!A2:P", // ⬅️ WAJIB SAMPAI KOLOM P
     });
 
     const rows = res.data.values || [];
 
-    // ✅ mapping rows -> orders
     const allOrders = rows
       .map((row) => {
         const invoice = String(row[0] || "").trim(); // A
+        if (!invoice) return null;
+
         const tanggal = String(row[1] || "").trim(); // B
         const nama = String(row[2] || "").trim(); // C
         const produk = String(row[5] || "").trim(); // F
         const qty = Number(row[6] || 0); // G
         const totalBayar = Number(row[9] || 0); // J
         const metode = String(row[11] || "").trim(); // L
-        const st = String(row[12] || "").toUpperCase().trim(); // M
+        const statusRow = String(row[12] || "").toUpperCase().trim(); // M
+        const closed = String(row[15] || "").toUpperCase().trim(); // P
 
-        if (!invoice) return null;
+        // 🔴 INI KUNCI STEP 1
+        if (closed === "YES") return null;
 
         return {
           invoice,
@@ -38,20 +44,23 @@ export async function GET(req: Request) {
           qty,
           totalBayar,
           metode,
-          status: st || "PENDING",
+          status: statusRow || "PENDING",
         };
       })
       .filter(Boolean) as any[];
 
-    // ✅ filter status
+    // filter status tab
     const filtered =
-      status === "ALL" ? allOrders : allOrders.filter((o) => o.status === status);
+      status === "ALL"
+        ? allOrders
+        : allOrders.filter((o) => o.status === status);
 
-    // ✅ sort terbaru di atas (opsional)
-    // kalau tanggal format kamu konsisten, aman. kalau nggak, tetap OK.
-    filtered.sort((a, b) => (b.tanggal || "").localeCompare(a.tanggal || ""));
+    // sort terbaru di atas
+    filtered.sort((a, b) =>
+      (b.tanggal || "").localeCompare(a.tanggal || "")
+    );
 
-    // ✅ pagination
+    // pagination
     const total = filtered.length;
     const totalPages = Math.max(1, Math.ceil(total / limit));
     const safePage = Math.min(page, totalPages);
