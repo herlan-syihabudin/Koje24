@@ -28,7 +28,7 @@ function StatCard({
       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
         {title}
       </p>
-      <p className="mt-4 text-3xl font-semibold text-gray-900">
+      <p className="mt-3 text-2xl font-semibold text-gray-900">
         {value ?? "—"}
       </p>
     </div>
@@ -114,7 +114,7 @@ export default function DashboardHome() {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-10">
+    <div className="max-w-7xl mx-auto space-y-6">
 
       {/* KPI */}
       <section className="grid gap-5 md:grid-cols-3">
@@ -178,7 +178,7 @@ export default function DashboardHome() {
         </p>
 
         <div className="grid gap-5 md:grid-cols-3">
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
+          <div className="rounded-xl border bg-white p-5 shadow-sm">
             <p className="text-xs text-gray-500 uppercase tracking-wide">
               Total Pendapatan
             </p>
