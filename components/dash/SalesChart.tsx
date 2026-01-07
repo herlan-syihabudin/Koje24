@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -29,7 +29,7 @@ export default function SalesChart() {
   }, [mode]);
 
   return (
-    <div className="rounded-2xl border bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border bg-white p-4 shadow-sm h-full">
       {/* HEADER */}
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-semibold text-gray-900">
@@ -54,54 +54,51 @@ export default function SalesChart() {
       </div>
 
       {/* CHART */}
-      <div className="h-[240px]">
+      <div className="h-[260px]">
         {data.length === 0 ? (
           <div className="h-full flex items-center justify-center text-xs text-gray-400">
             Belum ada data
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-  <AreaChart
-    data={data}
-    margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
-  >
-    <defs>
-      <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#0FA3A8" stopOpacity={0.35} />
-        <stop offset="100%" stopColor="#0FA3A8" stopOpacity={0.05} />
-      </linearGradient>
-    </defs>
+            <AreaChart
+              data={data}
+              margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
+            >
+              <defs>
+                <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#0FA3A8" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#0FA3A8" stopOpacity={0.05} />
+                </linearGradient>
+              </defs>
 
-    <XAxis
-      dataKey="label"
-      tick={{ fontSize: 11 }}
-    />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
 
-    <YAxis
-      width={90}
-      tick={{ fontSize: 11 }}
-      tickFormatter={(v) => `Rp ${v / 1000}k`}
-      axisLine={false}
-      tickLine={false}
-    />
+              <YAxis
+                width={90}
+                tick={{ fontSize: 11 }}
+                tickFormatter={(v) => `Rp ${v / 1000}k`}
+                axisLine={false}
+                tickLine={false}
+              />
 
-    <Tooltip
-      formatter={(v: any) =>
-        `Rp ${Number(v || 0).toLocaleString("id-ID")}`
-      }
-    />
+              <Tooltip
+                formatter={(v: any) =>
+                  `Rp ${Number(v || 0).toLocaleString("id-ID")}`
+                }
+              />
 
-    <Area
-      type="monotone"
-      dataKey="total"
-      stroke="#0FA3A8"
-      strokeWidth={3}
-      fill="url(#salesGradient)"
-      dot={{ r: 3 }}
-      activeDot={{ r: 6 }}
-    />
-  </AreaChart>
-</ResponsiveContainer>
+              <Area
+                type="monotone"
+                dataKey="total"
+                stroke="#0FA3A8"
+                strokeWidth={3}
+                fill="url(#salesGradient)"
+                dot={{ r: 3 }}
+                activeDot={{ r: 6 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         )}
       </div>
     </div>
