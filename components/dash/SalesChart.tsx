@@ -61,34 +61,39 @@ export default function SalesChart() {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data}>
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 11, fill: "#6B7280" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 11, fill: "#6B7280" }}
-                axisLine={false}
-                tickLine={false}
-                width={40}
-              />
-              <Tooltip
-                contentStyle={{
-                  fontSize: "12px",
-                  borderRadius: "8px",
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="total"
-                stroke="#0FA3A8"
-                strokeWidth={2.5}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+  <LineChart
+    data={data}
+    margin={{ top: 10, right: 20, left: 30, bottom: 10 }}
+  >
+    <XAxis
+      dataKey="label"
+      tick={{ fontSize: 11 }}
+    />
+
+    <YAxis
+      width={70}
+      tick={{ fontSize: 11 }}
+      tickFormatter={(v) =>
+        `Rp ${Number(v).toLocaleString("id-ID")}`
+      }
+    />
+
+    <Tooltip
+      formatter={(v: any) =>
+        `Rp ${Number(v || 0).toLocaleString("id-ID")}`
+      }
+    />
+
+    <Line
+      type="monotone"
+      dataKey="total"
+      stroke="#0FA3A8"
+      strokeWidth={3}
+      dot={{ r: 3 }}
+      activeDot={{ r: 5 }}
+    />
+  </LineChart>
+</ResponsiveContainer>
         )}
       </div>
     </div>
