@@ -162,57 +162,51 @@ export default function DashboardHome() {
   )}
 </section>
 
-      {/* SALES CHART */}
-      <section>
-        <SalesChart />
-      </section>
+      {/* SALES + FINANCE (SEJAJAR & COMPACT) */}
+<section className="grid gap-5 md:grid-cols-[2fr_1fr] items-stretch">
 
-      {/* 💰 RINGKASAN KEUANGAN */}
-      <section>
-        <p className="text-sm font-semibold text-gray-900 mb-4">
-          Ringkasan Keuangan
-        </p>
+  {/* 🔵 SALES CHART – 65% */}
+  <div className="h-full">
+    <SalesChart />
+  </div>
 
-        <div className="grid gap-5 md:grid-cols-3">
-          <div className="rounded-xl border bg-white p-5 shadow-sm">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">
-              Total Pendapatan
-            </p>
-            <p className="mt-3 text-2xl font-semibold">
-              {formatRupiah(finance?.summary.totalRevenue)}
-            </p>
-          </div>
+  {/* 🟢 FINANCE SIDE – 35% */}
+  <div className="space-y-4 h-full">
 
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">
-              Transfer / QRIS
-            </p>
-            <p className="mt-3 text-xl font-semibold">
-              {formatRupiah(finance?.methods.transfer.amount)}
-            </p>
-            <p className="text-xs text-gray-400">
-              {finance?.methods.transfer.count || 0} transaksi
-            </p>
-          </div>
+    {/* 💰 RINGKASAN KEUANGAN */}
+    <div className="rounded-2xl border bg-white p-5 shadow-sm">
+      <p className="text-sm font-semibold text-gray-900 mb-3">
+        Ringkasan Keuangan
+      </p>
 
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">
-              COD
-            </p>
-            <p className="mt-3 text-xl font-semibold">
-              {formatRupiah(finance?.methods.cod.amount)}
-            </p>
-            <p className="text-xs text-gray-400">
-              {finance?.methods.cod.count || 0} transaksi
-            </p>
-          </div>
+      <div className="space-y-3">
+        <div>
+          <p className="text-xs text-gray-500 uppercase">Total Pendapatan</p>
+          <p className="text-xl font-semibold">
+            {formatRupiah(finance?.summary.totalRevenue)}
+          </p>
         </div>
-      </section>
 
-      {/* 📊 FINANCE CHART */}
-      <section>
-        <FinanceChart data={finance?.chart || []} />
-      </section>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">Transfer / QRIS</span>
+          <span className="font-semibold">
+            {formatRupiah(finance?.methods.transfer.amount)}
+          </span>
+        </div>
+
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">COD</span>
+          <span className="font-semibold">
+            {formatRupiah(finance?.methods.cod.amount)}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    {/* 📊 DONUT CHART */}
+    <FinanceChart data={finance?.chart || []} />
+  </div>
+</section>
 
       {/* QUICK ACTION */}
       <section>
