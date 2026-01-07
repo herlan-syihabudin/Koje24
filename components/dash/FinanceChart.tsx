@@ -39,7 +39,7 @@ export default function FinanceChart({ data = [] }: { data?: ChartItem[] }) {
   }
 
   return (
-    <div className="rounded-2xl border bg-white p-6 shadow-sm">
+    <div className="rounded-2xl border bg-white p-4 shadow-sm">
       <div className="mb-4">
         <p className="text-sm font-semibold">Perbandingan Metode Pembayaran</p>
         <p className="text-xs text-gray-500">
@@ -47,17 +47,17 @@ export default function FinanceChart({ data = [] }: { data?: ChartItem[] }) {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 items-center">
+      <div className="space-y-4">
         {/* CHART */}
-        <div className="h-56">
+        <div className="h-44">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={visibleData}
                 dataKey="value"
                 nameKey="name"
-                innerRadius={60}
-                outerRadius={90}
+                innerRadius={45}
+                outerRadius={70}
                 paddingAngle={4}
               >
                 {visibleData.map((_, i) => (
@@ -73,7 +73,7 @@ export default function FinanceChart({ data = [] }: { data?: ChartItem[] }) {
         </div>
 
         {/* LEGEND */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           {data.map((item, i) => {
             const percent =
               totalValue === 0 ? 0 : Math.round(((item.value || 0) / totalValue) * 100);
@@ -84,7 +84,7 @@ export default function FinanceChart({ data = [] }: { data?: ChartItem[] }) {
               <div
                 key={item.name}
                 onClick={() => toggleLegend(item.name)}
-                className={`cursor-pointer rounded-xl border p-3 transition ${
+                className={`cursor-pointer rounded-xl border p-2 transition ${
                   isHidden ? "opacity-40" : "hover:bg-gray-50"
                 }`}
               >
