@@ -115,15 +115,6 @@ export default function DashboardHome() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-10">
-      {/* HEADER */}
-      <section>
-        <h1 className="text-3xl font-semibold text-gray-900">
-          Ringkasan KOJE24
-        </h1>
-        <p className="text-sm text-gray-600 mt-2 max-w-2xl">
-          Dashboard internal untuk memantau order, produk, dan operasional KOJE24
-        </p>
-      </section>
 
       {/* KPI */}
       <section className="grid gap-5 md:grid-cols-3">
