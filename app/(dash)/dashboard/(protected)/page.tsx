@@ -116,55 +116,51 @@ export default function DashboardHome() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
 
-      {/* KPI */}
-      <section className="grid gap-5 md:grid-cols-3">
-        <StatCard title="Order Hari Ini" value={todayOrders} />
-        <StatCard title="Total Order Bulan Ini" value={monthOrders} />
-        <StatCard
-          title="Total Pendapatan"
-          value={formatRupiah(finance?.summary.totalRevenue)}
-        />
-      </section>
+      {/* KPI + INSIGHT (COMPACT) */}
+<section className="space-y-3">
+  {/* KPI */}
+  <div className="grid gap-4 md:grid-cols-3">
+    <StatCard title="Order Hari Ini" value={todayOrders} />
+    <StatCard title="Total Order Bulan Ini" value={monthOrders} />
+    <StatCard
+      title="Total Pendapatan"
+      value={formatRupiah(finance?.summary.totalRevenue)}
+    />
+  </div>
 
-       {/* 🔥 INSIGHT OTOMATIS */}
-{finance?.insights && (
-  <section className="rounded-2xl border bg-[#F7FBFB] p-5 space-y-2">
-    <p className="text-sm text-gray-800">
-      {finance.insights.revenueTrend.status === "up" && "📈"}
-      {finance.insights.revenueTrend.status === "down" && "📉"}
-      {finance.insights.revenueTrend.status === "flat" && "➖"}
-      {" "}
-      Pendapatan{" "}
-      <strong>
-        {finance.insights.revenueTrend.status === "up"
-          ? "meningkat"
-          : finance.insights.revenueTrend.status === "down"
-          ? "menurun"
-          : "stabil"}
-      </strong>{" "}
-      sebesar{" "}
-      <strong>{finance.insights.revenueTrend.percent}%</strong>{" "}
-      dibanding 7 hari sebelumnya
-    </p>
+  {/* INSIGHT COMPACT BAR */}
+  {finance?.insights && (
+    <div className="rounded-xl border bg-[#F7FBFB] px-4 py-2 text-sm text-gray-700 flex flex-wrap gap-4">
+      <span>
+        {finance.insights.revenueTrend.status === "up" && "📈"}
+        {finance.insights.revenueTrend.status === "down" && "📉"}
+        {finance.insights.revenueTrend.status === "flat" && "➖"}{" "}
+        Pendapatan{" "}
+        <b>
+          {finance.insights.revenueTrend.status === "up"
+            ? "naik"
+            : finance.insights.revenueTrend.status === "down"
+            ? "turun"
+            : "stabil"}
+        </b>{" "}
+        {finance.insights.revenueTrend.percent}%
+      </span>
 
-    {finance.insights.topProduct?.name && (
-      <p className="text-sm text-gray-800">
-        🔥 Produk dominan bulan ini:{" "}
-        <strong>{finance.insights.topProduct.name}</strong>{" "}
-        (kontribusi{" "}
-        <strong>{finance.insights.topProduct.contribution}%</strong>{" "}
-        dari total penjualan)
-      </p>
-    )}
+      {finance.insights.topProduct?.name && (
+        <span>
+          🔥 Produk dominan:{" "}
+          <b>{finance.insights.topProduct.name}</b>
+        </span>
+      )}
 
-    {finance.insights.paymentRisk.warning && (
-      <p className="text-sm text-orange-600">
-        ⚠️ <strong>{finance.insights.paymentRisk.codRatio}%</strong>{" "}
-        transaksi masih COD — pertimbangkan promo Transfer / QRIS
-      </p>
-    )}
-  </section>
-)}
+      {finance.insights.paymentRisk.warning && (
+        <span className="text-orange-600">
+          ⚠️ COD {finance.insights.paymentRisk.codRatio}%
+        </span>
+      )}
+    </div>
+  )}
+</section>
 
       {/* SALES CHART */}
       <section>
