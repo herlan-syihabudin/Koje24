@@ -9,6 +9,15 @@ const ALLOWED_STATUS = [
   "SELESAI",
 ];
 
+// 🔥 FLOW STATUS WAJIB
+const STATUS_FLOW: Record<string, string[]> = {
+  PENDING: ["PAID"],
+  PAID: ["DIPROSES"],
+  DIPROSES: ["DIKIRIM"],
+  DIKIRIM: ["SELESAI"],
+  SELESAI: [],
+};
+
 function now() {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
 }
@@ -25,6 +34,7 @@ export async function POST(req: Request) {
     }
 
     const cleanStatus = String(status).trim().toUpperCase();
+
     if (!ALLOWED_STATUS.includes(cleanStatus)) {
       return NextResponse.json(
         { success: false, message: "Status tidak valid" },
@@ -35,7 +45,7 @@ export async function POST(req: Request) {
     // 1️⃣ Ambil data transaksi
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Transaksi!A2:O",
+      range: "Transaksi!A2:P", // ⬅️ P dipakai buat CLOSED
     });
 
     const rows = res.data.values || [];
@@ -51,9 +61,38 @@ export async function POST(req: Request) {
     }
 
     const sheetRow = rowIndex + 2;
-    const oldStatus = String(rows[rowIndex][12] || "").toUpperCase(); // kolom M
+    const oldStatus = String(rows[rowIndex][12] || "PENDING").toUpperCase(); // M
+    const closed = String(rows[rowIndex][15] || "").toUpperCase(); // P
 
-    // 2️⃣ Update STATUS (kolom M)
+    // ❌ JIKA SUDAH CLOSING
+    if (closed === "YES") {
+      return NextResponse.json(
+        { success: false, message: "Order sudah di-closing & tidak bisa diubah" },
+        { status: 403 }
+      );
+    }
+
+    // ❌ JIKA SUDAH SELESAI
+    if (oldStatus === "SELESAI") {
+      return NextResponse.json(
+        { success: false, message: "Order SELESAI tidak bisa diubah" },
+        { status: 403 }
+      );
+    }
+
+    // ❌ VALIDASI FLOW STATUS
+    const allowedNext = STATUS_FLOW[oldStatus] || [];
+    if (!allowedNext.includes(cleanStatus)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Transisi status tidak valid: ${oldStatus} → ${cleanStatus}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // 2️⃣ UPDATE STATUS
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `Transaksi!M${sheetRow}`,
@@ -63,7 +102,7 @@ export async function POST(req: Request) {
       },
     });
 
-    // 3️⃣ TULIS AUDIT LOG 🔥
+    // 3️⃣ AUDIT LOG 🔥
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: "Audit_Log!A:F",
@@ -75,7 +114,7 @@ export async function POST(req: Request) {
           "UPDATE_STATUS",
           oldStatus,
           cleanStatus,
-          "dashboard"
+          "dashboard",
         ]],
       },
     });
