@@ -4,9 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut } from "lucide-react";
 
-/* =====================
-   NAV CONFIG
-===================== */
 const NAV = [
   {
     title: "OVERVIEW",
@@ -51,30 +48,31 @@ const NAV = [
   },
 ];
 
-/* =====================
-   COMPONENT
-===================== */
 export default function Sidebar() {
   const pathname = usePathname();
 
   const logout = async () => {
     if (!confirm("Yakin mau logout?")) return;
+
     await fetch("/api/dashboard/logout", { method: "POST" });
+
+    // 🔥 FULL reload (WAJIB untuk auth & Safari)
     window.location.href = "/dashboard/login";
   };
 
   return (
     <aside className="p-5 space-y-6 h-full flex flex-col">
-      {/* HEADER */}
+      {/* HEADER + LOGOUT */}
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24</p>
           <h2 className="text-lg font-semibold">Dashboard</h2>
           <p className="text-xs text-gray-500 mt-1">
-            Administrator
+            Internal panel operasional
           </p>
         </div>
 
+        {/* LOGOUT */}
         <button
           onClick={logout}
           title="Logout"
