@@ -15,7 +15,6 @@ export function requireAdminFromRequest(req: NextRequest) {
       ),
     };
   }
-
   const raw = req.cookies.get(COOKIE_NAME)?.value;
 
   if (!raw) {
