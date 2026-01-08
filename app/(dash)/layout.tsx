@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifySession, getCookieName } from "@/lib/dashboardAuth";
-import Sidebar from "@/components/(dash)/Sidebar"; // Pastikan path sidebar lo bener
+import Sidebar from "@/components/dash/Sidebar"; // Pastikan path sidebar lo bener
 
 export default async function DashGroupLayout({
   children,
