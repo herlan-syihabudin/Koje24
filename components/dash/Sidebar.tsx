@@ -5,17 +5,6 @@ import { usePathname } from "next/navigation";
 import { LogOut } from "lucide-react";
 
 /* =====================
-   TYPES
-===================== */
-type Admin = {
-  email: string;
-};
-
-type SidebarProps = {
-  admin: Admin;
-};
-
-/* =====================
    NAV CONFIG
 ===================== */
 const NAV = [
@@ -65,7 +54,7 @@ const NAV = [
 /* =====================
    COMPONENT
 ===================== */
-export default function Sidebar({ admin }: SidebarProps) {
+export default function Sidebar() {
   const pathname = usePathname();
 
   const logout = async () => {
@@ -82,7 +71,7 @@ export default function Sidebar({ admin }: SidebarProps) {
           <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24</p>
           <h2 className="text-lg font-semibold">Dashboard</h2>
           <p className="text-xs text-gray-500 mt-1">
-            {admin.email}
+            Administrator
           </p>
         </div>
 
