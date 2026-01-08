@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut } from "lucide-react";
 
 const NAV = [
   {
@@ -34,16 +33,6 @@ const NAV = [
       { label: "Ringkasan", href: "/dashboard/finance" },
       { label: "Pembayaran", href: "/dashboard/finance/payments" },
       { label: "Ongkir & Kurir", href: "/dashboard/finance/shipping" },
-      { label: "Invoice", href: "/dashboard/finance/invoices" },
-    ],
-  },
-  {
-    title: "PENGATURAN",
-    items: [
-      { label: "Metode Pembayaran", href: "/dashboard/settings/payment" },
-      { label: "Pengiriman", href: "/dashboard/settings/shipping" },
-      { label: "Admin & Akses", href: "/dashboard/settings/admin" },
-      { label: "System Status", href: "/dashboard/settings/system" },
     ],
   },
 ];
@@ -51,31 +40,21 @@ const NAV = [
 export default function Sidebar() {
   const pathname = usePathname();
 
-  const logout = async () => {
-    if (!confirm("Yakin mau logout?")) return;
-
-    await fetch("/api/dashboard/logout", { method: "POST" });
-
-    // 🔥 FULL reload (WAJIB untuk auth & Safari)
-    window.location.href = "/dashboard/login";
-  };
-
   return (
-    <aside className="p-5 space-y-6 h-full flex flex-col">
-      {/* HEADER + LOGOUT */}
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24</p>
-          <h2 className="text-lg font-semibold">Dashboard</h2>
-          <p className="text-xs text-gray-500 mt-1">
-            Internal panel operasional
-          </p>
-        </div>
+    <aside className="h-screen w-64 border-r bg-white p-5 flex flex-col">
+      {/* HEADER */}
+      <div className="mb-6">
+        <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24</p>
+        <h2 className="text-lg font-semibold">Dashboard</h2>
+        <p className="text-xs text-gray-500 mt-1">
+          Internal panel operasional
+        </p>
+      </div>
 
       {/* NAV */}
-      <div className="flex-1 overflow-y-auto pr-1">
+      <div className="flex-1 overflow-y-auto pr-1 space-y-6">
         {NAV.map((section) => (
-          <div key={section.title} className="mb-5">
+          <div key={section.title}>
             <p className="text-[10px] font-semibold text-gray-400 mb-2 tracking-widest">
               {section.title}
             </p>
@@ -106,10 +85,9 @@ export default function Sidebar() {
       </div>
 
       {/* FOOTER */}
-      <div className="pt-4 border-t">
-        <p className="text-xs text-gray-500">Status Sistem</p>
-        <p className="text-sm font-medium mt-1">UI: Stabil ✅</p>
-        <p className="text-xs text-gray-500">Data: Aktif (Orders)</p>
+      <div className="pt-4 border-t text-xs text-gray-500">
+        UI: Stabil ✅<br />
+        Data: Aktif (Orders)
       </div>
     </aside>
   );
