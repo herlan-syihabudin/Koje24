@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/requireAdmin";
+import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 
 function parseTanggal(raw: string) {
