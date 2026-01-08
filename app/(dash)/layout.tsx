@@ -1,13 +1,19 @@
+// app/(dash)/layout.tsx
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { verifySession } from "@/lib/dashboardAuth.server";
-import { COOKIE_NAME } from "@/lib/dashboardAuth.edge";
+import { verifySession, getCookieName } from "@/lib/dashboardAuth";
 
-export default async function DashGroupLayout({ children }: any) {
-  const token = cookies().get(COOKIE_NAME)?.value;
-  const admin = verifySession(token);
+export default async function DashGroupLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const token = cookies().get(getCookieName())?.value;
+  const session = verifySession(token);
 
-  if (!admin) redirect("/dashboard/login");
+  if (!session) {
+    redirect("/dashboard/login");
+  }
 
   return children;
 }
