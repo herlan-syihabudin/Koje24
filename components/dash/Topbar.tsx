@@ -8,7 +8,6 @@ export default function Topbar() {
     await fetch("/api/dashboard/logout", { method: "POST" });
     window.location.href = "/dashboard/login";
   };
-
   return (
     <header className="border-b bg-white">
       <div className="px-4 md:px-8 py-3 flex items-center justify-between">
