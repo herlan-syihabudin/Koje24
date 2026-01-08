@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 
+/* =====================
+   UTIL
+===================== */
 function parseTanggal(tanggalRaw: string) {
   if (!tanggalRaw) return null;
   const datePart = String(tanggalRaw).split(",")[0];
@@ -9,8 +12,14 @@ function parseTanggal(tanggalRaw: string) {
   return new Date(y, m - 1, d);
 }
 
-type ProductAgg = { qty: number; revenue: number };
+type ProductAgg = {
+  qty: number;
+  revenue: number;
+};
 
+/* =====================
+   GET TOP PRODUCTS (BULAN INI)
+===================== */
 export async function GET() {
   try {
     const res = await sheets.spreadsheets.values.get({
@@ -24,8 +33,8 @@ export async function GET() {
     const productMap: Record<string, ProductAgg> = {};
 
     rows.forEach((row) => {
-      const tanggal = row[1]; // B
-      const produkRaw = row[5]; // F
+      const tanggal = row[1];          // B
+      const produkRaw = row[5];        // F
       const qty = Number(row[6] || 1); // G
       const totalBayar = Number(row[9] || 0); // J
       const status = String(row[12] || "").toUpperCase(); // M
@@ -36,31 +45,31 @@ export async function GET() {
       const dt = parseTanggal(String(tanggal));
       if (!dt) return;
 
-      // filter bulan ini
+      // filter bulan & tahun sekarang
       if (
         dt.getMonth() !== now.getMonth() ||
         dt.getFullYear() !== now.getFullYear()
-      )
+      ) {
         return;
+      }
 
-      // 🔥 split produk (kalau 1 order berisi beberapa produk)
-      const products: string[] = String(produkRaw)
+      // split produk (kalau 1 order isi banyak produk)
+      const products = String(produkRaw)
         .split(",")
-        .map((p: string) => p.replace(/\(.*?\)/g, "").trim())
-        .filter((p: string) => p.length > 0);
+        .map((p) => p.replace(/\(.*?\)/g, "").trim())
+        .filter(Boolean);
 
       if (products.length === 0) return;
 
-      // bagi rata qty & revenue ke tiap item dalam paket
       const qtyPerProduct = qty / products.length;
       const revenuePerProduct = totalBayar / products.length;
 
-      products.forEach((productName: string) => {
-        if (!productMap[productName]) {
-          productMap[productName] = { qty: 0, revenue: 0 };
+      products.forEach((name) => {
+        if (!productMap[name]) {
+          productMap[name] = { qty: 0, revenue: 0 };
         }
-        productMap[productName].qty += qtyPerProduct;
-        productMap[productName].revenue += revenuePerProduct;
+        productMap[name].qty += qtyPerProduct;
+        productMap[name].revenue += revenuePerProduct;
       });
     });
 
