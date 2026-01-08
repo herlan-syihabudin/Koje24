@@ -72,16 +72,6 @@ export default function Sidebar() {
           </p>
         </div>
 
-        {/* LOGOUT */}
-        <button
-          onClick={logout}
-          title="Logout"
-          className="text-red-500 hover:bg-red-50 p-2 rounded-xl transition"
-        >
-          <LogOut size={18} />
-        </button>
-      </div>
-
       {/* NAV */}
       <div className="flex-1 overflow-y-auto pr-1">
         {NAV.map((section) => (
