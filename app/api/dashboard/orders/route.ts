@@ -3,14 +3,32 @@ import type { NextRequest } from "next/server";
 import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 
+/* =====================
+   TYPES
+===================== */
+type OrderRow = {
+  invoice: string;
+  tanggal: string;
+  nama: string;
+  produk: string;
+  qty: number;
+  totalBayar: number;
+  status: string;
+  closed: "YES" | "NO";
+  _dt: number;
+};
+
+/* =====================
+   HELPERS
+===================== */
 function parseTanggal(raw: string) {
-  if (!raw) return null;
-  const datePart = String(raw).split(",")[0].trim();
-  const [d, m, y] = datePart.split("/").map(Number);
-  if (!d || !m || !y) return null;
-  return new Date(y, m - 1, d);
+  const [d, m, y] = (raw?.split(",")[0] || "").split("/").map(Number);
+  return d && m && y ? new Date(y, m - 1, d).getTime() : 0;
 }
 
+/* =====================
+   GET ORDERS
+===================== */
 export async function GET(req: NextRequest) {
   const guard = requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
@@ -19,7 +37,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
 
     const status = (searchParams.get("status") || "ALL").toUpperCase();
-    const closed = (searchParams.get("closed") || "NO").toUpperCase();
+    const closed = (searchParams.get("closed") || "ALL").toUpperCase();
 
     const page = Math.max(1, Number(searchParams.get("page") || 1));
     const limit = Math.min(100, Math.max(5, Number(searchParams.get("limit") || 25)));
@@ -31,7 +49,7 @@ export async function GET(req: NextRequest) {
 
     const rows = res.data.values || [];
 
-    let orders = rows
+    let orders: OrderRow[] = rows
       .map((row) => {
         const invoice = String(row[0] || "").trim();
         if (!invoice) return null;
@@ -45,29 +63,46 @@ export async function GET(req: NextRequest) {
           totalBayar: Number(row[9] || 0),
           status: String(row[12] || "PENDING").toUpperCase(),
           closed: String(row[15] || "").toUpperCase() === "YES" ? "YES" : "NO",
-          _dt: parseTanggal(row[1])?.getTime() || 0,
+          _dt: parseTanggal(row[1]),
         };
       })
-      .filter(Boolean) as any[];
+      .filter(Boolean) as OrderRow[];
 
+    // 🔎 filters
     if (status !== "ALL") orders = orders.filter(o => o.status === status);
     if (closed !== "ALL") orders = orders.filter(o => o.closed === closed);
 
+    // ⏱ sort terbaru
     orders.sort((a, b) => b._dt - a._dt);
 
+    // 📄 pagination
     const total = orders.length;
     const totalPages = Math.max(1, Math.ceil(total / limit));
     const safePage = Math.min(page, totalPages);
 
     const start = (safePage - 1) * limit;
-    const data = orders.slice(start, start + limit).map(({ _dt, ...o }) => o);
+    const data = orders
+      .slice(start, start + limit)
+      .map(({ _dt, ...o }) => o);
 
     return NextResponse.json({
       success: true,
-      meta: { status, closed, page: safePage, limit, total, totalPages },
+      meta: {
+        status,
+        closed,
+        page: safePage,
+        limit,
+        total,
+        totalPages,
+      },
       orders: data,
     });
-  } catch (e: any) {
-    return NextResponse.json({ success: false, message: e.message }, { status: 500 });
+
+  } catch (err) {
+    console.error("GET /dashboard/orders error:", err);
+    return NextResponse.json(
+      { success: false, message: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
