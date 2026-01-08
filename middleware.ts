@@ -2,25 +2,17 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-
-  // 🔐 PROTEKSI DASHBOARD
-  if (pathname.startsWith("/dashboard")) {
-    const adminToken = req.cookies.get("admin_token")?.value;
-
-    if (!adminToken) {
-      const loginUrl = req.nextUrl.clone();
-      loginUrl.pathname = "/admin/login";
-      return NextResponse.redirect(loginUrl);
+  if (req.nextUrl.pathname.startsWith("/dashboard")) {
+    const token = req.cookies.get("koje_admin")?.value;
+    if (!token) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/admin/login";
+      return NextResponse.redirect(url);
     }
   }
-
   return NextResponse.next();
 }
 
-/* =====================
-   ROUTE YANG DIJAGA
-===================== */
 export const config = {
   matcher: ["/dashboard/:path*"],
 };
