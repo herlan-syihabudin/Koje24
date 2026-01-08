@@ -13,8 +13,11 @@ export default async function ProtectedLayout({
   const cookieStore = await cookies();
   const token = cookieStore.get(getCookieName())?.value;
 
-  const v = verifySession(token);
-  if (!v.ok) redirect("/dashboard/login");
+  const session = verifySession(token);
+
+if (!session) {
+  redirect("/dashboard/login");
+}
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC]">
