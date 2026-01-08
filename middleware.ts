@@ -14,7 +14,6 @@ export function middleware(req: NextRequest) {
   ) {
     return NextResponse.next();
   }
-
   if (pathname.startsWith("/dashboard")) {
     const token = req.cookies.get(COOKIE_NAME)?.value;
     if (!token) {
