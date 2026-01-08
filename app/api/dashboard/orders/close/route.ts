@@ -28,9 +28,10 @@ const ALLOWED_CLOSING_STATUS = ["PAID", "SELESAI"];
 export async function POST(req: NextRequest) {
   // 🔐 GUARD ADMIN
   const guard = requireAdminFromRequest(req);
-  if (!guard.ok) return guard.res;
+if (!guard.ok) return guard.res;
 
-  const adminEmail = guard.admin.email;
+const { admin } = guard;
+const adminEmail = admin.email;
 
   try {
     const { from, to, status } = await req.json();
