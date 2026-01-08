@@ -18,76 +18,80 @@ export default function DashboardLoginPage() {
     try {
       const res = await fetch("/api/dashboard/login", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
-
-      // ❗️ WAJIB CEK success (BUKAN ok)
       if (!res.ok || !data?.success) {
         throw new Error(data?.message || "Login gagal");
       }
 
-      // ✅ WAJIB FULL RELOAD agar cookie terbaca server
       window.location.href = "/dashboard";
     } catch (e: any) {
-      setErr(e?.message || "Login gagal");
+      setErr(e.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-[#F4FAFA] text-[#0B4B50] flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white border rounded-3xl shadow p-6">
-        <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">
-          KOJE24 • ADMIN
-        </p>
+    <main className="min-h-screen relative flex items-center justify-center overflow-hidden">
+      {/* 🌿 Background */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_#0FA3A8,_#062F32_70%)]" />
+      <div className="absolute inset-0 backdrop-blur-[2px]" />
 
-        <h1 className="text-2xl font-playfair font-semibold mt-1">
-          Dashboard Login
-        </h1>
+      {/* 💎 Login Card */}
+      <div className="relative z-10 w-full max-w-md px-6">
+        <div className="rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl p-8 text-white">
+          <p className="text-xs tracking-[0.35em] text-[#9FE6E8]">
+            KOJE24 • ADMIN
+          </p>
 
-        <form onSubmit={submit} className="space-y-4 mt-6">
-          <input
-            className="border rounded-xl px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            required
-          />
+          <h1 className="text-3xl font-playfair font-semibold mt-2">
+            Dashboard Login
+          </h1>
 
-          <input
-            className="border rounded-xl px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]"
-            placeholder="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            required
-          />
+          <p className="text-sm text-white/70 mt-1">
+            Akses terbatas internal operasional
+          </p>
 
-          {err && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {err}
-            </p>
-          )}
+          <form onSubmit={submit} className="space-y-4 mt-6">
+            <input
+              className="w-full rounded-xl bg-white/20 px-4 py-3 text-sm placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]"
+              placeholder="Email admin"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
 
-          <button
-            disabled={loading}
-            className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold transition disabled:opacity-50"
-          >
-            {loading ? "Memproses..." : "Masuk Dashboard"}
-          </button>
-        </form>
+            <input
+              type="password"
+              className="w-full rounded-xl bg-white/20 px-4 py-3 text-sm placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
 
-        <p className="text-[11px] text-gray-500 mt-4 text-center">
-          Akses terbatas untuk admin KOJE24.
-        </p>
+            {err && (
+              <div className="text-sm bg-red-500/20 border border-red-400/30 rounded-lg px-3 py-2">
+                {err}
+              </div>
+            )}
+
+            <button
+              disabled={loading}
+              className="w-full mt-2 rounded-full bg-[#0FA3A8] hover:bg-[#12b7bc] py-3 font-semibold transition disabled:opacity-50"
+            >
+              {loading ? "Memverifikasi..." : "Masuk Dashboard"}
+            </button>
+          </form>
+
+          <p className="text-[11px] text-white/50 mt-6 text-center">
+            Sistem internal • Unauthorized access prohibited
+          </p>
+        </div>
       </div>
     </main>
   );
