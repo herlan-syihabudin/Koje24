@@ -1,19 +1,13 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { verifySession, getCookieName } from "@/lib/dashboardAuth";
+import { verifySession } from "@/lib/dashboardAuth.server";
+import { COOKIE_NAME } from "@/lib/dashboardAuth.edge";
 
-export default async function DashGroupLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const cookieStore = await cookies(); // ✅ WAJIB await
-  const token = cookieStore.get(getCookieName())?.value;
+export default async function DashGroupLayout({ children }: any) {
+  const token = cookies().get(COOKIE_NAME)?.value;
+  const admin = verifySession(token);
 
-  const v = verifySession(token);
-  if (!v.ok) {
-    redirect("/dashboard/login");
-  }
+  if (!admin) redirect("/dashboard/login");
 
   return children;
 }
