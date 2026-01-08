@@ -4,24 +4,23 @@ import type { NextRequest } from "next/server";
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // hanya proteksi dashboard
-  if (!pathname.startsWith("/dashboard")) {
-    return NextResponse.next();
-  }
+  // 🔐 PROTEKSI DASHBOARD
+  if (pathname.startsWith("/dashboard")) {
+    const adminToken = req.cookies.get("admin_token")?.value;
 
-  // contoh: cookie admin token (HttpOnly) bernama "koje_admin"
-  const token = req.cookies.get("koje_admin")?.value;
-
-  if (!token) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/admin/login"; // sesuaikan route login admin lu
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+    if (!adminToken) {
+      const loginUrl = req.nextUrl.clone();
+      loginUrl.pathname = "/admin/login";
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   return NextResponse.next();
 }
 
+/* =====================
+   ROUTE YANG DIJAGA
+===================== */
 export const config = {
   matcher: ["/dashboard/:path*"],
 };
