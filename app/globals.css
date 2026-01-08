@@ -200,3 +200,53 @@
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* ===============================
+   DASHBOARD ADD-ON (UTILITIES)
+   =============================== */
+@layer utilities {
+  /* Scrollbar halus untuk Sidebar & Main Content */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+  }
+
+  /* Glassmorphism untuk Header Dashboard */
+  .glass-header {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Efek kartu dashboard pro */
+  .dash-card {
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .dash-card:hover {
+    box-shadow: 0 10px 20px rgba(0,0,0,0.04);
+    border-color: var(--brand);
+    transform: translateY(-2px);
+  }
+}
+
+/* Fix untuk Sidebar Nav - Garis Aktif */
+.nav-active-indicator {
+  position: absolute;
+  left: 0;
+  width: 4px;
+  height: 20px;
+  background-color: var(--brand);
+  border-radius: 0 4px 4px 0;
+}
