@@ -18,7 +18,6 @@ export default async function ProtectedLayout({
 if (!session) {
   redirect("/dashboard/login");
 }
-
   return (
     <div className="flex min-h-screen bg-[#F8FAFC]">
       {/* SIDEBAR */}
