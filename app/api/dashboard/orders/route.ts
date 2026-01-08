@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 
