@@ -5,17 +5,18 @@ import { getCookieName } from "@/lib/dashboardAuth";
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 🔐 Lindungi dashboard (kecuali halaman login)
-  if (
-    pathname.startsWith("/dashboard") &&
-    !pathname.startsWith("/dashboard/login")
-  ) {
+  // ✅ IZINKAN LOGIN TANPA AUTH
+  if (pathname === "/dashboard/login") {
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith("/dashboard")) {
     const token = req.cookies.get(getCookieName())?.value;
 
     if (!token) {
-      const loginUrl = req.nextUrl.clone();
-      loginUrl.pathname = "/dashboard/login";
-      return NextResponse.redirect(loginUrl);
+      const url = req.nextUrl.clone();
+      url.pathname = "/dashboard/login";
+      return NextResponse.redirect(url);
     }
   }
 
