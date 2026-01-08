@@ -18,18 +18,27 @@ export default function DashboardLoginPage() {
     try {
       const res = await fetch("/api/dashboard/login", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password.trim(),
+        }),
       });
 
       const data = await res.json();
+
       if (!res.ok || !data?.success) {
         throw new Error(data?.message || "Login gagal");
       }
 
+      // 🔥 FULL reload (cookie pasti kebaca server)
       window.location.href = "/dashboard";
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (error) {
+      if (error instanceof Error) {
+        setErr(error.message);
+      } else {
+        setErr("Login gagal");
+      }
     } finally {
       setLoading(false);
     }
@@ -58,7 +67,10 @@ export default function DashboardLoginPage() {
 
           <form onSubmit={submit} className="space-y-4 mt-6">
             <input
-              className="w-full rounded-xl bg-white/20 px-4 py-3 text-sm placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]"
+              type="email"
+              autoComplete="email"
+              disabled={loading}
+              className="w-full rounded-xl bg-white/20 px-4 py-3 text-sm placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-[#0FA3A8] disabled:opacity-60"
               placeholder="Email admin"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -67,7 +79,9 @@ export default function DashboardLoginPage() {
 
             <input
               type="password"
-              className="w-full rounded-xl bg-white/20 px-4 py-3 text-sm placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]"
+              autoComplete="current-password"
+              disabled={loading}
+              className="w-full rounded-xl bg-white/20 px-4 py-3 text-sm placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-[#0FA3A8] disabled:opacity-60"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -81,6 +95,7 @@ export default function DashboardLoginPage() {
             )}
 
             <button
+              type="submit"
               disabled={loading}
               className="w-full mt-2 rounded-full bg-[#0FA3A8] hover:bg-[#12b7bc] py-3 font-semibold transition disabled:opacity-50"
             >
