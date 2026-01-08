@@ -22,6 +22,9 @@ const STATUS_STYLE: Record<string, string> = {
   SELESAI: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
+/* =====================
+   TYPES
+===================== */
 type Order = {
   invoice: string;
   nama: string;
@@ -29,6 +32,7 @@ type Order = {
   qty: number;
   totalBayar: number;
   status: string;
+  closed?: "YES" | "NO";
 };
 
 type Meta = {
@@ -44,7 +48,9 @@ type Meta = {
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
+
   const [activeStatus, setActiveStatus] = useState("ALL");
+  const [showClosed, setShowClosed] = useState(false);
 
   /* pagination */
   const [page, setPage] = useState(1);
@@ -66,13 +72,17 @@ export default function OrdersPage() {
     setLoading(true);
     try {
       const qs = new URLSearchParams();
+
       if (status !== "ALL") qs.set("status", status);
+      qs.set("closed", showClosed ? "ALL" : "NO");
+
       qs.set("page", String(pageNum));
       qs.set("limit", String(limit));
 
       const res = await fetch(`/api/dashboard/orders?${qs.toString()}`, {
         cache: "no-store",
       });
+
       const data = await res.json();
 
       if (data?.success) {
@@ -92,7 +102,7 @@ export default function OrdersPage() {
     setPage(1);
     fetchOrders(activeStatus, 1);
     // eslint-disable-next-line
-  }, [activeStatus]);
+  }, [activeStatus, showClosed]);
 
   useEffect(() => {
     fetchOrders(activeStatus, page);
@@ -100,7 +110,7 @@ export default function OrdersPage() {
   }, [page]);
 
   /* =====================
-     UPDATE STATUS (INI KUNCI)
+     UPDATE STATUS
   ===================== */
   async function updateStatus(invoice: string, status: string) {
     if (!confirm(`Ubah status ${invoice} → ${status}?`)) return;
@@ -112,7 +122,6 @@ export default function OrdersPage() {
     });
 
     const data = await res.json();
-
     if (!data.success) {
       alert(data.message || "Gagal update status");
       return;
@@ -137,11 +146,7 @@ export default function OrdersPage() {
     const res = await fetch("/api/dashboard/orders/export", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: fromDate,
-        to: toDate,
-        status: closingStatus,
-      }),
+      body: JSON.stringify({ from: fromDate, to: toDate, status: closingStatus }),
     });
 
     if (!res.ok) {
@@ -180,11 +185,7 @@ export default function OrdersPage() {
     const res = await fetch("/api/dashboard/orders/close", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: fromDate,
-        to: toDate,
-        status: closingStatus,
-      }),
+      body: JSON.stringify({ from: fromDate, to: toDate, status: closingStatus }),
     });
 
     const data = await res.json();
@@ -216,11 +217,9 @@ export default function OrdersPage() {
       {/* HEADER */}
       <div>
         <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">ORDERS</p>
-        <h1 className="text-2xl md:text-3xl font-semibold">
-          Manajemen Order
-        </h1>
+        <h1 className="text-2xl md:text-3xl font-semibold">Manajemen Order</h1>
         <p className="text-sm text-gray-600 mt-1">
-          Update status, export & closing order harian / mingguan
+          Update status, export & closing order
         </p>
       </div>
 
@@ -241,31 +240,59 @@ export default function OrdersPage() {
         ))}
       </div>
 
+      {/* TOGGLE CLOSED */}
+      <div className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={showClosed}
+          onChange={(e) => setShowClosed(e.target.checked)}
+        />
+        <span>Tampilkan order CLOSED</span>
+      </div>
+
       {/* EXPORT & CLOSING */}
       <div className="border rounded-2xl bg-white p-6 space-y-4">
         <p className="font-semibold">Export & Closing Order</p>
 
         <div className="grid md:grid-cols-5 gap-4">
-          <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="border rounded-xl px-4 py-2 text-sm" />
-          <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="border rounded-xl px-4 py-2 text-sm" />
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            className="border rounded-xl px-4 py-2 text-sm"
+          />
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            className="border rounded-xl px-4 py-2 text-sm"
+          />
 
-          <select value={closingStatus} onChange={(e) => setClosingStatus(e.target.value)} className="border rounded-xl px-4 py-2 text-sm">
+          <select
+            value={closingStatus}
+            onChange={(e) => setClosingStatus(e.target.value)}
+            className="border rounded-xl px-4 py-2 text-sm"
+          >
             <option value="PAID">PAID</option>
             <option value="SELESAI">SELESAI</option>
           </select>
 
-          <button onClick={handleExport} disabled={exportLoading} className="bg-[#0FA3A8] text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50">
+          <button
+            onClick={handleExport}
+            disabled={exportLoading}
+            className="bg-[#0FA3A8] text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
+          >
             {exportLoading ? "Exporting..." : "Export Excel"}
           </button>
 
-          <button onClick={handleClosing} disabled={closingLoading} className="bg-red-500 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50">
+          <button
+            onClick={handleClosing}
+            disabled={closingLoading}
+            className="bg-red-500 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
+          >
             {closingLoading ? "Processing..." : "Closing Order"}
           </button>
         </div>
-
-        <p className="text-xs text-yellow-600">
-          ⚠️ Export dulu sebelum closing. Closing akan mengunci data.
-        </p>
       </div>
 
       <p className="text-xs text-gray-500">{paginationText}</p>
@@ -295,7 +322,12 @@ export default function OrdersPage() {
 
             {!loading &&
               orders.map((o) => (
-                <tr key={o.invoice} className="border-b">
+                <tr
+                  key={o.invoice}
+                  className={`border-b ${
+                    o.closed === "YES" ? "bg-gray-50" : ""
+                  }`}
+                >
                   <td className="p-3 font-medium">{o.invoice}</td>
                   <td className="p-3">{o.nama}</td>
                   <td className="p-3">{o.produk}</td>
@@ -304,17 +336,26 @@ export default function OrdersPage() {
                     Rp {o.totalBayar.toLocaleString("id-ID")}
                   </td>
 
-                  {/* STATUS EDITABLE */}
                   <td className="p-3 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className={`px-2 py-1 text-xs rounded-full border ${STATUS_STYLE[o.status]}`}>
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full border ${STATUS_STYLE[o.status]}`}
+                      >
                         {o.status}
                       </span>
 
+                      {o.closed === "YES" && (
+                        <span className="px-2 py-1 text-xs rounded-full border bg-black/5">
+                          🔒 CLOSED
+                        </span>
+                      )}
+
                       <select
                         value={o.status}
-                        disabled={o.status === "SELESAI"}
-                        onChange={(e) => updateStatus(o.invoice, e.target.value)}
+                        disabled={o.closed === "YES"}
+                        onChange={(e) =>
+                          updateStatus(o.invoice, e.target.value)
+                        }
                         className="border rounded-lg px-2 py-1 text-xs disabled:opacity-50"
                       >
                         <option value="PENDING">PENDING</option>
