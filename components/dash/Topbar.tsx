@@ -1,4 +1,14 @@
+"use client";
+
+import { LogOut } from "lucide-react";
+
 export default function Topbar() {
+  const logout = async () => {
+    if (!confirm("Yakin mau logout?")) return;
+    await fetch("/api/dashboard/logout", { method: "POST" });
+    window.location.href = "/dashboard/login";
+  };
+
   return (
     <header className="border-b bg-white">
       <div className="px-4 md:px-8 py-3 flex items-center justify-between">
@@ -15,10 +25,13 @@ export default function Topbar() {
 
         {/* RIGHT */}
         <div className="flex items-center gap-3">
-          <span className="text-[11px] px-2.5 py-1 rounded-full bg-gray-100 text-gray-500">
-            Mode: UI only
-          </span>
-          {/* nanti bisa tambah notif, avatar, search */}
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 text-sm text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg transition"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
         </div>
 
       </div>
