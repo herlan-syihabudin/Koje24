@@ -5,23 +5,19 @@ import { getCookieName } from "@/lib/dashboardAuth";
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // ✅ LOGIN PAGE & AUTH API JANGAN DISENTUH
   if (
     pathname === "/dashboard/login" ||
-    pathname.startsWith("/api/dashboard/login") ||
-    pathname.startsWith("/api/dashboard/logout")
+    pathname.startsWith("/api/dashboard")
   ) {
     return NextResponse.next();
   }
 
-  // 🔐 PROTEKSI DASHBOARD
   if (pathname.startsWith("/dashboard")) {
     const token = req.cookies.get(getCookieName())?.value;
-
     if (!token) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/dashboard/login";
-      return NextResponse.redirect(url);
+      return NextResponse.redirect(
+        new URL("/dashboard/login", req.url)
+      );
     }
   }
 
