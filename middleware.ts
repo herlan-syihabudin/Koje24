@@ -1,17 +1,27 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getCookieName } from "@/lib/dashboardAuth";
 
 export function middleware(req: NextRequest) {
-  if (req.nextUrl.pathname.startsWith("/dashboard")) {
-    const token = req.cookies.get("koje_admin")?.value;
+  const { pathname } = req.nextUrl;
+
+  // 🔐 Lindungi dashboard (kecuali halaman login)
+  if (
+    pathname.startsWith("/dashboard") &&
+    !pathname.startsWith("/dashboard/login")
+  ) {
+    const token = req.cookies.get(getCookieName())?.value;
+
     if (!token) {
-      const url = req.nextUrl.clone();
+      const loginUrl = req.nextUrl.clone();
       loginUrl.pathname = "/dashboard/login";
-      return NextResponse.redirect(url);
+      return NextResponse.redirect(loginUrl);
     }
   }
+
   return NextResponse.next();
 }
+
 export const config = {
   matcher: ["/dashboard/:path*"],
 };
