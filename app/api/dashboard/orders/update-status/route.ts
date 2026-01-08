@@ -12,9 +12,10 @@ function now() {
 export async function POST(req: NextRequest) {
   // 🔐 GUARD ADMIN
   const guard = requireAdminFromRequest(req);
-  if (!guard.ok) return guard.res;
+if (!guard.ok) return guard.res;
 
-  const adminEmail = guard.admin.email;
+const { admin } = guard; // <- TS sekarang yakin
+const adminEmail = admin.email;
 
   try {
     const { invoice, status } = await req.json();
