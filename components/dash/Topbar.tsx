@@ -1,30 +1,36 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 export default function Topbar() {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
-  const logout = async () => {
-    if (loading) return;
-    setLoading(true);
-
-    try {
-      await fetch("/api/dashboard/logout", { method: "POST" });
-      window.location.href = "/dashboard/login"; // FULL reload
-    } catch {
-      alert("Logout gagal");
-      setLoading(false);
+  // ⛔ Klik di luar → close
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
     }
-  };
+
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEsc);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, []);
 
   return (
     <header className="border-b bg-white">
       <div className="px-4 md:px-8 py-3 flex items-center justify-between">
-        
+
         {/* LEFT */}
         <div>
           <h1 className="text-base md:text-lg font-semibold text-gray-900">
@@ -36,32 +42,39 @@ export default function Topbar() {
         </div>
 
         {/* RIGHT */}
-        <div className="relative">
-          {/* Avatar */}
+        <div className="relative" ref={ref}>
+          {/* AVATAR */}
           <button
             onClick={() => setOpen((v) => !v)}
-            className="w-9 h-9 rounded-full bg-[#0FA3A8] text-white flex items-center justify-center font-semibold"
+            className="w-9 h-9 rounded-full bg-[#0FA3A8] text-white flex items-center justify-center font-semibold hover:opacity-90 transition"
           >
             A
           </button>
 
-          {/* Dropdown */}
+          {/* DROPDOWN */}
           {open && (
-            <div className="absolute right-0 mt-2 w-48 rounded-xl border bg-white shadow-lg z-50">
-              <div className="px-4 py-3 border-b">
-                <p className="text-xs text-gray-500">Admin</p>
-                <p className="text-sm font-medium truncate">
+            <div
+              className="absolute right-0 mt-2 w-44 rounded-xl border bg-white shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-2"
+              onMouseLeave={() => setOpen(false)}
+            >
+              <div className="px-4 py-3 text-sm">
+                <p className="font-semibold text-gray-800">Admin</p>
+                <p className="text-xs text-gray-500 truncate">
                   admin@koje24
                 </p>
               </div>
 
-              <button
-                onClick={logout}
-                disabled={loading}
-                className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
-              >
-                {loading ? "Logging out..." : "Logout"}
-              </button>
+              <div className="border-t">
+                <button
+                  onClick={async () => {
+                    await fetch("/api/dashboard/logout", { method: "POST" });
+                    window.location.href = "/dashboard/login";
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                >
+                  Logout
+                </button>
+              </div>
             </div>
           )}
         </div>
