@@ -1,20 +1,40 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getCookieName } from "@/lib/dashboardAuth";
+
+/**
+ * ⚠️ HARUS SAMA DENGAN:
+ * export const COOKIE_NAME = "koje_admin";
+ */
+const COOKIE_NAME = "koje_admin";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // biarin login page & semua API dashboard lewat
-  if (pathname === "/dashboard/login" || pathname.startsWith("/api/dashboard")) {
+  /**
+   * ✅ IZINKAN:
+   * - halaman login
+   * - semua API dashboard (login, logout, dll)
+   */
+  if (
+    pathname === "/dashboard/login" ||
+    pathname.startsWith("/api/dashboard")
+  ) {
     return NextResponse.next();
   }
 
-  // proteksi semua /dashboard/*
+  /**
+   * 🔐 PROTEKSI SEMUA /dashboard/*
+   * ❌ TIDAK VERIFY TOKEN
+   * ❌ TIDAK IMPORT crypto
+   * ❌ EDGE SAFE
+   */
   if (pathname.startsWith("/dashboard")) {
-    const token = req.cookies.get(getCookieName())?.value;
+    const token = req.cookies.get(COOKIE_NAME)?.value;
+
     if (!token) {
-      return NextResponse.redirect(new URL("/dashboard/login", req.url));
+      const url = req.nextUrl.clone();
+      url.pathname = "/dashboard/login";
+      return NextResponse.redirect(url);
     }
   }
 
