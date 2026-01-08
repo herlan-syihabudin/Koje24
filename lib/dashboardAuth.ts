@@ -1,31 +1,22 @@
+// lib/dashboardAuth.ts
 import crypto from "crypto";
 
 export const COOKIE_NAME = "koje_admin";
-
-// 🔑 HARUS ADA di Vercel
-const SECRET = process.env.ADMIN_COOKIE_SECRET as string;
-
-if (!SECRET) {
-  throw new Error("ADMIN_COOKIE_SECRET belum diset di ENV");
-}
+const SECRET = process.env.ADMIN_COOKIE_SECRET || "";
 
 export function getCookieName() {
   return COOKIE_NAME;
 }
 
 export function getMaxAgeSec() {
-  return 60 * 60 * 12; // 12 jam
+  return 60 * 60 * 12;
 }
 
 export function createSession(email: string) {
-  const payload = {
-    email,
-    iat: Date.now(),
-  };
+  if (!SECRET) throw new Error("Missing ADMIN_COOKIE_SECRET");
 
-  const payloadB64 = Buffer
-    .from(JSON.stringify(payload))
-    .toString("base64");
+  const payload = { email, iat: Date.now() };
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString("base64");
 
   const sig = crypto
     .createHmac("sha256", SECRET)
@@ -36,25 +27,19 @@ export function createSession(email: string) {
 }
 
 export function verifySession(raw?: string) {
-  if (!raw) return null;
+  if (!raw || !SECRET) return null;
 
-  const parts = raw.split(".");
-  if (parts.length !== 2) return null;
-
-  const [payloadB64, sig] = parts;
+  const [payloadB64, sig] = raw.split(".");
+  if (!payloadB64 || !sig) return null;
 
   const expected = crypto
     .createHmac("sha256", SECRET)
     .update(payloadB64)
     .digest("hex");
 
-  if (sig !== expected) return null;
+  if (expected !== sig) return null;
 
-  try {
-    return JSON.parse(
-      Buffer.from(payloadB64, "base64").toString("utf8")
-    ) as { email: string; iat: number };
-  } catch {
-    return null;
-  }
+  return JSON.parse(
+    Buffer.from(payloadB64, "base64").toString("utf8")
+  ) as { email: string };
 }
