@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 
 const NAV = [
   {
@@ -49,36 +50,43 @@ const NAV = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
 
-  // 🔐 LOGOUT HANDLER
   const logout = async () => {
-    try {
-      await fetch("/api/dashboard/logout", {
-        method: "POST",
-      });
-    } catch (err) {
-      console.error("Logout error:", err);
-    } finally {
-      // 🔥 WAJIB FULL RELOAD BIAR COOKIE KEHAPUS
-      window.location.href = "/dashboard/login";
-    }
+    if (!confirm("Yakin mau logout?")) return;
+
+    await fetch("/api/dashboard/logout", { method: "POST" });
+
+    // 🔥 FULL reload biar cookie benar-benar ilang
+    window.location.href = "/dashboard/login";
   };
 
   return (
     <aside className="p-5 space-y-6 h-full flex flex-col">
-      {/* HEADER */}
-      <div>
-        <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24</p>
-        <h2 className="text-lg font-semibold">Dashboard</h2>
-        <p className="text-xs text-gray-500 mt-1">
-          Internal panel operasional
-        </p>
+      {/* HEADER + LOGOUT */}
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24</p>
+          <h2 className="text-lg font-semibold">Dashboard</h2>
+          <p className="text-xs text-gray-500 mt-1">
+            Internal panel operasional
+          </p>
+        </div>
+
+        {/* LOGOUT BUTTON */}
+        <button
+          onClick={logout}
+          title="Logout"
+          className="text-red-500 hover:bg-red-50 p-2 rounded-xl transition"
+        >
+          <LogOut size={18} />
+        </button>
       </div>
 
       {/* NAVIGATION */}
-      <div className="flex-1 overflow-y-auto space-y-6">
+      <div className="flex-1 overflow-y-auto pr-1">
         {NAV.map((section) => (
-          <div key={section.title}>
+          <div key={section.title} className="mb-5">
             <p className="text-[10px] font-semibold text-gray-400 mb-2 tracking-widest">
               {section.title}
             </p>
@@ -108,22 +116,11 @@ export default function Sidebar() {
         ))}
       </div>
 
-      {/* FOOTER */}
-      <div className="pt-4 border-t space-y-3">
-        <div>
-          <p className="text-xs text-gray-500">Status Sistem</p>
-          <p className="text-sm font-medium mt-1">UI: Stabil ✅</p>
-          <p className="text-xs text-gray-500">Data: Aktif (Orders)</p>
-        </div>
-
-        {/* LOGOUT BUTTON */}
-        <button
-          onClick={logout}
-          className="w-full text-left text-sm px-3 py-2 rounded-xl
-                     text-red-600 hover:bg-red-50 transition font-medium"
-        >
-          Logout
-        </button>
+      {/* FOOTER STATUS */}
+      <div className="pt-4 border-t">
+        <p className="text-xs text-gray-500">Status Sistem</p>
+        <p className="text-sm font-medium mt-1">UI: Stabil ✅</p>
+        <p className="text-xs text-gray-500">Data: Aktif (Orders)</p>
       </div>
     </aside>
   );
