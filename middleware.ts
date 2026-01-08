@@ -6,7 +6,7 @@ export function middleware(req: NextRequest) {
     const token = req.cookies.get("koje_admin")?.value;
     if (!token) {
       const url = req.nextUrl.clone();
-      url.pathname = "/admin/login";
+      loginUrl.pathname = "/dashboard/login";
       return NextResponse.redirect(url);
     }
   }
