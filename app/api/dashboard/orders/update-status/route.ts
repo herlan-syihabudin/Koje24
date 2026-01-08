@@ -1,22 +1,7 @@
 import { NextResponse } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 
-const ALLOWED_STATUS = [
-  "PENDING",
-  "PAID",
-  "DIPROSES",
-  "DIKIRIM",
-  "SELESAI",
-];
-
-// 🔥 FLOW STATUS WAJIB
-const STATUS_FLOW: Record<string, string[]> = {
-  PENDING: ["PAID"],
-  PAID: ["DIPROSES"],
-  DIPROSES: ["DIKIRIM"],
-  DIKIRIM: ["SELESAI"],
-  SELESAI: [],
-};
+const ALLOWED_STATUS = ["PENDING", "PAID", "DIPROSES", "DIKIRIM", "SELESAI"] as const;
 
 function now() {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
@@ -27,103 +12,70 @@ export async function POST(req: Request) {
     const { invoice, status } = await req.json();
 
     if (!invoice || !status) {
-      return NextResponse.json(
-        { success: false, message: "invoice & status wajib diisi" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: "invoice & status wajib diisi" }, { status: 400 });
     }
 
+    const cleanInvoice = String(invoice).trim();
     const cleanStatus = String(status).trim().toUpperCase();
 
-    if (!ALLOWED_STATUS.includes(cleanStatus)) {
-      return NextResponse.json(
-        { success: false, message: "Status tidak valid" },
-        { status: 400 }
-      );
+    if (!ALLOWED_STATUS.includes(cleanStatus as any)) {
+      return NextResponse.json({ success: false, message: "Status tidak valid" }, { status: 400 });
     }
 
-    // 1️⃣ Ambil data transaksi
+    // 1) ambil data transaksi sampai kolom P (closed)
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Transaksi!A2:P", // ⬅️ P dipakai buat CLOSED
+      range: "Transaksi!A2:P",
     });
 
     const rows = res.data.values || [];
-    const rowIndex = rows.findIndex(
-      (row) => String(row[0]).trim() === String(invoice).trim()
-    );
+    const rowIndex = rows.findIndex((row) => String(row[0] || "").trim() === cleanInvoice);
 
     if (rowIndex === -1) {
-      return NextResponse.json(
-        { success: false, message: "Invoice tidak ditemukan" },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: "Invoice tidak ditemukan" }, { status: 404 });
     }
 
     const sheetRow = rowIndex + 2;
-    const oldStatus = String(rows[rowIndex][12] || "PENDING").toUpperCase(); // M
-    const closed = String(rows[rowIndex][15] || "").toUpperCase(); // P
 
-    // ❌ JIKA SUDAH CLOSING
-    if (closed === "YES") {
+    const oldStatus = String(rows[rowIndex][12] || "").toUpperCase().trim(); // M
+    const closedFlag = String(rows[rowIndex][15] || "").toUpperCase().trim(); // P
+
+    // ✅ KUNCI: kalau sudah closed, STOP
+    if (closedFlag === "YES") {
       return NextResponse.json(
-        { success: false, message: "Order sudah di-closing & tidak bisa diubah" },
+        { success: false, message: "Order sudah CLOSED, status tidak bisa diubah." },
         { status: 403 }
       );
     }
 
-    // ❌ JIKA SUDAH SELESAI
+    // (opsional tapi bagus) kalau sudah selesai, kunci juga
     if (oldStatus === "SELESAI") {
       return NextResponse.json(
-        { success: false, message: "Order SELESAI tidak bisa diubah" },
+        { success: false, message: "Order SELESAI bersifat final." },
         { status: 403 }
       );
     }
 
-    // ❌ VALIDASI FLOW STATUS
-    const allowedNext = STATUS_FLOW[oldStatus] || [];
-    if (!allowedNext.includes(cleanStatus)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: `Transisi status tidak valid: ${oldStatus} → ${cleanStatus}`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // 2️⃣ UPDATE STATUS
+    // 2) update status
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `Transaksi!M${sheetRow}`,
       valueInputOption: "RAW",
-      requestBody: {
-        values: [[cleanStatus]],
-      },
+      requestBody: { values: [[cleanStatus]] },
     });
 
-    // 3️⃣ AUDIT LOG 🔥
+    // 3) audit log
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: "Audit_Log!A:F",
       valueInputOption: "RAW",
       requestBody: {
-        values: [[
-          now(),
-          invoice,
-          "UPDATE_STATUS",
-          oldStatus,
-          cleanStatus,
-          "dashboard",
-        ]],
+        values: [[now(), cleanInvoice, "UPDATE_STATUS", oldStatus, cleanStatus, "dashboard"]],
       },
     });
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    return NextResponse.json(
-      { success: false, message: err.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
 }
