@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { LogOut } from "lucide-react";
 
 const NAV = [
@@ -50,14 +50,13 @@ const NAV = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
 
   const logout = async () => {
     if (!confirm("Yakin mau logout?")) return;
 
     await fetch("/api/dashboard/logout", { method: "POST" });
 
-    // 🔥 FULL reload biar cookie benar-benar ilang
+    // 🔥 FULL reload (WAJIB untuk auth & Safari)
     window.location.href = "/dashboard/login";
   };
 
@@ -73,7 +72,7 @@ export default function Sidebar() {
           </p>
         </div>
 
-        {/* LOGOUT BUTTON */}
+        {/* LOGOUT */}
         <button
           onClick={logout}
           title="Logout"
@@ -83,7 +82,7 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* NAVIGATION */}
+      {/* NAV */}
       <div className="flex-1 overflow-y-auto pr-1">
         {NAV.map((section) => (
           <div key={section.title} className="mb-5">
@@ -116,7 +115,7 @@ export default function Sidebar() {
         ))}
       </div>
 
-      {/* FOOTER STATUS */}
+      {/* FOOTER */}
       <div className="pt-4 border-t">
         <p className="text-xs text-gray-500">Status Sistem</p>
         <p className="text-sm font-medium mt-1">UI: Stabil ✅</p>
