@@ -2,36 +2,46 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifySession, getCookieName } from "@/lib/dashboardAuth";
 
-export type AdminPayload = {
-  email: string;
+type GuardFail = {
+  ok: false;
+  res: NextResponse;
 };
 
-export function requireAdminFromRequest(req: NextRequest) {
-  const raw = req.cookies.get(getCookieName())?.value;
-  const payload = verifySession(raw) as AdminPayload | null;
+type GuardSuccess = {
+  ok: true;
+  admin: {
+    email: string;
+  };
+};
 
-  // ❌ tidak login / token invalid
+export type AdminGuardResult = GuardFail | GuardSuccess;
+
+export function requireAdminFromRequest(
+  req: NextRequest
+): AdminGuardResult {
+  const raw = req.cookies.get(getCookieName())?.value;
+  const payload = verifySession(raw);
+
   if (!payload) {
     return {
       ok: false,
       res: NextResponse.json(
-        { success: false, message: "Unauthorized" },
+        { message: "Unauthorized" },
         { status: 401 }
       ),
     };
   }
 
-  // 🔐 whitelist admin email
   const allow = (process.env.ADMIN_EMAILS || "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
 
-  if (allow.length && !allow.includes(payload.email.toLowerCase())) {
+  if (!allow.includes(payload.email.toLowerCase())) {
     return {
       ok: false,
       res: NextResponse.json(
-        { success: false, message: "Forbidden" },
+        { message: "Forbidden" },
         { status: 403 }
       ),
     };
@@ -39,6 +49,6 @@ export function requireAdminFromRequest(req: NextRequest) {
 
   return {
     ok: true,
-    admin: payload,
+    admin: { email: payload.email },
   };
 }
