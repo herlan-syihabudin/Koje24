@@ -2,16 +2,60 @@ import { NextResponse } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 
 /* =====================
-   UTIL
+   UTIL TANGGAL
 ===================== */
 function parseTanggal(tanggalRaw: string) {
   if (!tanggalRaw) return null;
+
   const datePart = String(tanggalRaw).split(",")[0];
   const [d, m, y] = datePart.split("/").map(Number);
   if (!d || !m || !y) return null;
+
   return new Date(y, m - 1, d);
 }
 
+/* =====================
+   NORMALISASI PRODUK
+===================== */
+const PRODUCT_ALIASES: Record<string, string> = {
+  "golden detox": "Golden Detox",
+  "green revive": "Green Revive",
+  "red vitality": "Red Vitality",
+  "lemongrass fresh": "Lemongrass Fresh",
+};
+
+function normalizeProducts(raw: string): string[] {
+  if (!raw) return [];
+
+  const cleaned = raw
+    .replace(/â€”|—/g, "-")
+    .replace(/\[.*?\]/g, "")
+    .replace(/\(.*?\)/g, "")
+    .trim();
+
+  const parts = cleaned
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  const results: string[] = [];
+
+  parts.forEach((p) => {
+    const key = p.toLowerCase();
+    for (const alias in PRODUCT_ALIASES) {
+      if (key.includes(alias)) {
+        results.push(PRODUCT_ALIASES[alias]);
+        return;
+      }
+    }
+  });
+
+  return results;
+}
+
+/* =====================
+   TYPE
+===================== */
 type ProductAgg = {
   qty: number;
   revenue: number;
@@ -33,9 +77,9 @@ export async function GET() {
     const productMap: Record<string, ProductAgg> = {};
 
     rows.forEach((row) => {
-      const tanggal = row[1];          // B
-      const produkRaw = row[5];        // F
-      const qty = Number(row[6] || 1); // G
+      const tanggal = row[1];               // B
+      const produkRaw = row[5];             // F
+      const qty = Number(row[6] || 1);      // G
       const totalBayar = Number(row[9] || 0); // J
       const status = String(row[12] || "").toUpperCase(); // M
 
@@ -49,16 +93,9 @@ export async function GET() {
       if (
         dt.getMonth() !== now.getMonth() ||
         dt.getFullYear() !== now.getFullYear()
-      ) {
-        return;
-      }
+      ) return;
 
-      // split produk (kalau 1 order isi banyak produk)
-      const products = String(produkRaw)
-        .split(",")
-        .map((p) => p.replace(/\(.*?\)/g, "").trim())
-        .filter(Boolean);
-
+      const products = normalizeProducts(String(produkRaw));
       if (products.length === 0) return;
 
       const qtyPerProduct = qty / products.length;
