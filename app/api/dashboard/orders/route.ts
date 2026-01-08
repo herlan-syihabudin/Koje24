@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
+
+export async function GET(req: Request) {
+  const guard = requireAdmin();
+  if (!guard.ok) return guard.res;
 
 function parseTanggal(raw: string) {
   if (!raw) return null;
