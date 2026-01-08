@@ -19,17 +19,24 @@ if (!session) {
   redirect("/dashboard/login");
 }
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC]">
-      {/* SIDEBAR */}
-      <aside className="w-64 border-r bg-white">
-        <Sidebar />
-      </aside>
+  <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
+    {/* SIDEBAR */}
+    <aside className="w-64 border-r bg-white flex-shrink-0">
+      <Sidebar />
+    </aside>
 
-      {/* CONTENT */}
-      <main className="flex-1">
+    {/* MAIN AREA */}
+    <div className="flex flex-col flex-1 min-w-0">
+      {/* TOPBAR (tidak ikut scroll) */}
+      <div className="flex-shrink-0">
         <Topbar />
-        <div className="px-6 py-4">{children}</div>
+      </div>
+
+      {/* CONTENT (scroll di sini saja) */}
+      <main className="flex-1 overflow-y-auto px-6 py-4">
+        {children}
       </main>
     </div>
-  );
+  </div>
+);
 }
