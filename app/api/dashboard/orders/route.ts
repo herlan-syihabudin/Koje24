@@ -10,8 +10,8 @@ function parseTanggal(raw: string) {
   return new Date(y, m - 1, d);
 }
 
-export async function GET(req: Request) {
-  const guard = await requireAdmin();
+export async function GET(req: NextRequest) {
+  const guard = requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
   try {
