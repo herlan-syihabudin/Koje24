@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
+import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 
 /* =====================
    UTIL
@@ -7,11 +9,10 @@ import { sheets, SHEET_ID } from "@/lib/googleSheets";
 function parseTanggalSheet(raw: string) {
   if (!raw) return null;
 
-  // support: "dd/mm/yyyy" atau "dd/mm/yyyy, hh:mm"
   const datePart = String(raw).split(",")[0];
   const [d, m, y] = datePart.split("/").map(Number);
-
   if (!d || !m || !y) return null;
+
   return new Date(y, m - 1, d);
 }
 
@@ -24,7 +25,13 @@ const ALLOWED_CLOSING_STATUS = ["PAID", "SELESAI"];
 /* =====================
    CLOSING ORDER
 ===================== */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  // 🔐 GUARD ADMIN
+  const guard = requireAdminFromRequest(req);
+  if (!guard.ok) return guard.res;
+
+  const adminEmail = guard.admin.email;
+
   try {
     const { from, to, status } = await req.json();
 
@@ -60,9 +67,9 @@ export async function POST(req: Request) {
 
     rows.forEach((row, index) => {
       const invoice = String(row[0] || "").trim(); // A
-      const tanggalRaw = row[1]; // B
+      const tanggalRaw = row[1];                   // B
       const orderStatus = String(row[12] || "").toUpperCase(); // M
-      const closed = String(row[15] || "").toUpperCase(); // P
+      const closed = String(row[15] || "").toUpperCase();      // P
 
       if (!invoice) return;
       if (closed === "YES") return;
@@ -97,10 +104,10 @@ export async function POST(req: Request) {
       },
     });
 
-    // 🔥 AUDIT LOG
+    // 🔥 AUDIT LOG (DITAMBAH ADMIN EMAIL)
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: "Audit_Log!A:F",
+      range: "Audit_Log!A:G",
       valueInputOption: "RAW",
       requestBody: {
         values: [[
@@ -110,6 +117,7 @@ export async function POST(req: Request) {
           cleanStatus,
           `${from} → ${to}`,
           `${closedInvoices.length} order`,
+          adminEmail,
         ]],
       },
     });
