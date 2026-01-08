@@ -19,7 +19,6 @@ function parseTanggalSheet(raw: string) {
 function now() {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
 }
-
 const ALLOWED_CLOSING_STATUS = ["PAID", "SELESAI"];
 
 /* =====================
