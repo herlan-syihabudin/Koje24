@@ -26,7 +26,6 @@ const adminEmail = admin.email;
         { status: 400 }
       );
     }
-
     const cleanInvoice = String(invoice).trim();
     const cleanStatus = String(status).trim().toUpperCase();
 
