@@ -5,7 +5,7 @@ import { getCookieName } from "@/lib/dashboardAuth";
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // ✅ BIARKAN LOGIN & API AUTH LEWAT
+  // ✅ BIARKAN LOGIN PAGE & AUTH API LEWAT
   if (
     pathname === "/dashboard/login" ||
     pathname.startsWith("/api/dashboard/login") ||
@@ -21,6 +21,7 @@ export function middleware(req: NextRequest) {
     if (!token) {
       const url = req.nextUrl.clone();
       url.pathname = "/dashboard/login";
+      url.search = ""; // 🔥 PENTING: HAPUS QUERY
       return NextResponse.redirect(url);
     }
   }
@@ -29,5 +30,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/api/dashboard/:path*"],
+  matcher: ["/dashboard/:path*"],
 };
