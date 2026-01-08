@@ -17,27 +17,23 @@ function parseTanggal(raw: string) {
 }
 
 /* =====================
-   GET ORDERS
+   GET ORDERS (ADMIN)
 ===================== */
 export async function GET(req: Request) {
-  const guard = requireAdmin();
+  // 🔐 ADMIN GUARD (WAJIB)
+  const guard = await requireAdmin();
   if (!guard.ok) return guard.res;
 
   try {
     const { searchParams } = new URL(req.url);
 
     const status = (searchParams.get("status") || "ALL").toUpperCase();
-
-    // filter CLOSED:
-    // NO (default) | YES | ALL
-    const closed = (searchParams.get("closed") || "NO").toUpperCase();
+    const closed = (searchParams.get("closed") || "NO").toUpperCase(); // NO | YES | ALL
 
     const page = Math.max(1, Number(searchParams.get("page") || 1));
-    const limit = Math.min(
-      100,
-      Math.max(5, Number(searchParams.get("limit") || 25))
-    );
+    const limit = Math.min(100, Math.max(5, Number(searchParams.get("limit") || 25)));
 
+    // 📥 ambil sampai kolom P (closed flag)
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: "Transaksi!A2:P",
@@ -47,19 +43,17 @@ export async function GET(req: Request) {
 
     const allOrders = rows
       .map((row) => {
-        const invoice = String(row[0] || "").trim(); // A
-        const tanggalRaw = String(row[1] || "").trim(); // B
-        const nama = String(row[2] || "").trim(); // C
-        const produk = String(row[5] || "").trim(); // F
-        const qty = Number(row[6] || 0); // G
-        const totalBayar = Number(row[9] || 0); // J
-        const metode = String(row[11] || "").trim(); // L
+        const invoice = String(row[0] || "").trim();        // A
+        const tanggalRaw = String(row[1] || "").trim();     // B
+        const nama = String(row[2] || "").trim();           // C
+        const produk = String(row[5] || "").trim();         // F
+        const qty = Number(row[6] || 0);                    // G
+        const totalBayar = Number(row[9] || 0);             // J
+        const metode = String(row[11] || "").trim();        // L
         const st = String(row[12] || "").toUpperCase().trim(); // M
         const closedFlag = String(row[15] || "").toUpperCase().trim(); // P
 
         if (!invoice) return null;
-
-        const dt = parseTanggal(tanggalRaw);
 
         return {
           invoice,
@@ -71,30 +65,30 @@ export async function GET(req: Request) {
           metode,
           status: st || "PENDING",
           closed: closedFlag === "YES" ? "YES" : "NO",
-          _dt: dt ? dt.getTime() : 0,
+          _dt: parseTanggal(tanggalRaw)?.getTime() || 0,
         };
       })
       .filter(Boolean) as any[];
 
-    // filter status
+    // 🔍 FILTER STATUS
     let filtered =
       status === "ALL"
         ? allOrders
         : allOrders.filter((o) => o.status === status);
 
-    // filter closed
+    // 🔍 FILTER CLOSED
     if (closed !== "ALL") {
       filtered = filtered.filter((o) => o.closed === closed);
     }
 
-    // sort terbaru
+    // 🔽 SORT TERBARU
     filtered.sort(
       (a, b) =>
         b._dt - a._dt ||
         String(b.invoice).localeCompare(String(a.invoice))
     );
 
-    // pagination
+    // 📄 PAGINATION
     const total = filtered.length;
     const totalPages = Math.max(1, Math.ceil(total / limit));
     const safePage = Math.min(page, totalPages);
