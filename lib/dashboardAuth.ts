@@ -25,7 +25,6 @@ export function createSession(email: string) {
 
   return `${payloadB64}.${sig}`;
 }
-
 export function verifySession(raw?: string) {
   if (!raw || !SECRET) return null;
 
