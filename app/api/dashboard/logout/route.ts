@@ -3,14 +3,9 @@ import { getCookieName } from "@/lib/dashboardAuth";
 
 export async function POST() {
   const res = NextResponse.json({ success: true });
-
-  // 🔥 HAPUS COOKIE SESSION
-  res.cookies.set({
-    name: getCookieName(),
-    value: "",
+  res.cookies.set(getCookieName(), "", {
     path: "/",
     maxAge: 0,
   });
-
   return res;
 }
