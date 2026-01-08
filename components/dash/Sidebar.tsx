@@ -50,8 +50,22 @@ const NAV = [
 export default function Sidebar() {
   const pathname = usePathname();
 
+  // 🔐 LOGOUT HANDLER
+  const logout = async () => {
+    try {
+      await fetch("/api/dashboard/logout", {
+        method: "POST",
+      });
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      // 🔥 WAJIB FULL RELOAD BIAR COOKIE KEHAPUS
+      window.location.href = "/dashboard/login";
+    }
+  };
+
   return (
-    <aside className="p-5 space-y-6">
+    <aside className="p-5 space-y-6 h-full flex flex-col">
       {/* HEADER */}
       <div>
         <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24</p>
@@ -62,41 +76,54 @@ export default function Sidebar() {
       </div>
 
       {/* NAVIGATION */}
-      {NAV.map((section) => (
-        <div key={section.title}>
-          <p className="text-[10px] font-semibold text-gray-400 mb-2 tracking-widest">
-            {section.title}
-          </p>
+      <div className="flex-1 overflow-y-auto space-y-6">
+        {NAV.map((section) => (
+          <div key={section.title}>
+            <p className="text-[10px] font-semibold text-gray-400 mb-2 tracking-widest">
+              {section.title}
+            </p>
 
-          <nav className="space-y-1">
-            {section.items.map((item) => {
-              const active =
-                pathname === item.href ||
-                pathname.startsWith(item.href + "/");
+            <nav className="space-y-1">
+              {section.items.map((item) => {
+                const active =
+                  pathname === item.href ||
+                  pathname.startsWith(item.href + "/");
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`block rounded-xl px-3 py-2 text-sm transition ${
-                    active
-                      ? "bg-[#F7FBFB] font-semibold border"
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`block rounded-xl px-3 py-2 text-sm transition ${
+                      active
+                        ? "bg-[#F7FBFB] font-semibold border"
+                        : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        ))}
+      </div>
+
+      {/* FOOTER */}
+      <div className="pt-4 border-t space-y-3">
+        <div>
+          <p className="text-xs text-gray-500">Status Sistem</p>
+          <p className="text-sm font-medium mt-1">UI: Stabil ✅</p>
+          <p className="text-xs text-gray-500">Data: Aktif (Orders)</p>
         </div>
-      ))}
 
-      {/* FOOTER STATUS */}
-      <div className="pt-4 border-t">
-        <p className="text-xs text-gray-500">Status Sistem</p>
-        <p className="text-sm font-medium mt-1">UI: Stabil ✅</p>
-        <p className="text-xs text-gray-500">Data: Aktif (Orders)</p>
+        {/* LOGOUT BUTTON */}
+        <button
+          onClick={logout}
+          className="w-full text-left text-sm px-3 py-2 rounded-xl
+                     text-red-600 hover:bg-red-50 transition font-medium"
+        >
+          Logout
+        </button>
       </div>
     </aside>
   );
