@@ -1,74 +1,27 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 import type { NextRequest } from "next/server";
-
-const COOKIE_NAME = "koje_admin";
-const SECRET = process.env.ADMIN_COOKIE_SECRET || "";
+import { verifySession, getCookieName } from "@/lib/dashboardAuth";
 
 export function requireAdminFromRequest(req: NextRequest) {
-  if (!SECRET) {
+  const raw = req.cookies.get(getCookieName())?.value;
+  const payload = verifySession(raw);
+
+  if (!payload) {
     return {
       ok: false,
-      res: NextResponse.json(
-        { message: "Server misconfigured" },
-        { status: 500 }
-      ),
+      res: NextResponse.json({ message: "Unauthorized" }, { status: 401 }),
     };
   }
-  const raw = req.cookies.get(COOKIE_NAME)?.value;
-
-  if (!raw) {
-    return {
-      ok: false,
-      res: NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 }
-      ),
-    };
-  }
-
-  const [payloadB64, sig] = raw.split(".");
-  if (!payloadB64 || !sig) {
-    return {
-      ok: false,
-      res: NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 }
-      ),
-    };
-  }
-
-  const expected = crypto
-    .createHmac("sha256", SECRET)
-    .update(payloadB64)
-    .digest("hex");
-
-  if (expected !== sig) {
-    return {
-      ok: false,
-      res: NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 }
-      ),
-    };
-  }
-
-  const payload = JSON.parse(
-    Buffer.from(payloadB64, "base64").toString("utf8")
-  );
 
   const allow = (process.env.ADMIN_EMAILS || "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
 
-  if (!allow.includes(String(payload.email || "").toLowerCase())) {
+  if (!allow.includes(payload.email.toLowerCase())) {
     return {
       ok: false,
-      res: NextResponse.json(
-        { message: "Forbidden" },
-        { status: 403 }
-      ),
+      res: NextResponse.json({ message: "Forbidden" }, { status: 403 }),
     };
   }
 
