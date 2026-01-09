@@ -29,9 +29,12 @@ export default function ProductsPage() {
   const [openForm, setOpenForm] = useState(false);
   const [editData, setEditData] = useState<Product | null>(null);
 
-  // inline edit stok
+  // inline stok
   const [editingStock, setEditingStock] = useState<string | null>(null);
   const [stockValue, setStockValue] = useState<number>(0);
+
+  // action lock
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     load();
@@ -48,20 +51,17 @@ export default function ProductsPage() {
   const filtered = useMemo(() => {
     let data = [...products];
 
-    // search
-    const qq = q.toLowerCase().trim();
-    if (qq) {
+    if (q.trim()) {
+      const qq = q.toLowerCase();
       data = data.filter((p) =>
         `${p.nama} ${p.kategori || ""}`.toLowerCase().includes(qq)
       );
     }
 
-    // filter status
     if (status !== "ALL") {
       data = data.filter((p) => p.aktif === status);
     }
 
-    // sort
     data.sort((a, b) => {
       let A: any = a[sort];
       let B: any = b[sort];
@@ -89,8 +89,20 @@ export default function ProductsPage() {
     setOpenForm(true);
   }
 
+  /* =====================
+     INLINE ACTIONS
+  ===================== */
+
   async function toggleStatus(p: Product) {
+    if (busyId) return;
+    setBusyId(p.id);
+
     const next = p.aktif === "YES" ? "NO" : "YES";
+
+    // optimistic UI
+    setProducts((prev) =>
+      prev.map((x) => (x.id === p.id ? { ...x, aktif: next } : x))
+    );
 
     const res = await fetch(`/api/dashboard/products/${p.id}`, {
       method: "PATCH",
@@ -100,13 +112,28 @@ export default function ProductsPage() {
 
     const json = await res.json();
     if (!json.success) {
+      // rollback
+      setProducts((prev) =>
+        prev.map((x) => (x.id === p.id ? { ...x, aktif: p.aktif } : x))
+      );
       alert(json.message || "Gagal update status");
-      return;
     }
-    await load();
+
+    setBusyId(null);
   }
 
   async function saveStock(p: Product) {
+    if (busyId) return;
+    setBusyId(p.id);
+
+    const old = p.stok;
+
+    setProducts((prev) =>
+      prev.map((x) =>
+        x.id === p.id ? { ...x, stok: stockValue } : x
+      )
+    );
+
     const res = await fetch(`/api/dashboard/products/${p.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -115,17 +142,22 @@ export default function ProductsPage() {
 
     const json = await res.json();
     if (!json.success) {
+      setProducts((prev) =>
+        prev.map((x) =>
+          x.id === p.id ? { ...x, stok: old } : x
+        )
+      );
       alert(json.message || "Gagal update stok");
-      return;
     }
 
     setEditingStock(null);
-    await load();
+    setBusyId(null);
   }
 
   async function remove(p: Product) {
-    const ok = confirm(`Nonaktifkan produk "${p.nama}"?`);
-    if (!ok) return;
+    if (!confirm(`Nonaktifkan produk "${p.nama}"?`)) return;
+
+    setProducts((prev) => prev.filter((x) => x.id !== p.id));
 
     const res = await fetch(`/api/dashboard/products/${p.id}`, {
       method: "DELETE",
@@ -134,9 +166,8 @@ export default function ProductsPage() {
     const json = await res.json();
     if (!json.success) {
       alert(json.message || "Gagal hapus produk");
-      return;
+      load(); // fallback reload
     }
-    await load();
   }
 
   return (
@@ -153,7 +184,7 @@ export default function ProductsPage() {
       </div>
 
       {/* Action Bar */}
-      <div className="flex flex-wrap justify-between items-center gap-3">
+      <div className="flex flex-wrap justify-between gap-3">
         <div className="flex gap-2 flex-wrap">
           <input
             value={q}
@@ -232,7 +263,7 @@ export default function ProductsPage() {
                       )}
 
                       <div>
-                        <div className="font-medium text-gray-900">{p.nama}</div>
+                        <div className="font-medium">{p.nama}</div>
                         {p.kategori && (
                           <div className="text-xs text-gray-500">
                             {p.kategori}
@@ -268,7 +299,6 @@ export default function ProductsPage() {
                           setStockValue(p.stok);
                         }}
                         className="cursor-pointer hover:underline"
-                        title="Klik untuk edit stok"
                       >
                         {p.stok}
                       </span>
@@ -280,8 +310,8 @@ export default function ProductsPage() {
                       onClick={() => toggleStatus(p)}
                       className={`cursor-pointer text-xs px-2 py-1 rounded-full ${
                         p.aktif === "YES"
-                          ? "bg-green-100 text-green-700 hover:bg-green-200"
-                          : "bg-gray-200 text-gray-500 hover:bg-gray-300"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-200 text-gray-500"
                       }`}
                     >
                       {p.aktif === "YES" ? "Aktif" : "Nonaktif"}
