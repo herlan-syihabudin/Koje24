@@ -26,6 +26,9 @@ export default function ProductsPage() {
   // modal state
   const [openForm, setOpenForm] = useState(false);
   const [editData, setEditData] = useState<Product | null>(null);
+  const [status, setStatus] = useState<"ALL" | "YES" | "NO">("ALL");
+const [sort, setSort] = useState<"nama" | "harga" | "stok">("nama");
+const [dir, setDir] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     load();
@@ -40,12 +43,38 @@ export default function ProductsPage() {
   }
 
   const filtered = useMemo(() => {
-    const qq = q.toLowerCase().trim();
-    if (!qq) return products;
-    return products.filter((p) =>
+  let data = [...products];
+
+  // search
+  const qq = q.toLowerCase().trim();
+  if (qq) {
+    data = data.filter((p) =>
       `${p.nama} ${p.kategori || ""}`.toLowerCase().includes(qq)
     );
-  }, [products, q]);
+  }
+
+  // filter status
+  if (status !== "ALL") {
+    data = data.filter((p) => p.aktif === status);
+  }
+
+  // sort
+  data.sort((a, b) => {
+    let A: any = a[sort];
+    let B: any = b[sort];
+
+    if (typeof A === "string") {
+      A = A.toLowerCase();
+      B = B.toLowerCase();
+    }
+
+    if (A < B) return dir === "asc" ? -1 : 1;
+    if (A > B) return dir === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  return data;
+}, [products, q, status, sort, dir]);
 
   function openAdd() {
     setEditData(null);
@@ -87,20 +116,49 @@ export default function ProductsPage() {
 
       {/* Action Bar */}
       <div className="flex flex-wrap justify-between items-center gap-3">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Cari produk..."
-          className="border rounded-xl px-4 py-2 text-sm w-72 focus:ring-2 focus:ring-[#0FA3A8]"
-        />
+  <div className="flex gap-2 flex-wrap">
+    <input
+      value={q}
+      onChange={(e) => setQ(e.target.value)}
+      placeholder="Cari produk..."
+      className="border rounded-xl px-4 py-2 text-sm w-64"
+    />
 
-        <button
-          onClick={openAdd}
-          className="bg-[#0FA3A8] text-white px-5 py-2 rounded-xl text-sm font-semibold"
-        >
-          + Tambah Produk
-        </button>
-      </div>
+    <select
+      value={status}
+      onChange={(e) => setStatus(e.target.value as any)}
+      className="border rounded-xl px-3 py-2 text-sm"
+    >
+      <option value="ALL">Semua Status</option>
+      <option value="YES">Aktif</option>
+      <option value="NO">Nonaktif</option>
+    </select>
+
+    <select
+      value={sort}
+      onChange={(e) => setSort(e.target.value as any)}
+      className="border rounded-xl px-3 py-2 text-sm"
+    >
+      <option value="nama">Sort: Nama</option>
+      <option value="harga">Sort: Harga</option>
+      <option value="stok">Sort: Stok</option>
+    </select>
+
+    <button
+      onClick={() => setDir(dir === "asc" ? "desc" : "asc")}
+      className="border rounded-xl px-3 py-2 text-sm"
+    >
+      {dir === "asc" ? "⬆️ Asc" : "⬇️ Desc"}
+    </button>
+  </div>
+
+  <button
+    onClick={openAdd}
+    className="bg-[#0FA3A8] text-white px-5 py-2 rounded-xl text-sm font-semibold"
+  >
+    + Tambah Produk
+  </button>
+</div>
 
       {/* Table */}
       <div className="rounded-2xl border bg-white overflow-hidden">
