@@ -1,73 +1,120 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-type Props = {
-  open: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
+type Product = {
+  id: string;
+  nama: string;
+  kategori?: string;
+  harga: number;
+  stok: number;
+  aktif: "YES" | "NO";
+  thumbnail?: string;
 };
 
-export default function AddProductModal({ open, onClose, onSuccess }: Props) {
+export default function AddProductModal({
+  open,
+  mode,
+  initialData,
+  onClose,
+  onSuccess,
+}: {
+  open: boolean;
+  mode: "add" | "edit";
+  initialData: Product | null;
+  onClose: () => void;
+  onSuccess: () => void | Promise<void>;
+}) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
-    nama: "",
-    kategori: "",
-    harga: "",
-    stok: "",
-    aktif: "YES",
-    thumbnail: "",
-  });
-
-  if (!open) return null;
-
-  function resetForm() {
-    setForm({
+  const emptyForm = useMemo(
+    () => ({
       nama: "",
       kategori: "",
       harga: "",
       stok: "",
-      aktif: "YES",
+      aktif: "YES" as "YES" | "NO",
       thumbnail: "",
-    });
-    setError(null);
-  }
+    }),
+    []
+  );
+
+  const [form, setForm] = useState(emptyForm);
+
+  // sync form ketika modal dibuka / mode berubah
+  useEffect(() => {
+    if (!open) return;
+
+    if (mode === "edit" && initialData) {
+      setForm({
+        nama: initialData.nama || "",
+        kategori: initialData.kategori || "",
+        harga: String(initialData.harga ?? ""),
+        stok: String(initialData.stok ?? ""),
+        aktif: initialData.aktif || "YES",
+        thumbnail: initialData.thumbnail || "",
+      });
+    } else {
+      setForm(emptyForm);
+    }
+  }, [open, mode, initialData, emptyForm]);
+
+  if (!open) return null;
 
   async function submit() {
     if (!form.nama.trim()) {
-      setError("Nama produk wajib diisi");
+      alert("Nama produk wajib diisi");
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
-      const res = await fetch("/api/dashboard/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          harga: Number(form.harga || 0),
-          stok: Number(form.stok || 0),
-        }),
-      });
+      // ADD
+      if (mode === "add") {
+        const res = await fetch("/api/dashboard/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...form,
+            harga: Number(form.harga || 0),
+            stok: Number(form.stok || 0),
+          }),
+        });
 
-      const json = await res.json();
-
-      if (!json.success) {
-        setError(json.message || "Gagal tambah produk");
-        setLoading(false);
-        return;
+        const json = await res.json();
+        if (!json.success) {
+          alert(json.message || "Gagal tambah produk");
+          return;
+        }
       }
 
-      onSuccess();
-      resetForm();
+      // EDIT
+      if (mode === "edit") {
+        if (!initialData?.id) {
+          alert("ID produk tidak ditemukan");
+          return;
+        }
+
+        const res = await fetch(`/api/dashboard/products/${initialData.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...form,
+            harga: Number(form.harga || 0),
+            stok: Number(form.stok || 0),
+          }),
+        });
+
+        const json = await res.json();
+        if (!json.success) {
+          alert(json.message || "Gagal update produk");
+          return;
+        }
+      }
+
+      await onSuccess();
       onClose();
-    } catch (e) {
-      setError("Terjadi kesalahan jaringan");
     } finally {
       setLoading(false);
     }
@@ -75,17 +122,10 @@ export default function AddProductModal({ open, onClose, onSuccess }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div
-        className="bg-white w-full max-w-md rounded-2xl p-6 space-y-4"
-        onKeyDown={(e) => e.key === "Enter" && submit()}
-      >
-        <h2 className="text-lg font-semibold">Tambah Produk</h2>
-
-        {error && (
-          <div className="bg-red-50 text-red-600 text-sm px-4 py-2 rounded-xl">
-            {error}
-          </div>
-        )}
+      <div className="bg-white w-full max-w-md rounded-2xl p-6 space-y-4">
+        <h2 className="text-lg font-semibold">
+          {mode === "add" ? "Tambah Produk" : "Edit Produk"}
+        </h2>
 
         <input
           placeholder="Nama produk"
@@ -127,30 +167,22 @@ export default function AddProductModal({ open, onClose, onSuccess }: Props) {
         <select
           className="border rounded-xl px-4 py-2 w-full"
           value={form.aktif}
-          onChange={(e) => setForm({ ...form, aktif: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, aktif: e.target.value as "YES" | "NO" })
+          }
         >
           <option value="YES">Aktif</option>
           <option value="NO">Nonaktif</option>
         </select>
 
         <div className="flex justify-end gap-3 pt-4">
-          <button
-            onClick={() => {
-              if (!loading) {
-                resetForm();
-                onClose();
-              }
-            }}
-            disabled={loading}
-            className="text-sm text-gray-500"
-          >
+          <button onClick={onClose} className="text-sm">
             Batal
           </button>
-
           <button
             onClick={submit}
             disabled={loading}
-            className="bg-[#0FA3A8] text-white px-5 py-2 rounded-xl text-sm font-semibold disabled:opacity-60"
+            className="bg-[#0FA3A8] text-white px-5 py-2 rounded-xl text-sm font-semibold"
           >
             {loading ? "Menyimpan..." : "Simpan"}
           </button>
