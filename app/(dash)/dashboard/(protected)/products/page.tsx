@@ -22,13 +22,16 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
 
   const [q, setQ] = useState("");
+  const [status, setStatus] = useState<"ALL" | "YES" | "NO">("ALL");
+  const [sort, setSort] = useState<"nama" | "harga" | "stok">("nama");
+  const [dir, setDir] = useState<"asc" | "desc">("asc");
 
-  // modal state
   const [openForm, setOpenForm] = useState(false);
   const [editData, setEditData] = useState<Product | null>(null);
-  const [status, setStatus] = useState<"ALL" | "YES" | "NO">("ALL");
-const [sort, setSort] = useState<"nama" | "harga" | "stok">("nama");
-const [dir, setDir] = useState<"asc" | "desc">("asc");
+
+  // inline edit stok
+  const [editingStock, setEditingStock] = useState<string | null>(null);
+  const [stockValue, setStockValue] = useState<number>(0);
 
   useEffect(() => {
     load();
@@ -43,38 +46,38 @@ const [dir, setDir] = useState<"asc" | "desc">("asc");
   }
 
   const filtered = useMemo(() => {
-  let data = [...products];
+    let data = [...products];
 
-  // search
-  const qq = q.toLowerCase().trim();
-  if (qq) {
-    data = data.filter((p) =>
-      `${p.nama} ${p.kategori || ""}`.toLowerCase().includes(qq)
-    );
-  }
-
-  // filter status
-  if (status !== "ALL") {
-    data = data.filter((p) => p.aktif === status);
-  }
-
-  // sort
-  data.sort((a, b) => {
-    let A: any = a[sort];
-    let B: any = b[sort];
-
-    if (typeof A === "string") {
-      A = A.toLowerCase();
-      B = B.toLowerCase();
+    // search
+    const qq = q.toLowerCase().trim();
+    if (qq) {
+      data = data.filter((p) =>
+        `${p.nama} ${p.kategori || ""}`.toLowerCase().includes(qq)
+      );
     }
 
-    if (A < B) return dir === "asc" ? -1 : 1;
-    if (A > B) return dir === "asc" ? 1 : -1;
-    return 0;
-  });
+    // filter status
+    if (status !== "ALL") {
+      data = data.filter((p) => p.aktif === status);
+    }
 
-  return data;
-}, [products, q, status, sort, dir]);
+    // sort
+    data.sort((a, b) => {
+      let A: any = a[sort];
+      let B: any = b[sort];
+
+      if (typeof A === "string") {
+        A = A.toLowerCase();
+        B = B.toLowerCase();
+      }
+
+      if (A < B) return dir === "asc" ? -1 : 1;
+      if (A > B) return dir === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return data;
+  }, [products, q, status, sort, dir]);
 
   function openAdd() {
     setEditData(null);
@@ -86,13 +89,48 @@ const [dir, setDir] = useState<"asc" | "desc">("asc");
     setOpenForm(true);
   }
 
+  async function toggleStatus(p: Product) {
+    const next = p.aktif === "YES" ? "NO" : "YES";
+
+    const res = await fetch(`/api/dashboard/products/${p.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ aktif: next }),
+    });
+
+    const json = await res.json();
+    if (!json.success) {
+      alert(json.message || "Gagal update status");
+      return;
+    }
+    await load();
+  }
+
+  async function saveStock(p: Product) {
+    const res = await fetch(`/api/dashboard/products/${p.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stok: stockValue }),
+    });
+
+    const json = await res.json();
+    if (!json.success) {
+      alert(json.message || "Gagal update stok");
+      return;
+    }
+
+    setEditingStock(null);
+    await load();
+  }
+
   async function remove(p: Product) {
-    const ok = confirm(`Hapus (nonaktifkan) produk: "${p.nama}" ?`);
+    const ok = confirm(`Nonaktifkan produk "${p.nama}"?`);
     if (!ok) return;
 
     const res = await fetch(`/api/dashboard/products/${p.id}`, {
       method: "DELETE",
     });
+
     const json = await res.json();
     if (!json.success) {
       alert(json.message || "Gagal hapus produk");
@@ -116,49 +154,49 @@ const [dir, setDir] = useState<"asc" | "desc">("asc");
 
       {/* Action Bar */}
       <div className="flex flex-wrap justify-between items-center gap-3">
-  <div className="flex gap-2 flex-wrap">
-    <input
-      value={q}
-      onChange={(e) => setQ(e.target.value)}
-      placeholder="Cari produk..."
-      className="border rounded-xl px-4 py-2 text-sm w-64"
-    />
+        <div className="flex gap-2 flex-wrap">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Cari produk..."
+            className="border rounded-xl px-4 py-2 text-sm w-64"
+          />
 
-    <select
-      value={status}
-      onChange={(e) => setStatus(e.target.value as any)}
-      className="border rounded-xl px-3 py-2 text-sm"
-    >
-      <option value="ALL">Semua Status</option>
-      <option value="YES">Aktif</option>
-      <option value="NO">Nonaktif</option>
-    </select>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as any)}
+            className="border rounded-xl px-3 py-2 text-sm"
+          >
+            <option value="ALL">Semua Status</option>
+            <option value="YES">Aktif</option>
+            <option value="NO">Nonaktif</option>
+          </select>
 
-    <select
-      value={sort}
-      onChange={(e) => setSort(e.target.value as any)}
-      className="border rounded-xl px-3 py-2 text-sm"
-    >
-      <option value="nama">Sort: Nama</option>
-      <option value="harga">Sort: Harga</option>
-      <option value="stok">Sort: Stok</option>
-    </select>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as any)}
+            className="border rounded-xl px-3 py-2 text-sm"
+          >
+            <option value="nama">Sort: Nama</option>
+            <option value="harga">Sort: Harga</option>
+            <option value="stok">Sort: Stok</option>
+          </select>
 
-    <button
-      onClick={() => setDir(dir === "asc" ? "desc" : "asc")}
-      className="border rounded-xl px-3 py-2 text-sm"
-    >
-      {dir === "asc" ? "⬆️ Asc" : "⬇️ Desc"}
-    </button>
-  </div>
+          <button
+            onClick={() => setDir(dir === "asc" ? "desc" : "asc")}
+            className="border rounded-xl px-3 py-2 text-sm"
+          >
+            {dir === "asc" ? "⬆️ Asc" : "⬇️ Desc"}
+          </button>
+        </div>
 
-  <button
-    onClick={openAdd}
-    className="bg-[#0FA3A8] text-white px-5 py-2 rounded-xl text-sm font-semibold"
-  >
-    + Tambah Produk
-  </button>
-</div>
+        <button
+          onClick={openAdd}
+          className="bg-[#0FA3A8] text-white px-5 py-2 rounded-xl text-sm font-semibold"
+        >
+          + Tambah Produk
+        </button>
+      </div>
 
       {/* Table */}
       <div className="rounded-2xl border bg-white overflow-hidden">
@@ -181,21 +219,69 @@ const [dir, setDir] = useState<"asc" | "desc">("asc");
               {filtered.map((p) => (
                 <tr key={p.id} className="border-t hover:bg-gray-50/50">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">{p.nama}</div>
-                    {p.kategori ? (
-                      <div className="text-xs text-gray-500">{p.kategori}</div>
-                    ) : null}
+                    <div className="flex items-center gap-3">
+                      {p.thumbnail ? (
+                        <img
+                          src={p.thumbnail}
+                          className="w-10 h-10 rounded-lg object-cover border"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-400">
+                          —
+                        </div>
+                      )}
+
+                      <div>
+                        <div className="font-medium text-gray-900">{p.nama}</div>
+                        {p.kategori && (
+                          <div className="text-xs text-gray-500">
+                            {p.kategori}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </td>
 
                   <td className="text-center">{rupiah(p.harga)}</td>
-                  <td className="text-center">{p.stok}</td>
+
+                  <td className="text-center">
+                    {editingStock === p.id ? (
+                      <input
+                        type="number"
+                        className="border rounded px-2 py-1 w-20 text-center"
+                        value={stockValue}
+                        onChange={(e) =>
+                          setStockValue(Number(e.target.value))
+                        }
+                        onBlur={() => saveStock(p)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveStock(p);
+                          if (e.key === "Escape")
+                            setEditingStock(null);
+                        }}
+                        autoFocus
+                      />
+                    ) : (
+                      <span
+                        onClick={() => {
+                          setEditingStock(p.id);
+                          setStockValue(p.stok);
+                        }}
+                        className="cursor-pointer hover:underline"
+                        title="Klik untuk edit stok"
+                      >
+                        {p.stok}
+                      </span>
+                    )}
+                  </td>
 
                   <td className="text-center">
                     <span
-                      className={`text-xs px-2 py-1 rounded-full ${
+                      onClick={() => toggleStatus(p)}
+                      className={`cursor-pointer text-xs px-2 py-1 rounded-full ${
                         p.aktif === "YES"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-200 text-gray-500"
+                          ? "bg-green-100 text-green-700 hover:bg-green-200"
+                          : "bg-gray-200 text-gray-500 hover:bg-gray-300"
                       }`}
                     >
                       {p.aktif === "YES" ? "Aktif" : "Nonaktif"}
@@ -206,13 +292,13 @@ const [dir, setDir] = useState<"asc" | "desc">("asc");
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => openEdit(p)}
-                        className="text-xs font-semibold text-[#0FA3A8] hover:underline"
+                        className="text-xs font-semibold text-[#0FA3A8]"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => remove(p)}
-                        className="text-xs font-semibold text-red-600 hover:underline"
+                        className="text-xs font-semibold text-red-600"
                       >
                         Hapus
                       </button>
@@ -225,7 +311,6 @@ const [dir, setDir] = useState<"asc" | "desc">("asc");
         )}
       </div>
 
-      {/* Modal (Add / Edit) */}
       <AddProductModal
         open={openForm}
         mode={editData ? "edit" : "add"}
