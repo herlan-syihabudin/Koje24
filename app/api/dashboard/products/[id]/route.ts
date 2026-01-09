@@ -6,9 +6,13 @@ import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 const SHEET_NAME = "Produk";
 const RANGE = `${SHEET_NAME}!A2:J`;
 
+/* =====================
+   UTIL
+===================== */
 function now() {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
 }
+
 function slugify(input: string) {
   return String(input || "")
     .toLowerCase()
@@ -17,22 +21,34 @@ function slugify(input: string) {
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
 }
+
 function asYESNO(v: any): "YES" | "NO" {
-  const s = String(v || "").toUpperCase().trim();
-  return s === "YES" ? "YES" : "NO";
+  return String(v || "").toUpperCase().trim() === "YES" ? "YES" : "NO";
 }
+
 function toNum(v: any, fallback = 0) {
   const n = Number(String(v ?? "").replace(/[^\d.-]/g, ""));
   return Number.isFinite(n) ? n : fallback;
 }
 
-export async function PATCH(req: NextRequest, ctx: { params: { id: string } }) {
+/* =====================
+   PATCH : UPDATE PRODUCT
+===================== */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const guard = requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
   try {
-    const id = String(ctx.params.id || "").trim();
-    if (!id) return NextResponse.json({ success: false }, { status: 400 });
+    const id = String(params.id || "").trim();
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: "ID tidak valid" },
+        { status: 400 }
+      );
+    }
 
     const body = await req.json();
     const ts = now();
@@ -52,23 +68,22 @@ export async function PATCH(req: NextRequest, ctx: { params: { id: string } }) {
       );
     }
 
-    const sheetRow = idx + 2; // karena A2 start
-
-    // ambil existing row
+    const sheetRow = idx + 2;
     const current = rows[idx] || [];
     const currentSlug = String(current[1] || "").trim();
 
     const nama = body?.nama !== undefined ? String(body.nama).trim() : String(current[2] || "").trim();
     const slug = body?.slug !== undefined ? slugify(body.slug) : currentSlug;
     const kategori = body?.kategori !== undefined ? String(body.kategori).trim() : String(current[3] || "").trim();
-    const harga = body?.harga !== undefined ? toNum(body.harga, 0) : toNum(current[4], 0);
-    const stok = body?.stok !== undefined ? toNum(body.stok, 0) : toNum(current[5], 0);
+    const harga = body?.harga !== undefined ? toNum(body.harga) : toNum(current[4]);
+    const stok = body?.stok !== undefined ? toNum(body.stok) : toNum(current[5]);
     const aktif = body?.aktif !== undefined ? asYESNO(body.aktif) : asYESNO(current[6]);
     const thumbnail = body?.thumbnail !== undefined ? String(body.thumbnail || "").trim() : String(current[7] || "").trim();
 
-    // jika slug berubah, pastikan unik
     if (slug !== currentSlug) {
-      const slugExists = rows.some((r, i) => i !== idx && String(r?.[1] || "").trim() === slug);
+      const slugExists = rows.some(
+        (r, i) => i !== idx && String(r?.[1] || "").trim() === slug
+      );
       if (slugExists) {
         return NextResponse.json(
           { success: false, message: "slug sudah dipakai" },
@@ -77,27 +92,42 @@ export async function PATCH(req: NextRequest, ctx: { params: { id: string } }) {
       }
     }
 
-    // update satu baris (A..J)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A${sheetRow}:J${sheetRow}`,
       valueInputOption: "RAW",
       requestBody: {
-        values: [[id, slug, nama, kategori, harga, stok, aktif, thumbnail, ts, String(current[9] || ts)]],
+        values: [[
+          id,
+          slug,
+          nama,
+          kategori,
+          harga,
+          stok,
+          aktif,
+          thumbnail,
+          ts,
+          String(current[9] || ts),
+        ]],
       },
     });
 
-    // audit log optional
-    try {
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: SHEET_ID,
-        range: "Audit_Log!A:G",
-        valueInputOption: "RAW",
-        requestBody: {
-          values: [[ts, id, "UPDATE_PRODUCT", "-", `${nama}`, "dashboard", guard.admin.email]],
-        },
-      });
-    } catch {}
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: "Audit_Log!A:G",
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [[
+          ts,
+          id,
+          "UPDATE_PRODUCT",
+          "-",
+          nama,
+          "dashboard",
+          guard.admin.email,
+        ]],
+      },
+    });
 
     return NextResponse.json({ success: true });
   } catch (e: any) {
@@ -108,16 +138,18 @@ export async function PATCH(req: NextRequest, ctx: { params: { id: string } }) {
   }
 }
 
-/**
- * OPTIONAL: DELETE = soft delete (set aktif=NO)
- * supaya history aman dan gak mengacau mapping.
- */
-export async function DELETE(req: NextRequest, ctx: { params: { id: string } }) {
+/* =====================
+   DELETE : SOFT DELETE
+===================== */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const guard = requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
   try {
-    const id = String(ctx.params.id || "").trim();
+    const id = String(params.id || "").trim();
     const ts = now();
 
     const res = await sheets.spreadsheets.values.get({
@@ -127,6 +159,7 @@ export async function DELETE(req: NextRequest, ctx: { params: { id: string } }) 
 
     const rows = res.data.values || [];
     const idx = rows.findIndex((r) => String(r?.[0] || "").trim() === id);
+
     if (idx === -1) {
       return NextResponse.json(
         { success: false, message: "Produk tidak ditemukan" },
@@ -136,7 +169,6 @@ export async function DELETE(req: NextRequest, ctx: { params: { id: string } }) 
 
     const sheetRow = idx + 2;
 
-    // hanya update kolom G (aktif) + updatedAt (I)
     await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: SHEET_ID,
       requestBody: {
@@ -148,16 +180,22 @@ export async function DELETE(req: NextRequest, ctx: { params: { id: string } }) 
       },
     });
 
-    try {
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: SHEET_ID,
-        range: "Audit_Log!A:G",
-        valueInputOption: "RAW",
-        requestBody: {
-          values: [[ts, id, "SOFT_DELETE_PRODUCT", "-", "aktif=NO", "dashboard", guard.admin.email]],
-        },
-      });
-    } catch {}
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: "Audit_Log!A:G",
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [[
+          ts,
+          id,
+          "SOFT_DELETE_PRODUCT",
+          "-",
+          "aktif=NO",
+          "dashboard",
+          guard.admin.email,
+        ]],
+      },
+    });
 
     return NextResponse.json({ success: true });
   } catch (e: any) {
