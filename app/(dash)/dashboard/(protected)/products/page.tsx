@@ -35,7 +35,7 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-6">
-      {/* HEADER */}
+      {/* Header */}
       <div>
         <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">PRODUCTS</p>
         <h1 className="text-2xl font-semibold text-[#0B4B50]">
@@ -46,7 +46,7 @@ export default function ProductsPage() {
         </p>
       </div>
 
-      {/* ACTION BAR */}
+      {/* Action Bar */}
       <div className="flex justify-between items-center gap-3">
         <input
           value={q}
@@ -63,7 +63,7 @@ export default function ProductsPage() {
         </button>
       </div>
 
-      {/* TABLE */}
+      {/* Table */}
       <div className="rounded-2xl border bg-white overflow-hidden">
         {loading ? (
           <p className="p-6 text-sm text-gray-400">Loading produk...</p>
@@ -77,12 +77,11 @@ export default function ProductsPage() {
                 <th className="text-center">Harga</th>
                 <th className="text-center">Stok</th>
                 <th className="text-center">Status</th>
-                <th className="text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((p) => (
-                <tr key={p.id} className="border-t hover:bg-gray-50">
+                <tr key={p.id} className="border-t">
                   <td className="px-4 py-3 font-medium">{p.nama}</td>
                   <td className="text-center">
                     Rp {p.harga.toLocaleString("id-ID")}
@@ -99,11 +98,6 @@ export default function ProductsPage() {
                       {p.aktif === "YES" ? "Aktif" : "Nonaktif"}
                     </span>
                   </td>
-                  <td className="text-center">
-                    <button className="text-xs font-semibold text-[#0FA3A8] hover:underline">
-                      Edit
-                    </button>
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -111,19 +105,11 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* NOTE */}
-      <div className="border rounded-2xl p-4 bg-[#F7FBFB]">
-        <p className="text-sm font-semibold">Catatan</p>
-        <p className="text-sm text-gray-600 mt-1">
-          Manajemen produk full via dashboard (tanpa coding).
-        </p>
-      </div>
-
-      {/* MODAL */}
+      {/* Modal */}
       <AddProductModal
         open={openAdd}
         onClose={() => setOpenAdd(false)}
-        onSuccess={load}
+        onSuccess={() => load()}
       />
     </div>
   );
