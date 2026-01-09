@@ -26,6 +26,7 @@ export default function AddProductModal({
   onSuccess: () => void | Promise<void>;
 }) {
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const emptyForm = useMemo(
     () => ({
@@ -41,7 +42,7 @@ export default function AddProductModal({
 
   const [form, setForm] = useState(emptyForm);
 
-  // sync form ketika modal dibuka / mode berubah
+  // sync form ketika modal dibuka
   useEffect(() => {
     if (!open) return;
 
@@ -61,6 +62,35 @@ export default function AddProductModal({
 
   if (!open) return null;
 
+  /* =====================
+     UPLOAD IMAGE
+  ===================== */
+  async function uploadImage(file: File) {
+    const fd = new FormData();
+    fd.append("file", file);
+
+    setUploading(true);
+    try {
+      const res = await fetch("/api/dashboard/upload-image", {
+        method: "POST",
+        body: fd,
+      });
+      const json = await res.json();
+
+      if (!json.success) {
+        alert(json.message || "Gagal upload gambar");
+        return;
+      }
+
+      setForm((f) => ({ ...f, thumbnail: json.url }));
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  /* =====================
+     SUBMIT
+  ===================== */
   async function submit() {
     if (!form.nama.trim()) {
       alert("Nama produk wajib diisi");
@@ -68,20 +98,20 @@ export default function AddProductModal({
     }
 
     setLoading(true);
-
     try {
+      const payload = {
+        ...form,
+        harga: Number(form.harga || 0),
+        stok: Number(form.stok || 0),
+      };
+
       // ADD
       if (mode === "add") {
         const res = await fetch("/api/dashboard/products", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...form,
-            harga: Number(form.harga || 0),
-            stok: Number(form.stok || 0),
-          }),
+          body: JSON.stringify(payload),
         });
-
         const json = await res.json();
         if (!json.success) {
           alert(json.message || "Gagal tambah produk");
@@ -96,16 +126,14 @@ export default function AddProductModal({
           return;
         }
 
-        const res = await fetch(`/api/dashboard/products/${initialData.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...form,
-            harga: Number(form.harga || 0),
-            stok: Number(form.stok || 0),
-          }),
-        });
-
+        const res = await fetch(
+          `/api/dashboard/products/${initialData.id}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }
+        );
         const json = await res.json();
         if (!json.success) {
           alert(json.message || "Gagal update produk");
@@ -141,28 +169,47 @@ export default function AddProductModal({
           onChange={(e) => setForm({ ...form, kategori: e.target.value })}
         />
 
-        <input
-          placeholder="Harga"
-          type="number"
-          className="border rounded-xl px-4 py-2 w-full"
-          value={form.harga}
-          onChange={(e) => setForm({ ...form, harga: e.target.value })}
-        />
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            placeholder="Harga"
+            type="number"
+            className="border rounded-xl px-4 py-2 w-full"
+            value={form.harga}
+            onChange={(e) => setForm({ ...form, harga: e.target.value })}
+          />
+          <input
+            placeholder="Stok"
+            type="number"
+            className="border rounded-xl px-4 py-2 w-full"
+            value={form.stok}
+            onChange={(e) => setForm({ ...form, stok: e.target.value })}
+          />
+        </div>
 
-        <input
-          placeholder="Stok"
-          type="number"
-          className="border rounded-xl px-4 py-2 w-full"
-          value={form.stok}
-          onChange={(e) => setForm({ ...form, stok: e.target.value })}
-        />
+        {/* UPLOAD IMAGE */}
+        <div className="space-y-1">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) uploadImage(f);
+            }}
+            className="text-sm"
+          />
 
-        <input
-          placeholder="Thumbnail URL"
-          className="border rounded-xl px-4 py-2 w-full"
-          value={form.thumbnail}
-          onChange={(e) => setForm({ ...form, thumbnail: e.target.value })}
-        />
+          {uploading && (
+            <p className="text-xs text-gray-500">Uploading image…</p>
+          )}
+
+          {form.thumbnail && (
+            <img
+              src={form.thumbnail}
+              alt="Preview"
+              className="h-20 rounded-lg border"
+            />
+          )}
+        </div>
 
         <select
           className="border rounded-xl px-4 py-2 w-full"
@@ -181,7 +228,7 @@ export default function AddProductModal({
           </button>
           <button
             onClick={submit}
-            disabled={loading}
+            disabled={loading || uploading}
             className="bg-[#0FA3A8] text-white px-5 py-2 rounded-xl text-sm font-semibold"
           >
             {loading ? "Menyimpan..." : "Simpan"}
