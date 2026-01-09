@@ -6,13 +6,9 @@ import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 const SHEET_NAME = "Produk";
 const RANGE = `${SHEET_NAME}!A2:J`;
 
-/* =====================
-   UTIL
-===================== */
 function now() {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
 }
-
 function slugify(input: string) {
   return String(input || "")
     .toLowerCase()
@@ -21,23 +17,19 @@ function slugify(input: string) {
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
 }
-
 function asYESNO(v: any): "YES" | "NO" {
-  return String(v || "").toUpperCase().trim() === "YES" ? "YES" : "NO";
+  const s = String(v || "").toUpperCase().trim();
+  return s === "YES" ? "YES" : "NO";
 }
-
 function toNum(v: any, fallback = 0) {
   const n = Number(String(v ?? "").replace(/[^\d.-]/g, ""));
   return Number.isFinite(n) ? n : fallback;
 }
 
-/* =====================
-   PATCH : UPDATE PRODUCT
-===================== */
-export async function PATCH(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+// Next.js kamu minta params sebagai Promise (lihat error Vercel kamu)
+type Ctx = { params: Promise<{ id: string }> };
+
+export async function PATCH(req: NextRequest, context: Ctx) {
   const guard = requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
@@ -60,10 +52,7 @@ export async function PATCH(
     });
 
     const rows = res.data.values || [];
-    const idx = rows.findIndex(
-      (r) => String(r?.[0] || "").trim() === cleanId
-    );
-
+    const idx = rows.findIndex((r) => String(r?.[0] || "").trim() === cleanId);
     if (idx === -1) {
       return NextResponse.json(
         { success: false, message: "Produk tidak ditemukan" },
@@ -89,21 +78,20 @@ export async function PATCH(
         : String(current[3] || "").trim();
 
     const harga =
-      body?.harga !== undefined ? toNum(body.harga) : toNum(current[4]);
+      body?.harga !== undefined ? toNum(body.harga, 0) : toNum(current[4], 0);
 
     const stok =
-      body?.stok !== undefined ? toNum(body.stok) : toNum(current[5]);
+      body?.stok !== undefined ? toNum(body.stok, 0) : toNum(current[5], 0);
 
     const aktif =
-      body?.aktif !== undefined
-        ? asYESNO(body.aktif)
-        : asYESNO(current[6]);
+      body?.aktif !== undefined ? asYESNO(body.aktif) : asYESNO(current[6]);
 
     const thumbnail =
       body?.thumbnail !== undefined
         ? String(body.thumbnail || "").trim()
         : String(current[7] || "").trim();
 
+    // slug unik kalau berubah
     if (slug !== currentSlug) {
       const slugExists = rows.some(
         (r, i) => i !== idx && String(r?.[1] || "").trim() === slug
@@ -121,37 +109,34 @@ export async function PATCH(
       range: `${SHEET_NAME}!A${sheetRow}:J${sheetRow}`,
       valueInputOption: "RAW",
       requestBody: {
-        values: [[
-          cleanId,
-          slug,
-          nama,
-          kategori,
-          harga,
-          stok,
-          aktif,
-          thumbnail,
-          ts,
-          String(current[9] || ts),
-        ]],
+        values: [
+          [
+            cleanId,
+            slug,
+            nama,
+            kategori,
+            harga,
+            stok,
+            aktif,
+            thumbnail,
+            ts,
+            String(current[9] || ts), // createdAt tetap
+          ],
+        ],
       },
     });
 
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
-      range: "Audit_Log!A:G",
-      valueInputOption: "RAW",
-      requestBody: {
-        values: [[
-          ts,
-          cleanId,
-          "UPDATE_PRODUCT",
-          "-",
-          nama,
-          "dashboard",
-          guard.admin.email,
-        ]],
-      },
-    });
+    // audit log optional
+    try {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SHEET_ID,
+        range: "Audit_Log!A:G",
+        valueInputOption: "RAW",
+        requestBody: {
+          values: [[ts, cleanId, "UPDATE_PRODUCT", "-", nama, "dashboard", guard.admin.email]],
+        },
+      });
+    } catch {}
 
     return NextResponse.json({ success: true });
   } catch (e: any) {
@@ -162,13 +147,7 @@ export async function PATCH(
   }
 }
 
-/* =====================
-   DELETE : SOFT DELETE
-===================== */
-export async function DELETE(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(req: NextRequest, context: Ctx) {
   const guard = requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
@@ -190,10 +169,7 @@ export async function DELETE(
     });
 
     const rows = res.data.values || [];
-    const idx = rows.findIndex(
-      (r) => String(r?.[0] || "").trim() === cleanId
-    );
-
+    const idx = rows.findIndex((r) => String(r?.[0] || "").trim() === cleanId);
     if (idx === -1) {
       return NextResponse.json(
         { success: false, message: "Produk tidak ditemukan" },
@@ -203,6 +179,7 @@ export async function DELETE(
 
     const sheetRow = idx + 2;
 
+    // soft delete: aktif=NO, updatedAt=ts
     await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: SHEET_ID,
       requestBody: {
@@ -214,22 +191,16 @@ export async function DELETE(
       },
     });
 
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
-      range: "Audit_Log!A:G",
-      valueInputOption: "RAW",
-      requestBody: {
-        values: [[
-          ts,
-          cleanId,
-          "SOFT_DELETE_PRODUCT",
-          "-",
-          "aktif=NO",
-          "dashboard",
-          guard.admin.email,
-        ]],
-      },
-    });
+    try {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SHEET_ID,
+        range: "Audit_Log!A:G",
+        valueInputOption: "RAW",
+        requestBody: {
+          values: [[ts, cleanId, "SOFT_DELETE_PRODUCT", "-", "aktif=NO", "dashboard", guard.admin.email]],
+        },
+      });
+    } catch {}
 
     return NextResponse.json({ success: true });
   } catch (e: any) {
