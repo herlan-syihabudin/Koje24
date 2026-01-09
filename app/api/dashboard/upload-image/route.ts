@@ -5,38 +5,25 @@ import { Readable } from "stream";
 export async function POST(req: Request) {
   try {
     const form = await req.formData();
-    const file = form.get("file") as File | null;
+    const file = form.get("file") as File;
 
     if (!file) {
-      return NextResponse.json({
-        success: false,
-        message: "File tidak ditemukan",
-      });
+      return NextResponse.json({ success: false, message: "No file" });
     }
 
-    // =========================
-    // CONVERT FILE → STREAM
-    // =========================
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // ⬇️ INI YANG PENTING
     const stream = Readable.from(buffer);
 
-    // =========================
-    // AUTH GOOGLE
-    // =========================
     const auth = new google.auth.JWT({
       email: process.env.GOOGLE_CLIENT_EMAIL,
       key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
       scopes: ["https://www.googleapis.com/auth/drive"],
     });
 
-    const drive = google.drive({
-      version: "v3",
-      auth,
-    });
+    const drive = google.drive({ version: "v3", auth });
 
-    // =========================
-    // UPLOAD FILE
-    // =========================
     const res = await drive.files.create({
       requestBody: {
         name: `${Date.now()}-${file.name}`,
@@ -49,15 +36,10 @@ export async function POST(req: Request) {
     });
 
     const fileId = res.data.id;
-    if (!fileId) {
-      throw new Error("Gagal upload ke Google Drive");
-    }
 
-    // =========================
-    // SET PUBLIC
-    // =========================
+    // set public
     await drive.permissions.create({
-      fileId,
+      fileId: fileId!,
       requestBody: {
         role: "reader",
         type: "anyone",
@@ -66,12 +48,9 @@ export async function POST(req: Request) {
 
     const url = `https://drive.google.com/uc?id=${fileId}`;
 
-    return NextResponse.json({
-      success: true,
-      url,
-    });
+    return NextResponse.json({ success: true, url });
   } catch (e: any) {
-    console.error("UPLOAD ERROR:", e);
+    console.error(e);
     return NextResponse.json({
       success: false,
       message: e.message,
