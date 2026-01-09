@@ -9,7 +9,6 @@ type Product = {
   stok: number;
   aktif: "YES" | "NO";
 };
-
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
