@@ -36,14 +36,15 @@ function toNum(v: any, fallback = 0) {
 ===================== */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const guard = requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
   try {
-    const id = String(params.id || "").trim();
-    if (!id) {
+    const { id } = await context.params;
+    const cleanId = String(id || "").trim();
+    if (!cleanId) {
       return NextResponse.json(
         { success: false, message: "ID tidak valid" },
         { status: 400 }
@@ -59,7 +60,9 @@ export async function PATCH(
     });
 
     const rows = res.data.values || [];
-    const idx = rows.findIndex((r) => String(r?.[0] || "").trim() === id);
+    const idx = rows.findIndex(
+      (r) => String(r?.[0] || "").trim() === cleanId
+    );
 
     if (idx === -1) {
       return NextResponse.json(
@@ -72,13 +75,34 @@ export async function PATCH(
     const current = rows[idx] || [];
     const currentSlug = String(current[1] || "").trim();
 
-    const nama = body?.nama !== undefined ? String(body.nama).trim() : String(current[2] || "").trim();
-    const slug = body?.slug !== undefined ? slugify(body.slug) : currentSlug;
-    const kategori = body?.kategori !== undefined ? String(body.kategori).trim() : String(current[3] || "").trim();
-    const harga = body?.harga !== undefined ? toNum(body.harga) : toNum(current[4]);
-    const stok = body?.stok !== undefined ? toNum(body.stok) : toNum(current[5]);
-    const aktif = body?.aktif !== undefined ? asYESNO(body.aktif) : asYESNO(current[6]);
-    const thumbnail = body?.thumbnail !== undefined ? String(body.thumbnail || "").trim() : String(current[7] || "").trim();
+    const nama =
+      body?.nama !== undefined
+        ? String(body.nama).trim()
+        : String(current[2] || "").trim();
+
+    const slug =
+      body?.slug !== undefined ? slugify(body.slug) : currentSlug;
+
+    const kategori =
+      body?.kategori !== undefined
+        ? String(body.kategori).trim()
+        : String(current[3] || "").trim();
+
+    const harga =
+      body?.harga !== undefined ? toNum(body.harga) : toNum(current[4]);
+
+    const stok =
+      body?.stok !== undefined ? toNum(body.stok) : toNum(current[5]);
+
+    const aktif =
+      body?.aktif !== undefined
+        ? asYESNO(body.aktif)
+        : asYESNO(current[6]);
+
+    const thumbnail =
+      body?.thumbnail !== undefined
+        ? String(body.thumbnail || "").trim()
+        : String(current[7] || "").trim();
 
     if (slug !== currentSlug) {
       const slugExists = rows.some(
@@ -98,7 +122,7 @@ export async function PATCH(
       valueInputOption: "RAW",
       requestBody: {
         values: [[
-          id,
+          cleanId,
           slug,
           nama,
           kategori,
@@ -119,7 +143,7 @@ export async function PATCH(
       requestBody: {
         values: [[
           ts,
-          id,
+          cleanId,
           "UPDATE_PRODUCT",
           "-",
           nama,
@@ -143,13 +167,21 @@ export async function PATCH(
 ===================== */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const guard = requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
   try {
-    const id = String(params.id || "").trim();
+    const { id } = await context.params;
+    const cleanId = String(id || "").trim();
+    if (!cleanId) {
+      return NextResponse.json(
+        { success: false, message: "ID tidak valid" },
+        { status: 400 }
+      );
+    }
+
     const ts = now();
 
     const res = await sheets.spreadsheets.values.get({
@@ -158,7 +190,9 @@ export async function DELETE(
     });
 
     const rows = res.data.values || [];
-    const idx = rows.findIndex((r) => String(r?.[0] || "").trim() === id);
+    const idx = rows.findIndex(
+      (r) => String(r?.[0] || "").trim() === cleanId
+    );
 
     if (idx === -1) {
       return NextResponse.json(
@@ -187,7 +221,7 @@ export async function DELETE(
       requestBody: {
         values: [[
           ts,
-          id,
+          cleanId,
           "SOFT_DELETE_PRODUCT",
           "-",
           "aktif=NO",
