@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 /* =======================
    TYPE
 ======================= */
-type InvoiceStatus = "Pending" | "Paid" | "COD" | "Cancelled";
+type InvoiceStatus = "PENDING" | "PAID" | "COD" | "CANCELLED";
 
 /* =======================
    ENV
@@ -15,7 +15,9 @@ type InvoiceStatus = "Pending" | "Paid" | "COD" | "Cancelled";
 const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? "";
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? "";
 const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
-const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n");
+
+// normalize private key (handle \n & \\n)
+const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n");
 
 const SHEET_NAME = "Transaksi";
 const RANGE = `${SHEET_NAME}!A2:Q`;
@@ -27,12 +29,15 @@ function now() {
   return new Date().toLocaleString("id-ID");
 }
 
-function normStatus(s: string): InvoiceStatus {
-  const t = String(s || "").trim().toUpperCase();
-  if (t === "PAID" || t === "LUNAS") return "Paid";
+function normStatus(s: any): InvoiceStatus {
+  const t = String(s ?? "").trim().toUpperCase();
+
+  if (t === "PAID" || t === "LUNAS") return "PAID";
   if (t === "COD") return "COD";
-  if (t === "CANCEL" || t === "CANCELLED") return "Cancelled";
-  return "Pending";
+  if (t === "CANCEL" || t === "CANCELLED") return "CANCELLED";
+  if (t === "PENDING") return "PENDING";
+
+  return "PENDING";
 }
 
 function getBaseUrl(req: NextRequest) {
@@ -50,13 +55,17 @@ function assertEnv() {
 
 /* =========================================================
    POST → UPDATE STATUS (TELEGRAM / DASHBOARD / SHEET)
+   - status diseragamkan ke UPPERCASE
+   - lock rule: CANCELLED terkunci, PAID tidak boleh downgrade
+   - idempotent: jika sama, return success no-op
+   - kirim invoice email hanya sekali saat menjadi PAID
 ========================================================= */
 export async function POST(req: NextRequest) {
   try {
     assertEnv();
 
-    const { invoiceId, status } = await req.json();
-    const inv = String(invoiceId || "").trim();
+    const body = await req.json().catch(() => ({}));
+    const inv = String(body?.invoiceId || "").trim();
     if (!inv) {
       return NextResponse.json(
         { success: false, message: "invoiceId kosong" },
@@ -64,22 +73,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const nextStatus: InvoiceStatus = normStatus(status);
+    const nextStatus: InvoiceStatus = normStatus(body?.status);
 
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
+
     const sheets = google.sheets({ version: "v4", auth });
 
+    // ambil semua transaksi
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: RANGE,
     });
 
     const rows = res.data.values || [];
-    const idx = rows.findIndex(r => String(r?.[0] || "").trim() === inv);
+    const idx = rows.findIndex((r) => String(r?.[0] || "").trim() === inv);
+
     if (idx === -1) {
       return NextResponse.json(
         { success: false, message: "Invoice tidak ditemukan" },
@@ -88,8 +100,9 @@ export async function POST(req: NextRequest) {
     }
 
     const sheetRow = idx + 2;
-    const row = rows[idx];
+    const row = rows[idx] || [];
 
+    // M=12 status, N=13 invoiceUrl, O=14 email, Q=16 invoiceEmailSentAt
     const oldStatus: InvoiceStatus = normStatus(row[12]);
     const invoiceUrl = String(row[13] || "").trim();
     const email = String(row[14] || "").trim();
@@ -100,7 +113,7 @@ export async function POST(req: NextRequest) {
     =============================== */
 
     // Cancelled = mati total
-    if (oldStatus === "Cancelled") {
+    if (oldStatus === "CANCELLED") {
       return NextResponse.json(
         { success: false, message: "Invoice CANCELLED (terkunci)" },
         { status: 409 }
@@ -108,21 +121,21 @@ export async function POST(req: NextRequest) {
     }
 
     // Paid → tidak boleh downgrade
-    if (oldStatus === "Paid" && nextStatus !== "Paid") {
+    if (oldStatus === "PAID" && nextStatus !== "PAID") {
       return NextResponse.json(
         { success: false, message: "Invoice PAID (terkunci)" },
         { status: 409 }
       );
     }
 
-    // Paid → Paid (idempotent)
-    if (oldStatus === "Paid" && nextStatus === "Paid") {
+    // idempotent
+    if (oldStatus === nextStatus) {
       return NextResponse.json({
         success: true,
         invoiceId: inv,
         oldStatus,
         nextStatus,
-        message: "No-op (sudah PAID)",
+        message: "No-op (status sama)",
       });
     }
 
@@ -138,8 +151,9 @@ export async function POST(req: NextRequest) {
 
     /* ==============================
        SEND INVOICE EMAIL (ONCE)
+       hanya saat berubah → PAID
     =============================== */
-    const becomesPaid = oldStatus !== nextStatus && nextStatus === "Paid";
+    const becomesPaid = oldStatus !== "PAID" && nextStatus === "PAID";
 
     if (becomesPaid && email && invoiceUrl && !invoiceSentAt) {
       const baseUrl = getBaseUrl(req);
@@ -157,7 +171,7 @@ export async function POST(req: NextRequest) {
       const jr = await send.json().catch(() => ({}));
       if (!send.ok || !jr?.success) {
         return NextResponse.json(
-          { success: false, message: "Gagal kirim invoice email" },
+          { success: false, message: jr?.message || "Gagal kirim invoice email" },
           { status: 500 }
         );
       }
@@ -179,7 +193,7 @@ export async function POST(req: NextRequest) {
   } catch (e: any) {
     console.error("INVOICE STATUS ERROR:", e);
     return NextResponse.json(
-      { success: false, message: e.message || "Internal error" },
+      { success: false, message: e?.message || "Internal error" },
       { status: 500 }
     );
   }
