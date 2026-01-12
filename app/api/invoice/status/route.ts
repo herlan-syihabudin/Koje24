@@ -13,7 +13,7 @@ const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
 const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n");
 
 const SHEET_NAME = "Transaksi";
-const RANGE = `${SHEET_NAME}!A2:Q`; // sampai kolom Q
+const RANGE = `${SHEET_NAME}!A2:Q`; // A..Q
 
 /* =======================
    HELPER
@@ -22,16 +22,32 @@ function now() {
   return new Date().toLocaleString("id-ID");
 }
 
+/**
+ * Konsisten dengan sheet: Pending / Paid / COD / Cancelled
+ */
 function normStatus(s: string) {
   const t = String(s || "").trim().toUpperCase();
-  if (t === "PAID" || t === "LUNAS") return "PAID";
+  if (t === "PAID" || t === "LUNAS") return "Paid";
   if (t === "COD") return "COD";
-  if (t === "CANCEL" || t === "CANCELLED") return "CANCELLED";
-  return "PENDING";
+  if (t === "CANCEL" || t === "CANCELLED") return "Cancelled";
+  return "Pending";
+}
+
+function getBaseUrl(req: NextRequest) {
+  return (
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    `${req.headers.get("x-forwarded-proto") || "https"}://${req.headers.get("host")}`
+  );
+}
+
+function assertEnv() {
+  if (!SHEET_ID) throw new Error("ENV GOOGLE_SHEET_ID kosong");
+  if (!CLIENT_EMAIL) throw new Error("ENV GOOGLE_CLIENT_EMAIL kosong");
+  if (!PRIVATE_KEY_RAW) throw new Error("ENV GOOGLE_PRIVATE_KEY kosong");
 }
 
 /* =========================================================
-   GET → READ ONLY (dipakai invoice page / user)
+   GET → READ ONLY
    /api/invoice/status?id=INV-XXXX
 ========================================================= */
 export async function GET(req: NextRequest) {
@@ -46,7 +62,18 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const res = await fetch(`${req.nextUrl.origin}/api/invoice/${invoiceId}`);
+    // Call endpoint resmi invoice kamu
+    const res = await fetch(`${req.nextUrl.origin}/api/invoice/${invoiceId}`, {
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      return NextResponse.json({
+        success: false,
+        message: "Gagal mengambil data invoice",
+      });
+    }
+
     const json = await res.json();
 
     if (!json?.success || !json?.data) {
@@ -70,7 +97,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: false,
       message: "Gagal mengambil status invoice",
-      detail: err?.message ?? err,
+      detail: err?.message ?? String(err),
     });
   }
 }
@@ -78,10 +105,12 @@ export async function GET(req: NextRequest) {
 /* =========================================================
    POST → UPDATE STATUS (ADMIN / BOT / GOOGLE SHEET)
    - update kolom status
-   - kirim invoice email HANYA SEKALI saat PAID
+   - kirim invoice email HANYA SEKALI saat Paid
 ========================================================= */
 export async function POST(req: NextRequest) {
   try {
+    assertEnv();
+
     const { invoiceId, status } = await req.json();
     const inv = String(invoiceId || "").trim();
 
@@ -109,9 +138,7 @@ export async function POST(req: NextRequest) {
     });
 
     const rows = res.data.values || [];
-    const idx = rows.findIndex(
-      (r) => String(r?.[0] || "").trim() === inv
-    );
+    const idx = rows.findIndex((r) => String(r?.[0] || "").trim() === inv);
 
     if (idx === -1) {
       return NextResponse.json(
@@ -120,36 +147,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const sheetRow = idx + 2; // karena mulai dari A2
+    const sheetRow = idx + 2; // karena mulai A2
     const row = rows[idx] || [];
 
-    const oldStatus = normStatus(row[12] || ""); // kolom M
-    const invoiceUrl = String(row[13] || "").trim(); // N
-    const email = String(row[14] || "").trim(); // O
-    const invoiceSentAt = String(row[16] || "").trim(); // Q
+    // index 0-based:
+    // M = 12 status
+    // N = 13 invoiceUrl
+    // O = 14 email
+    // Q = 16 invoiceEmailSentAt
+    const oldStatus = normStatus(row[12] || "");
+    const invoiceUrl = String(row[13] || "").trim();
+    const email = String(row[14] || "").trim();
+    const invoiceSentAt = String(row[16] || "").trim();
 
-    // 1️⃣ update status
+    // 1) update status (kolom M)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!M${sheetRow}`,
       valueInputOption: "RAW",
-      requestBody: {
-        values: [[nextStatus]],
-      },
+      requestBody: { values: [[nextStatus]] },
     });
 
-    // 2️⃣ kirim invoice email JIKA:
-    // - status berubah jadi PAID
-    // - belum pernah dikirim
-    const becomesPaid =
-      oldStatus !== "PAID" && nextStatus === "PAID";
+    // 2) kirim invoice email hanya saat berubah Pending->Paid dan belum pernah kirim
+    const becomesPaid = oldStatus !== "Paid" && nextStatus === "Paid";
 
     if (becomesPaid && email && invoiceUrl && !invoiceSentAt) {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_BASE_URL ||
-        `${req.headers.get("x-forwarded-proto") || "https"}://${req.headers.get(
-          "host"
-        )}`;
+      const baseUrl = getBaseUrl(req);
 
       const send = await fetch(`${baseUrl}/api/send-invoice-email`, {
         method: "POST",
@@ -165,19 +188,17 @@ export async function POST(req: NextRequest) {
       const jr = await send.json().catch(() => ({}));
       if (!send.ok || !jr?.success) {
         return NextResponse.json(
-          { success: false, message: "Gagal kirim invoice email" },
+          { success: false, message: jr?.message || "Gagal kirim invoice email" },
           { status: 500 }
         );
       }
 
-      // tandai sudah dikirim
+      // tandai invoice email terkirim (kolom Q)
       await sheets.spreadsheets.values.update({
         spreadsheetId: SHEET_ID,
         range: `${SHEET_NAME}!Q${sheetRow}`,
         valueInputOption: "RAW",
-        requestBody: {
-          values: [[now()]],
-        },
+        requestBody: { values: [[now()]] },
       });
     }
 
