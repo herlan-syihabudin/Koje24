@@ -1,19 +1,36 @@
 import { NextResponse } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 
-function parseTanggal(tanggalRaw: string) {
-  if (!tanggalRaw) return null;
-  const datePart = String(tanggalRaw).split(",")[0];
+/* =====================
+   HELPERS
+===================== */
+function parseTanggal(raw: string) {
+  if (!raw) return null;
+  const datePart = String(raw).split(",")[0];
   const [d, m, y] = datePart.split("/").map(Number);
   if (!d || !m || !y) return null;
   return new Date(y, m - 1, d);
 }
 
+function normalizeStatus(v: any) {
+  return String(v || "").trim().toUpperCase();
+}
+
+function normalizeMethod(v: any) {
+  const m = String(v || "").toUpperCase();
+  if (m.includes("COD")) return "COD";
+  if (m.includes("TRANSFER") || m.includes("QRIS")) return "TRANSFER";
+  return "UNKNOWN";
+}
+
+/* =====================
+   DASHBOARD INSIGHT
+===================== */
 export async function GET() {
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Transaksi!A2:O",
+      range: "Transaksi!A2:P",
     });
 
     const rows = res.data.values || [];
@@ -28,12 +45,12 @@ export async function GET() {
     const productRevenue: Record<string, number> = {};
 
     rows.forEach((row) => {
-      const tanggal = row[1];
-      const produkRaw = row[5];
-      const qty = Number(row[6] || 0);
-      const total = Number(row[9] || 0);
-      const metode = String(row[11] || "").toUpperCase();
-      const status = String(row[12] || "").toUpperCase();
+      const tanggal = row[1];        // B
+      const produkRaw = row[5];      // F
+      const qty = Number(row[6] || 0); // G
+      const total = Number(row[9] || 0); // J
+      const metode = normalizeMethod(row[13]); // N
+      const status = normalizeStatus(row[12]); // M
 
       if (status !== "PAID") return;
 
@@ -45,25 +62,23 @@ export async function GET() {
       totalRevenue += total;
       revenueByDate[dateKey] = (revenueByDate[dateKey] || 0) + total;
 
-      if (metode.includes("COD")) codAmount += total;
-      else transferAmount += total;
+      if (metode === "COD") codAmount += total;
+      if (metode === "TRANSFER") transferAmount += total;
 
       if (produkRaw) {
-        const name = produkRaw.replace(/\(.*?\)/g, "").trim();
+        const name = String(produkRaw).replace(/\(.*?\)/g, "").trim();
         productQty[name] = (productQty[name] || 0) + qty;
         productRevenue[name] = (productRevenue[name] || 0) + total;
       }
     });
 
     /* =====================
-       INSIGHT LOGIC
+       INSIGHTS
     ===================== */
-
-    // 1️⃣ Revenue trend (7 hari vs 7 hari sebelumnya)
-    const getRangeSum = (offsetStart: number, offsetEnd: number) => {
+    const getRangeSum = (from: number, to: number) => {
       let sum = 0;
-      for (let i = offsetStart; i <= offsetEnd; i++) {
-        const d = new Date();
+      for (let i = from; i <= to; i++) {
+        const d = new Date(now);
         d.setDate(now.getDate() - i);
         const key = d.toISOString().slice(0, 10);
         sum += revenueByDate[key] || 0;
@@ -74,27 +89,31 @@ export async function GET() {
     const last7 = getRangeSum(0, 6);
     const prev7 = getRangeSum(7, 13);
 
-    const revenuePercent =
-      prev7 === 0 ? 0 : Math.round(((last7 - prev7) / prev7) * 100);
+    let revenuePercent = 0;
+    let revenueStatus: "up" | "down" | "flat" = "flat";
 
-    const revenueStatus =
-      revenuePercent > 3 ? "up" : revenuePercent < -3 ? "down" : "flat";
+    if (prev7 === 0 && last7 > 0) {
+      revenuePercent = 100;
+      revenueStatus = "up";
+    } else if (prev7 > 0) {
+      revenuePercent = Math.round(((last7 - prev7) / prev7) * 100);
+      revenueStatus =
+        revenuePercent > 3 ? "up" :
+        revenuePercent < -3 ? "down" : "flat";
+    }
 
-    // 2️⃣ Produk terlaris (berdasarkan QTY)
-    const topProductName =
+    const topProduct =
       Object.entries(productQty).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
 
-    const topProductContribution = topProductName
-      ? Math.round(
-          (productRevenue[topProductName] / totalRevenue) * 100
-        )
-      : 0;
+    const topProductContribution =
+      topProduct && totalRevenue > 0
+        ? Math.round((productRevenue[topProduct] / totalRevenue) * 100)
+        : 0;
 
-    // 3️⃣ Risiko metode pembayaran
     const codRatio =
-      totalRevenue === 0
-        ? 0
-        : Math.round((codAmount / totalRevenue) * 100);
+      totalRevenue > 0
+        ? Math.round((codAmount / totalRevenue) * 100)
+        : 0;
 
     return NextResponse.json({
       success: true,
@@ -104,12 +123,8 @@ export async function GET() {
       },
 
       methods: {
-        transfer: {
-          amount: transferAmount,
-        },
-        cod: {
-          amount: codAmount,
-        },
+        transfer: { amount: transferAmount },
+        cod: { amount: codAmount },
       },
 
       chart: [
@@ -120,10 +135,10 @@ export async function GET() {
       insights: {
         revenueTrend: {
           percent: revenuePercent,
-          status: revenueStatus, // up | down | flat
+          status: revenueStatus,
         },
         topProduct: {
-          name: topProductName,
+          name: topProduct,
           contribution: topProductContribution,
         },
         paymentRisk: {
