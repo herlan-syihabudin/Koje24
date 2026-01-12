@@ -157,9 +157,22 @@ export async function POST(req: NextRequest) {
     // Q = 16 invoiceEmailSentAt
     const oldStatus = normStatus(row[12] || "");
      // ==============================
-// 🔒 LEVEL 2 GLOBAL LOCK
+// 🔒 LEVEL 2 GLOBAL RULE (BENAR)
 // ==============================
-if (oldStatus === "Paid") {
+
+// ❌ Cancelled = mati total
+if (oldStatus === "Cancelled") {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Invoice sudah CANCELLED dan terkunci",
+    },
+    { status: 409 }
+  );
+}
+
+// ❌ Paid → tidak boleh downgrade
+if (oldStatus === "Paid" && nextStatus !== "Paid") {
   return NextResponse.json(
     {
       success: false,
@@ -167,6 +180,17 @@ if (oldStatus === "Paid") {
     },
     { status: 409 }
   );
+}
+
+// ✅ Paid → Paid (idempotent / aman)
+if (oldStatus === "Paid" && nextStatus === "Paid") {
+  return NextResponse.json({
+    success: true,
+    invoiceId: inv,
+    oldStatus,
+    nextStatus,
+    message: "Invoice sudah PAID (no-op)",
+  });
 }
 
 if (oldStatus === "Cancelled") {
