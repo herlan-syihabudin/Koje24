@@ -13,7 +13,7 @@ type OrderRow = {
   produk: string;
   qty: number;
   totalBayar: number;
-  status: string;
+  status: "PAID" | "PENDING" | "CANCELLED";
   closed: "YES" | "NO";
   _dt: number;
 };
@@ -22,8 +22,18 @@ type OrderRow = {
    HELPERS
 ===================== */
 function parseTanggal(raw: string) {
-  const [d, m, y] = (raw?.split(",")[0] || "").split("/").map(Number);
-  return d && m && y ? new Date(y, m - 1, d).getTime() : 0;
+  if (!raw) return 0;
+  const datePart = raw.split(",")[0]; // "6/1/2026"
+  const [d, m, y] = datePart.split("/").map(Number);
+  if (!d || !m || !y) return 0;
+  return new Date(y, m - 1, d).getTime();
+}
+
+function normalizeStatus(s: string): OrderRow["status"] {
+  const t = String(s || "").trim().toUpperCase();
+  if (t === "PAID") return "PAID";
+  if (t === "PENDING") return "PENDING";
+  return "CANCELLED";
 }
 
 /* =====================
@@ -56,12 +66,12 @@ export async function GET(req: NextRequest) {
 
         return {
           invoice,
-          tanggal: row[1],
-          nama: row[2],
-          produk: row[5],
+          tanggal: String(row[1] || ""),
+          nama: String(row[2] || ""),
+          produk: String(row[5] || ""),
           qty: Number(row[6] || 0),
           totalBayar: Number(row[9] || 0),
-          status: String(row[12] || "PENDING").toUpperCase(),
+          status: normalizeStatus(row[12]),
           closed: String(row[15] || "").toUpperCase() === "YES" ? "YES" : "NO",
           _dt: parseTanggal(row[1]),
         };
