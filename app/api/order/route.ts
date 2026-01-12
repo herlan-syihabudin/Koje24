@@ -79,28 +79,30 @@ export async function POST(req: NextRequest) {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:O`,
+      range: `${SHEET_NAME}!A:Q`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [
-          [
-            invoiceId,
-            new Date().toLocaleString("id-ID"),
-            nama,
-            hp,
-            alamat,
-            produkList,
-            qtyTotal,
-            subtotalCalc,
-            effectiveOngkir,
-            effectiveGrandTotal,
-            promoText,
-            paymentLabel,
-            "Pending",
-            invoiceUrl,
-            email,
-          ],
-        ],
+  [
+    invoiceId,                        // A
+    new Date().toLocaleString("id-ID"), // B
+    nama,                             // C
+    hp,                               // D
+    alamat,                           // E
+    produkList,                       // F
+    qtyTotal,                         // G
+    subtotalCalc,                     // H
+    effectiveOngkir,                  // I
+    effectiveGrandTotal,              // J
+    promoText,                        // K
+    paymentLabel,                     // L
+    "Pending",                        // M
+    invoiceUrl,                       // N
+    email,                            // O
+    "",                               // P PaymentEmailSentAt
+    "",                               // Q InvoiceEmailSentAt
+  ],
+],
       },
     });
 
@@ -130,16 +132,18 @@ export async function POST(req: NextRequest) {
     }
 
     // 🚀 Trigger auto-email invoice (WAJIB pakai await biar stabil di Vercel)
-    await fetch(`${baseUrl}/api/send-invoice-email`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        nama,
-        invoiceId,
-        invoiceUrl,
-      }),
-    });
+    await fetch(`${baseUrl}/api/send-payment-request-email`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    email,
+    nama,
+    invoiceId,
+    invoiceUrl,
+    total: effectiveGrandTotal,
+    paymentLabel,
+  }),
+});
 
     /* =====================================================
    📲 WHATSAPP NOTIFICATION (NON-BLOCKING)
