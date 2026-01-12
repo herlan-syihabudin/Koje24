@@ -101,11 +101,14 @@ export default function OrdersPage() {
 
     setUpdatingInvoice(invoice);
     try {
-      const res = await fetch("/api/dashboard/orders/update-status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ invoice, status }),
-      });
+      const res = await fetch("/api/invoice/status", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    invoiceId: invoice, // ⚠️ WAJIB invoiceId
+    status,
+  }),
+});
 
       const data = await res.json();
       if (!data.success) {
