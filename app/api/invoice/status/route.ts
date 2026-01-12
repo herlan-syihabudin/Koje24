@@ -156,6 +156,28 @@ export async function POST(req: NextRequest) {
     // O = 14 email
     // Q = 16 invoiceEmailSentAt
     const oldStatus = normStatus(row[12] || "");
+     // ==============================
+// 🔒 LEVEL 2 GLOBAL LOCK
+// ==============================
+if (oldStatus === "Paid") {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Invoice sudah PAID dan terkunci",
+    },
+    { status: 409 }
+  );
+}
+
+if (oldStatus === "Cancelled") {
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Invoice sudah CANCELLED",
+    },
+    { status: 409 }
+  );
+}
     const invoiceUrl = String(row[13] || "").trim();
     const email = String(row[14] || "").trim();
     const invoiceSentAt = String(row[16] || "").trim();
