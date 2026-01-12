@@ -191,7 +191,8 @@ if (oldStatus === "Cancelled") {
     });
 
     // 2) kirim invoice email hanya saat berubah Pending->Paid dan belum pernah kirim
-    const becomesPaid = oldStatus !== "Paid" && nextStatus === "Paid";
+    const isStatusChanged = oldStatus !== nextStatus;
+const becomesPaid = isStatusChanged && nextStatus === "Paid";
 
     if (becomesPaid && email && invoiceUrl && !invoiceSentAt) {
       const baseUrl = getBaseUrl(req);
