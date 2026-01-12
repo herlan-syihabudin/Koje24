@@ -31,13 +31,13 @@ export async function POST(req: NextRequest) {
     const promoAmount = Number(form.get("promoAmount") ?? 0);
     const promoLabel = String(form.get("promoLabel") ?? "");
 
-    // 💥 Cart fallback aman
     const cartJson = String(
       form.get("cart") ||
-      form.get("items") ||
-      form.get("keranjang") ||
-      "[]"
+        form.get("items") ||
+        form.get("keranjang") ||
+        "[]"
     );
+
     let cart: any[] = [];
     try {
       cart = JSON.parse(cartJson);
@@ -45,30 +45,49 @@ export async function POST(req: NextRequest) {
       cart = [];
     }
 
-    // 🛑 Validasi wajib
-    if (!nama || !hp || !alamat || !email) throw new Error("Data belum lengkap");
-    if (!Array.isArray(cart) || cart.length === 0) throw new Error("Keranjang kosong");
+    if (!nama || !hp || !alamat || !email)
+      throw new Error("Data belum lengkap");
+    if (!Array.isArray(cart) || cart.length === 0)
+      throw new Error("Keranjang kosong");
 
     const produkList = cart.map((x: any) => `${x.name} (${x.qty}x)`).join(", ");
     const qtyTotal = cart.reduce((a, x) => a + Number(x.qty), 0);
-    const subtotalCalc = cart.reduce((a, x) => a + Number(x.price) * Number(x.qty), 0);
+    const subtotalCalc = cart.reduce(
+      (a, x) => a + Number(x.price) * Number(x.qty),
+      0
+    );
 
     const effectiveOngkir = shippingCost > 0 ? shippingCost : 15000;
     const safePromoAmount = promoAmount > 0 ? promoAmount : 0;
-    const effectiveGrandTotal = Math.max(0, subtotalCalc + effectiveOngkir - safePromoAmount);
+    const effectiveGrandTotal = Math.max(
+      0,
+      subtotalCalc + effectiveOngkir - safePromoAmount
+    );
 
     const invoiceId =
       "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || req.nextUrl.origin;
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL || req.nextUrl.origin;
+
     const invoiceUrl = `${baseUrl}/invoice/${invoiceId}`;
 
     const paymentLabel =
-      payment === "qris" ? "QRIS" : payment === "cod" ? "COD" : "Transfer";
+      payment === "qris"
+        ? "QRIS"
+        : payment === "cod"
+        ? "COD"
+        : "Transfer";
 
     const promoText = safePromoAmount > 0 ? promoLabel : "-";
 
-    // 🟢 Simpan ke Google Sheet (kolom O untuk Email)
+    // =========================
+    // GOOGLE SHEET AUTH
+    // =========================
+    if (!SHEET_ID || !CLIENT_EMAIL || !PRIVATE_KEY) {
+      throw new Error("Google Sheet ENV belum lengkap");
+    }
+
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
@@ -77,118 +96,121 @@ export async function POST(req: NextRequest) {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    await sheets.spreadsheets.values.append({
+    // =========================
+    // APPEND DATA (A–Q)
+    // =========================
+    const appendRes = await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!A:Q`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
-        values: [
-  [
-    invoiceId,                        // A
-    new Date().toLocaleString("id-ID"), // B
-    nama,                             // C
-    hp,                               // D
-    alamat,                           // E
-    produkList,                       // F
-    qtyTotal,                         // G
-    subtotalCalc,                     // H
-    effectiveOngkir,                  // I
-    effectiveGrandTotal,              // J
-    promoText,                        // K
-    paymentLabel,                     // L
-    "Pending",                        // M
-    invoiceUrl,                       // N
-    email,                            // O
-    "",                               // P PaymentEmailSentAt
-    "",                               // Q InvoiceEmailSentAt
-  ],
-],
+        values: [[
+          invoiceId,                         // A
+          new Date().toLocaleString("id-ID"),// B
+          nama,                              // C
+          hp,                                // D
+          alamat,                            // E
+          produkList,                        // F
+          qtyTotal,                          // G
+          subtotalCalc,                      // H
+          effectiveOngkir,                   // I
+          effectiveGrandTotal,               // J
+          promoText,                         // K
+          paymentLabel,                      // L
+          "Pending",                         // M
+          invoiceUrl,                        // N
+          email,                             // O
+          "",                                // P PaymentEmailSentAt
+          "",                                // Q InvoiceEmailSentAt
+        ]],
       },
     });
 
-    // 🔥 Telegram notif (opsional)
+    // ambil nomor baris hasil append
+    const updatedRange = appendRes.data.updates?.updatedRange || "";
+    const rowNum = Number(updatedRange.match(/\d+/)?.[0]);
+
+    // =========================
+    // TELEGRAM (NON BLOCKING)
+    // =========================
     if (BOT_TOKEN && CHAT_ID) {
       const esc = (t: string) =>
         String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
-
-      const msg =
-        `🛒 *ORDER BARU KOJE24*\n#${invoiceId}\n\n` +
-        `👤 *${esc(nama)}*\n📞 ${esc(hp)}\n📍 ${esc(alamat)}\n\n` +
-        `🍹 *Produk:* ${esc(produkList)}\n` +
-        `💳 *Metode:* ${paymentLabel}\n` +
-        `💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}\n\n` +
-        `📝 Catatan: ${esc(note || "-")}\n` +
-        `🔗 ${invoiceUrl}`;
 
       fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: CHAT_ID,
-          text: msg,
+          text:
+            `🛒 *ORDER BARU KOJE24*\n#${invoiceId}\n\n` +
+            `👤 *${esc(nama)}*\n📞 ${esc(hp)}\n📍 ${esc(alamat)}\n\n` +
+            `🍹 *Produk:* ${esc(produkList)}\n` +
+            `💳 *Metode:* ${paymentLabel}\n` +
+            `💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}\n\n` +
+            `📝 Catatan: ${esc(note || "-")}\n` +
+            `🔗 ${invoiceUrl}`,
           parse_mode: "Markdown",
         }),
-      });
+      }).catch(() => {});
     }
 
-    // 🚀 Trigger auto-email invoice (WAJIB pakai await biar stabil di Vercel)
-    await fetch(`${baseUrl}/api/send-payment-request-email`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    email,
-    nama,
-    invoiceId,
-    invoiceUrl,
-    total: effectiveGrandTotal,
-    paymentLabel,
-  }),
-});
+    // =========================
+    // EMAIL PAYMENT REQUEST
+    // =========================
+    fetch(`${baseUrl}/api/send-payment-request-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        nama,
+        invoiceId,
+        invoiceUrl,
+        total: effectiveGrandTotal,
+        paymentLabel,
+      }),
+    })
+      .then(async () => {
+        if (!rowNum) return;
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SHEET_ID,
+          range: `${SHEET_NAME}!P${rowNum}`,
+          valueInputOption: "RAW",
+          requestBody: {
+            values: [[new Date().toLocaleString("id-ID")]],
+          },
+        });
+      })
+      .catch(() => {});
 
-    /* =====================================================
-   📲 WHATSAPP NOTIFICATION (NON-BLOCKING)
-   - Tidak boleh menggagalkan order
-   - Jika WA error → order tetap sukses
-===================================================== */
-fetch(`${baseUrl}/api/whatsapp`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    invoiceId,
-    invoiceUrl,
-    name: nama,
-    phone: hp,
-    address: alamat,
-    note,
-    order: cart,
-    subtotal: subtotalCalc,
-    ongkir: effectiveOngkir,
-    promoLabel,
-    promoAmount: safePromoAmount,
-    grandTotal: effectiveGrandTotal,
-    paymentLabel,
-  }),
-})
-  .then(() => {
-    console.log("✅ WhatsApp trigger sent");
-  })
-  .catch((err) => {
-    console.error("⚠️ WhatsApp failed (ignored):", err);
-  });
-    
-// 🔔 AUTO SUBSCRIBE (NON-BLOCKING, TIDAK BOLEH GAGALKAN ORDER)
-fetch(`${baseUrl}/api/subscribe`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    email,
-    source: "checkout",
-  }),
-}).catch(() => {
-  // sengaja dikosongkan
-});
+    // =========================
+    // WHATSAPP & SUBSCRIBE (IGNORE ERROR)
+    // =========================
+    fetch(`${baseUrl}/api/whatsapp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        invoiceId,
+        invoiceUrl,
+        name: nama,
+        phone: hp,
+        address: alamat,
+        note,
+        order: cart,
+        subtotal: subtotalCalc,
+        ongkir: effectiveOngkir,
+        promoLabel,
+        promoAmount: safePromoAmount,
+        grandTotal: effectiveGrandTotal,
+        paymentLabel,
+      }),
+    }).catch(() => {});
+
+    fetch(`${baseUrl}/api/subscribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, source: "checkout" }),
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,
