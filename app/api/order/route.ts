@@ -131,29 +131,47 @@ export async function POST(req: NextRequest) {
     const rowNum = Number(updatedRange.match(/\d+/)?.[0]);
 
     // =========================
-    // TELEGRAM (NON BLOCKING)
-    // =========================
-    if (BOT_TOKEN && CHAT_ID) {
-      const esc = (t: string) =>
-        String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
+// TELEGRAM (NON BLOCKING + INLINE BUTTON)
+// =========================
+if (BOT_TOKEN && CHAT_ID) {
+  const esc = (t: string) =>
+    String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
 
-      fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: CHAT_ID,
-          text:
-            `🛒 *ORDER BARU KOJE24*\n#${invoiceId}\n\n` +
-            `👤 *${esc(nama)}*\n📞 ${esc(hp)}\n📍 ${esc(alamat)}\n\n` +
-            `🍹 *Produk:* ${esc(produkList)}\n` +
-            `💳 *Metode:* ${paymentLabel}\n` +
-            `💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}\n\n` +
-            `📝 Catatan: ${esc(note || "-")}\n` +
-            `🔗 ${invoiceUrl}`,
-          parse_mode: "Markdown",
-        }),
-      }).catch(() => {});
-    }
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: CHAT_ID,
+      parse_mode: "Markdown",
+      text:
+        `🛒 *ORDER BARU KOJE24*\n\n` +
+        `📄 *Invoice:* ${invoiceId}\n` +
+        `👤 *Nama:* ${esc(nama)}\n` +
+        `📞 ${esc(hp)}\n` +
+        `📍 ${esc(alamat)}\n\n` +
+        `🍹 *Produk:* ${esc(produkList)}\n` +
+        `💳 *Metode:* ${paymentLabel}\n` +
+        `💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}\n\n` +
+        `📝 Catatan: ${esc(note || "-")}\n` +
+        `🔗 ${invoiceUrl}\n\n` +
+        `📌 Status: *PENDING*`,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "✅ Tandai PAID",
+              callback_data: `set:PAID:${invoiceId}`,
+            },
+            {
+              text: "🚚 COD",
+              callback_data: `set:COD:${invoiceId}`,
+            },
+          ],
+        ],
+      },
+    }),
+  }).catch(() => {});
+}
 
     // =========================
     // EMAIL PAYMENT REQUEST
