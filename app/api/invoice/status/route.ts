@@ -7,7 +7,14 @@ export const runtime = "nodejs";
 /* =======================
    TYPE
 ======================= */
-type InvoiceStatus = "PENDING" | "PAID" | "COD" | "CANCELLED";
+type InvoiceStatus =
+  | "PENDING"
+  | "PAID"
+  | "COD"
+  | "DIPROSES"
+  | "DIKIRIM"
+  | "SELESAI"
+  | "CANCELLED";
 
 /* =======================
    ENV
@@ -15,16 +22,11 @@ type InvoiceStatus = "PENDING" | "PAID" | "COD" | "CANCELLED";
 const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? "";
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? "";
 const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
-
-// normalize private key (handle \n & \\n)
 const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n");
 
 const SHEET_NAME = "Transaksi";
 const RANGE = `${SHEET_NAME}!A2:Q`;
 
-/* =======================
-   HELPERS
-======================= */
 function now() {
   return new Date().toLocaleString("id-ID");
 }
@@ -34,9 +36,10 @@ function normStatus(s: any): InvoiceStatus {
 
   if (t === "PAID" || t === "LUNAS") return "PAID";
   if (t === "COD") return "COD";
+  if (t === "DIPROSES") return "DIPROSES";
+  if (t === "DIKIRIM") return "DIKIRIM";
+  if (t === "SELESAI") return "SELESAI";
   if (t === "CANCEL" || t === "CANCELLED") return "CANCELLED";
-  if (t === "PENDING") return "PENDING";
-
   return "PENDING";
 }
 
@@ -54,11 +57,12 @@ function assertEnv() {
 }
 
 /* =========================================================
-   POST → UPDATE STATUS (TELEGRAM / DASHBOARD / SHEET)
-   - status diseragamkan ke UPPERCASE
-   - lock rule: CANCELLED terkunci, PAID tidak boleh downgrade
-   - idempotent: jika sama, return success no-op
-   - kirim invoice email hanya sekali saat menjadi PAID
+   POST → UPDATE STATUS
+   RULE LEVEL 2:
+   - CANCELLED terkunci total
+   - boleh naik tahap: PENDING → PAID/COD → DIPROSES → DIKIRIM → SELESAI
+   - PAID tidak boleh balik ke PENDING
+   - idempotent: status sama = no-op
 ========================================================= */
 export async function POST(req: NextRequest) {
   try {
@@ -73,7 +77,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const nextStatus: InvoiceStatus = normStatus(body?.status);
+    const nextStatus = normStatus(body?.status);
 
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
@@ -83,7 +87,6 @@ export async function POST(req: NextRequest) {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // ambil semua transaksi
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: RANGE,
@@ -103,16 +106,12 @@ export async function POST(req: NextRequest) {
     const row = rows[idx] || [];
 
     // M=12 status, N=13 invoiceUrl, O=14 email, Q=16 invoiceEmailSentAt
-    const oldStatus: InvoiceStatus = normStatus(row[12]);
+    const oldStatus = normStatus(row[12]);
     const invoiceUrl = String(row[13] || "").trim();
     const email = String(row[14] || "").trim();
     const invoiceSentAt = String(row[16] || "").trim();
 
-    /* ==============================
-       🔒 LEVEL 2 GLOBAL RULE
-    =============================== */
-
-    // Cancelled = mati total
+    // 🔒 CANCELLED terkunci total
     if (oldStatus === "CANCELLED") {
       return NextResponse.json(
         { success: false, message: "Invoice CANCELLED (terkunci)" },
@@ -120,15 +119,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Paid → tidak boleh downgrade
-    if (oldStatus === "PAID" && nextStatus !== "PAID") {
-      return NextResponse.json(
-        { success: false, message: "Invoice PAID (terkunci)" },
-        { status: 409 }
-      );
-    }
-
-    // idempotent
+    // ✅ idempotent
     if (oldStatus === nextStatus) {
       return NextResponse.json({
         success: true,
@@ -139,9 +130,27 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    /* ==============================
-       UPDATE STATUS (SHEET)
-    =============================== */
+    // 🔒 Aturan “tidak boleh downgrade”
+    // urutan progres
+    const rank: Record<InvoiceStatus, number> = {
+      PENDING: 1,
+      COD: 2,
+      PAID: 2,
+      DIPROSES: 3,
+      DIKIRIM: 4,
+      SELESAI: 5,
+      CANCELLED: 99,
+    };
+
+    // Tidak boleh mundur (misal PAID → PENDING)
+    if (rank[nextStatus] < rank[oldStatus]) {
+      return NextResponse.json(
+        { success: false, message: `Tidak boleh downgrade: ${oldStatus} → ${nextStatus}` },
+        { status: 409 }
+      );
+    }
+
+    // ✅ Update status di sheet (kolom M)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `${SHEET_NAME}!M${sheetRow}`,
@@ -149,23 +158,15 @@ export async function POST(req: NextRequest) {
       requestBody: { values: [[nextStatus]] },
     });
 
-    /* ==============================
-       SEND INVOICE EMAIL (ONCE)
-       hanya saat berubah → PAID
-    =============================== */
+    // ✅ Email invoice hanya sekali saat first time jadi PAID
     const becomesPaid = oldStatus !== "PAID" && nextStatus === "PAID";
-
     if (becomesPaid && email && invoiceUrl && !invoiceSentAt) {
       const baseUrl = getBaseUrl(req);
 
       const send = await fetch(`${baseUrl}/api/send-invoice-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          invoiceId: inv,
-          invoiceUrl,
-        }),
+        body: JSON.stringify({ email, invoiceId: inv, invoiceUrl }),
       });
 
       const jr = await send.json().catch(() => ({}));
@@ -184,12 +185,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({
-      success: true,
-      invoiceId: inv,
-      oldStatus,
-      nextStatus,
-    });
+    return NextResponse.json({ success: true, invoiceId: inv, oldStatus, nextStatus });
   } catch (e: any) {
     console.error("INVOICE STATUS ERROR:", e);
     return NextResponse.json(
