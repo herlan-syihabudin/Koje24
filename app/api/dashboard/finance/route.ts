@@ -49,8 +49,8 @@ export async function GET() {
       const produkRaw = row[5];      // F
       const qty = Number(row[6] || 0); // G
       const total = Number(row[9] || 0); // J
-      const metode = normalizeMethod(row[13]); // N
-      const status = normalizeStatus(row[12]); // M
+      const metode = normalizeMethod(row[11]); // METODE BAYAR
+const status = normalizeStatus(row[12]); // STATUS
 
       if (status !== "PAID") return;
 
