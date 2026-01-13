@@ -67,9 +67,21 @@ export default function OrdersPage() {
   const [activeStatus, setActiveStatus] = useState("ALL");
   const [updatingInvoice, setUpdatingInvoice] = useState<string | null>(null);
 
+  /* pagination */
   const [page, setPage] = useState(1);
   const limit = 25;
   const [meta, setMeta] = useState<Meta | null>(null);
+
+  /* =====================
+     EXPORT & CLOSING
+  ===================== */
+  const today = new Date().toISOString().slice(0, 10);
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
+  const [closingStatus, setClosingStatus] =
+    useState<"PAID" | "SELESAI">("PAID");
+  const [exportLoading, setExportLoading] = useState(false);
+  const [closingLoading, setClosingLoading] = useState(false);
 
   /* =====================
      FETCH ORDERS
@@ -85,7 +97,6 @@ export default function OrdersPage() {
       const res = await fetch(`/api/dashboard/orders?${qs.toString()}`, {
         cache: "no-store",
       });
-
       const data = await res.json();
 
       if (data?.success) {
@@ -123,10 +134,7 @@ export default function OrdersPage() {
       const res = await fetch("/api/invoice/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          invoiceId: invoice,
-          status,
-        }),
+        body: JSON.stringify({ invoiceId: invoice, status }),
       });
 
       const data = await res.json();
@@ -138,6 +146,87 @@ export default function OrdersPage() {
       await fetchOrders(activeStatus, page);
     } finally {
       setUpdatingInvoice(null);
+    }
+  }
+
+  /* =====================
+     EXPORT EXCEL
+  ===================== */
+  async function handleExport() {
+    if (
+      !confirm(
+        `Export order ${closingStatus}\n${fromDate} → ${toDate}\n\nLanjutkan?`
+      )
+    )
+      return;
+
+    setExportLoading(true);
+    try {
+      const res = await fetch("/api/dashboard/orders/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: fromDate,
+          to: toDate,
+          status: closingStatus,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.message || "Gagal export");
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Closing_${closingStatus}_${fromDate}_${toDate}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } finally {
+      setExportLoading(false);
+    }
+  }
+
+  /* =====================
+     CLOSING
+  ===================== */
+  async function handleClosing() {
+    if (
+      !confirm(
+        `CLOSING order ${closingStatus}\n${fromDate} → ${toDate}\n\nData akan dikunci. Lanjutkan?`
+      )
+    )
+      return;
+
+    setClosingLoading(true);
+    try {
+      const res = await fetch("/api/dashboard/orders/close", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: fromDate,
+          to: toDate,
+          status: closingStatus,
+        }),
+      });
+
+      const data = await res.json();
+      alert(
+        data.success
+          ? `Closing berhasil (${data.closedCount ?? 0} order)`
+          : data.message || "Gagal closing"
+      );
+
+      await fetchOrders(activeStatus, page);
+    } finally {
+      setClosingLoading(false);
     }
   }
 
@@ -177,6 +266,51 @@ export default function OrdersPage() {
             {tab.label}
           </button>
         ))}
+      </div>
+
+      {/* EXPORT & CLOSING */}
+      <div className="border rounded-2xl bg-white p-5 space-y-3">
+        <p className="font-semibold">Export & Closing</p>
+
+        <div className="grid md:grid-cols-5 gap-3">
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            className="border rounded-xl px-4 py-2 text-sm"
+          />
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            className="border rounded-xl px-4 py-2 text-sm"
+          />
+
+          <select
+            value={closingStatus}
+            onChange={(e) => setClosingStatus(e.target.value as any)}
+            className="border rounded-xl px-4 py-2 text-sm"
+          >
+            <option value="PAID">PAID</option>
+            <option value="SELESAI">SELESAI</option>
+          </select>
+
+          <button
+            onClick={handleClosing}
+            disabled={closingLoading}
+            className="bg-red-500 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
+          >
+            {closingLoading ? "Closing..." : "Closing Order"}
+          </button>
+
+          <button
+            onClick={handleExport}
+            disabled={exportLoading}
+            className="bg-[#0FA3A8] text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
+          >
+            {exportLoading ? "Exporting..." : "Export Excel"}
+          </button>
+        </div>
       </div>
 
       <p className="text-xs text-gray-500">{paginationText}</p>
@@ -242,7 +376,10 @@ export default function OrdersPage() {
                             o.status === "CANCELLED"
                           }
                           onChange={(e) =>
-                            updateStatus(o.invoice, e.target.value as OrderStatus)
+                            updateStatus(
+                              o.invoice,
+                              e.target.value as OrderStatus
+                            )
                           }
                           className="border rounded-lg px-2 py-1 text-xs disabled:opacity-50"
                         >
