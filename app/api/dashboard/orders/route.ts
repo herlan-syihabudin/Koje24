@@ -6,6 +6,15 @@ import { sheets, SHEET_ID } from "@/lib/googleSheets";
 /* =====================
    TYPES
 ===================== */
+type OrderStatus =
+  | "PENDING"
+  | "PAID"
+  | "COD"
+  | "DIPROSES"
+  | "DIKIRIM"
+  | "SELESAI"
+  | "CANCELLED";
+
 type OrderRow = {
   invoice: string;
   tanggal: string;
@@ -13,7 +22,7 @@ type OrderRow = {
   produk: string;
   qty: number;
   totalBayar: number;
-  status: "PAID" | "PENDING" | "CANCELLED";
+  status: OrderStatus;
   closed: "YES" | "NO";
   _dt: number;
 };
@@ -21,7 +30,7 @@ type OrderRow = {
 /* =====================
    HELPERS
 ===================== */
-function parseTanggal(raw: string) {
+function parseTanggal(raw: string): number {
   if (!raw) return 0;
   const datePart = raw.split(",")[0]; // "6/1/2026"
   const [d, m, y] = datePart.split("/").map(Number);
@@ -29,11 +38,17 @@ function parseTanggal(raw: string) {
   return new Date(y, m - 1, d).getTime();
 }
 
-function normalizeStatus(s: string): OrderRow["status"] {
+function normalizeStatus(s: any): OrderStatus {
   const t = String(s || "").trim().toUpperCase();
+
   if (t === "PAID") return "PAID";
-  if (t === "PENDING") return "PENDING";
-  return "CANCELLED";
+  if (t === "COD") return "COD";
+  if (t === "DIPROSES") return "DIPROSES";
+  if (t === "DIKIRIM") return "DIKIRIM";
+  if (t === "SELESAI") return "SELESAI";
+  if (t === "CANCEL" || t === "CANCELLED") return "CANCELLED";
+
+  return "PENDING";
 }
 
 /* =====================
@@ -71,21 +86,32 @@ export async function GET(req: NextRequest) {
           produk: String(row[5] || ""),
           qty: Number(row[6] || 0),
           totalBayar: Number(row[9] || 0),
-          status: normalizeStatus(row[12]),
+          status: normalizeStatus(row[12]), // kolom M
           closed: String(row[15] || "").toUpperCase() === "YES" ? "YES" : "NO",
           _dt: parseTanggal(row[1]),
         };
       })
       .filter(Boolean) as OrderRow[];
 
-    // 🔎 filters
-    if (status !== "ALL") orders = orders.filter(o => o.status === status);
-    if (closed !== "ALL") orders = orders.filter(o => o.closed === closed);
+    /* =====================
+       FILTER
+    ===================== */
+    if (status !== "ALL") {
+      orders = orders.filter((o) => o.status === status);
+    }
 
-    // ⏱ sort terbaru
+    if (closed !== "ALL") {
+      orders = orders.filter((o) => o.closed === closed);
+    }
+
+    /* =====================
+       SORT TERBARU
+    ===================== */
     orders.sort((a, b) => b._dt - a._dt);
 
-    // 📄 pagination
+    /* =====================
+       PAGINATION
+    ===================== */
     const total = orders.length;
     const totalPages = Math.max(1, Math.ceil(total / limit));
     const safePage = Math.min(page, totalPages);
@@ -107,7 +133,6 @@ export async function GET(req: NextRequest) {
       },
       orders: data,
     });
-
   } catch (err) {
     console.error("GET /dashboard/orders error:", err);
     return NextResponse.json(
