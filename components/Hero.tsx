@@ -55,27 +55,25 @@ export default function Hero() {
       
       {/* SEO H1 */}
       <h1 className="sr-only">
-        Cold-Pressed Healthy Juice untuk Detox, Imunitas, dan Energi Harian | KOJE24 Jakarta
-      </h1>
+Jual Cold Pressed Juice Jakarta & Tangerang – Jus Detox Tanpa Gula | KOJE24
+</h1>
 
       {/* BACKGROUND IMAGE */}
       <motion.div 
         style={{ y, opacity }} 
         className="absolute inset-0"
       >
-        <picture>
-          <source srcSet="/image/hero2.webp" type="image/webp" />
-          <Image
-            src="/image/hero2.png"
-            alt="KOJE24 Cold Pressed Healthy Juice - 100% natural cold-pressed juice for detox and immunity"
-            fill
-            priority
-            quality={75}
-            sizes="100vw"
-            className="object-cover object-center md:object-right"
-            onLoad={() => setLoaded(true)}
-          />
-        </picture>
+        <Image
+  src="/image/hero2.png"
+  alt="Cold Pressed Juice Jakarta - KOJE24"
+  fill
+  priority
+  quality={70}
+  sizes="100vw"
+  className="object-cover object-center md:object-right"
+  placeholder="blur"
+  blurDataURL="/image/hero-blur.jpg"
+/>
 
         {/* Fade-in overlay */}
         <motion.div
