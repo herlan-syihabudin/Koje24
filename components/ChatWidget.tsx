@@ -120,7 +120,7 @@ export default function ChatWidget() {
   const lastTsRef = useRef(0);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Init session
   useEffect(() => {
@@ -194,17 +194,24 @@ export default function ChatWidget() {
             ...data.messages.map((m: ChatMessage) => m.ts)
           );
         }
-      } catch (err) {
-        if (err.name === 'AbortError') return;
-        
-        console.error("Polling error:", err);
-        setPollRetries(prev => prev + 1);
-        
-        if (pollRetries >= MAX_RETRIES) {
-          dispatch({ type: "SET_ERROR", payload: "Koneksi terputus. Menghubungkan kembali..." });
-        }
-      }
-    };
+      } catch (err: unknown) {
+  if (err instanceof Error && err.name === "AbortError") return;
+
+  console.error("Polling error:", err);
+
+  setPollRetries(prev => {
+    const next = prev + 1;
+
+    if (next >= MAX_RETRIES) {
+      dispatch({
+        type: "SET_ERROR",
+        payload: "Koneksi terputus. Menghubungkan kembali..."
+      });
+    }
+
+    return next;
+  });
+}
 
     pollingIntervalRef.current = setInterval(poll, POLL_INTERVAL);
     poll(); // immediate first poll
