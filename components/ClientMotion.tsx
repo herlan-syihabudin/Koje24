@@ -3,7 +3,13 @@
 
 import { motion } from "framer-motion";
 import React, { useState, useEffect } from "react";
-import type { AnimationDirection } from "./AnimateOnScroll";
+type AnimationDirection =
+  | "up"
+  | "down"
+  | "left"
+  | "right"
+  | "fade"
+  | "scale"
 
 interface ClientMotionProps {
   children: React.ReactNode;
