@@ -153,78 +153,78 @@ export default function ChatWidget() {
 
   // Polling dengan AbortController
   useEffect(() => {
-    if (!state.open || state.step !== "chat" || !state.sid) return;
+  if (!state.open || state.step !== "chat" || !state.sid) return;
 
-    const poll = async () => {
-      // Cancel previous request if any
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
-
-      try {
-        const res = await fetch(
-          `/api/chat/poll?sid=${state.sid}&after=${lastTsRef.current}`,
-          { 
-            signal: controller.signal,
-            cache: "no-store",
-            headers: { "Cache-Control": "no-cache" }
-          }
-        );
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        
-        const data = await res.json();
-        if (!data?.ok) throw new Error("Invalid response");
-
-        dispatch({
-          type: "SET_ADMIN_STATUS",
-          payload: { online: !!data.adminOnline, typing: !!data.adminTyping },
-        });
-        
-        dispatch({ type: "SET_CLOSED", payload: !!data.closed });
-        setPollRetries(0); // reset retries on success
-
-        if (Array.isArray(data.messages) && data.messages.length) {
-          dispatch({ type: "ADD_MESSAGES", payload: data.messages });
-          lastTsRef.current = Math.max(
-            lastTsRef.current,
-            ...data.messages.map((m: ChatMessage) => m.ts)
-          );
-        }
-      } catch (err: unknown) {
-  if (err instanceof Error && err.name === "AbortError") return;
-
-  console.error("Polling error:", err);
-
-  setPollRetries(prev => {
-    const next = prev + 1;
-
-    if (next >= MAX_RETRIES) {
-      dispatch({
-        type: "SET_ERROR",
-        payload: "Koneksi terputus. Menghubungkan kembali..."
-      });
+  const poll = async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
 
-    return next;
-  });
-}
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
-    pollingIntervalRef.current = setInterval(poll, POLL_INTERVAL);
-    poll(); // immediate first poll
+    try {
+      const res = await fetch(
+        `/api/chat/poll?sid=${state.sid}&after=${lastTsRef.current}`,
+        {
+          signal: controller.signal,
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" },
+        }
+      );
 
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      if (!data?.ok) throw new Error("Invalid response");
+
+      dispatch({
+        type: "SET_ADMIN_STATUS",
+        payload: { online: !!data.adminOnline, typing: !!data.adminTyping },
+      });
+
+      dispatch({ type: "SET_CLOSED", payload: !!data.closed });
+      setPollRetries(0);
+
+      if (Array.isArray(data.messages) && data.messages.length) {
+        dispatch({ type: "ADD_MESSAGES", payload: data.messages });
+        lastTsRef.current = Math.max(
+          lastTsRef.current,
+          ...data.messages.map((m: ChatMessage) => m.ts)
+        );
       }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [state.open, state.step, state.sid, pollRetries]);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") return;
+
+      console.error("Polling error:", err);
+
+      setPollRetries((prev) => {
+        const next = prev + 1;
+
+        if (next >= MAX_RETRIES) {
+          dispatch({
+            type: "SET_ERROR",
+            payload: "Koneksi terputus. Menghubungkan kembali...",
+          });
+        }
+
+        return next;
+      });
+    }
+  };
+
+  pollingIntervalRef.current = setInterval(poll, POLL_INTERVAL);
+  poll();
+
+  return () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
+}, [state.open, state.step, state.sid, pollRetries]);
 
   // Validasi form
   const validateForm = useCallback(() => {
