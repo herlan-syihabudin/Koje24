@@ -1,34 +1,38 @@
-"use client";
+// AnimateOnScroll.tsx (SERVER COMPONENT)
+import React from 'react'
+import ClientMotion from './ClientMotion'
 
-import { motion } from "framer-motion";
-import React from "react";
+export type AnimationDirection = 'up' | 'down' | 'left' | 'right' | 'fade' | 'scale'
 
-type Direction = "up" | "left" | "right";
+export interface AnimateOnScrollProps {
+  children: React.ReactNode
+  direction?: AnimationDirection
+  delay?: number
+  duration?: number
+  threshold?: number
+  once?: boolean
+  className?: string
+}
 
 export default function AnimateOnScroll({
   children,
-  direction = "up",
+  direction = 'up',
   delay = 0,
-}: {
-  children: React.ReactNode;
-  direction?: Direction;
-  delay?: number;
-}) {
-  const initial =
-    direction === "left"
-      ? { opacity: 0, x: 30 }
-      : direction === "right"
-      ? { opacity: 0, x: -30 }
-      : { opacity: 0, y: 30 };
-
+  duration = 0.7,
+  threshold = 0.2,
+  once = true,
+  className = '',
+}: AnimateOnScrollProps) {
   return (
-    <motion.div
-      initial={initial}
-      whileInView={{ opacity: 1, x: 0, y: 0 }}
-      transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
-      viewport={{ once: true, amount: 0.2 }}
+    <ClientMotion
+      direction={direction}
+      delay={delay}
+      duration={duration}
+      threshold={threshold}
+      once={once}
+      className={className}
     >
       {children}
-    </motion.div>
-  );
+    </ClientMotion>
+  )
 }
