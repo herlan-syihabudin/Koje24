@@ -1,98 +1,112 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+"use client";
+
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { X, ShoppingBag } from "lucide-react";
 import Image from "next/image";
 import { useCartStore } from "@/stores/cartStore";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import React from "react";
 
-// Safe event dispatcher
+/* ================= TYPES ================= */
+
+interface CartItemType {
+  id: string;
+  name: string;
+  price: number;
+  qty: number;
+  img?: string;
+}
+
+interface CartItemProps {
+  item: CartItemType;
+  onAdd: (item: CartItemType) => void;
+  onRemove: (id: string) => void;
+}
+
+/* ================= SAFE EVENT ================= */
+
 const dispatchEvent = (eventName: string) => {
-  if (typeof window === 'undefined') return;
-  try {
-    window.dispatchEvent(new Event(eventName));
-  } catch (error) {
-    console.warn(`Failed to dispatch ${eventName}:`, error);
-  }
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(eventName));
 };
 
-// SPLIT COMPONENT: Cart Item dengan React.memo
-const CartItem = React.memo(({ item, onAdd, onRemove }) => {
-  const [imgError, setImgError] = useState(false);
-  const { title, detail } = formatName(item.name);
-  
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.2 }}
-      className="flex gap-3 py-4 items-center"
-    >
-      <div className="relative w-14 h-14 rounded-md overflow-hidden flex-shrink-0">
-        <Image
-          src={imgError ? "/images/no-image.jpg" : item.img || "/images/no-image.jpg"}
-          alt={item.name}
-          fill
-          sizes="56px"
-          className="object-cover"
-          loading="lazy"
-          onError={() => setImgError(true)}
-        />
-      </div>
+/* ================= CART ITEM ================= */
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-[#0B4B50] leading-snug truncate">
-              {title}
-            </p>
-            {detail && (
-              <p className="text-xs text-gray-500 leading-tight mt-0.5 truncate">
-                {detail}
+const CartItem = React.memo(
+  ({ item, onAdd, onRemove }: CartItemProps) => {
+    const [imgError, setImgError] = useState(false);
+    const { title, detail } = formatName(item.name);
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        transition={{ duration: 0.2 }}
+        className="flex gap-3 py-4 items-center"
+      >
+        <div className="relative w-14 h-14 rounded-md overflow-hidden flex-shrink-0">
+          <Image
+            src={imgError ? "/images/no-image.jpg" : item.img || "/images/no-image.jpg"}
+            alt={item.name}
+            fill
+            sizes="56px"
+            className="object-cover"
+            onError={() => setImgError(true)}
+          />
+        </div>
+
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-[#0B4B50] truncate">
+                {title}
               </p>
-            )}
+              {detail && (
+                <p className="text-xs text-gray-500 truncate">
+                  {detail}
+                </p>
+              )}
+            </div>
+            <p className="font-semibold text-[#0B4B50] whitespace-nowrap">
+              Rp {(item.qty * item.price).toLocaleString("id-ID")}
+            </p>
           </div>
-          <p className="font-semibold text-[#0B4B50] whitespace-nowrap ml-2">
-            Rp {(item.qty * item.price).toLocaleString("id-ID")}
-          </p>
-        </div>
 
-        <div className="flex justify-between items-center mt-1">
-          <p className="text-sm text-gray-500">
-            Rp {item.price.toLocaleString("id-ID")}
-          </p>
+          <div className="flex justify-between items-center mt-1">
+            <p className="text-sm text-gray-500">
+              Rp {item.price.toLocaleString("id-ID")}
+            </p>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onRemove(item.id)}
-              className="w-7 h-7 flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"
-              aria-label="Kurangi jumlah"
-            >
-              -
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onRemove(item.id)}
+                className="w-7 h-7 rounded-full border"
+              >
+                -
+              </button>
 
-            <span className="min-w-[24px] text-center font-semibold">
-              {item.qty}
-            </span>
+              <span className="min-w-[24px] text-center font-semibold">
+                {item.qty}
+              </span>
 
-            <button
-              onClick={() => onAdd(item)}
-              className="w-7 h-7 flex items-center justify-center rounded-full bg-[#0FA3A8] text-white hover:bg-[#0B4B50] transition-colors"
-              aria-label="Tambah jumlah"
-            >
-              +
-            </button>
+              <button
+                onClick={() => onAdd(item)}
+                className="w-7 h-7 rounded-full bg-[#0FA3A8] text-white"
+              >
+                +
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </motion.div>
-  );
-});
+      </motion.div>
+    );
+  }
+);
 
-CartItem.displayName = 'CartItem';
+CartItem.displayName = "CartItem";
 
 // MAIN COMPONENT
 export default function CartPopup() {
