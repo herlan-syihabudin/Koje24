@@ -15,12 +15,10 @@ interface ProductCardProps {
   stock?: number
 }
 
-// Helper di luar component biar gak re-render
 const formatPrice = (price: number) => {
   return price.toLocaleString("id-ID")
 }
 
-// Pakai memo biar gak re-render kalau props sama
 const ProductCard = memo(function ProductCard({
   id,
   name,
@@ -29,46 +27,55 @@ const ProductCard = memo(function ProductCard({
   promo,
   stock = 10
 }: ProductCardProps) {
+
   const ranking = useBestSellerRanking()
   const info = ranking[id]
   const isBest = Boolean(info?.isBestSeller)
 
-  // Optimasi store lookup - ambil qty doang
-  const qty = useCartStore((s) => s.items.find((i) => i.id === id)?.qty ?? 0)
+  const qty = useCartStore(
+    (s) => s.items.find((i) => i.id === id)?.qty ?? 0
+  )
   const addItem = useCartStore((s) => s.addItem)
   const removeItem = useCartStore((s) => s.removeItem)
 
   const hasPromo = promo?.active && (promo.discountPercent ?? 0) > 0
-  const discount = hasPromo && promo?.discountPercent
-    ? Math.round(price * (promo.discountPercent / 100))
+  const discount = hasPromo
+    ? Math.round(price * ((promo?.discountPercent ?? 0) / 100))
     : 0
   const finalPrice = price - discount
 
-  // Handler pake useCallback? Gak perlu karena pakai memo
-  const handleAdd = () => addItem({ id, name, price: finalPrice, img })
+  // 🔥 FIX UTAMA DI SINI
+  const imageSrc = typeof img === "string" ? img : img.src
+
+  const handleAdd = () => {
+    addItem({
+      id,
+      name,
+      price: finalPrice,
+      img: imageSrc, // sekarang selalu string
+    })
+  }
+
   const handleRemove = () => removeItem(id)
 
   return (
     <div className="relative bg-white rounded-2xl border border-[#e6eeee] shadow-sm overflow-hidden transition-all duration-300 hover:shadow-[0_8px_26px_rgba(0,0,0,0.08)] hover:-translate-y-1">
-      
-      {/* Best Seller Badge - CSS Pulse */}
+
       {isBest && (
         <div className="absolute top-3 left-3 bg-[#F4B400] text-white text-[11px] font-semibold px-2 py-1 rounded-full shadow-md z-20 animate-pulse">
           ⭐ Best Seller
         </div>
       )}
 
-      {/* Quantity Badge - CSS Scale Transition */}
       {qty > 0 && (
-        <div className="absolute top-3 right-3 bg-[#0FA3A8] text-white text-[11px] font-bold px-[7px] py-[3px] rounded-full z-20 shadow-md transition-transform duration-200 scale-100">
+        <div className="absolute top-3 right-3 bg-[#0FA3A8] text-white text-[11px] font-bold px-[7px] py-[3px] rounded-full z-20 shadow-md">
           {qty}x
         </div>
       )}
 
-      {/* Image - Next.js Optimized */}
       <div className="relative w-full h-40 overflow-hidden">
         <Image
-          src={typeof img === "string" ? img : img.src}
+          src={imageSrc}
           alt={name}
           fill
           sizes="(max-width: 768px) 100vw, 33vw"
@@ -77,13 +84,11 @@ const ProductCard = memo(function ProductCard({
         />
       </div>
 
-      {/* Content */}
       <div className="p-4">
         <h3 className="font-semibold text-[#0B4B50] leading-tight line-clamp-2">
           {name}
         </h3>
 
-        {/* Price */}
         {hasPromo ? (
           <div className="mt-1">
             <p className="text-[#D20000] font-bold text-[15px]">
@@ -93,7 +98,7 @@ const ProductCard = memo(function ProductCard({
               Rp {formatPrice(price)}
             </p>
             <span className="inline-block mt-1 bg-[#D20000] text-white text-[10px] px-2 py-[3px] rounded-full font-semibold">
-              -{promo!.discountPercent}%
+              -{promo?.discountPercent}%
             </span>
           </div>
         ) : (
@@ -102,7 +107,6 @@ const ProductCard = memo(function ProductCard({
           </p>
         )}
 
-        {/* Actions - CSS Transition */}
         <div className="flex items-center gap-2 mt-4">
           {qty > 0 && (
             <button
@@ -123,7 +127,6 @@ const ProductCard = memo(function ProductCard({
           </button>
         </div>
 
-        {/* Stock Warning */}
         {stock < 5 && stock > 0 && (
           <p className="text-xs text-orange-500 mt-2">
             ⚡ Sisa {stock} lagi!
