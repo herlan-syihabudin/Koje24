@@ -1,3 +1,4 @@
+"use client"
 // AnimateOnScroll.tsx (SERVER COMPONENT)
 import React from 'react'
 import ClientMotion from './ClientMotion'
