@@ -1,6 +1,6 @@
 // AnimateOnScroll.tsx (SERVER COMPONENT)
 import React from 'react'
-import ClientMotion from './animations/ClientMotion'
+import ClientMotion from './ClientMotion'
 
 export type AnimationDirection = 'up' | 'down' | 'left' | 'right' | 'fade' | 'scale'
 
