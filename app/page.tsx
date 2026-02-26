@@ -1,6 +1,5 @@
 // app/page.tsx (SERVER COMPONENT - TANPA "use client"!)
-import dynamic from "next/dynamic";
-import { Suspense } from "react";
+import { Suspense, lazy } from "react";
 import { Metadata } from "next";
 import Header from "@/components/Header";
 import PromoBanner from "@/components/PromoBanner";
@@ -9,16 +8,16 @@ import Footer from "@/components/Footer";
 import AnimateOnScroll from "@/components/AnimateOnScroll";
 
 // LAZY LOADING UNTUK KOMPONEN BERAT
-const FeaturedProducts = dynamic(() => import("@/components/FeaturedProducts"), { ssr: false });
-const ProductGrid = dynamic(() => import("@/components/ProductGrid"), { ssr: false });
-const AboutSection = dynamic(() => import("@/components/AboutSection"), { ssr: false });
-const PackagesSection = dynamic(() => import("@/components/PackagesSection"), { ssr: false });
-const SubscriptionSection = dynamic(() => import("@/components/SubscriptionSection"), { ssr: false });
-const TestimonialsCarousel = dynamic(() => import("@/components/TestimonialsCarousel"), { ssr: false });
-const FaqSection = dynamic(() => import("@/components/FaqSection"), { ssr: false });
-const CartPopup = dynamic(() => import("@/components/CartPopup"), { ssr: false });
-const PackagePopup = dynamic(() => import("@/components/PackagePopup"), { ssr: false });
-const RatingPopup = dynamic(() => import("@/components/RatingPopup"), { ssr: false });
+const FeaturedProducts = lazy(() => import("@/components/FeaturedProducts"));
+const ProductGrid = lazy(() => import("@/components/ProductGrid"));
+const AboutSection = lazy(() => import("@/components/AboutSection"));
+const PackagesSection = lazy(() => import("@/components/PackagesSection"));
+const SubscriptionSection = lazy(() => import("@/components/SubscriptionSection"));
+const TestimonialsCarousel = lazy(() => import("@/components/TestimonialsCarousel"));
+const FaqSection = lazy(() => import("@/components/FaqSection"));
+const CartPopup = lazy(() => import("@/components/CartPopup"));
+const PackagePopup = lazy(() => import("@/components/PackagePopup"));
+const RatingPopup = lazy(() => import("@/components/RatingPopup"));
 
 // METADATA UNTUK SEO
 export const metadata: Metadata = {
