@@ -1,5 +1,6 @@
 // app/page.tsx (SERVER COMPONENT - TANPA "use client"!)
-import { Suspense, lazy } from "react";
+import dynamic from "next/dynamic";
+import { Suspense } from "react";
 import { Metadata } from "next";
 import Header from "@/components/Header";
 import PromoBanner from "@/components/PromoBanner";
