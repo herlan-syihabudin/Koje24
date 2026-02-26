@@ -1,3 +1,5 @@
+"use client"
+
 // app/components/FaqSection.tsx (SERVER COMPONENT - TANPA "use client"!)
 import Script from "next/script";
 
