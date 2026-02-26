@@ -30,6 +30,18 @@ interface RankStats {
   [key: string]: { count: number };
 }
 
+// Extend Product type untuk package items
+interface ProductWithItems {
+  id: string;
+  name: string;
+  price: number | string;
+  img?: string;
+  slogan?: string;
+  desc?: string;
+  isPackage?: boolean;
+  items?: Array<{ id: string; name: string; price: number }>;
+}
+
 // === CONSTANTS ===
 const FALLBACK_IDS = process.env.NEXT_PUBLIC_FALLBACK_IDS?.split(',') || ["1", "2", "3"]
 const BEST_SELLER_THRESHOLD = 10
@@ -45,7 +57,23 @@ const formatIDR = (n: number) => {
 
 export default function FeaturedProducts() {
   const addToCart = useCartStore((s) => s.addItem)
-  const rankStats = useBestSellerRanking() as RankStats
+  
+  // FIX ERROR 2: Proper type conversion
+  const rankData = useBestSellerRanking()
+  const [rankStats, setRankStats] = useState<RankStats>({})
+
+  useEffect(() => {
+    // Convert rankData to proper RankStats format
+    const stats: RankStats = {}
+    if (rankData && typeof rankData === 'object') {
+      Object.keys(rankData).forEach(key => {
+        stats[key] = { 
+          count: (rankData as any)[key]?.count || 0 
+        }
+      })
+    }
+    setRankStats(stats)
+  }, [rankData])
 
   const [sheetData, setSheetData] = useState<SheetMap>({})
   const [weeklySales, setWeeklySales] = useState<Record<string, number>>({})
@@ -184,10 +212,10 @@ export default function FeaturedProducts() {
   // HANDLE ADD TO CART
   // =========================
   const handleAddToCart = (
-  product: typeof products[number],
-  price: number,
-  img: string
-) => {
+    product: typeof products[number],
+    price: number,
+    img: string
+  ) => {
     // Trigger animation
     setAnimatingId(product.id)
     setTimeout(() => setAnimatingId(null), 500)
@@ -205,6 +233,9 @@ export default function FeaturedProducts() {
     
     // Actual add to cart logic
     if (product.isPackage) {
+      // FIX ERROR 3: Safe access to items
+      const packageItems = (product as any).items || []
+      
       window.dispatchEvent(
         new CustomEvent("open-package", {
           detail: {
@@ -212,7 +243,7 @@ export default function FeaturedProducts() {
             name: product.name,
             price: price,
             img: img,
-            items: product.items,
+            items: packageItems,
           },
         })
       )
@@ -267,7 +298,7 @@ export default function FeaturedProducts() {
           {featured.map((p) => {
             const db = sheetData[p.id]
             const weeklySold = weeklySales[p.id] ?? 87
-const isBestSeller = weeklySold >= 100
+            const isBestSeller = weeklySold >= 100
             const aiScore = aiScores[p.id] || 0
 
             const price =
@@ -385,7 +416,7 @@ const isBestSeller = weeklySold >= 100
   )
 }
 
-// SKELETON COMPONENT (same as before)
+// SKELETON COMPONENT
 function FeaturedProductsSkeleton() {
   return (
     <section className="bg-white py-16 md:py-20 px-6 md:px-14 lg:px-24">
