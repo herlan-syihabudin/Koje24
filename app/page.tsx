@@ -1,4 +1,4 @@
-"use client";
+
 
 import { Suspense, lazy } from "react";
 import dynamic from "next/dynamic";
