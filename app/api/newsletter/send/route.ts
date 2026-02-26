@@ -7,12 +7,24 @@ import { newsletterTemplate } from "@/lib/email/newsletterTemplate"
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
-const SHEET_ID = process.env.GOOGLE_SHEET_ID!
-const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL!
-const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, "\n")
+const SHEET_ID = process.env.GOOGLE_SHEET_ID
+const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL
+
+const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY
+const PRIVATE_KEY = PRIVATE_KEY_RAW
+  ? PRIVATE_KEY_RAW.replace(/\\n/g, "\n")
+  : undefined
 
 export async function POST() {
   try {
+
+    if (!SHEET_ID || !CLIENT_EMAIL || !PRIVATE_KEY) {
+  return NextResponse.json(
+    { success: false, message: "Google credentials not configured" },
+    { status: 500 }
+  )
+}
+
     // 🔐 Google Sheets auth
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,

@@ -1,9 +1,6 @@
 # *
 User-agent: *
 Allow: /
-
-# *
-User-agent: *
 Disallow: /invoice/*
 Disallow: /checkout
 Disallow: /api/*

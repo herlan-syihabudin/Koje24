@@ -1,4 +1,6 @@
 // app/components/Footer.tsx (SERVER COMPONENT - TANPA "use client"!)
+"use client"
+
 import Image from "next/image"
 import Script from "next/script"
 import { FaInstagram, FaWhatsapp, FaTiktok } from "react-icons/fa"

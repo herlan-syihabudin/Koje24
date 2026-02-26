@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 
@@ -18,16 +19,18 @@ const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
+  preload: true,
 });
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
   display: "swap",
+  preload: true,
 });
 
 /* =====================
-   METADATA (PWA SOURCE OF TRUTH)
+   METADATA
 ===================== */
 export const metadata: Metadata = {
   title: {
@@ -45,15 +48,33 @@ export const metadata: Metadata = {
     ],
     apple: "/icons/apple-touch-icon.png",
   },
+  other: {
+    'google-site-verification': 'your-verification-code', // ✅ Tambah ini
+  }
 };
 
 export const viewport: Viewport = {
   themeColor: "#0FA3A8",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 /* =====================
-   ROOT LAYOUT
+   ORGANIZATION SCHEMA
 ===================== */
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "KOJE24",
+  "url": "https://webkoje24.vercel.app",
+  "logo": "https://webkoje24.vercel.app/icons/icon-512x512.png",
+  "sameAs": [
+    "https://instagram.com/koje24",
+    "https://wa.me/6282213139580"
+  ]
+};
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
@@ -62,34 +83,54 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <head>
-        {/* ⚡ Preconnect fonts */}
+        {/* Preconnect fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
 
-        {/* 🍎 Apple Touch Icon */}
+        {/* Apple Touch Icon */}
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+        {/* Preload hero image */}
+        <link
+          rel="preload"
+          as="image"
+          href="/image/hero2.webp"
+          type="image/webp"
+        />
       </head>
 
       <body className="antialiased font-inter bg-white text-[#0B4B50] max-w-[100vw] overflow-x-hidden">
-        {/* ⭐ SEO: Aggregate Rating & Review Schema */}
+        {/* SEO Schemas */}
         <TestimonialSchemaSEO />
-
-        {/* 🔥 APP CONTENT */}
-        {children}
-
-        {/* 🔥 GLOBAL FEATURES */}
-        <ChatWidget />
-        <InstallPWAButton />
-        <StickyCartBar />
-        <PromoPopup />
-        <SpeedInsights />
-
-        {/* smooth scroll fallback */}
+        
         <script
+          type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: `try { document.documentElement.style.scrollBehavior = "smooth"; } catch(e){}`,
+            __html: JSON.stringify(organizationSchema)
           }}
         />
+
+        {/* Main content */}
+        {children}
+
+        {/* Client Components with Suspense */}
+        <Suspense fallback={null}>
+          <ChatWidget />
+        </Suspense>
+
+        <Suspense fallback={null}>
+          <InstallPWAButton />
+        </Suspense>
+
+        <Suspense fallback={null}>
+          <StickyCartBar />
+        </Suspense>
+
+        <Suspense fallback={null}>
+          <PromoPopup />
+        </Suspense>
+
+        <SpeedInsights />
       </body>
     </html>
   );
