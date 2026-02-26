@@ -8,11 +8,11 @@ import { motion, useScroll, useTransform } from "framer-motion"
 import { useEffect, useState } from "react"
 
 // ... data constants tetap sama ...
-const BENEFITS = [ ... ] // unchanged
-const FUNCTION_TAGS = [ ... ] // unchanged
-const MANFAAT_TESTIMONI = [ ... ] // unchanged
-const NUTRIENTS = [ ... ] // unchanged
-const MOMENTS = [ ... ] // unchanged
+const BENEFITS = []
+const FUNCTION_TAGS = []
+const MANFAAT_TESTIMONI = []
+const NUTRIENTS = []
+const MOMENTS = []
 
 // Lazy load components
 const TestimoniSnippets = dynamic(() => import('@/components/TestimoniSnippets'), {
