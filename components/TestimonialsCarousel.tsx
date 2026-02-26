@@ -1,52 +1,94 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import dynamic from "next/dynamic"
 import Image from "next/image"
+import { Star } from "lucide-react"
 import TulisTestimoniForm from "./TulisTestimoniForm"
 
 const Marquee = dynamic(() => import("react-fast-marquee"), { ssr: false })
 
-type Testimoni = {
-  nama: string
-  kota: string
-  pesan: string
-  rating: number
-  varian: string
-  img?: string
-  active?: string | boolean
-  showOnHome?: string | boolean
+interface RawTestimoni {
+  nama: string;
+  kota: string;
+  pesan: string;
+  rating: number | string;
+  varian: string;
+  img?: string;
+  active?: string | boolean;
+  showOnHome?: string | boolean;
 }
 
-function toBool(v: any) {
+interface Testimoni {
+  nama: string;
+  kota: string;
+  pesan: string;
+  rating: number;
+  varian: string;
+  img?: string;
+}
+
+function toBool(v: any): boolean {
   return ["true", "1", "yes", "ya"].includes(String(v).trim().toLowerCase())
+}
+
+function StarRating({ rating }: { rating: number }) {
+  const safeRating = Math.min(5, Math.max(0, Math.round(rating)))
+  
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          size={14}
+          className={star <= safeRating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
+        />
+      ))}
+    </div>
+  )
 }
 
 export default function TestimonialsCarousel() {
   const [data, setData] = useState<Testimoni[]>([])
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
-  const load = useCallback(async () => {
+  const loadTestimonials = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true)
-      const res = await fetch("/api/testimonial", { cache: "no-store" })
-      const json = await res.json()
+      const res = await fetch("/api/testimonial", { 
+        signal,
+        cache: "no-store" 
+      })
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      
+      const json = await res.json() as RawTestimoni[]
 
-      // 🔥 Filter + sort + LIMIT (ANTI BERAT)
+      // Filter + sort + LIMIT
       const filtered: Testimoni[] = json
-        .filter((x: any) => toBool(x.showOnHome) && toBool(x.active))
-        .sort((a: any, b: any) => {
-          const ra = Number(a.rating || 0)
-          const rb = Number(b.rating || 0)
-          const pa = a.img ? 1 : 0
-          const pb = b.img ? 1 : 0
-          return rb - ra || pb - pa
+        .filter((x) => toBool(x.showOnHome) && toBool(x.active))
+        .map((x) => ({
+          nama: x.nama || 'Pelanggan',
+          kota: x.kota || 'Indonesia',
+          pesan: x.pesan || 'Produknya segar dan enak!',
+          rating: Math.min(5, Math.max(1, Number(x.rating) || 5)),
+          varian: x.varian || 'Cold Pressed Juice',
+          img: x.img,
+        }))
+        .sort((a, b) => {
+          // Sort by rating (desc) and image priority
+          if (b.rating !== a.rating) return b.rating - a.rating
+          if (a.img && !b.img) return -1
+          if (!a.img && b.img) return 1
+          return 0
         })
-        .slice(0, 12) // ⬅️ LIMIT WAJIB
+        .slice(0, 12) // LIMIT WAJIB
 
       setData(filtered)
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return
       console.error("Error load testimoni:", err)
     } finally {
       setLoading(false)
@@ -55,8 +97,16 @@ export default function TestimonialsCarousel() {
 
   useEffect(() => {
     setMounted(true)
-    load()
-  }, [load])
+    
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    
+    loadTestimonials(controller.signal)
+    
+    return () => {
+      controller.abort()
+    }
+  }, [loadTestimonials])
 
   // ⛔ cegah hydration glitch
   if (!mounted) return null
@@ -80,7 +130,7 @@ export default function TestimonialsCarousel() {
           </div>
 
           <div className="flex items-center gap-3">
-            <TulisTestimoniForm onSuccess={load} />
+            <TulisTestimoniForm onSuccess={() => loadTestimonials()} />
             <a
               href="/testimoni"
               className="text-[#0FA3A8] text-sm md:text-base font-medium hover:underline"
@@ -90,7 +140,7 @@ export default function TestimonialsCarousel() {
           </div>
         </div>
 
-        {/* Loading skeleton (ANTI CLS) */}
+        {/* Loading skeleton */}
         {loading && (
           <div className="flex gap-4 overflow-x-auto pb-2">
             {[1, 2, 3].map((i) => (
@@ -118,27 +168,27 @@ export default function TestimonialsCarousel() {
           </div>
         )}
 
+        {/* Empty state */}
         {!loading && data.length === 0 && (
           <p className="text-center text-gray-500 text-sm">
             Belum ada testimoni yang ditampilkan di beranda. 🙌
           </p>
         )}
 
-        {/* MARQUEE */}
+        {/* Marquee */}
         {!loading && data.length > 0 && (
           <Marquee pauseOnHover gradient={false} speed={28}>
             {data.map((t, i) => {
-              const safeRating = Math.min(5, Math.max(1, Number(t.rating)))
-              const initials =
-                (t.nama || "")
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .slice(0, 2) || "K"
+              const initials = (t.nama || "K")
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase()
 
               return (
                 <article
-                  key={i}
+                  key={`${t.nama}-${i}`}
                   className="mx-3 min-w-[280px] sm:min-w-[330px]"
                 >
                   <div
@@ -156,8 +206,8 @@ export default function TestimonialsCarousel() {
                           alt={t.nama}
                           width={40}
                           height={40}
-                          loading="lazy"
                           className="rounded-full object-cover border border-[#e6eeee]"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-[#0FA3A8]/10
@@ -174,12 +224,7 @@ export default function TestimonialsCarousel() {
                         <p className="text-xs text-gray-500">{t.kota}</p>
                       </div>
 
-                      <div className="text-[13px] text-yellow-500 leading-none">
-                        {"★".repeat(safeRating)}
-                        <span className="text-gray-300">
-                          {"★".repeat(5 - safeRating)}
-                        </span>
-                      </div>
+                      <StarRating rating={t.rating} />
                     </div>
 
                     {/* body */}
