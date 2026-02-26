@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { X, SendHorizonal } from "lucide-react";
 
 type ChatMessage = {
@@ -10,6 +10,10 @@ type ChatMessage = {
 };
 
 const STORAGE_KEY = "koje24_chat_history";
+const MAX_CONTEXT = 10;
+const MIN_SEND_INTERVAL = 1000; // 1 detik
+const AUTO_CLOSE_TIME = 180000; // 3 menit
+const LOADING_TIMEOUT = 10000; // 10 detik
 
 const QUICK_REPLIES = [
   { label: "Rekomendasi varian detox", text: "Aku mau rekomendasi varian untuk detox harian dong." },
@@ -22,10 +26,14 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lastSendTime, setLastSendTime] = useState(0);
+  const [userScrolled, setUserScrolled] = useState(false);
 
   const chatRef = useRef<HTMLDivElement | null>(null);
+  const timerRef = useRef<NodeJS.Timeout>();
+  const loadingTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // === LOAD HISTORY (default welcome jika kosong)
+  // === LOAD HISTORY
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -42,7 +50,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
 
     setMessages([
       {
-        id: "welcome",
+        id: `welcome-${Date.now()}`,
         from: "bot",
         text: "Halo! Aku KOJE24 Assistant. Ada yang bisa aku bantu hari ini? 😊",
       },
@@ -56,35 +64,78 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
     }
   }, [messages]);
 
-  // === AUTO SCROLL
+  // === AUTO CLOSE TIMER (FIXED)
   useEffect(() => {
-    if (chatRef.current) {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    
+    timerRef.current = setTimeout(() => {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(STORAGE_KEY);
+      }
+      onClose();
+    }, AUTO_CLOSE_TIME);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [messages, onClose]);
+
+  // === LOADING TIMEOUT
+  useEffect(() => {
+    if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+    
+    if (loading) {
+      loadingTimeoutRef.current = setTimeout(() => {
+        setLoading(false);
+        setMessages(prev => [...prev, {
+          id: `timeout-${Date.now()}`,
+          from: "bot",
+          text: "Maaf, loading terlalu lama. Coba lagi ya 🙏",
+        }]);
+      }, LOADING_TIMEOUT);
+    }
+
+    return () => {
+      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+    };
+  }, [loading]);
+
+  // === SCROLL DETECTION
+  useEffect(() => {
+    const chatDiv = chatRef.current;
+    if (!chatDiv) return;
+    
+    const handleScroll = () => {
+      const isAtBottom = Math.abs(chatDiv.scrollHeight - chatDiv.scrollTop - chatDiv.clientHeight) < 10;
+      setUserScrolled(!isAtBottom);
+    };
+    
+    chatDiv.addEventListener('scroll', handleScroll);
+    return () => chatDiv.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // === AUTO SCROLL (with user scroll detection)
+  useEffect(() => {
+    if (!userScrolled && chatRef.current) {
       chatRef.current.scrollTo({
         top: chatRef.current.scrollHeight,
         behavior: "smooth",
       });
     }
-  }, [messages, loading]);
+  }, [messages, loading, userScrolled]);
 
-  // === AUTO CLOSE & RESET jika tidak ada aktivitas 3 menit
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem(STORAGE_KEY);
-      }
-      onClose();
-    }, 180000); // 3 menit
-
-    return () => clearTimeout(timer);
-  }, [messages]);
-
-  // === SEND MESSAGE
-  const sendMessage = async (text?: string) => {
+  // === SEND MESSAGE (with rate limiting)
+  const sendMessage = useCallback(async (text?: string) => {
+    const now = Date.now();
+    if (now - lastSendTime < MIN_SEND_INTERVAL) return;
+    
     const content = (text ?? input).trim();
     if (!content || loading) return;
 
+    setLastSendTime(now);
+
     const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
+      id: `user-${Date.now()}-${Math.random()}`,
       from: "user",
       text: content,
     };
@@ -95,7 +146,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
     setLoading(true);
 
     try {
-      const apiMessages = newMessages.slice(-10).map((m) => ({
+      const apiMessages = newMessages.slice(-MAX_CONTEXT).map((m) => ({
         role: m.from === "user" ? "user" : "assistant",
         content: m.text,
       }));
@@ -112,7 +163,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
       const replyText = data?.reply ?? "Maaf, coba ulang beberapa saat lagi ya 🙏";
 
       const botMsg: ChatMessage = {
-        id: `bot-${Date.now()}`,
+        id: `bot-${Date.now()}-${Math.random()}`,
         from: "bot",
         text: replyText,
       };
@@ -122,7 +173,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
       setMessages((prev) => [
         ...prev,
         {
-          id: `bot-error-${Date.now()}`,
+          id: `error-${Date.now()}`,
           from: "bot",
           text: "Maaf, koneksi lagi gangguan. Coba lagi sebentar ya 🙏",
         },
@@ -130,21 +181,23 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [input, loading, lastSendTime, messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    void sendMessage();
+    sendMessage();
   };
 
   const handleQuickReply = (text: string) => {
-    void sendMessage(text);
+    sendMessage(text);
   };
 
   return (
     <div
       id="chat-window"
       className="fixed bottom-24 right-7 z-50 w-[320px] md:w-[360px] bg-white rounded-3xl shadow-2xl border border-[#e9f4f4] overflow-hidden animate-chatFadeIn"
+      role="dialog"
+      aria-label="KOJE24 Chat Assistant"
     >
       {/* HEADER */}
       <div className="bg-[#0FA3A8] text-white px-4 py-3 flex justify-between items-center">
@@ -158,7 +211,6 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        {/* BTN CLOSE = AUTO RESET */}
         <button
           onClick={() => {
             if (typeof window !== "undefined") {
@@ -167,6 +219,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
             onClose();
           }}
           className="hover:bg-white/10 rounded-full p-1 transition"
+          aria-label="Tutup chat"
         >
           <X size={18} />
         </button>
@@ -196,7 +249,7 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
           </div>
         ))}
 
-        {/* LOADING TYPING */}
+        {/* LOADING */}
         {loading && (
           <div className="flex justify-start">
             <div className="flex gap-2 items-center max-w-[80%]">
@@ -237,48 +290,32 @@ export default function ChatWindow({ onClose }: { onClose: () => void }) {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Tulis pesan…"
           className="flex-1 border border-[#e3f1f1] rounded-full px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#0FA3A8]/60"
+          disabled={loading}
         />
         <button
           type="submit"
           disabled={loading || !input.trim()}
           className="ml-2 bg-[#0FA3A8] text-white p-2 rounded-full disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#0c8c91] transition"
+          aria-label="Kirim pesan"
         >
           <SendHorizonal size={18} />
         </button>
       </form>
 
-      {/* ANIMATION */}
+      {/* ANIMATIONS */}
       <style jsx global>{`
         @keyframes chatFadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(15px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0px);
-          }
+          from { opacity: 0; transform: translateY(15px); }
+          to { opacity: 1; transform: translateY(0px); }
         }
-
-        .animate-chatFadeIn {
-          animation: chatFadeIn 0.24s ease-out;
-        }
-
+        .animate-chatFadeIn { animation: chatFadeIn 0.24s ease-out; }
+        
         @keyframes bubbleDots {
-          0%, 80%, 100% {
-            transform: scale(0.8);
-            opacity: 0.4;
-          }
-          40% {
-            transform: scale(1);
-            opacity: 1;
-          }
+          0%, 80%, 100% { transform: scale(0.8); opacity: 0.4; }
+          40% { transform: scale(1); opacity: 1; }
         }
-
         .dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 999px;
+          width: 6px; height: 6px; border-radius: 999px;
           background: #0FA3A8;
           animation: bubbleDots 1.2s infinite ease-in-out;
         }
