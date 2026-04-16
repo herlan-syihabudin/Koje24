@@ -1,27 +1,4 @@
 // app/testimoni/[slug]/page.tsx
-import { Metadata } from "next"
-
-type Props = {
-  params: { slug: string }
-}
-
-// ✅ METADATA (Server Component - jalan duluan)
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const slug = params.slug
-  const timestamp = decodeURIComponent(slug.split("-")[0])
-  
-  return {
-    title: `Detail Testimoni KOJE24`,
-    description: "Lihat detail ulasan pelanggan KOJE24 tentang cold-pressed juice alami tanpa gula.",
-    robots: "noindex, follow",
-    openGraph: {
-      title: `Testimoni Pelanggan KOJE24`,
-      description: "Ulasan asli pelanggan KOJE24",
-    },
-  }
-}
-
-// ✅ CLIENT COMPONENT
 "use client"
 
 import { useEffect, useState } from "react"
@@ -50,7 +27,6 @@ export default function TestimoniDetailPage() {
     const run = async () => {
       try {
         const rawSlug = params.slug || ""
-        // Ambil timestamp dari awal slug (lebih robust)
         const ts = decodeURIComponent(rawSlug.split("-")[0])
         
         if (!ts) {
@@ -60,8 +36,6 @@ export default function TestimoniDetailPage() {
 
         const res = await fetch("/api/testimonial", { cache: "no-store" })
         const json = await res.json()
-        
-        // Cari berdasarkan timestamp (string comparison lebih aman)
         const found = json.find((x: any) => String(x.timestamp) === String(ts))
 
         if (found) {
@@ -79,7 +53,6 @@ export default function TestimoniDetailPage() {
     run()
   }, [params.slug, router])
 
-  // Loading state dengan skeleton
   if (loading) {
     return (
       <>
@@ -177,7 +150,6 @@ export default function TestimoniDetailPage() {
               “{data.pesan}”
             </p>
 
-            {/* Tambahan: timestamp */}
             <p className="text-xs text-gray-400 mt-6 pt-4 border-t border-gray-100">
               Ditulis pada: {new Date(data.timestamp).toLocaleDateString("id-ID")}
             </p>
