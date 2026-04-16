@@ -1,28 +1,32 @@
-import type { Metadata } from "next"
-import type { ReactNode } from "react"
+// app/testimoni/[slug]/layout.tsx
+import { Metadata } from "next"
 
-export const metadata: Metadata = {
-  title: "Testimoni Pelanggan KOJE24",
-  description:
-    "Ulasan asli pelanggan KOJE24 tentang manfaat dan rasa minuman cold-pressed alami.",
-  openGraph: {
-    title: "Testimoni Pelanggan KOJE24",
-    description:
-      "Pengalaman nyata pelanggan setelah rutin minum KOJE24.",
-    images: ["/og-testimoni.jpg"],
-    type: "article",
-  },
-  twitter: {
-    card: "summary_large_image",
-    images: ["/og-testimoni.jpg"],
-  },
+type Props = {
+  params: { slug: string }
 }
 
-// ⬇️ INI YANG KEMARIN BELUM ADA
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const slug = params.slug
+  const timestamp = decodeURIComponent(slug.split("-")[0])
+  
+  // Opsional: fetch data buat title & description yang lebih relevan
+  // Kalau mau simpel, ya seperti kode kamu sudah cukup
+  
+  return {
+    title: `Detail Testimoni KOJE24`,
+    description: "Lihat detail ulasan pelanggan KOJE24 tentang cold-pressed juice alami tanpa gula.",
+    robots: "noindex, follow", // Biar gak kompetisi dengan halaman utama testimoni
+    openGraph: {
+      title: `Testimoni Pelanggan KOJE24`,
+      description: "Ulasan asli pelanggan KOJE24",
+    },
+  }
+}
+
 export default function TestimoniDetailLayout({
   children,
 }: {
-  children: ReactNode
+  children: React.ReactNode
 }) {
   return <>{children}</>
 }
