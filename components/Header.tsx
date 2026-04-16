@@ -48,6 +48,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAnimate, setMenuAnimate] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [isHomePage, setIsHomePage] = useState(true); // TAMBAH: deteksi halaman
 
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
@@ -60,6 +61,17 @@ export default function Header() {
     const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  // TAMBAH: Deteksi halaman (homepage atau bukan)
+  useEffect(() => {
+    const checkPage = () => {
+      setIsHomePage(window.location.pathname === '/');
+    };
+    
+    checkPage();
+    window.addEventListener('popstate', checkPage);
+    return () => window.removeEventListener('popstate', checkPage);
   }, []);
 
   // Scroll handler dengan throttle sederhana
@@ -132,56 +144,56 @@ export default function Header() {
     });
   }, [shrink, prefersReducedMotion]);
 
-  // Navigation handler
-const navClick = useCallback((href: string) => {
-  dispatchEvent("close-testimoni-modal");
-  closeMenu();
+  // Navigation handler - UPDATED
+  const navClick = useCallback((href: string) => {
+    dispatchEvent("close-testimoni-modal");
+    closeMenu();
 
-  if (href.startsWith("#")) {
-    // Cek apakah sedang di homepage
-    if (window.location.pathname !== '/') {
-      // Jika tidak di homepage, arahkan ke homepage dulu dengan hash
-      router.push(`/${href}`);
+    if (href.startsWith("#")) {
+      // Cek apakah sedang di homepage
+      if (window.location.pathname !== '/') {
+        // Jika tidak di homepage, arahkan ke homepage dulu dengan hash
+        router.push(`/${href}`);
+        return;
+      }
+      
+      // Jika di homepage, scroll biasa
+      setTimeout(() => scrollToSection(href), prefersReducedMotion ? 0 : 240);
       return;
     }
-    
-    // Jika di homepage, scroll biasa
-    setTimeout(() => scrollToSection(href), prefersReducedMotion ? 0 : 240);
-    return;
-  }
 
-  router.push(href);
-}, [closeMenu, scrollToSection, router, prefersReducedMotion]);
+    router.push(href);
+  }, [closeMenu, scrollToSection, router, prefersReducedMotion]);
 
-  // Dynamic classes dengan useMemo
+  // Dynamic classes dengan useMemo - UPDATED
   const headerClasses = useMemo(() => {
     if (menuOpen) return "fixed top-0 w-full z-[200] bg-transparent py-5";
     
     return `
       fixed top-0 w-full z-[200]
       transition-all duration-700
-      ${isScrolled 
-        ? "backdrop-blur-xl bg-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.05)]" 
+      ${(isScrolled || !isHomePage)
+        ? "backdrop-blur-xl bg-white/90 shadow-[0_4px_20px_rgba(0,0,0,0.05)]" 
         : "bg-transparent"
       }
       ${shrink ? "py-2" : "py-5"}
     `;
-  }, [menuOpen, isScrolled, shrink]);
+  }, [menuOpen, isScrolled, shrink, isHomePage]);
 
   const logoClasses = useMemo(() => {
     if (menuOpen) return "font-playfair font-bold transition-all duration-700 text-xl text-white";
     return `
       font-playfair font-bold transition-all duration-700
       ${shrink ? "text-xl" : "text-2xl"}
-      ${isScrolled ? "text-[#0B4B50]" : "text-white"}
+      ${(isScrolled || !isHomePage) ? "text-[#0B4B50]" : "text-white"}
     `;
-  }, [menuOpen, shrink, isScrolled]);
+  }, [menuOpen, shrink, isScrolled, isHomePage]);
 
-  const getTextColor = useCallback((baseClass = "text-white") => {
+  const getTextColor = useCallback(() => {
     if (menuOpen) return "text-white";
-    if (isScrolled) return "text-[#0B4B50]";
-    return baseClass;
-  }, [menuOpen, isScrolled]);
+    if (isScrolled || !isHomePage) return "text-[#0B4B50]";
+    return "text-white";
+  }, [menuOpen, isScrolled, isHomePage]);
 
   return (
     <header className={headerClasses}>
@@ -212,7 +224,7 @@ const navClick = useCallback((href: string) => {
             className={
               menuOpen
                 ? "text-[#E8C46B]"
-                : isScrolled
+                : (isScrolled || !isHomePage)
                 ? "text-[#0FA3A8]"
                 : "text-[#E8C46B]"
             }
@@ -230,8 +242,8 @@ const navClick = useCallback((href: string) => {
               className={`
                 font-medium transition-all duration-300
                 ${getTextColor()}
-                ${!menuOpen && isScrolled && "hover:text-[#0FA3A8]"}
-                ${!menuOpen && !isScrolled && "hover:text-[#E8C46B]"}
+                ${(!menuOpen && (isScrolled || !isHomePage)) && "hover:text-[#0FA3A8]"}
+                ${(!menuOpen && !isScrolled && isHomePage) && "hover:text-[#E8C46B]"}
               `}
             >
               {item.label}
@@ -261,7 +273,7 @@ const navClick = useCallback((href: string) => {
               ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm shadow-md transition-all
               ${menuOpen
                 ? "bg-white/20 text-white"
-                : isScrolled
+                : (isScrolled || !isHomePage)
                 ? "bg-[#0FA3A8] text-white hover:bg-[#0B4B50]"
                 : "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30"
               }
