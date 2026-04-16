@@ -129,7 +129,7 @@ Jual Cold Pressed Juice Jakarta & Tangerang – Jus Detox Tanpa Gula | KOJE24
         >
           Cold-pressed juice harian dari bahan alami terbaik untuk detox,
           daya tahan tubuh, dan energi. <strong className="text-white">Tanpa gula, tanpa pengawet.</strong> 
-          Dibuat fresh setiap hari oleh KOJE24 di Jakarta & Tangerang.
+          Dibuat fresh setiap hari oleh KOJE24 di Bekasi.
         </motion.p>
 
         {/* STATS */}
