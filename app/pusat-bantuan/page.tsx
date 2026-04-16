@@ -153,7 +153,7 @@ export default function PusatBantuanPage() {
     
     <main className="min-h-screen bg-gradient-to-b from-[#f5fbfb] to-white">
       {/* ================= HERO ================= */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-12">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-12">
         <motion.h1
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
