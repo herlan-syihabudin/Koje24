@@ -5,6 +5,9 @@ import type { ComponentType } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import dynamic from "next/dynamic"
+import Header from "@/components/Header"  // ← TAMBAHKAN
+import Footer from "@/components/Footer"  // ← TAMBAHKAN
+
 
 import {
   Search,
@@ -145,6 +148,9 @@ export default function PusatBantuanPage() {
   }
 
   return (
+     <>
+    <Header /> 
+    
     <main className="min-h-screen bg-gradient-to-b from-[#f5fbfb] to-white">
       {/* ================= HERO ================= */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-12">
@@ -241,5 +247,7 @@ export default function PusatBantuanPage() {
       {/* ================= CHATBOT ================= */}
       <KOJE24Assistant />
     </main>
+       <Footer />
+    </>
   )
 }
