@@ -133,17 +133,25 @@ export default function Header() {
   }, [shrink, prefersReducedMotion]);
 
   // Navigation handler
-  const navClick = useCallback((href: string) => {
-    dispatchEvent("close-testimoni-modal");
-    closeMenu();
+const navClick = useCallback((href: string) => {
+  dispatchEvent("close-testimoni-modal");
+  closeMenu();
 
-    if (href.startsWith("#")) {
-      setTimeout(() => scrollToSection(href), prefersReducedMotion ? 0 : 240);
+  if (href.startsWith("#")) {
+    // Cek apakah sedang di homepage
+    if (window.location.pathname !== '/') {
+      // Jika tidak di homepage, arahkan ke homepage dulu dengan hash
+      router.push(`/${href}`);
       return;
     }
+    
+    // Jika di homepage, scroll biasa
+    setTimeout(() => scrollToSection(href), prefersReducedMotion ? 0 : 240);
+    return;
+  }
 
-    router.push(href);
-  }, [closeMenu, scrollToSection, router, prefersReducedMotion]);
+  router.push(href);
+}, [closeMenu, scrollToSection, router, prefersReducedMotion]);
 
   // Dynamic classes dengan useMemo
   const headerClasses = useMemo(() => {
