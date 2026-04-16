@@ -11,8 +11,15 @@
 :root {
   --brand: #0FA3A8;
   --brand-2: #0B4B50;
+  --brand-accent: #E8C46B;
   --font-heading: "Playfair Display", serif;
   --font-body: "Inter", sans-serif;
+  
+  /* Z-INDEX SYSTEM */
+  --z-header: 200;
+  --z-modal: 1000;
+  --z-tooltip: 1100;
+  --z-toast: 1200;
 }
 
 /* ===============================
@@ -22,15 +29,18 @@
   html {
     scroll-behavior: smooth;
     overscroll-behavior: none;
-    scroll-padding-top: 80px;
+    scroll-padding-top: 90px; /* DITINGKATKAN */
+  }
+
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   body {
     font-family: var(--font-body);
     background: #ffffff;
     color: inherit;
-    max-width: 100%;
-    overflow-x: hidden;
   }
 
   h1, h2, h3, h4 {
@@ -69,6 +79,13 @@
     background: var(--brand-2);
     transform: translateY(-2px);
   }
+  
+  /* SKELETON LOADING */
+  .skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+  }
 }
 
 /* ===============================
@@ -84,9 +101,10 @@
 }
 
 /* ===============================
-   BODY LOCK (SATU SAJA!)
+   BODY LOCK (DISATUKAN)
 =============================== */
-.body-lock {
+.body-lock,
+.body-menu-lock {
   overflow: hidden !important;
   height: 100vh !important;
   width: 100% !important;
@@ -94,7 +112,7 @@
 }
 
 /* ===============================
-   MODAL (Z-INDEX AMAN)
+   MODAL (Z-INDEX PAKAI VARIABLE)
 =============================== */
 .koje-modal-overlay {
   position: fixed;
@@ -103,7 +121,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: var(--z-modal);
 }
 
 .koje-modal-box {
@@ -113,7 +131,15 @@
   width: 92%;
   max-height: 85vh;
   overflow-y: auto;
-  z-index: 10001;
+  z-index: calc(var(--z-modal) + 1);
+}
+
+/* ===============================
+   ANIMATIONS
+=============================== */
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* ===============================
@@ -158,6 +184,11 @@
     display: none !important;
     visibility: hidden !important;
   }
+  
+  /* reset transform untuk print */
+  button, button:active {
+    transform: none !important;
+  }
 
   /* invoice bersih */
   .invoice-wrapper,
@@ -199,4 +230,15 @@
 =============================== */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ===============================
+   DARK MODE (OPTIONAL)
+=============================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand: #0FA3A8;
+    --brand-2: #0B4B50;
+    --brand-accent: #E8C46B;
+  }
 }
