@@ -1,4 +1,27 @@
 // app/testimoni/[slug]/page.tsx
+import { Metadata } from "next"
+
+type Props = {
+  params: { slug: string }
+}
+
+// ✅ METADATA (Server Component - jalan duluan)
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const slug = params.slug
+  const timestamp = decodeURIComponent(slug.split("-")[0])
+  
+  return {
+    title: `Detail Testimoni KOJE24`,
+    description: "Lihat detail ulasan pelanggan KOJE24 tentang cold-pressed juice alami tanpa gula.",
+    robots: "noindex, follow",
+    openGraph: {
+      title: `Testimoni Pelanggan KOJE24`,
+      description: "Ulasan asli pelanggan KOJE24",
+    },
+  }
+}
+
+// ✅ CLIENT COMPONENT
 "use client"
 
 import { useEffect, useState } from "react"
