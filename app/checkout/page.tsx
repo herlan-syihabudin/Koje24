@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/stores/cartStore";
 import Script from "next/script";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 declare const google: any;
 
@@ -38,14 +40,13 @@ export default function CheckoutPage() {
   const items = useCartStore((s) => s.items);
   const clearCart = useCartStore((s) => s.clearCart);
 
-  // ✅ PROMO (baru)
   const promo = useCartStore((s) => s.promo);
   const getDiscount = useCartStore((s) => s.getDiscount);
 
   const [hydrated, setHydrated] = useState(false);
   const [nama, setNama] = useState("");
   const [hp, setHp] = useState("");
-  const [email, setEmail] = useState(""); // <-- NEW
+  const [email, setEmail] = useState("");
   const [alamat, setAlamat] = useState("");
   const [catatan, setCatatan] = useState("");
 
@@ -58,12 +59,8 @@ export default function CheckoutPage() {
   const alamatRef = useRef<HTMLInputElement | null>(null);
 
   const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0);
-
-  // ✅ Diskon realtime dari store
   const promoAmount = getDiscount();
   const promoLabel = promo?.kode ?? "";
-
-  // ✅ Total final (subtotal + ongkir - diskon)
   const total = Math.max(0, subtotal + ongkir - promoAmount);
 
   useEffect(() => {
@@ -136,7 +133,13 @@ export default function CheckoutPage() {
       return;
     }
 
-    // 🔥 NEW VALIDASI EMAIL
+    // Validasi nomor HP
+    const phoneClean = hp.replace(/\D/g, '');
+    if (phoneClean.length < 10 || phoneClean.length > 13) {
+      setErrorMsg("Nomor WhatsApp harus 10-13 digit angka 🙏");
+      return;
+    }
+
     if (!email.trim() || !email.includes("@")) {
       setErrorMsg("Masukkan email yang valid ya 🙏");
       return;
@@ -158,17 +161,14 @@ export default function CheckoutPage() {
       const fd = new FormData();
       fd.append("nama", nama);
       fd.append("hp", hp);
-      fd.append("email", email); // <-- NEW
+      fd.append("email", email);
       fd.append("alamat", alamat);
       fd.append("note", catatan);
       fd.append("payment", payment);
       fd.append("distanceKm", String(distanceKm || 0));
       fd.append("shippingCost", String(ongkir));
-
-      // ✅ tetap kirim format lama biar API / sheet / invoice tidak rusak
       fd.append("promoAmount", String(promoAmount));
       fd.append("promoLabel", promoLabel);
-
       fd.append("grandTotal", String(total));
       fd.append(
         "cart",
@@ -185,9 +185,8 @@ export default function CheckoutPage() {
       const data = await res.json();
       if (!data?.success) throw new Error("API failed");
 
-      // nanti kalau mau, data.invoiceUrl / data.invoicePdfUrl bisa dipakai di popup
       clearCart();
-      router.push("/"); // balik ke homepage, tidak 404 lagi
+      router.push("/");
     } catch {
       setStatus("error");
       setErrorMsg("Ada gangguan sistem — coba sebentar lagi 🙏");
@@ -198,16 +197,24 @@ export default function CheckoutPage() {
 
   return (
     <>
+      <Header />
+      
       <Script
         src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
         strategy="lazyOnload"
       />
 
-      <main className="min-h-screen bg-[#F4FAFA] text-[#0B4B50] py-10 px-4 flex justify-center">
+      <main className="min-h-screen bg-[#F4FAFA] text-[#0B4B50] py-10 px-4 flex justify-center pt-24">
         <div className="w-full max-w-6xl space-y-6">
           <div>
             <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24 • CHECKOUT</p>
             <h1 className="text-3xl md:text-4xl font-playfair font-semibold">Selesaikan Pesanan Kamu</h1>
+            <button
+              onClick={() => router.back()}
+              className="text-[#0FA3A8] text-sm hover:underline mt-2 inline-block"
+            >
+              ← Kembali ke Keranjang
+            </button>
           </div>
 
           {hydrated && items.length === 0 ? (
@@ -215,45 +222,41 @@ export default function CheckoutPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
               
-  {/* RINGKASAN PESANAN */}
-<aside className="bg-white border rounded-3xl shadow p-6 space-y-4 h-fit">
-  <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
+              {/* RINGKASAN PESANAN */}
+              <aside className="bg-white border rounded-3xl shadow p-6 space-y-4 h-fit">
+                <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
 
-  <div className="space-y-3">
-    {items.map((it) => (
-      <div
-        key={it.id}
-        className="flex justify-between items-start border-b pb-2 text-sm gap-3"
-      >
-        {/* THUMBNAIL */}
-        <div className="w-11 h-11 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-          <img
-            src={it.img || "/placeholder-product.jpg"}
-            alt={it.name}
-            className="w-full h-full object-cover"
-          />
-        </div>
+                <div className="space-y-3">
+                  {items.map((it) => (
+                    <div
+                      key={it.id}
+                      className="flex justify-between items-start border-b pb-2 text-sm gap-3"
+                    >
+                      <div className="w-11 h-11 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                        <img
+                          src={it.img || "/placeholder-product.jpg"}
+                          alt={it.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium">{it.name}</p>
+                        <p className="text-[12px] text-gray-500">
+                          {it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs
+                        </p>
+                      </div>
+                      <div className="font-semibold whitespace-nowrap">
+                        Rp{(it.qty * it.price).toLocaleString("id-ID")}
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-        {/* INFO */}
-        <div className="flex-1">
-          <p className="font-medium">{it.name}</p>
-          <p className="text-[12px] text-gray-500">
-            {it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs
-          </p>
-        </div>
+                <p className="text-[11px] text-gray-500 pt-2">
+                  *Catatan tambahan dapat diisi di bawah
+                </p>
+              </aside>
 
-        {/* TOTAL */}
-        <div className="font-semibold whitespace-nowrap">
-          Rp{(it.qty * it.price).toLocaleString("id-ID")}
-        </div>
-      </div>
-    ))}
-  </div>
-
-  <p className="text-[11px] text-gray-500 pt-2">
-    *Catatan tambahan dapat diisi di bawah
-  </p>
-</aside> 
               {/* FORM */}
               <section className="bg-white border rounded-3xl shadow p-6 md:p-8 space-y-5">
                 <form onSubmit={handleSubmit} className="space-y-5">
@@ -275,8 +278,7 @@ export default function CheckoutPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                  />{" "}
-                  {/* NEW */}
+                  />
                   <input
                     ref={alamatRef}
                     className="border rounded-lg px-3 py-2 w-full"
@@ -359,37 +361,45 @@ export default function CheckoutPage() {
                       </div>
                     )}
                   </div>
-{/* TOTAL PEMBAYARAN */}
-<div className="border-t pt-4 space-y-2 text-sm">
-  <div className="flex justify-between">
-    <span>Subtotal</span>
-    <span>Rp{subtotal.toLocaleString("id-ID")}</span>
-  </div>
 
-  <div className="flex justify-between">
-    <span>Ongkir</span>
-    <span>Rp{ongkir.toLocaleString("id-ID")}</span>
-  </div>
+                  {/* TOTAL PEMBAYARAN */}
+                  <div className="border-t pt-4 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span>Rp{subtotal.toLocaleString("id-ID")}</span>
+                    </div>
 
-  {promoAmount > 0 && promoLabel && (
-    <div className="flex justify-between text-green-600 font-medium">
-      <span>{promoLabel}</span>
-      <span>- Rp{promoAmount.toLocaleString("id-ID")}</span>
-    </div>
-  )}
+                    <div className="flex justify-between">
+                      <span>Ongkir</span>
+                      <span>Rp{ongkir.toLocaleString("id-ID")}</span>
+                    </div>
 
-  <div className="flex justify-between font-semibold text-lg pt-2">
-    <span>Total Pembayaran</span>
-    <span>Rp{total.toLocaleString("id-ID")}</span>
-  </div>
-</div>
+                    {promoAmount > 0 && promoLabel && (
+                      <div className="flex justify-between text-green-600 font-medium">
+                        <span>{promoLabel}</span>
+                        <span>- Rp{promoAmount.toLocaleString("id-ID")}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between font-semibold text-lg pt-2">
+                      <span>Total Pembayaran</span>
+                      <span>Rp{total.toLocaleString("id-ID")}</span>
+                    </div>
+                  </div>
+
                   {errorMsg && <p className="text-red-500 text-sm pt-1">{errorMsg}</p>}
 
                   <button
                     disabled={disabled}
-                    className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold disabled:opacity-50"
+                    className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    {status === "submitting" ? "Memproses pesanan..." : "Buat Pesanan"}
+                    {status === "submitting" ? (
+                      <>
+                        <span className="animate-spin">⏳</span> Memproses pesanan...
+                      </>
+                    ) : (
+                      "Buat Pesanan"
+                    )}
                   </button>
                 </form>
               </section>
@@ -397,6 +407,8 @@ export default function CheckoutPage() {
           )}
         </div>
       </main>
+
+      <Footer />
     </>
   );
 }
