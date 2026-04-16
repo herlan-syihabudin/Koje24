@@ -105,22 +105,11 @@ export default function AboutSection() {
               whileTap={prefersReducedMotion ? {} : { scale: 0.96 }}
             >
               <Link
-                href="/#manfaat"
-                scroll={false}
-                onClick={(e) => {
-                  e.preventDefault()
-                  const element = document.getElementById("manfaat")
-                  if (element) {
-                    element.scrollIntoView({
-                      behavior: prefersReducedMotion ? "auto" : "smooth",
-                      block: "start",
-                    })
-                  }
-                }}
-                className="bg-[#0FA3A8] text-white font-semibold px-8 py-3 rounded-full hover:bg-[#0DC1C7] transition-all duration-300 shadow-[0_4px_15px_rgba(15,163,168,0.4)] hover:shadow-[0_6px_25px_rgba(15,163,168,0.5)] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]/50 focus:ring-offset-2 focus:ring-offset-[#f8fcfc] inline-block text-center"
-              >
-                Lihat Manfaatnya
-              </Link>
+  href="/manfaat"
+  className="bg-[#0FA3A8] text-white font-semibold px-8 py-3 rounded-full hover:bg-[#0DC1C7] transition-all duration-300 shadow-[0_4px_15px_rgba(15,163,168,0.4)] hover:shadow-[0_6px_25px_rgba(15,163,168,0.5)] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]/50 focus:ring-offset-2 focus:ring-offset-[#f8fcfc] inline-block text-center"
+>
+  Lihat Manfaatnya
+</Link>
             </motion.div>
           </div>
 
