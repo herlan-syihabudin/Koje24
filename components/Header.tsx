@@ -212,7 +212,6 @@ export default function Header() {
         <Link
           href="/"
           onClick={(e) => {
-            e.preventDefault();
             dispatchEvent("close-testimoni-modal");
             closeMenu();
             window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
