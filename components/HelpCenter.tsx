@@ -21,7 +21,12 @@ import {
   ArrowRight,
   Zap,
   TrendingUp,
-  Star
+  Star,
+  Globe,
+  Headphones,
+  Award,
+  Coffee,
+  Leaf
 } from "lucide-react";
 import ChatWindow from "./ChatWindow";
 import Header from "@/components/Header";
@@ -90,45 +95,76 @@ const POPULAR_ARTICLES: Article[] = [
 ];
 
 const QUICK_ACTIONS = [
-  { icon: <MessageCircle size={18} />, label: "Live Chat", action: "chat" },
-  { icon: <Mail size={18} />, label: "Email", action: "email" },
-  { icon: <Phone size={18} />, label: "Call", action: "phone" },
+  { icon: <MessageCircle size={18} />, label: "Live Chat", action: "chat", desc: "Respon < 2 menit" },
+  { icon: <Mail size={18} />, label: "Email", action: "email", desc: "info@koje24.id" },
+  { icon: <Phone size={18} />, label: "Call", action: "phone", desc: "022-13139580" },
 ];
 
-// FAQ Item Component
-function FaqItem({ question, answer, category }: { question: string; answer: string; category: string }) {
+// FAQ Item Component with animation
+function FaqItem({ question, answer, category, index }: { question: string; answer: string; category: string; index: number }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="border-b border-gray-100 last:border-0">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="border-b border-gray-100 last:border-0"
+    >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full py-4 text-left flex items-start justify-between gap-4 group"
+        className="w-full py-5 text-left flex items-start justify-between gap-4 group"
       >
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-medium text-[#0FA3A8] bg-[#0FA3A8]/10 px-2 py-0.5 rounded-full">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-xs font-medium text-[#0FA3A8] bg-[#0FA3A8]/10 px-2.5 py-0.5 rounded-full">
               {category}
             </span>
           </div>
-          <span className="font-semibold text-gray-800 group-hover:text-[#0FA3A8] transition">
+          <span className="text-base font-semibold text-gray-800 group-hover:text-[#0FA3A8] transition">
             {question}
           </span>
         </div>
-        <ChevronRight 
-          size={20} 
-          className={`text-gray-400 transition-transform duration-300 flex-shrink-0 mt-1 ${
-            isOpen ? 'rotate-90' : ''
-          }`}
-        />
+        <div className={`w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center transition-all duration-300 ${isOpen ? 'bg-[#0FA3A8]' : 'group-hover:bg-gray-200'}`}>
+          <ChevronRight 
+            size={14} 
+            className={`text-gray-500 transition-all duration-300 ${isOpen ? 'rotate-90 text-white' : 'group-hover:text-[#0FA3A8]'}`}
+          />
+        </div>
       </button>
       
-      {isOpen && (
-        <div className="pb-4 text-gray-600 leading-relaxed">
-          {answer}
-        </div>
-      )}
-    </div>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="pb-5 text-gray-600 leading-relaxed pl-0">
+              {answer}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// Stats Card Component
+function StatCard({ icon: Icon, value, label, color }: { icon: any; value: string; label: string; color: string }) {
+  return (
+    <motion.div 
+      whileHover={{ y: -5 }}
+      className="text-center p-4 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all"
+    >
+      <div className={`w-10 h-10 rounded-lg bg-${color}-50 flex items-center justify-center mx-auto mb-3`}>
+        <Icon size={20} className={`text-${color}-500`} />
+      </div>
+      <div className="text-xl font-bold text-gray-900">{value}</div>
+      <div className="text-xs text-gray-500">{label}</div>
+    </motion.div>
   );
 }
 
@@ -200,38 +236,68 @@ export default function HelpCenter() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50/50 pb-24">
+      <main className="min-h-screen bg-white">
         
-        {/* HERO SECTION */}
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0FA3A8]/5 via-transparent to-transparent" />
-          <div className="absolute top-20 right-0 w-72 h-72 bg-[#0FA3A8]/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#E8C46B]/10 rounded-full blur-3xl" />
+        {/* HERO SECTION - PREMIUM GLASSMORPHISM */}
+        <section className="relative overflow-hidden bg-gradient-to-br from-[#0FA3A8]/5 via-white to-[#E8C46B]/5">
+          {/* Animated background */}
+          <div className="absolute inset-0">
+            <div className="absolute top-0 -left-4 w-72 h-72 bg-[#0FA3A8]/30 rounded-full mix-blend-multiply filter blur-3xl animate-pulse" />
+            <div className="absolute top-0 -right-4 w-72 h-72 bg-[#E8C46B]/30 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000" />
+            <div className="absolute -bottom-8 left-20 w-72 h-72 bg-[#0B4B50]/20 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-2000" />
+          </div>
           
-          <div className="relative max-w-6xl mx-auto px-6 md:px-10 pt-20 pb-16">
-            <nav className="flex items-center gap-2 text-sm mb-6">
+          <div className="relative max-w-6xl mx-auto px-6 md:px-10 pt-24 pb-20">
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-2 text-sm mb-8">
               <a href="/" className="text-gray-500 hover:text-[#0FA3A8] transition">Beranda</a>
               <ChevronRight size={14} className="text-gray-400" />
               <span className="text-[#0FA3A8] font-semibold">Pusat Bantuan</span>
             </nav>
 
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#0FA3A8]/10 to-[#0FA3A8]/5 backdrop-blur-sm px-4 py-2 rounded-full mb-6 border border-[#0FA3A8]/20">
+            {/* Badge */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full mb-6 border border-gray-200 shadow-sm"
+            >
               <Sparkles size={16} className="text-[#0FA3A8]" />
-              <span className="text-sm font-medium text-[#0FA3A8]">24/7 Customer Support</span>
-            </div>
+              <span className="text-sm font-medium text-gray-700">✨ 24/7 Premium Support</span>
+            </motion.div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent mb-4">
-              Ada pertanyaan tentang
-              <span className="bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] bg-clip-text text-transparent"> KOJE24</span>?
-            </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mb-8 leading-relaxed">
+            {/* Title - BIG & BOLD */}
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6"
+            >
+              <span className="text-gray-900">Ada yang bisa</span>
+              <br />
+              <span className="bg-gradient-to-r from-[#0FA3A8] via-[#0B4B50] to-[#E8C46B] bg-clip-text text-transparent">
+                kami bantu?
+              </span>
+            </motion.h1>
+            
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-lg text-gray-600 max-w-2xl mb-10 leading-relaxed"
+            >
               Temukan jawaban cepat seputar produk, pemesanan, pengiriman, dan lainnya. 
               Butuh bantuan instan? Chat dengan KOJE24 Assistant sekarang.
-            </p>
+            </motion.p>
 
-            <div className="max-w-2xl">
+            {/* Search Bar - ULTRA PREMIUM */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="max-w-2xl"
+            >
               <form onSubmit={handleSearch} className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#0FA3A8]/20 to-[#E8C46B]/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#0FA3A8] to-[#E8C46B] rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-500" />
                 <div className="relative flex items-center gap-3 bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300">
                   <Search className="absolute left-5 text-gray-400" size={20} />
                   <input
@@ -239,21 +305,22 @@ export default function HelpCenter() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Cari jawaban... (misal: 'cara order', 'penyimpanan')"
-                    className="w-full pl-12 pr-24 py-4 bg-transparent rounded-2xl outline-none text-gray-700 placeholder:text-gray-400"
+                    className="w-full pl-12 pr-28 py-4.5 bg-transparent rounded-2xl outline-none text-gray-700 placeholder:text-gray-400 text-base"
                   />
                   <button
                     type="submit"
-                    className="absolute right-2 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] text-white px-5 py-2 rounded-xl text-sm font-semibold hover:shadow-lg transition-all"
+                    className="absolute right-2 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all"
                   >
-                    Cari
+                    Cari Jawaban
                   </button>
                 </div>
               </form>
 
+              {/* Recent Searches */}
               {recentSearches.length > 0 && !showSearchResults && (
                 <div className="mt-4 flex items-center gap-2 text-sm text-gray-500 flex-wrap">
                   <Clock size={14} className="text-gray-400" />
-                  <span>Pencarian terakhir:</span>
+                  <span>Riwayat pencarian:</span>
                   {recentSearches.map((search, idx) => (
                     <button
                       key={idx}
@@ -261,67 +328,85 @@ export default function HelpCenter() {
                         setSearchQuery(search);
                         setShowSearchResults(true);
                       }}
-                      className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs transition"
+                      className="px-3 py-1 bg-gray-50 hover:bg-gray-100 rounded-full text-xs transition border border-gray-200"
                     >
                       {search}
                     </button>
                   ))}
                 </div>
               )}
-            </div>
+            </motion.div>
 
-            <div className="flex flex-wrap items-center gap-3 mt-8">
-              <button
-                onClick={() => handleQuickAction("chat")}
-                className="group relative inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] rounded-xl text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-              >
-                <MessageCircle size={18} />
-                Buka KOJE24 Assistant
-                <ArrowRight size={16} className="group-hover:translate-x-1 transition" />
-              </button>
-              
+            {/* Stats Row */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl mt-10"
+            >
+              <StatCard icon={Headphones} value="24/7" label="Support Aktif" color="green" />
+              <StatCard icon={Clock} value="< 2m" label="Respon Cepat" color="blue" />
+              <StatCard icon={Award} value="98%" label="Puas" color="yellow" />
+              <StatCard icon={Globe} value="100+" label="Artikel" color="purple" />
+            </motion.div>
+
+            {/* Quick Actions - Premium Cards */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="flex flex-wrap gap-3 mt-10"
+            >
               {QUICK_ACTIONS.map((action, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleQuickAction(action.action)}
-                  className="p-3 rounded-xl border border-gray-200 bg-white text-gray-600 hover:border-[#0FA3A8] hover:text-[#0FA3A8] hover:shadow-md transition-all duration-300"
-                  title={action.label}
+                  className="group flex items-center gap-3 px-5 py-3 bg-white border border-gray-200 rounded-xl hover:border-[#0FA3A8] hover:shadow-md transition-all duration-300"
                 >
-                  {action.icon}
+                  <div className="w-8 h-8 rounded-lg bg-gray-50 group-hover:bg-[#0FA3A8]/10 flex items-center justify-center transition">
+                    <div className="text-gray-500 group-hover:text-[#0FA3A8]">
+                      {action.icon}
+                    </div>
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-semibold text-gray-700 group-hover:text-[#0FA3A8]">
+                      {action.label}
+                    </div>
+                    <div className="text-xs text-gray-400">{action.desc}</div>
+                  </div>
                 </button>
               ))}
-            </div>
-
-            <div className="flex items-center gap-2 mt-6">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-sm text-gray-500">Online • Respon rata-rata &lt; 2 menit</span>
-            </div>
+            </motion.div>
           </div>
         </section>
 
-        {/* MAIN CONTENT - SINGLE COLUMN FULL WIDTH */}
-        <div className="max-w-5xl mx-auto px-6 md:px-10">
-          <div className="space-y-12">
+        {/* MAIN CONTENT - PREMIUM LAYOUT */}
+        <div className="max-w-6xl mx-auto px-6 md:px-10 py-16">
+          <div className="space-y-16">
             
-            {/* ARTIKEL POPULER - GRID 2 KOLOM */}
+            {/* POPULAR ARTICLES SECTION */}
             <div>
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Artikel Populer</h2>
-                  <p className="text-gray-500 text-sm mt-1">Yang paling sering dibaca minggu ini</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp size={20} className="text-[#0FA3A8]" />
+                    <span className="text-sm font-semibold text-[#0FA3A8] uppercase tracking-wide">Most Popular</span>
+                  </div>
+                  <h2 className="text-3xl font-bold text-gray-900">Artikel Populer</h2>
+                  <p className="text-gray-500 mt-1">Yang paling sering dibaca minggu ini</p>
                 </div>
-                <TrendingUp size={20} className="text-[#0FA3A8]" />
               </div>
 
-              <div className="flex flex-wrap gap-2 mb-6">
+              {/* Category Pills */}
+              <div className="flex flex-wrap gap-2 mb-8">
                 {CATEGORIES.map((cat) => (
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                       selectedCategory === cat.id
                         ? "bg-[#0FA3A8] text-white shadow-md"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200"
                     }`}
                   >
                     {cat.icon}
@@ -330,16 +415,18 @@ export default function HelpCenter() {
                 ))}
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              {/* Articles Grid - 2 Column Premium Cards */}
+              <div className="grid md:grid-cols-2 gap-5">
                 {filteredArticles.map((article, idx) => (
                   <motion.a
                     key={article.id}
                     href={article.url}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
-                    className="group block bg-white rounded-xl border border-gray-100 p-4 hover:border-[#0FA3A8]/30 hover:shadow-lg transition-all duration-300"
+                    className="group relative bg-white rounded-2xl border border-gray-100 p-5 hover:border-[#0FA3A8]/30 hover:shadow-xl transition-all duration-300 overflow-hidden"
                   >
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#0FA3A8]/5 to-transparent rounded-bl-3xl" />
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-800 group-hover:text-[#0FA3A8] transition mb-2 line-clamp-2">
@@ -363,127 +450,144 @@ export default function HelpCenter() {
                           </button>
                         </div>
                       </div>
-                      <ChevronRight size={18} className="text-gray-300 group-hover:text-[#0FA3A8] group-hover:translate-x-1 transition-all flex-shrink-0" />
+                      <div className="w-8 h-8 rounded-full bg-gray-50 group-hover:bg-[#0FA3A8]/10 flex items-center justify-center transition">
+                        <ChevronRight size={16} className="text-gray-400 group-hover:text-[#0FA3A8] group-hover:translate-x-0.5 transition-all" />
+                      </div>
                     </div>
                   </motion.a>
                 ))}
               </div>
 
-              <a
+              {/* View All Link */}
+              <motion.a
                 href="/pusat-bantuan/artikel"
-                className="inline-flex items-center gap-2 mt-6 text-sm font-medium text-[#0FA3A8] hover:gap-3 transition-all"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="inline-flex items-center gap-2 mt-8 text-sm font-medium text-[#0FA3A8] hover:gap-3 transition-all"
               >
                 Lihat semua artikel
                 <ArrowRight size={14} />
-              </a>
+              </motion.a>
             </div>
 
-            {/* FAQ SECTION - FULL WIDTH DENGAN BANYAK KONTEN */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <Star size={20} className="text-[#E8C46B] fill-[#E8C46B]" />
-                <h2 className="text-2xl font-bold text-gray-900">Pertanyaan Umum</h2>
+            {/* FAQ SECTION - PREMIUM ACCORDION */}
+            <div className="bg-gradient-to-br from-white to-gray-50/50 rounded-3xl border border-gray-100 p-8 md:p-10 shadow-sm">
+              <div className="text-center mb-10">
+                <div className="inline-flex items-center gap-2 bg-[#0FA3A8]/10 px-4 py-2 rounded-full mb-4">
+                  <Star size={16} className="text-[#0FA3A8] fill-[#0FA3A8]/20" />
+                  <span className="text-sm font-medium text-[#0FA3A8]">Frequently Asked Questions</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+                  Yang Sering Ditanyakan
+                </h2>
+                <p className="text-gray-500 max-w-2xl mx-auto">
+                  Temukan jawaban seputar <span className="font-semibold text-[#0FA3A8]">KOJE24</span> — mulai dari penyimpanan, manfaat, hingga cara pemesanan
+                </p>
+                <div className="w-16 h-1 bg-gradient-to-r from-[#0FA3A8] to-[#E8C46B] rounded-full mx-auto mt-4" />
               </div>
-              <p className="text-gray-500 mb-6 pb-2 border-b border-gray-100">
-                Temukan jawaban seputar <span className="font-semibold text-[#0FA3A8]">KOJE24</span> — mulai dari penyimpanan, manfaat, hingga cara pemesanan
-              </p>
               
-              <div className="space-y-2">
+              <div className="max-w-3xl mx-auto divide-y divide-gray-100">
                 <FaqItem 
                   question="Apa itu KOJE24?"
                   answer="KOJE24 adalah minuman sehat cold-pressed alami tanpa gula tambahan dan tanpa pengawet. Dibalut dari bahan segar pilihan setiap hari untuk menjaga keseimbangan tubuh, energi, dan kesehatan kulit."
                   category="Produk"
+                  index={0}
                 />
                 <FaqItem 
                   question="Berapa lama masa simpan jus KOJE24?"
                   answer="Dalam kondisi tertutup rapat dan disimpan di chiller 0-4°C, jus KOJE24 idealnya dikonsumsi dalam 2-3 hari untuk mendapatkan manfaat dan kesegaran maksimal."
                   category="Produk"
+                  index={1}
                 />
                 <FaqItem 
                   question="Bagaimana cara memesan KOJE24?"
                   answer="Pilih varian jus favoritmu → masukkan ke keranjang → isi alamat pengiriman → lakukan pembayaran → pesanan akan segera diproses dan dikirim."
                   category="Pesanan"
+                  index={2}
                 />
                 <FaqItem 
                   question="Apakah KOJE24 bisa untuk diet?"
                   answer="Sangat cocok! Jus KOJE24 rendah kalori, tanpa gula tambahan, dan kaya serat. Sangat baik untuk program detoks dan menjaga berat badan ideal."
                   category="Produk"
+                  index={3}
                 />
                 <FaqItem 
                   question="Berapa minimum pemesanan?"
                   answer="Untuk area Surabaya tidak ada minimum pemesanan. Untuk luar Surabaya, minimum pemesanan 2 botol."
                   category="Pengiriman"
+                  index={4}
                 />
                 <FaqItem 
                   question="Apakah ada garansi jika produk rusak?"
                   answer="Ada! Kami memberikan garansi 100% jika produk rusak atau tidak sesuai. Segera hubungi CS kami maksimal 1x24 jam setelah barang diterima."
                   category="Kebijakan"
-                />
-                <FaqItem 
-                  question="Bisa custom order untuk acara tertentu?"
-                  answer="Bisa banget! Untuk acara wedding, gathering, atau corporate event, silakan hubungi tim sales kami untuk pemesanan khusus."
-                  category="Pesanan"
-                />
-                <FaqItem 
-                  question="Apakah tersedia opsi langganan rutin?"
-                  answer="Tersedia! Kamu bisa pilih paket langganan 7, 14, atau 30 hari dengan harga lebih hemat & gratis ongkir untuk area tertentu."
-                  category="Produk"
+                  index={5}
                 />
               </div>
             </div>
 
-            {/* NEED MORE HELP CARD */}
-            <div className="bg-gradient-to-br from-[#0FA3A8]/5 to-[#0B4B50]/5 rounded-2xl p-8 border border-[#0FA3A8]/10 text-center">
-              <div className="w-14 h-14 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] rounded-xl flex items-center justify-center mx-auto mb-4">
-                <MessageCircle size={28} className="text-white" />
+            {/* CTA BANNER - PREMIUM */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] rounded-3xl p-10 text-center shadow-xl">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
+              <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
+              <div className="relative">
+                <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
+                  <Headphones size={16} className="text-white" />
+                  <span className="text-sm font-medium text-white">We're here 24/7</span>
+                </div>
+                <h3 className="text-white text-2xl md:text-3xl font-bold mb-3">
+                  Masih butuh bantuan?
+                </h3>
+                <p className="text-white/80 mb-6 max-w-md mx-auto">
+                  Tim support kami siap membantu Anda kapan saja. Chat sekarang untuk solusi cepat!
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    onClick={() => setOpenChat(true)}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white rounded-xl text-[#0FA3A8] font-semibold hover:shadow-lg hover:scale-105 transition-all"
+                  >
+                    <MessageCircle size={18} />
+                    Chat Sekarang
+                  </button>
+                  <a
+                    href="https://wa.me/6282213139580"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white font-semibold hover:bg-white/20 transition-all"
+                  >
+                    <MessageCircle size={18} />
+                    WhatsApp
+                  </a>
+                </div>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Masih butuh bantuan?</h3>
-              <p className="text-gray-500 mb-4">
-                Tim support kami siap membantu 24/7 via chat atau WhatsApp
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-3">
+            </div>
+
+            {/* FEEDBACK SECTION */}
+            <div className="text-center">
+              <div className="inline-flex items-center gap-2 bg-gray-50 rounded-full px-4 py-2 border border-gray-200">
+                <Coffee size={14} className="text-gray-500" />
+                <span className="text-xs text-gray-500">Help us improve</span>
+              </div>
+              <p className="text-gray-600 mt-4 mb-3">Apakah informasi di halaman ini membantu?</p>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => {
+                    if (typeof window !== 'undefined' && 'gtag' in window) {
+                      (window as any).gtag?.('event', 'helpful_page', { helpful: true });
+                    }
+                  }}
+                  className="px-6 py-2 bg-green-50 text-green-600 rounded-full text-sm font-medium hover:bg-green-100 transition"
+                >
+                  👍 Ya, membantu
+                </button>
                 <button
                   onClick={() => setOpenChat(true)}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] rounded-xl text-white font-medium hover:shadow-lg transition-all"
+                  className="px-6 py-2 bg-red-50 text-red-600 rounded-full text-sm font-medium hover:bg-red-100 transition"
                 >
-                  <MessageCircle size={18} />
-                  Chat Sekarang
+                  👎 Tidak, chat saja
                 </button>
-                <a
-                  href="https://wa.me/6282213139580"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-700 font-medium hover:border-[#0FA3A8] hover:text-[#0FA3A8] transition-all"
-                >
-                  <MessageCircle size={18} />
-                  WhatsApp
-                </a>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* HELPFUL FEEDBACK */}
-        <div className="max-w-2xl mx-auto mt-12 text-center">
-          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-            <p className="text-sm text-gray-600 mb-2">Apakah informasi di halaman ini membantu?</p>
-            <div className="flex items-center justify-center gap-3">
-              <button
-                onClick={() => {
-                  if (typeof window !== 'undefined' && 'gtag' in window) {
-                    (window as any).gtag?.('event', 'helpful_page', { helpful: true });
-                  }
-                }}
-                className="px-5 py-1.5 bg-green-50 text-green-600 rounded-full text-sm font-medium hover:bg-green-100 transition"
-              >
-                👍 Ya, membantu
-              </button>
-              <button
-                onClick={() => setOpenChat(true)}
-                className="px-5 py-1.5 bg-red-50 text-red-600 rounded-full text-sm font-medium hover:bg-red-100 transition"
-              >
-                👎 Tidak, chat saja
-              </button>
             </div>
           </div>
         </div>
@@ -504,7 +608,7 @@ export default function HelpCenter() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
             onClick={() => setShowSearchResults(false)}
           >
             <motion.div
@@ -521,9 +625,10 @@ export default function HelpCenter() {
                 </button>
               </div>
               <div className="p-5 overflow-y-auto max-h-[60vh]">
-                <p className="text-gray-400 text-center py-8">
-                  Fitur pencarian akan segera hadir! 🚀
-                </p>
+                <div className="text-center py-12">
+                  <Leaf size={48} className="text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-400">Fitur pencarian akan segera hadir! 🚀</p>
+                </div>
               </div>
             </motion.div>
           </motion.div>
