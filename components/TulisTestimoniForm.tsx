@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Star, X, Image, Upload } from "lucide-react";
+import { useState, useEffect, useRef } from "react";  // ← WAJIB ADA useEffect
+import { Star, X, Upload } from "lucide-react";
 import { updateRating } from "@/lib/bestSeller";
-import { toast } from "sonner";
+import { toast } from "sonner";  // ← pake sonner
 
 type Props = { onSuccess?: () => void };
 
@@ -35,13 +35,12 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
   
   const [file, setFile] = useState<File | null>(null);
 
-  // Body lock
+  // ✅ Body lock - WAJIB ADA
   useEffect(() => {
     if (show) {
       document.body.classList.add("body-lock");
     } else {
       document.body.classList.remove("body-lock");
-      // Reset form saat tutup
       setForm({ nama: "", kota: "", pesan: "", rating: 5, varian: "" });
       setFile(null);
       if (preview) URL.revokeObjectURL(preview);
@@ -50,7 +49,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     return () => document.body.classList.remove("body-lock");
   }, [show, preview]);
 
-  // Close handler
+  // ✅ Close handler - WAJIB ADA
   useEffect(() => {
     const handler = () => setShow(false);
     window.addEventListener("close-testimoni-modal", handler);
@@ -78,7 +77,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     return true;
   };
 
-  // File handler - simple
+  // File handler
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -98,7 +97,7 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     setPreview(URL.createObjectURL(f));
   };
 
-  // Submit - simple flow
+  // Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid()) return;
@@ -107,7 +106,6 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
     setSending(true);
     
     try {
-      // Upload image if any
       let imageUrl = "";
       if (file) {
         const fd = new FormData();
@@ -117,7 +115,6 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
         if (json.success) imageUrl = json.url;
       }
       
-      // Submit testimonial
       const payload = {
         ...form,
         img: imageUrl,
@@ -133,13 +130,13 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
       
       if (!res.ok) throw new Error();
       
-      // Update rating (optional, don't await)
       const productId = VARIAN_ID_MAP[form.varian];
       if (productId) updateRating(String(productId), form.rating);
       
       toast.success("Testimoni terkirim! Terima kasih 🙌");
       onSuccess?.();
-      setShow(false);
+      
+      setTimeout(() => setShow(false), 1500);
       
     } catch (error) {
       toast.error("Gagal mengirim, coba lagi");
@@ -166,27 +163,17 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden"
           >
-            {/* Header */}
             <div className="flex justify-between items-center p-5 border-b">
               <div>
-                <h3 className="text-lg font-semibold text-[#0B4B50]">
-                  Tulis Testimoni
-                </h3>
-                <p className="text-xs text-gray-500">
-                  Ceritakan pengalamanmu dengan KOJE24
-                </p>
+                <h3 className="text-lg font-semibold text-[#0B4B50]">Tulis Testimoni</h3>
+                <p className="text-xs text-gray-500">Ceritakan pengalamanmu dengan KOJE24</p>
               </div>
-              <button
-                onClick={() => setShow(false)}
-                className="p-1 rounded-full hover:bg-gray-100"
-              >
+              <button onClick={() => setShow(false)} className="p-1 rounded-full hover:bg-gray-100">
                 <X size={20} />
               </button>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              {/* Nama & Kota - 2 kolom */}
               <div className="grid grid-cols-2 gap-3">
                 <input
                   type="text"
@@ -204,7 +191,6 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 />
               </div>
 
-              {/* Varian */}
               <select
                 value={form.varian}
                 onChange={(e) => setForm({ ...form, varian: e.target.value })}
@@ -216,19 +202,19 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 ))}
               </select>
 
-              {/* Pesan */}
-              <textarea
-                placeholder="Ceritakan pengalamanmu..."
-                rows={3}
-                value={form.pesan}
-                onChange={(e) => setForm({ ...form, pesan: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0FA3A8] resize-none"
-              />
-              <p className="text-xs text-gray-400 text-right">
-                {form.pesan.length}/{MIN_MESSAGE_LENGTH}+
-              </p>
+              <div>
+                <textarea
+                  placeholder="Ceritakan pengalamanmu..."
+                  rows={3}
+                  value={form.pesan}
+                  onChange={(e) => setForm({ ...form, pesan: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0FA3A8] resize-none"
+                />
+                <p className="text-xs text-gray-400 text-right mt-1">
+                  {form.pesan.length}/{MIN_MESSAGE_LENGTH}+
+                </p>
+              </div>
 
-              {/* Rating */}
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600">Rating:</span>
                 <div className="flex gap-1">
@@ -253,25 +239,15 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 </div>
               </div>
 
-              {/* Foto Upload */}
               <div>
                 <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                   <Upload size={16} />
                   <span>Tambah foto (opsional)</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
+                  <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
                 </label>
                 {preview && (
                   <div className="relative w-16 h-16 mt-2">
-                    <img
-                      src={preview}
-                      alt="Preview"
-                      className="w-16 h-16 rounded-lg object-cover border"
-                    />
+                    <img src={preview} alt="Preview" className="w-16 h-16 rounded-lg object-cover border" />
                     <button
                       type="button"
                       onClick={() => {
@@ -287,7 +263,6 @@ export default function TulisTestimoniForm({ onSuccess }: Props) {
                 )}
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={sending}
