@@ -21,6 +21,9 @@ import {
 } from "lucide-react";
 import ChatWindow from "./ChatWindow";
 import FaqSection from "./FaqSection";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+
 
 // Types
 interface Category {
@@ -173,7 +176,10 @@ export default function HelpCenter() {
   }, [selectedCategory]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#f8fcfc] via-white to-[#f0f6f6] pt-28 pb-20">
+    <>
+      <Header />
+      <main className="min-h-screen bg-gradient-to-b from-[#f8fcfc] via-white to-[#f0f6f6] pb-20">
+  
       {/* Schema Markup untuk SEO */}
       <script
         type="application/ld+json"
@@ -470,5 +476,7 @@ export default function HelpCenter() {
         )}
       </AnimatePresence>
     </main>
+      <Footer />
+    </>
   );
 }
