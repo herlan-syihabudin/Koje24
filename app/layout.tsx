@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import { Toaster } from "sonner";
 
 import StickyCartBar from "@/components/StickyCartBar";
 import PromoPopup from "@/components/PromoPopup";
@@ -49,7 +50,7 @@ export const metadata: Metadata = {
     apple: "/icons/apple-touch-icon.png",
   },
   other: {
-    'google-site-verification': 'your-verification-code', // ✅ Tambah ini
+    'google-site-verification': 'your-verification-code',
   }
 };
 
@@ -114,6 +115,21 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
         {/* Main content */}
         {children}
+
+        {/* Toaster for notifications */}
+        <Toaster 
+          position="top-center" 
+          richColors 
+          toastOptions={{
+            style: {
+              background: '#fff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            },
+            duration: 3000,
+          }}
+        />
 
         {/* Client Components with Suspense */}
         <Suspense fallback={null}>
