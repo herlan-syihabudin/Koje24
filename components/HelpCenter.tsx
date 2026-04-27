@@ -24,11 +24,10 @@ import {
   Star
 } from "lucide-react";
 import ChatWindow from "./ChatWindow";
-import FaqSection from "./FaqSection";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-// Types & Constants (sama seperti sebelumnya)
+// Types
 interface Category {
   id: string;
   name: string;
@@ -45,6 +44,7 @@ interface Article {
   url: string;
 }
 
+// Constants
 const CATEGORIES: Category[] = [
   { id: "all", name: "Semua", icon: <BookOpen size={16} />, color: "#0FA3A8" },
   { id: "produk", name: "Produk", icon: <Package size={16} />, color: "#0FA3A8" },
@@ -61,7 +61,7 @@ const POPULAR_ARTICLES: Article[] = [
     category: "produk",
     views: 1243,
     helpful: 45,
-    url: "/bantuan/penyimpanan-jus"
+    url: "/pusat-bantuan/penyimpanan-jus"
   },
   {
     id: "2",
@@ -69,7 +69,7 @@ const POPULAR_ARTICLES: Article[] = [
     category: "keamanan",
     views: 987,
     helpful: 32,
-    url: "/bantuan/keamanan-ibu-hamil"
+    url: "/pusat-bantuan/keamanan-ibu-hamil"
   },
   {
     id: "3",
@@ -77,7 +77,7 @@ const POPULAR_ARTICLES: Article[] = [
     category: "pengiriman",
     views: 876,
     helpful: 28,
-    url: "/bantuan/pengiriman-luar-kota"
+    url: "/pusat-bantuan/pengiriman-luar-kota"
   },
   {
     id: "4",
@@ -85,15 +85,52 @@ const POPULAR_ARTICLES: Article[] = [
     category: "produk",
     views: 654,
     helpful: 21,
-    url: "/bantuan/berhenti-langganan"
+    url: "/pusat-bantuan/berhenti-langganan"
   }
 ];
 
 const QUICK_ACTIONS = [
-  { icon: <MessageCircle size={18} />, label: "Live Chat", action: "chat", gradient: "from-[#0FA3A8] to-[#0B4B50]" },
-  { icon: <Mail size={18} />, label: "Email", action: "email", gradient: "from-blue-500 to-blue-600" },
-  { icon: <Phone size={18} />, label: "Call", action: "phone", gradient: "from-green-500 to-green-600" },
+  { icon: <MessageCircle size={18} />, label: "Live Chat", action: "chat" },
+  { icon: <Mail size={18} />, label: "Email", action: "email" },
+  { icon: <Phone size={18} />, label: "Call", action: "phone" },
 ];
+
+// FAQ Item Component
+function FaqItem({ question, answer, category }: { question: string; answer: string; category: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="border-b border-gray-100 last:border-0">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full py-4 text-left flex items-start justify-between gap-4 group"
+      >
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-medium text-[#0FA3A8] bg-[#0FA3A8]/10 px-2 py-0.5 rounded-full">
+              {category}
+            </span>
+          </div>
+          <span className="font-semibold text-gray-800 group-hover:text-[#0FA3A8] transition">
+            {question}
+          </span>
+        </div>
+        <ChevronRight 
+          size={20} 
+          className={`text-gray-400 transition-transform duration-300 flex-shrink-0 mt-1 ${
+            isOpen ? 'rotate-90' : ''
+          }`}
+        />
+      </button>
+      
+      {isOpen && (
+        <div className="pb-4 text-gray-600 leading-relaxed">
+          {answer}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function HelpCenter() {
   const [openChat, setOpenChat] = useState(false);
@@ -165,28 +202,24 @@ export default function HelpCenter() {
       <Header />
       <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50/50 pb-24">
         
-        {/* HERO SECTION - UPGRADED */}
+        {/* HERO SECTION */}
         <section className="relative overflow-hidden">
-          {/* Background decoration */}
           <div className="absolute inset-0 bg-gradient-to-br from-[#0FA3A8]/5 via-transparent to-transparent" />
           <div className="absolute top-20 right-0 w-72 h-72 bg-[#0FA3A8]/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#E8C46B]/10 rounded-full blur-3xl" />
           
           <div className="relative max-w-6xl mx-auto px-6 md:px-10 pt-20 pb-16">
-            {/* Breadcrumb */}
             <nav className="flex items-center gap-2 text-sm mb-6">
               <a href="/" className="text-gray-500 hover:text-[#0FA3A8] transition">Beranda</a>
               <ChevronRight size={14} className="text-gray-400" />
               <span className="text-[#0FA3A8] font-semibold">Pusat Bantuan</span>
             </nav>
 
-            {/* Header */}
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#0FA3A8]/10 to-[#0FA3A8]/5 backdrop-blur-sm px-4 py-2 rounded-full mb-6 border border-[#0FA3A8]/20">
               <Sparkles size={16} className="text-[#0FA3A8]" />
               <span className="text-sm font-medium text-[#0FA3A8]">24/7 Customer Support</span>
             </div>
 
-            {/* Title */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent mb-4">
               Ada pertanyaan tentang
               <span className="bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] bg-clip-text text-transparent"> KOJE24</span>?
@@ -196,7 +229,6 @@ export default function HelpCenter() {
               Butuh bantuan instan? Chat dengan KOJE24 Assistant sekarang.
             </p>
 
-            {/* Search Bar - UPGRADED */}
             <div className="max-w-2xl">
               <form onSubmit={handleSearch} className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-[#0FA3A8]/20 to-[#E8C46B]/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -218,7 +250,6 @@ export default function HelpCenter() {
                 </div>
               </form>
 
-              {/* Recent Searches */}
               {recentSearches.length > 0 && !showSearchResults && (
                 <div className="mt-4 flex items-center gap-2 text-sm text-gray-500 flex-wrap">
                   <Clock size={14} className="text-gray-400" />
@@ -239,7 +270,6 @@ export default function HelpCenter() {
               )}
             </div>
 
-            {/* Quick Actions - UPGRADED */}
             <div className="flex flex-wrap items-center gap-3 mt-8">
               <button
                 onClick={() => handleQuickAction("chat")}
@@ -262,7 +292,6 @@ export default function HelpCenter() {
               ))}
             </div>
 
-            {/* Status */}
             <div className="flex items-center gap-2 mt-6">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               <span className="text-sm text-gray-500">Online • Respon rata-rata &lt; 2 menit</span>
@@ -270,11 +299,11 @@ export default function HelpCenter() {
           </div>
         </section>
 
-        {/* Main Content Grid - UPGRADED */}
-        <div className="max-w-6xl mx-auto px-6 md:px-10">
-          <div className="grid lg:grid-cols-[1.4fr,1fr] gap-8">
+        {/* MAIN CONTENT - SINGLE COLUMN FULL WIDTH */}
+        <div className="max-w-5xl mx-auto px-6 md:px-10">
+          <div className="space-y-12">
             
-            {/* Left Column - Featured Articles */}
+            {/* ARTIKEL POPULER - GRID 2 KOLOM */}
             <div>
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -284,7 +313,6 @@ export default function HelpCenter() {
                 <TrendingUp size={20} className="text-[#0FA3A8]" />
               </div>
 
-              {/* Category Filters - UPGRADED */}
               <div className="flex flex-wrap gap-2 mb-6">
                 {CATEGORIES.map((cat) => (
                   <button
@@ -302,8 +330,7 @@ export default function HelpCenter() {
                 ))}
               </div>
 
-              {/* Articles Grid */}
-              <div className="space-y-3">
+              <div className="grid md:grid-cols-2 gap-4">
                 {filteredArticles.map((article, idx) => (
                   <motion.a
                     key={article.id}
@@ -315,7 +342,7 @@ export default function HelpCenter() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-800 group-hover:text-[#0FA3A8] transition mb-2">
+                        <h3 className="font-semibold text-gray-800 group-hover:text-[#0FA3A8] transition mb-2 line-clamp-2">
                           {article.title}
                         </h3>
                         <div className="flex items-center gap-4 text-xs text-gray-400">
@@ -336,15 +363,14 @@ export default function HelpCenter() {
                           </button>
                         </div>
                       </div>
-                      <ChevronRight size={18} className="text-gray-300 group-hover:text-[#0FA3A8] group-hover:translate-x-1 transition-all" />
+                      <ChevronRight size={18} className="text-gray-300 group-hover:text-[#0FA3A8] group-hover:translate-x-1 transition-all flex-shrink-0" />
                     </div>
                   </motion.a>
                 ))}
               </div>
 
-              {/* View All */}
               <a
-                href="/bantuan/artikel"
+                href="/pusat-bantuan/artikel"
                 className="inline-flex items-center gap-2 mt-6 text-sm font-medium text-[#0FA3A8] hover:gap-3 transition-all"
               >
                 Lihat semua artikel
@@ -352,39 +378,92 @@ export default function HelpCenter() {
               </a>
             </div>
 
-            {/* Right Column - FAQ & Support */}
-            <div className="space-y-6">
-              {/* FAQ Section */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-4">
-                  <Star size={18} className="text-[#E8C46B] fill-[#E8C46B]" />
-                  <h2 className="text-xl font-bold text-gray-900">Pertanyaan Umum</h2>
-                </div>
-                <FaqSection />
+            {/* FAQ SECTION - FULL WIDTH DENGAN BANYAK KONTEN */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Star size={20} className="text-[#E8C46B] fill-[#E8C46B]" />
+                <h2 className="text-2xl font-bold text-gray-900">Pertanyaan Umum</h2>
               </div>
+              <p className="text-gray-500 mb-6 pb-2 border-b border-gray-100">
+                Temukan jawaban seputar <span className="font-semibold text-[#0FA3A8]">KOJE24</span> — mulai dari penyimpanan, manfaat, hingga cara pemesanan
+              </p>
+              
+              <div className="space-y-2">
+                <FaqItem 
+                  question="Apa itu KOJE24?"
+                  answer="KOJE24 adalah minuman sehat cold-pressed alami tanpa gula tambahan dan tanpa pengawet. Dibalut dari bahan segar pilihan setiap hari untuk menjaga keseimbangan tubuh, energi, dan kesehatan kulit."
+                  category="Produk"
+                />
+                <FaqItem 
+                  question="Berapa lama masa simpan jus KOJE24?"
+                  answer="Dalam kondisi tertutup rapat dan disimpan di chiller 0-4°C, jus KOJE24 idealnya dikonsumsi dalam 2-3 hari untuk mendapatkan manfaat dan kesegaran maksimal."
+                  category="Produk"
+                />
+                <FaqItem 
+                  question="Bagaimana cara memesan KOJE24?"
+                  answer="Pilih varian jus favoritmu → masukkan ke keranjang → isi alamat pengiriman → lakukan pembayaran → pesanan akan segera diproses dan dikirim."
+                  category="Pesanan"
+                />
+                <FaqItem 
+                  question="Apakah KOJE24 bisa untuk diet?"
+                  answer="Sangat cocok! Jus KOJE24 rendah kalori, tanpa gula tambahan, dan kaya serat. Sangat baik untuk program detoks dan menjaga berat badan ideal."
+                  category="Produk"
+                />
+                <FaqItem 
+                  question="Berapa minimum pemesanan?"
+                  answer="Untuk area Surabaya tidak ada minimum pemesanan. Untuk luar Surabaya, minimum pemesanan 2 botol."
+                  category="Pengiriman"
+                />
+                <FaqItem 
+                  question="Apakah ada garansi jika produk rusak?"
+                  answer="Ada! Kami memberikan garansi 100% jika produk rusak atau tidak sesuai. Segera hubungi CS kami maksimal 1x24 jam setelah barang diterima."
+                  category="Kebijakan"
+                />
+                <FaqItem 
+                  question="Bisa custom order untuk acara tertentu?"
+                  answer="Bisa banget! Untuk acara wedding, gathering, atau corporate event, silakan hubungi tim sales kami untuk pemesanan khusus."
+                  category="Pesanan"
+                />
+                <FaqItem 
+                  question="Apakah tersedia opsi langganan rutin?"
+                  answer="Tersedia! Kamu bisa pilih paket langganan 7, 14, atau 30 hari dengan harga lebih hemat & gratis ongkir untuk area tertentu."
+                  category="Produk"
+                />
+              </div>
+            </div>
 
-              {/* Need More Help Card */}
-              <div className="bg-gradient-to-br from-[#0FA3A8]/5 to-[#0B4B50]/5 rounded-2xl p-6 border border-[#0FA3A8]/10 text-center">
-                <div className="w-12 h-12 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <MessageCircle size={24} className="text-white" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Masih butuh bantuan?</h3>
-                <p className="text-gray-500 text-sm mb-4">
-                  Tim support kami siap membantu 24/7 via chat
-                </p>
+            {/* NEED MORE HELP CARD */}
+            <div className="bg-gradient-to-br from-[#0FA3A8]/5 to-[#0B4B50]/5 rounded-2xl p-8 border border-[#0FA3A8]/10 text-center">
+              <div className="w-14 h-14 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] rounded-xl flex items-center justify-center mx-auto mb-4">
+                <MessageCircle size={28} className="text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Masih butuh bantuan?</h3>
+              <p className="text-gray-500 mb-4">
+                Tim support kami siap membantu 24/7 via chat atau WhatsApp
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
                 <button
                   onClick={() => setOpenChat(true)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-700 font-medium hover:border-[#0FA3A8] hover:text-[#0FA3A8] transition-all"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] rounded-xl text-white font-medium hover:shadow-lg transition-all"
                 >
-                  <Zap size={16} />
+                  <MessageCircle size={18} />
                   Chat Sekarang
                 </button>
+                <a
+                  href="https://wa.me/6282213139580"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-700 font-medium hover:border-[#0FA3A8] hover:text-[#0FA3A8] transition-all"
+                >
+                  <MessageCircle size={18} />
+                  WhatsApp
+                </a>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Helpful Feedback Bar */}
+        {/* HELPFUL FEEDBACK */}
         <div className="max-w-2xl mx-auto mt-12 text-center">
           <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
             <p className="text-sm text-gray-600 mb-2">Apakah informasi di halaman ini membantu?</p>
