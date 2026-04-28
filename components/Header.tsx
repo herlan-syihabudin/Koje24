@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: "Tentang KOJE24", href: "#about" },
   { label: "Langganan", href: "#langganan" },
   { label: "Testimoni", href: "#testimoni" },
-  { label: "Bantuan", href: "#pusat-bantuan" },
+  { label: "Bantuan", href: "/pusat-bantuan" },
 ] as const;
 
 const SCROLL = {
