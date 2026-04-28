@@ -150,14 +150,21 @@ export default function Header() {
   closeMenu();
 
   if (href.startsWith("#")) {
-    // Jika sudah di homepage, langsung scroll
-    if (window.location.pathname === '/') {
-      setTimeout(() => scrollToSection(href), prefersReducedMotion ? 0 : 240);
+    // Kalau di homepage → scroll biasa
+    if (window.location.pathname === "/") {
+      setTimeout(() => {
+        scrollToSection(href);
+      }, prefersReducedMotion ? 0 : 240);
       return;
     }
-    
-    // 🔥 FIX: Pindah langsung ke /#target, biar browser yang handle scroll
-    router.push(`/${href}`);
+
+    // Kalau beda halaman → push dulu, lalu scroll setelah load
+    router.push("/");
+
+    setTimeout(() => {
+      scrollToSection(href);
+    }, 500); // tunggu page render
+
     return;
   }
 
