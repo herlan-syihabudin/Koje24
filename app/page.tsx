@@ -1,10 +1,8 @@
 // app/page.tsx (SERVER COMPONENT)
 
 import { Metadata } from "next"
-import Header from "@/components/Header"
 import PromoBanner from "@/components/PromoBanner"
 import Hero from "@/components/Hero"
-import Footer from "@/components/Footer"
 import AnimateOnScroll from "@/components/AnimateOnScroll"
 
 import FeaturedProducts from "@/components/FeaturedProducts"
@@ -28,40 +26,35 @@ export default function HomePage() {
   return (
     <>
       <PromoBanner />
-      <Header />
 
-      <main className="min-h-screen">
-        <Hero />
+      <Hero />
 
-        {/* TAMBAHKAN ID DI SINI */}
-        <section id="produk">
-          <AnimateOnScroll direction="up">
-            <FeaturedProducts />
-          </AnimateOnScroll>
+      {/* TAMBAHKAN ID DI SINI */}
+      <section id="produk">
+        <AnimateOnScroll direction="up">
+          <FeaturedProducts />
+        </AnimateOnScroll>
 
-          <ProductGrid />
-        </section>
+        <ProductGrid />
+      </section>
 
-        {/* TAMBAHKAN ID DI SINI */}
-        <section id="about">
-          <AboutSection />
-        </section>
+      {/* TAMBAHKAN ID DI SINI */}
+      <section id="about">
+        <AboutSection />
+      </section>
 
-        {/* TAMBAHKAN ID DI SINI */}
-        <section id="langganan">
-          <PackagesSection />
-          <SubscriptionSection />
-        </section>
+      {/* TAMBAHKAN ID DI SINI */}
+      <section id="langganan">
+        <PackagesSection />
+        <SubscriptionSection />
+      </section>
 
-        {/* TAMBAHKAN ID DI SINI */}
-        <section id="testimoni">
-          <TestimonialsCarousel />
-        </section>
+      {/* TAMBAHKAN ID DI SINI */}
+      <section id="testimoni">
+        <TestimonialsCarousel />
+      </section>
 
-        <FaqSection />
-      </main>
-
-      <Footer />
+      <FaqSection />
 
       <CartPopup />
       <PackagePopup />
