@@ -33,15 +33,31 @@ export default function HomePage() {
       <main className="min-h-screen">
         <Hero />
 
-        <AnimateOnScroll direction="up">
-          <FeaturedProducts />
-        </AnimateOnScroll>
+        {/* TAMBAHKAN ID DI SINI */}
+        <section id="produk">
+          <AnimateOnScroll direction="up">
+            <FeaturedProducts />
+          </AnimateOnScroll>
 
-        <ProductGrid />
-        <AboutSection />
-        <PackagesSection />
-        <SubscriptionSection />
-        <TestimonialsCarousel />
+          <ProductGrid />
+        </section>
+
+        {/* TAMBAHKAN ID DI SINI */}
+        <section id="about">
+          <AboutSection />
+        </section>
+
+        {/* TAMBAHKAN ID DI SINI */}
+        <section id="langganan">
+          <PackagesSection />
+          <SubscriptionSection />
+        </section>
+
+        {/* TAMBAHKAN ID DI SINI */}
+        <section id="testimoni">
+          <TestimonialsCarousel />
+        </section>
+
         <FaqSection />
       </main>
 
