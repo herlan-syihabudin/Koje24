@@ -29,8 +29,6 @@ import {
   Leaf
 } from "lucide-react";
 import ChatWindow from "./ChatWindow";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 
 // Types
 interface Category {
@@ -235,7 +233,6 @@ export default function HelpCenter() {
 
   return (
     <>
-      <Header />
       <main className="min-h-screen bg-white">
         
         {/* HERO SECTION - PREMIUM GLASSMORPHISM */}
@@ -599,7 +596,6 @@ export default function HelpCenter() {
           )}
         </AnimatePresence>
       </main>
-      <Footer />
 
       {/* SEARCH RESULTS MODAL */}
       <AnimatePresence>
