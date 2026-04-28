@@ -4,8 +4,6 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import Header from "@/components/Header"
-import Footer from "@/components/Footer"
 import TulisTestimoniForm from "@/components/TulisTestimoniForm"
 
 type Testi = {
@@ -81,7 +79,6 @@ export default function SemuaTestimoni() {
 
   return (
     <>
-      <Header />
       
       <main className="pt-24">
         <section className="py-16 md:py-20 bg-[#f6fbfb] min-h-screen">
@@ -197,8 +194,6 @@ export default function SemuaTestimoni() {
           </div>
         </section>
       </main>
-      
-      <Footer />
     </>
   )
 }
