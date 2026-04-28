@@ -20,16 +20,8 @@ const SCROLL = {
   SHRINK: 80,
   MOBILE_SHRINK: 65,
   DESKTOP_SHRINK: 110,
-  MENU_ANIMATION: 180,
-} as const;
+};
 
-const COLORS = {
-  primary: "#0FA3A8",
-  secondary: "#0B4B50",
-  accent: "#E8C46B",
-} as const;
-
-// Safe event dispatcher
 const dispatchEvent = (eventName: string, detail?: any) => {
   if (typeof window === 'undefined') return;
   try {
@@ -46,12 +38,17 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [shrink, setShrink] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [menuAnimate, setMenuAnimate] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [isHomePage, setIsHomePage] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
+
+  // Mounted state untuk menghindari hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Check user motion preference
   useEffect(() => {
@@ -63,7 +60,7 @@ export default function Header() {
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // Deteksi halaman (homepage atau bukan)
+  // Deteksi halaman
   useEffect(() => {
     const checkPage = () => {
       setIsHomePage(window.location.pathname === '/');
@@ -74,7 +71,7 @@ export default function Header() {
     return () => window.removeEventListener('popstate', checkPage);
   }, []);
 
-  // Scroll handler dengan throttle sederhana
+  // Scroll handler
   useEffect(() => {
     if (menuOpen) return;
 
@@ -96,41 +93,25 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [menuOpen]);
 
-  // Body lock dengan cleanup
+  // Body lock
   useEffect(() => {
     if (menuOpen) {
       document.body.classList.add("body-menu-lock");
     } else {
       document.body.classList.remove("body-menu-lock");
     }
-    
-    return () => {
-      document.body.classList.remove("body-menu-lock");
-    };
+    return () => document.body.classList.remove("body-menu-lock");
   }, [menuOpen]);
 
-  // Menu handlers
   const openMenu = useCallback(() => {
     setMenuOpen(true);
-    if (!prefersReducedMotion) {
-      requestAnimationFrame(() => setMenuAnimate(true));
-    } else {
-      setMenuAnimate(true);
-    }
-    window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
-  }, [prefersReducedMotion]);
+  }, []);
 
   const closeMenu = useCallback(() => {
-    if (!prefersReducedMotion) {
-      setMenuAnimate(false);
-      setTimeout(() => setMenuOpen(false), SCROLL.MENU_ANIMATION);
-    } else {
-      setMenuAnimate(false);
-      setMenuOpen(false);
-    }
-  }, [prefersReducedMotion]);
+    setMenuOpen(false);
+  }, []);
 
-  // Scroll to section dengan dynamic offset
+  // Scroll to section
   const scrollToSection = useCallback((href: string) => {
     const target = document.querySelector(href);
     if (!target) return;
@@ -144,264 +125,253 @@ export default function Header() {
     });
   }, [shrink, prefersReducedMotion]);
 
-  // Navigation handler - FIXED dengan polling scroll
+  // Navigation handler
   const navClick = useCallback((href: string) => {
     dispatchEvent("close-testimoni-modal");
     closeMenu();
 
     if (href.startsWith("#")) {
-      // Jika sudah di homepage, scroll langsung
       if (window.location.pathname === '/') {
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        const tryScroll = () => {
-          const target = document.querySelector(href);
-          if (target) {
-            const headerHeight = shrink ? SCROLL.MOBILE_SHRINK : SCROLL.DESKTOP_SHRINK;
-            const y = target.getBoundingClientRect().top + window.scrollY - headerHeight;
-            window.scrollTo({ top: y, behavior: 'smooth' });
-          } else if (attempts < maxAttempts) {
-            attempts++;
-            setTimeout(tryScroll, 100);
-          }
-        };
-        
-        setTimeout(tryScroll, 100);
+        setTimeout(() => scrollToSection(href), 100);
         return;
       }
-      
-      // Jika di halaman lain, pindah ke homepage
       router.push('/');
-      
-      // Polling scroll setelah pindah
-      let attempts = 0;
-      const maxAttempts = 30;
-      
-      const tryScroll = () => {
-        const target = document.querySelector(href);
-        if (target) {
-          const headerHeight = shrink ? SCROLL.MOBILE_SHRINK : SCROLL.DESKTOP_SHRINK;
-          const y = target.getBoundingClientRect().top + window.scrollY - headerHeight;
-          window.scrollTo({ top: y, behavior: 'smooth' });
-        } else if (attempts < maxAttempts) {
-          attempts++;
-          setTimeout(tryScroll, 100);
-        }
-      };
-      
-      setTimeout(tryScroll, 200);
+      setTimeout(() => scrollToSection(href), 300);
       return;
     }
 
     router.push(href);
-  }, [closeMenu, router, shrink]);
+  }, [closeMenu, router, scrollToSection]);
 
-  // Dynamic classes - FIXED (background PUTIH SOLID untuk halaman non-homepage)
+  // Header classes
   const headerClasses = useMemo(() => {
-    if (menuOpen) return "fixed top-0 w-full z-[200] bg-transparent py-5";
+    if (!mounted) return "fixed top-0 w-full z-[200] bg-white py-5";
+    if (menuOpen) return "fixed top-0 w-full z-[200] bg-white py-5 shadow-md";
     
-    // Untuk halaman NON-homepage (pusat-bantuan, testimoni, tentang-koje, dll)
-    // Background PUTIH SOLID, bukan transparan
     if (!isHomePage) {
       return `
         fixed top-0 w-full z-[200]
-        transition-all duration-700
-        bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)]
+        transition-all duration-500
+        bg-white shadow-md
         ${shrink ? "py-2" : "py-5"}
       `;
     }
     
-    // Untuk homepage: transparan sampai scroll
     return `
       fixed top-0 w-full z-[200]
-      transition-all duration-700
+      transition-all duration-500
       ${isScrolled
-        ? "bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)]" 
+        ? "bg-white shadow-md" 
         : "bg-transparent"
       }
       ${shrink ? "py-2" : "py-5"}
     `;
-  }, [menuOpen, isScrolled, shrink, isHomePage]);
+  }, [menuOpen, isScrolled, shrink, isHomePage, mounted]);
 
-  // Logo classes - FIXED
+  // Logo classes
   const logoClasses = useMemo(() => {
-    if (menuOpen) return "font-playfair font-bold transition-all duration-700 text-xl text-white";
+    if (!mounted) return "font-playfair font-bold text-2xl text-gray-800";
+    if (menuOpen) return "font-playfair font-bold text-2xl text-gray-800";
     
-    // Untuk halaman non-homepage
     if (!isHomePage) {
-      return `
-        font-playfair font-bold transition-all duration-700
-        ${shrink ? "text-xl" : "text-2xl"}
-        text-gray-800
-      `;
+      return `font-playfair font-bold transition-all duration-500 ${shrink ? "text-xl" : "text-2xl"} text-gray-800`;
     }
     
-    // Untuk homepage
-    return `
-      font-playfair font-bold transition-all duration-700
-      ${shrink ? "text-xl" : "text-2xl"}
-      ${isScrolled ? "text-gray-800" : "text-white"}
-    `;
-  }, [menuOpen, shrink, isScrolled, isHomePage]);
+    return `font-playfair font-bold transition-all duration-500 ${shrink ? "text-xl" : "text-2xl"} ${isScrolled ? "text-gray-800" : "text-white"}`;
+  }, [menuOpen, shrink, isScrolled, isHomePage, mounted]);
 
-  // Text color - FIXED (lebih gelap biar jelas)
+  const logoSpanClasses = useMemo(() => {
+    if (!mounted) return "text-[#0FA3A8]";
+    if (menuOpen) return "text-[#0FA3A8]";
+    if (!isHomePage) return "text-[#0FA3A8]";
+    if (isScrolled) return "text-[#0FA3A8]";
+    return "text-[#E8C46B]";
+  }, [menuOpen, isHomePage, isScrolled, mounted]);
+
+  // Text color
   const getTextColor = useCallback(() => {
-    if (menuOpen) return "text-white";
-    
-    // Di halaman non-homepage, background putih solid → teks gelap pekat
+    if (!mounted) return "text-gray-800";
+    if (menuOpen) return "text-gray-800";
     if (!isHomePage) return "text-gray-800";
-    
-    // Di homepage
     if (isScrolled) return "text-gray-800";
     return "text-white";
-  }, [menuOpen, isScrolled, isHomePage]);
+  }, [menuOpen, isScrolled, isHomePage, mounted]);
+
+  const getButtonBg = useCallback(() => {
+    if (!mounted) return "bg-[#0FA3A8] text-white";
+    if (menuOpen) return "bg-[#0FA3A8] text-white";
+    if (!isHomePage) return "bg-[#0FA3A8] text-white";
+    if (isScrolled) return "bg-[#0FA3A8] text-white";
+    return "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30";
+  }, [menuOpen, isScrolled, isHomePage, mounted]);
+
+  if (!mounted) return null;
 
   return (
     <header className={headerClasses}>
-      {isScrolled && !menuOpen && !isHomePage && (
-        <div className="absolute bottom-0 left-0 h-[1.5px] w-full bg-gradient-to-r from-[#0FA3A8]/40 via-[#0B4B50]/40 to-[#0FA3A8]/40" />
-      )}
-
       <div
         className={`
-          max-w-7xl mx-auto flex items-center justify-between px-5 md:px-10
-          ${shrink && !menuOpen ? "h-[60px]" : "h-[82px]"}
-          transition-all duration-700
+          max-w-7xl mx-auto flex items-center justify-between px-4 md:px-10
+          ${shrink && !menuOpen ? "h-[52px]" : "h-[70px]"}
+          transition-all duration-500
         `}
       >
         {/* LOGO */}
         <Link
           href="/"
-          onClick={(e) => {
+          onClick={() => {
             dispatchEvent("close-testimoni-modal");
             closeMenu();
-            window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className={logoClasses}
+          className="group relative"
         >
-          KOJE
-          <span
-            className={
-              menuOpen
-                ? "text-[#E8C46B]"
-                : !isHomePage
-                ? "text-[#0FA3A8]"
-                : isScrolled
-                ? "text-[#0FA3A8]"
-                : "text-[#E8C46B]"
-            }
-          >
-            24
+          <span className={logoClasses}>
+            KOJE
+            <span className={logoSpanClasses}>24</span>
           </span>
+          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#0FA3A8] to-[#E8C46B] transition-all duration-300 group-hover:w-full" />
         </Link>
 
         {/* DESKTOP MENU */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden md:flex items-center gap-6 lg:gap-8">
           {NAV_ITEMS.map((item) => (
             <button
               key={item.href}
               onClick={() => navClick(item.href)}
               className={`
-                font-medium transition-all duration-300
+                text-sm lg:text-base font-medium transition-all duration-300
                 ${getTextColor()}
-                ${(!menuOpen && (isScrolled || !isHomePage)) && "hover:text-[#0FA3A8]"}
-                ${(!menuOpen && !isScrolled && isHomePage) && "hover:text-[#E8C46B]"}
+                hover:text-[#0FA3A8]
               `}
             >
               {item.label}
             </button>
           ))}
 
+          {/* Cart Button */}
           <button
             onClick={() => dispatchEvent("open-cart")}
-            className="relative"
+            className="relative p-2 rounded-full hover:bg-gray-100 transition-all"
             aria-label={`Cart with ${totalQty} items`}
           >
-            <ShoppingCart
-              size={24}
-              className={getTextColor()}
-            />
+            <ShoppingCart size={20} className={getTextColor()} />
             {totalQty > 0 && (
-              <span className="absolute -top-2 -right-2 bg-[#E8C46B] text-[#0B4B50] text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
-                {totalQty}
+              <span className="absolute -top-1 -right-1 bg-[#0FA3A8] text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg">
+                {totalQty > 9 ? '9+' : totalQty}
               </span>
             )}
           </button>
 
-          {/* CHAT DESKTOP */}
+          {/* Chat Button */}
           <button
             onClick={() => dispatchEvent("open-chat")}
             className={`
-              ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm shadow-md transition-all
-              ${menuOpen
-                ? "bg-white/20 text-white"
-                : (isScrolled || !isHomePage)
-                ? "bg-[#0FA3A8] text-white hover:bg-[#0B4B50]"
-                : "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30"
-              }
+              flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
+              transition-all duration-300
+              ${getButtonBg()}
             `}
           >
-            <MessageCircle size={20} /> Chat
+            <MessageCircle size={16} />
+            <span className="hidden lg:inline">Chat</span>
           </button>
         </nav>
 
-        {/* MOBILE MENU TOGGLE */}
-        <button
-          onClick={openMenu}
-          className={`md:hidden text-2xl ${getTextColor()}`}
-          aria-label="Open menu"
-        >
-          <Menu size={26} />
-        </button>
+        {/* MOBILE: Cart & Menu Buttons */}
+        <div className="flex items-center gap-2 md:hidden">
+          {/* Cart Button Mobile */}
+          <button
+            onClick={() => dispatchEvent("open-cart")}
+            className="relative p-2 rounded-full hover:bg-gray-100 transition-all"
+            aria-label={`Cart with ${totalQty} items`}
+          >
+            <ShoppingCart size={22} className={getTextColor()} />
+            {totalQty > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#0FA3A8] text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg">
+                {totalQty > 9 ? '9+' : totalQty}
+              </span>
+            )}
+          </button>
+
+          {/* Menu Button */}
+          <button
+            onClick={openMenu}
+            className="p-2 rounded-full hover:bg-gray-100 transition-all"
+            aria-label="Open menu"
+          >
+            <Menu size={24} className={getTextColor()} />
+          </button>
+        </div>
       </div>
 
-      {/* MOBILE MENU */}
+      {/* MOBILE MENU - BOTTOM SHEET */}
       {menuOpen && (
-        <div
-          className={`
-            fixed inset-0 z-[300] flex flex-col items-center justify-center gap-8
-            bg-white/95 backdrop-blur-xl
-            transition-all duration-300
-            ${menuAnimate
-              ? "opacity-100 translate-y-0 pointer-events-auto"
-              : "opacity-0 translate-y-4 pointer-events-none"
-            }
-          `}
-        >
-          <button
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-[9998]"
             onClick={closeMenu}
-            className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8]"
-            aria-label="Close menu"
-          >
-            <X size={32} />
-          </button>
-
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.href}
-              onClick={() => navClick(item.href)}
-              className="text-3xl font-semibold text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
-            >
-              {item.label}
-            </button>
-          ))}
-
-          {/* CHAT MOBILE */}
-          <button
-            onClick={() => {
-              closeMenu();
-              dispatchEvent("open-chat");
+          />
+          
+          {/* Menu Panel */}
+          <div
+            className={`
+              fixed bottom-0 left-0 right-0 z-[9999] bg-white rounded-t-3xl
+              transition-all duration-300 ease-out
+              transform
+            `}
+            style={{
+              transform: menuOpen ? 'translateY(0)' : 'translateY(100%)',
+              opacity: menuOpen ? 1 : 0,
             }}
-            className="mt-10 flex items-center justify-center gap-3 px-10 py-3 bg-[#0FA3A8] text-white rounded-full text-xl hover:bg-[#0B4B50] transition-all shadow-xl"
           >
-            <MessageCircle size={28} /> Chat Sekarang
-          </button>
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <span className="font-playfair text-xl font-bold text-gray-800">
+                KOJE<span className="text-[#0FA3A8]">24</span>
+              </span>
+              <button
+                onClick={closeMenu}
+                className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition"
+                aria-label="Close menu"
+              >
+                <X size={20} className="text-gray-600" />
+              </button>
+            </div>
 
-          <div className="absolute bottom-8 text-sm text-gray-500">
-            © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
+            {/* Navigation Items */}
+            <div className="p-5">
+              {NAV_ITEMS.map((item) => (
+                <button
+                  key={item.href}
+                  onClick={() => navClick(item.href)}
+                  className="w-full text-left px-4 py-4 rounded-xl text-lg font-medium text-gray-700 hover:bg-gray-50 hover:text-[#0FA3A8] transition-all duration-200"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Chat Button Mobile */}
+            <div className="p-5 pt-0">
+              <button
+                onClick={() => {
+                  closeMenu();
+                  dispatchEvent("open-chat");
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] text-white rounded-xl font-semibold shadow-md"
+              >
+                <MessageCircle size={20} />
+                Chat Customer Service
+              </button>
+            </div>
+
+            {/* Footer */}
+            <div className="p-5 pt-0 pb-8 text-center text-xs text-gray-400">
+              © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </header>
   );
