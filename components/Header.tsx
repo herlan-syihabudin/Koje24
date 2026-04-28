@@ -150,26 +150,29 @@ export default function Header() {
   closeMenu();
 
   if (href.startsWith("#")) {
-    // Kalau di homepage → scroll biasa
-    if (window.location.pathname === "/") {
-      setTimeout(() => {
-        scrollToSection(href);
-      }, prefersReducedMotion ? 0 : 240);
+    if (window.location.pathname !== "/") {
+      router.push("/" + href);
       return;
     }
 
-    // Kalau beda halaman → push dulu, lalu scroll setelah load
-    router.push("/");
-
     setTimeout(() => {
-      scrollToSection(href);
-    }, 500); // tunggu page render
+      const el = document.querySelector(href);
+      if (el) {
+        const headerHeight = shrink ? 65 : 110;
+        const top = el.getBoundingClientRect().top + window.scrollY - headerHeight;
+
+        window.scrollTo({
+          top,
+          behavior: prefersReducedMotion ? "auto" : "smooth",
+        });
+      }
+    }, 50);
 
     return;
   }
 
   router.push(href);
-}, [closeMenu, scrollToSection, router, prefersReducedMotion]);
+}, [closeMenu, router, shrink, prefersReducedMotion]);
 
   // Dynamic classes dengan useMemo - UPDATED
   const headerClasses = useMemo(() => {
