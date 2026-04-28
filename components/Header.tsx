@@ -20,16 +20,8 @@ const SCROLL = {
   SHRINK: 80,
   MOBILE_SHRINK: 65,
   DESKTOP_SHRINK: 110,
-  MENU_ANIMATION: 180,
-} as const;
+};
 
-const COLORS = {
-  primary: "#0FA3A8",
-  secondary: "#0B4B50",
-  accent: "#E8C46B",
-} as const;
-
-// Safe event dispatcher
 const dispatchEvent = (eventName: string, detail?: any) => {
   if (typeof window === 'undefined') return;
   try {
@@ -46,11 +38,17 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [shrink, setShrink] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [menuAnimate, setMenuAnimate] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [isHomePage, setIsHomePage] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  const [hasDarkBackground, setHasDarkBackground] = useState(false);
 
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Check user motion preference
   useEffect(() => {
@@ -62,7 +60,29 @@ export default function Header() {
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // Scroll handler dengan throttle sederhana
+  // Deteksi halaman
+  useEffect(() => {
+    const checkPage = () => {
+      setIsHomePage(window.location.pathname === '/');
+      
+      // Deteksi background gelap di hero section
+      const heroSection = document.querySelector('#hero-section, .hero-section, [data-hero]');
+      if (heroSection) {
+        const bgColor = window.getComputedStyle(heroSection).backgroundColor;
+        const rgb = bgColor.match(/\d+/g);
+        if (rgb) {
+          const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+          setHasDarkBackground(brightness < 128);
+        }
+      }
+    };
+    
+    checkPage();
+    window.addEventListener('popstate', checkPage);
+    return () => window.removeEventListener('popstate', checkPage);
+  }, []);
+
+  // Scroll handler
   useEffect(() => {
     if (menuOpen) return;
 
@@ -84,41 +104,20 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [menuOpen]);
 
-  // Body lock dengan cleanup
+  // Body lock
   useEffect(() => {
     if (menuOpen) {
       document.body.classList.add("body-menu-lock");
     } else {
       document.body.classList.remove("body-menu-lock");
     }
-    
-    return () => {
-      document.body.classList.remove("body-menu-lock");
-    };
+    return () => document.body.classList.remove("body-menu-lock");
   }, [menuOpen]);
 
-  // Menu handlers
-  const openMenu = useCallback(() => {
-    setMenuOpen(true);
-    if (!prefersReducedMotion) {
-      requestAnimationFrame(() => setMenuAnimate(true));
-    } else {
-      setMenuAnimate(true);
-    }
-    window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
-  }, [prefersReducedMotion]);
+  const openMenu = useCallback(() => setMenuOpen(true), []);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
-  const closeMenu = useCallback(() => {
-    if (!prefersReducedMotion) {
-      setMenuAnimate(false);
-      setTimeout(() => setMenuOpen(false), SCROLL.MENU_ANIMATION);
-    } else {
-      setMenuAnimate(false);
-      setMenuOpen(false);
-    }
-  }, [prefersReducedMotion]);
-
-  // Scroll to section dengan dynamic offset
+  // Scroll to section
   const scrollToSection = useCallback((href: string) => {
     const target = document.querySelector(href);
     if (!target) return;
@@ -138,187 +137,267 @@ export default function Header() {
     closeMenu();
 
     if (href.startsWith("#")) {
-      setTimeout(() => scrollToSection(href), prefersReducedMotion ? 0 : 240);
+      if (window.location.pathname === '/') {
+        setTimeout(() => scrollToSection(href), 100);
+        return;
+      }
+      router.push('/');
+      setTimeout(() => scrollToSection(href), 300);
       return;
     }
 
     router.push(href);
-  }, [closeMenu, scrollToSection, router, prefersReducedMotion]);
+  }, [closeMenu, router, scrollToSection]);
 
-  // Dynamic classes dengan useMemo
+  // Update hasDarkBackground saat scroll
+  useEffect(() => {
+    if (isHomePage) {
+      const heroSection = document.querySelector('#hero-section, .hero-section, [data-hero]');
+      if (heroSection) {
+        const bgColor = window.getComputedStyle(heroSection).backgroundColor;
+        const rgb = bgColor.match(/\d+/g);
+        if (rgb) {
+          const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+          setHasDarkBackground(brightness < 128);
+        }
+      }
+    }
+  }, [isScrolled, isHomePage]);
+
+  // Header classes - DINAMIS berdasarkan background
   const headerClasses = useMemo(() => {
-    if (menuOpen) return "fixed top-0 w-full z-[200] bg-transparent py-5";
+    if (!mounted) return "fixed top-0 w-full z-[200] bg-white/80 backdrop-blur-md py-5";
+    if (menuOpen) return "fixed top-0 w-full z-[200] bg-white/80 backdrop-blur-md py-5 shadow-lg";
     
+    if (!isHomePage) {
+      return `
+        fixed top-0 w-full z-[200]
+        transition-all duration-500
+        bg-white/80 backdrop-blur-md
+        shadow-sm
+        ${shrink ? "py-2" : "py-5"}
+      `;
+    }
+    
+    if (isScrolled) {
+      return `
+        fixed top-0 w-full z-[200]
+        transition-all duration-500
+        bg-white/80 backdrop-blur-md
+        shadow-md
+        ${shrink ? "py-2" : "py-5"}
+      `;
+    }
+    
+    // Di homepage dan belum scroll: transparan dengan sedikit blur
     return `
       fixed top-0 w-full z-[200]
-      transition-all duration-700
-      ${isScrolled 
-        ? "backdrop-blur-xl bg-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.05)]" 
-        : "bg-transparent"
-      }
+      transition-all duration-500
+      bg-black/20 backdrop-blur-sm
       ${shrink ? "py-2" : "py-5"}
     `;
-  }, [menuOpen, isScrolled, shrink]);
+  }, [menuOpen, isScrolled, shrink, isHomePage, mounted]);
 
+  // Logo classes - DINAMIS
   const logoClasses = useMemo(() => {
-    if (menuOpen) return "font-playfair font-bold transition-all duration-700 text-xl text-white";
-    return `
-      font-playfair font-bold transition-all duration-700
-      ${shrink ? "text-xl" : "text-2xl"}
-      ${isScrolled ? "text-[#0B4B50]" : "text-white"}
-    `;
-  }, [menuOpen, shrink, isScrolled]);
+    if (!mounted) return "font-playfair font-bold text-2xl text-gray-800";
+    if (menuOpen) return "font-playfair font-bold text-2xl text-gray-800";
+    
+    if (!isHomePage) {
+      return `font-playfair font-bold transition-all duration-500 ${shrink ? "text-xl" : "text-2xl"} text-gray-800`;
+    }
+    
+    if (isScrolled) {
+      return `font-playfair font-bold transition-all duration-500 ${shrink ? "text-xl" : "text-2xl"} text-gray-800`;
+    }
+    
+    return `font-playfair font-bold transition-all duration-500 ${shrink ? "text-xl" : "text-2xl"} text-white`;
+  }, [menuOpen, shrink, isScrolled, isHomePage, mounted]);
 
-  const getTextColor = useCallback((baseClass = "text-white") => {
-    if (menuOpen) return "text-white";
-    if (isScrolled) return "text-[#0B4B50]";
-    return baseClass;
-  }, [menuOpen, isScrolled]);
+  const logoSpanClasses = useMemo(() => {
+    if (!mounted) return "text-[#0FA3A8]";
+    if (menuOpen) return "text-[#0FA3A8]";
+    if (!isHomePage) return "text-[#0FA3A8]";
+    if (isScrolled) return "text-[#0FA3A8]";
+    return "text-[#E8C46B]";
+  }, [menuOpen, isHomePage, isScrolled, mounted]);
+
+  // Text color - DINAMIS
+  const getTextColor = useCallback(() => {
+    if (!mounted) return "text-gray-700";
+    if (menuOpen) return "text-gray-700";
+    if (!isHomePage) return "text-gray-700";
+    if (isScrolled) return "text-gray-700";
+    return "text-white/90 hover:text-white";
+  }, [menuOpen, isScrolled, isHomePage, mounted]);
+
+  const getButtonBg = useCallback(() => {
+    if (!mounted) return "bg-[#0FA3A8] text-white";
+    if (menuOpen) return "bg-[#0FA3A8] text-white";
+    if (!isHomePage) return "bg-[#0FA3A8] text-white";
+    if (isScrolled) return "bg-[#0FA3A8] text-white";
+    return "bg-white/20 backdrop-blur-sm text-white border border-white/20 hover:bg-white/30";
+  }, [menuOpen, isScrolled, isHomePage, mounted]);
+
+  if (!mounted) return null;
 
   return (
     <header className={headerClasses}>
-      {isScrolled && !menuOpen && (
-        <div className="absolute bottom-0 left-0 h-[1.5px] w-full bg-gradient-to-r from-[#0FA3A8]/40 via-[#0B4B50]/40 to-[#0FA3A8]/40" />
+      {/* Animated gradient border */}
+      {(isScrolled || !isHomePage) && (
+        <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#0FA3A8]/30 to-transparent" />
       )}
 
       <div
         className={`
-          max-w-7xl mx-auto flex items-center justify-between px-5 md:px-10
-          ${shrink && !menuOpen ? "h-[60px]" : "h-[82px]"}
-          transition-all duration-700
+          max-w-7xl mx-auto flex items-center justify-between px-4 md:px-10
+          ${shrink && !menuOpen ? "h-[52px]" : "h-[70px]"}
+          transition-all duration-500
         `}
       >
         {/* LOGO */}
         <Link
           href="/"
-          onClick={(e) => {
-            e.preventDefault();
+          onClick={() => {
             dispatchEvent("close-testimoni-modal");
             closeMenu();
-            window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className={logoClasses}
+          className="group relative"
         >
-          KOJE
-          <span
-            className={
-              menuOpen
-                ? "text-[#E8C46B]"
-                : isScrolled
-                ? "text-[#0FA3A8]"
-                : "text-[#E8C46B]"
-            }
-          >
-            24
+          <span className={logoClasses}>
+            KOJE
+            <span className={logoSpanClasses}>24</span>
           </span>
+          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#0FA3A8] to-[#E8C46B] transition-all duration-300 group-hover:w-full" />
         </Link>
 
         {/* DESKTOP MENU */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden md:flex items-center gap-6 lg:gap-8">
           {NAV_ITEMS.map((item) => (
             <button
               key={item.href}
               onClick={() => navClick(item.href)}
               className={`
-                font-medium transition-all duration-300
+                text-sm lg:text-base font-medium transition-all duration-300
                 ${getTextColor()}
-                ${!menuOpen && isScrolled && "hover:text-[#0FA3A8]"}
-                ${!menuOpen && !isScrolled && "hover:text-[#E8C46B]"}
+                hover:text-[#0FA3A8]
               `}
             >
               {item.label}
             </button>
           ))}
 
+          {/* Cart Button */}
           <button
             onClick={() => dispatchEvent("open-cart")}
-            className="relative"
+            className="relative p-2 rounded-full hover:bg-gray-100/20 transition-all"
             aria-label={`Cart with ${totalQty} items`}
           >
-            <ShoppingCart
-              size={24}
-              className={getTextColor()}
-            />
+            <ShoppingCart size={20} className={getTextColor()} />
             {totalQty > 0 && (
-              <span className="absolute -top-2 -right-2 bg-[#E8C46B] text-[#0B4B50] text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
-                {totalQty}
+              <span className="absolute -top-1 -right-1 bg-[#0FA3A8] text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg">
+                {totalQty > 9 ? '9+' : totalQty}
               </span>
             )}
           </button>
 
-          {/* CHAT DESKTOP */}
+          {/* Chat Button */}
           <button
             onClick={() => dispatchEvent("open-chat")}
             className={`
-              ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm shadow-md transition-all
-              ${menuOpen
-                ? "bg-white/20 text-white"
-                : isScrolled
-                ? "bg-[#0FA3A8] text-white hover:bg-[#0B4B50]"
-                : "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30"
-              }
+              flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
+              transition-all duration-300
+              ${getButtonBg()}
             `}
           >
-            <MessageCircle size={20} /> Chat
+            <MessageCircle size={16} />
+            <span className="hidden lg:inline">Chat</span>
           </button>
         </nav>
 
-        {/* MOBILE MENU TOGGLE */}
-        <button
-          onClick={openMenu}
-          className={`md:hidden text-2xl ${getTextColor()}`}
-          aria-label="Open menu"
-        >
-          <Menu size={26} />
-        </button>
+        {/* MOBILE: Cart & Menu Buttons */}
+        <div className="flex items-center gap-2 md:hidden">
+          <button
+            onClick={() => dispatchEvent("open-cart")}
+            className="relative p-2 rounded-full hover:bg-gray-100/20 transition-all"
+            aria-label={`Cart with ${totalQty} items`}
+          >
+            <ShoppingCart size={22} className={getTextColor()} />
+            {totalQty > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#0FA3A8] text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg">
+                {totalQty > 9 ? '9+' : totalQty}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={openMenu}
+            className="p-2 rounded-full hover:bg-gray-100/20 transition-all"
+            aria-label="Open menu"
+          >
+            <Menu size={24} className={getTextColor()} />
+          </button>
+        </div>
       </div>
 
-      {/* MOBILE MENU */}
+      {/* MOBILE MENU - BOTTOM SHEET PREMIUM */}
       {menuOpen && (
-        <div
-          className={`
-            fixed inset-0 z-[300] flex flex-col items-center justify-center gap-8
-            bg-white/95 backdrop-blur-xl
-            transition-all duration-300
-            ${menuAnimate
-              ? "opacity-100 translate-y-0 pointer-events-auto"
-              : "opacity-0 translate-y-4 pointer-events-none"
-            }
-          `}
-        >
-          <button
-            onClick={closeMenu}
-            className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8]"
-            aria-label="Close menu"
-          >
-            <X size={32} />
-          </button>
-
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.href}
-              onClick={() => navClick(item.href)}
-              className="text-3xl font-semibold text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
-            >
-              {item.label}
-            </button>
-          ))}
-
-          {/* CHAT MOBILE */}
-          <button
-            onClick={() => {
-              closeMenu();
-              dispatchEvent("open-chat");
+        <>
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]" onClick={closeMenu} />
+          
+          <div
+            className={`
+              fixed bottom-0 left-0 right-0 z-[9999] bg-white/95 backdrop-blur-xl rounded-t-3xl
+              transition-all duration-300 ease-out transform
+            `}
+            style={{
+              transform: menuOpen ? 'translateY(0)' : 'translateY(100%)',
+              opacity: menuOpen ? 1 : 0,
             }}
-            className="mt-10 flex items-center justify-center gap-3 px-10 py-3 bg-[#0FA3A8] text-white rounded-full text-xl hover:bg-[#0B4B50] transition-all shadow-xl"
           >
-            <MessageCircle size={28} /> Chat Sekarang
-          </button>
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <span className="font-playfair text-xl font-bold text-gray-800">
+                KOJE<span className="text-[#0FA3A8]">24</span>
+              </span>
+              <button
+                onClick={closeMenu}
+                className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition"
+              >
+                <X size={20} className="text-gray-600" />
+              </button>
+            </div>
 
-          <div className="absolute bottom-8 text-sm text-gray-500">
-            © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
+            <div className="p-5">
+              {NAV_ITEMS.map((item) => (
+                <button
+                  key={item.href}
+                  onClick={() => navClick(item.href)}
+                  className="w-full text-left px-4 py-4 rounded-xl text-lg font-medium text-gray-700 hover:bg-gray-50 hover:text-[#0FA3A8] transition-all duration-200"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-5 pt-0">
+              <button
+                onClick={() => {
+                  closeMenu();
+                  dispatchEvent("open-chat");
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] text-white rounded-xl font-semibold shadow-md"
+              >
+                <MessageCircle size={20} />
+                Chat Customer Service
+              </button>
+            </div>
+
+            <div className="p-5 pt-0 pb-8 text-center text-xs text-gray-400">
+              © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </header>
   );
