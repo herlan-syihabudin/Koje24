@@ -34,6 +34,15 @@ const dispatchEvent = (eventName: string, detail?: any) => {
   }
 };
 
+// Debounce utility
+const debounce = (fn: Function, ms: number) => {
+  let timer: NodeJS.Timeout;
+  return (...args: any[]) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  };
+};
+
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [shrink, setShrink] = useState(false);
@@ -41,14 +50,22 @@ export default function Header() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [isHomePage, setIsHomePage] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [activeLink, setActiveLink] = useState("");
 
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
 
-  // Mounted state untuk menghindari hydration mismatch
+  // Mounted state
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Prefetch untuk performa
+  useEffect(() => {
+    if (mounted) {
+      router.prefetch('/pusat-bantuan');
+    }
+  }, [router, mounted]);
 
   // Check user motion preference
   useEffect(() => {
@@ -60,33 +77,39 @@ export default function Header() {
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // Deteksi halaman
+  // Deteksi halaman & active link
   useEffect(() => {
     const checkPage = () => {
-      setIsHomePage(window.location.pathname === '/');
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      setIsHomePage(path === '/');
+      
+      if (path === '/pusat-bantuan') setActiveLink('Bantuan');
+      else if (hash === '#produk') setActiveLink('Produk');
+      else if (hash === '#about') setActiveLink('Tentang KOJE24');
+      else if (hash === '#langganan') setActiveLink('Langganan');
+      else if (hash === '#testimoni') setActiveLink('Testimoni');
+      else setActiveLink('');
     };
     
     checkPage();
     window.addEventListener('popstate', checkPage);
-    return () => window.removeEventListener('popstate', checkPage);
+    window.addEventListener('hashchange', checkPage);
+    return () => {
+      window.removeEventListener('popstate', checkPage);
+      window.removeEventListener('hashchange', checkPage);
+    };
   }, []);
 
-  // Scroll handler
+  // Scroll handler with debounce for performance
   useEffect(() => {
     if (menuOpen) return;
 
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const y = window.scrollY;
-          setIsScrolled(y > SCROLL.SCROLLED);
-          setShrink(y > SCROLL.SHRINK);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
+    const handleScroll = debounce(() => {
+      const y = window.scrollY;
+      setIsScrolled(y > SCROLL.SCROLLED);
+      setShrink(y > SCROLL.SHRINK);
+    }, 16);
 
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -103,13 +126,8 @@ export default function Header() {
     return () => document.body.classList.remove("body-menu-lock");
   }, [menuOpen]);
 
-  const openMenu = useCallback(() => {
-    setMenuOpen(true);
-  }, []);
-
-  const closeMenu = useCallback(() => {
-    setMenuOpen(false);
-  }, []);
+  const openMenu = useCallback(() => setMenuOpen(true), []);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   // Scroll to section
   const scrollToSection = useCallback((href: string) => {
@@ -126,9 +144,10 @@ export default function Header() {
   }, [shrink, prefersReducedMotion]);
 
   // Navigation handler
-  const navClick = useCallback((href: string) => {
+  const navClick = useCallback((href: string, label: string) => {
     dispatchEvent("close-testimoni-modal");
     closeMenu();
+    setActiveLink(label);
 
     if (href.startsWith("#")) {
       if (window.location.pathname === '/') {
@@ -151,7 +170,7 @@ export default function Header() {
     if (!isHomePage) {
       return `
         fixed top-0 w-full z-[200]
-        transition-all duration-500
+        transition-all duration-300
         bg-white shadow-md
         ${shrink ? "py-2" : "py-5"}
       `;
@@ -159,7 +178,7 @@ export default function Header() {
     
     return `
       fixed top-0 w-full z-[200]
-      transition-all duration-500
+      transition-all duration-300
       ${isScrolled
         ? "bg-white shadow-md" 
         : "bg-transparent"
@@ -174,10 +193,10 @@ export default function Header() {
     if (menuOpen) return "font-playfair font-bold text-2xl text-gray-800";
     
     if (!isHomePage) {
-      return `font-playfair font-bold transition-all duration-500 ${shrink ? "text-xl" : "text-2xl"} text-gray-800`;
+      return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} text-gray-800`;
     }
     
-    return `font-playfair font-bold transition-all duration-500 ${shrink ? "text-xl" : "text-2xl"} ${isScrolled ? "text-gray-800" : "text-white"}`;
+    return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} ${isScrolled ? "text-gray-800" : "text-white"}`;
   }, [menuOpen, shrink, isScrolled, isHomePage, mounted]);
 
   const logoSpanClasses = useMemo(() => {
@@ -209,11 +228,16 @@ export default function Header() {
 
   return (
     <header className={headerClasses}>
+      {/* Skip to main content - Accessibility */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-white text-gray-800 px-4 py-2 rounded-lg z-[10000] shadow-lg">
+        Langsung ke konten utama
+      </a>
+
       <div
         className={`
           max-w-7xl mx-auto flex items-center justify-between px-4 md:px-10
           ${shrink && !menuOpen ? "h-[52px]" : "h-[70px]"}
-          transition-all duration-500
+          transition-all duration-300
         `}
       >
         {/* LOGO */}
@@ -222,6 +246,7 @@ export default function Header() {
           onClick={() => {
             dispatchEvent("close-testimoni-modal");
             closeMenu();
+            setActiveLink('');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           className="group relative"
@@ -238,10 +263,11 @@ export default function Header() {
           {NAV_ITEMS.map((item) => (
             <button
               key={item.href}
-              onClick={() => navClick(item.href)}
+              onClick={() => navClick(item.href, item.label)}
               className={`
                 text-sm lg:text-base font-medium transition-all duration-300
                 ${getTextColor()}
+                ${activeLink === item.label ? 'text-[#0FA3A8] font-semibold' : ''}
                 hover:text-[#0FA3A8]
               `}
             >
@@ -279,7 +305,6 @@ export default function Header() {
 
         {/* MOBILE: Cart & Menu Buttons */}
         <div className="flex items-center gap-2 md:hidden">
-          {/* Cart Button Mobile */}
           <button
             onClick={() => dispatchEvent("open-cart")}
             className="relative p-2 rounded-full hover:bg-gray-100 transition-all"
@@ -293,7 +318,6 @@ export default function Header() {
             )}
           </button>
 
-          {/* Menu Button */}
           <button
             onClick={openMenu}
             className="p-2 rounded-full hover:bg-gray-100 transition-all"
@@ -307,25 +331,18 @@ export default function Header() {
       {/* MOBILE MENU - BOTTOM SHEET */}
       {menuOpen && (
         <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50 z-[9998]"
-            onClick={closeMenu}
-          />
+          <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={closeMenu} />
           
-          {/* Menu Panel */}
           <div
             className={`
               fixed bottom-0 left-0 right-0 z-[9999] bg-white rounded-t-3xl
-              transition-all duration-300 ease-out
-              transform
+              transition-all duration-300 ease-out transform
             `}
             style={{
               transform: menuOpen ? 'translateY(0)' : 'translateY(100%)',
               opacity: menuOpen ? 1 : 0,
             }}
           >
-            {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <span className="font-playfair text-xl font-bold text-gray-800">
                 KOJE<span className="text-[#0FA3A8]">24</span>
@@ -339,34 +356,38 @@ export default function Header() {
               </button>
             </div>
 
-            {/* Navigation Items */}
             <div className="p-5">
               {NAV_ITEMS.map((item) => (
                 <button
                   key={item.href}
-                  onClick={() => navClick(item.href)}
-                  className="w-full text-left px-4 py-4 rounded-xl text-lg font-medium text-gray-700 hover:bg-gray-50 hover:text-[#0FA3A8] transition-all duration-200"
+                  onClick={() => navClick(item.href, item.label)}
+                  className={`
+                    w-full text-left px-4 py-4 rounded-xl text-lg font-medium
+                    transition-all duration-200
+                    ${activeLink === item.label 
+                      ? 'bg-gradient-to-r from-[#0FA3A8]/10 to-[#0B4B50]/10 text-[#0FA3A8] font-semibold' 
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-[#0FA3A8]'
+                    }
+                  `}
                 >
                   {item.label}
                 </button>
               ))}
             </div>
 
-            {/* Chat Button Mobile */}
             <div className="p-5 pt-0">
               <button
                 onClick={() => {
                   closeMenu();
                   dispatchEvent("open-chat");
                 }}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] text-white rounded-xl font-semibold shadow-md"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all"
               >
                 <MessageCircle size={20} />
                 Chat Customer Service
               </button>
             </div>
 
-            {/* Footer */}
             <div className="p-5 pt-0 pb-8 text-center text-xs text-gray-400">
               © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
             </div>
