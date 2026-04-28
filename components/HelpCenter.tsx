@@ -233,7 +233,7 @@ export default function HelpCenter() {
 
   return (
     <>
-      <main className="min-h-screen bg-white pt-24">
+      <main className="min-h-screen bg-white pt-26">
         
         {/* HERO SECTION - PREMIUM GLASSMORPHISM */}
         <section className="relative overflow-hidden bg-gradient-to-br from-[#0FA3A8]/5 via-white to-[#E8C46B]/5">
