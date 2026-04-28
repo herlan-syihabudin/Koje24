@@ -146,24 +146,36 @@ export default function Header() {
 
   // Navigation handler - UPDATED
   const navClick = useCallback((href: string) => {
-    dispatchEvent("close-testimoni-modal");
-    closeMenu();
+  dispatchEvent("close-testimoni-modal");
+  closeMenu();
 
-    if (href.startsWith("#")) {
-      // Cek apakah sedang di homepage
-      if (window.location.pathname !== '/') {
-        // Jika tidak di homepage, arahkan ke homepage dulu dengan hash
-        router.push(`/${href}`);
-        return;
-      }
-      
-      // Jika di homepage, scroll biasa
+  if (href.startsWith("#")) {
+    // Jika sudah di homepage, langsung scroll
+    if (window.location.pathname === '/') {
       setTimeout(() => scrollToSection(href), prefersReducedMotion ? 0 : 240);
       return;
     }
+    
+    // Jika di halaman lain, pindah ke homepage dulu
+    router.push('/');
+    
+    // Setelah pindah, scroll ke section
+    setTimeout(() => {
+      const target = document.querySelector(href);
+      if (target) {
+        const headerHeight = shrink ? SCROLL.MOBILE_SHRINK : SCROLL.DESKTOP_SHRINK;
+        const y = target.getBoundingClientRect().top + window.scrollY - headerHeight;
+        window.scrollTo({ 
+          top: y, 
+          behavior: prefersReducedMotion ? 'auto' : 'smooth' 
+        });
+      }
+    }, 300);
+    return;
+  }
 
-    router.push(href);
-  }, [closeMenu, scrollToSection, router, prefersReducedMotion]);
+  router.push(href);
+}, [closeMenu, scrollToSection, router, prefersReducedMotion, shrink]);
 
   // Dynamic classes dengan useMemo - UPDATED
   const headerClasses = useMemo(() => {
