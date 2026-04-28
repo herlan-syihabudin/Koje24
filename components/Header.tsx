@@ -48,7 +48,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAnimate, setMenuAnimate] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [isHomePage, setIsHomePage] = useState(true); // TAMBAH: deteksi halaman
+  const [isHomePage, setIsHomePage] = useState(true);
 
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
@@ -63,7 +63,7 @@ export default function Header() {
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // TAMBAH: Deteksi halaman (homepage atau bukan)
+  // Deteksi halaman (homepage atau bukan)
   useEffect(() => {
     const checkPage = () => {
       setIsHomePage(window.location.pathname === '/');
@@ -144,44 +144,79 @@ export default function Header() {
     });
   }, [shrink, prefersReducedMotion]);
 
-  // Navigation handler - UPDATED
+  // Navigation handler - FIXED dengan polling scroll
   const navClick = useCallback((href: string) => {
-  dispatchEvent("close-testimoni-modal");
-  closeMenu();
+    dispatchEvent("close-testimoni-modal");
+    closeMenu();
 
-  if (href.startsWith("#")) {
-    if (window.location.pathname !== "/") {
-      router.push("/" + href);
+    if (href.startsWith("#")) {
+      // Jika sudah di homepage, scroll langsung
+      if (window.location.pathname === '/') {
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        const tryScroll = () => {
+          const target = document.querySelector(href);
+          if (target) {
+            const headerHeight = shrink ? SCROLL.MOBILE_SHRINK : SCROLL.DESKTOP_SHRINK;
+            const y = target.getBoundingClientRect().top + window.scrollY - headerHeight;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+          } else if (attempts < maxAttempts) {
+            attempts++;
+            setTimeout(tryScroll, 100);
+          }
+        };
+        
+        setTimeout(tryScroll, 100);
+        return;
+      }
+      
+      // Jika di halaman lain, pindah ke homepage
+      router.push('/');
+      
+      // Polling scroll setelah pindah
+      let attempts = 0;
+      const maxAttempts = 30;
+      
+      const tryScroll = () => {
+        const target = document.querySelector(href);
+        if (target) {
+          const headerHeight = shrink ? SCROLL.MOBILE_SHRINK : SCROLL.DESKTOP_SHRINK;
+          const y = target.getBoundingClientRect().top + window.scrollY - headerHeight;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        } else if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(tryScroll, 100);
+        }
+      };
+      
+      setTimeout(tryScroll, 200);
       return;
     }
 
-    setTimeout(() => {
-      const el = document.querySelector(href);
-      if (el) {
-        const headerHeight = shrink ? 65 : 110;
-        const top = el.getBoundingClientRect().top + window.scrollY - headerHeight;
+    router.push(href);
+  }, [closeMenu, router, shrink]);
 
-        window.scrollTo({
-          top,
-          behavior: prefersReducedMotion ? "auto" : "smooth",
-        });
-      }
-    }, 50);
-
-    return;
-  }
-
-  router.push(href);
-}, [closeMenu, router, shrink, prefersReducedMotion]);
-
-  // Dynamic classes dengan useMemo - UPDATED
+  // Dynamic classes - FIXED (background putih untuk semua halaman non-homepage)
   const headerClasses = useMemo(() => {
     if (menuOpen) return "fixed top-0 w-full z-[200] bg-transparent py-5";
     
+    // Untuk halaman NON-homepage (pusat-bantuan, testimoni, tentang-koje, dll)
+    // Background putih dari awal, konsisten dengan halaman lain
+    if (!isHomePage) {
+      return `
+        fixed top-0 w-full z-[200]
+        transition-all duration-700
+        backdrop-blur-xl bg-white/90 shadow-[0_4px_20px_rgba(0,0,0,0.05)]
+        ${shrink ? "py-2" : "py-5"}
+      `;
+    }
+    
+    // Untuk homepage: transparan sampai scroll
     return `
       fixed top-0 w-full z-[200]
       transition-all duration-700
-      ${(isScrolled || !isHomePage)
+      ${isScrolled
         ? "backdrop-blur-xl bg-white/90 shadow-[0_4px_20px_rgba(0,0,0,0.05)]" 
         : "bg-transparent"
       }
@@ -189,24 +224,42 @@ export default function Header() {
     `;
   }, [menuOpen, isScrolled, shrink, isHomePage]);
 
+  // Logo classes - FIXED
   const logoClasses = useMemo(() => {
     if (menuOpen) return "font-playfair font-bold transition-all duration-700 text-xl text-white";
+    
+    // Untuk halaman non-homepage
+    if (!isHomePage) {
+      return `
+        font-playfair font-bold transition-all duration-700
+        ${shrink ? "text-xl" : "text-2xl"}
+        text-[#0B4B50]
+      `;
+    }
+    
+    // Untuk homepage
     return `
       font-playfair font-bold transition-all duration-700
       ${shrink ? "text-xl" : "text-2xl"}
-      ${(isScrolled || !isHomePage) ? "text-[#0B4B50]" : "text-white"}
+      ${isScrolled ? "text-[#0B4B50]" : "text-white"}
     `;
   }, [menuOpen, shrink, isScrolled, isHomePage]);
 
+  // Text color - FIXED
   const getTextColor = useCallback(() => {
     if (menuOpen) return "text-white";
-    if (isScrolled || !isHomePage) return "text-[#0B4B50]";
+    
+    // Di halaman non-homepage, background putih → teks gelap
+    if (!isHomePage) return "text-[#0B4B50]";
+    
+    // Di homepage
+    if (isScrolled) return "text-[#0B4B50]";
     return "text-white";
   }, [menuOpen, isScrolled, isHomePage]);
 
   return (
     <header className={headerClasses}>
-      {isScrolled && !menuOpen && (
+      {isScrolled && !menuOpen && !isHomePage && (
         <div className="absolute bottom-0 left-0 h-[1.5px] w-full bg-gradient-to-r from-[#0FA3A8]/40 via-[#0B4B50]/40 to-[#0FA3A8]/40" />
       )}
 
@@ -232,7 +285,9 @@ export default function Header() {
             className={
               menuOpen
                 ? "text-[#E8C46B]"
-                : (isScrolled || !isHomePage)
+                : !isHomePage
+                ? "text-[#0FA3A8]"
+                : isScrolled
                 ? "text-[#0FA3A8]"
                 : "text-[#E8C46B]"
             }
