@@ -45,7 +45,6 @@ export default function Header() {
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
 
-  // Mounted state untuk menghindari hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -103,13 +102,8 @@ export default function Header() {
     return () => document.body.classList.remove("body-menu-lock");
   }, [menuOpen]);
 
-  const openMenu = useCallback(() => {
-    setMenuOpen(true);
-  }, []);
-
-  const closeMenu = useCallback(() => {
-    setMenuOpen(false);
-  }, []);
+  const openMenu = useCallback(() => setMenuOpen(true), []);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   // Scroll to section
   const scrollToSection = useCallback((href: string) => {
@@ -143,27 +137,38 @@ export default function Header() {
     router.push(href);
   }, [closeMenu, router, scrollToSection]);
 
-  // Header classes
+  // Header classes - SEDERHANA & DINAMIS
   const headerClasses = useMemo(() => {
-    if (!mounted) return "fixed top-0 w-full z-[200] bg-white py-5";
-    if (menuOpen) return "fixed top-0 w-full z-[200] bg-white py-5 shadow-md";
+    if (!mounted) return "fixed top-0 w-full z-[200] bg-white/90 backdrop-blur-md py-5";
+    if (menuOpen) return "fixed top-0 w-full z-[200] bg-white/90 backdrop-blur-md py-5 shadow-lg";
     
+    // Halaman non-homepage (pusat-bantuan, testimoni, dll)
     if (!isHomePage) {
       return `
         fixed top-0 w-full z-[200]
         transition-all duration-500
-        bg-white shadow-md
+        bg-white/90 backdrop-blur-md
+        shadow-sm
         ${shrink ? "py-2" : "py-5"}
       `;
     }
     
+    // Homepage sudah scroll
+    if (isScrolled) {
+      return `
+        fixed top-0 w-full z-[200]
+        transition-all duration-500
+        bg-white/90 backdrop-blur-md
+        shadow-md
+        ${shrink ? "py-2" : "py-5"}
+      `;
+    }
+    
+    // Homepage awal: transparan
     return `
       fixed top-0 w-full z-[200]
       transition-all duration-500
-      ${isScrolled
-        ? "bg-white shadow-md" 
-        : "bg-transparent"
-      }
+      bg-transparent
       ${shrink ? "py-2" : "py-5"}
     `;
   }, [menuOpen, isScrolled, shrink, isHomePage, mounted]);
@@ -177,7 +182,11 @@ export default function Header() {
       return `font-playfair font-bold transition-all duration-500 ${shrink ? "text-xl" : "text-2xl"} text-gray-800`;
     }
     
-    return `font-playfair font-bold transition-all duration-500 ${shrink ? "text-xl" : "text-2xl"} ${isScrolled ? "text-gray-800" : "text-white"}`;
+    if (isScrolled) {
+      return `font-playfair font-bold transition-all duration-500 ${shrink ? "text-xl" : "text-2xl"} text-gray-800`;
+    }
+    
+    return `font-playfair font-bold transition-all duration-500 ${shrink ? "text-xl" : "text-2xl"} text-white`;
   }, [menuOpen, shrink, isScrolled, isHomePage, mounted]);
 
   const logoSpanClasses = useMemo(() => {
@@ -190,11 +199,11 @@ export default function Header() {
 
   // Text color
   const getTextColor = useCallback(() => {
-    if (!mounted) return "text-gray-800";
-    if (menuOpen) return "text-gray-800";
-    if (!isHomePage) return "text-gray-800";
-    if (isScrolled) return "text-gray-800";
-    return "text-white";
+    if (!mounted) return "text-gray-700";
+    if (menuOpen) return "text-gray-700";
+    if (!isHomePage) return "text-gray-700";
+    if (isScrolled) return "text-gray-700";
+    return "text-white/90 hover:text-white";
   }, [menuOpen, isScrolled, isHomePage, mounted]);
 
   const getButtonBg = useCallback(() => {
@@ -202,13 +211,18 @@ export default function Header() {
     if (menuOpen) return "bg-[#0FA3A8] text-white";
     if (!isHomePage) return "bg-[#0FA3A8] text-white";
     if (isScrolled) return "bg-[#0FA3A8] text-white";
-    return "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30";
+    return "bg-white/20 backdrop-blur-sm text-white border border-white/20 hover:bg-white/30";
   }, [menuOpen, isScrolled, isHomePage, mounted]);
 
   if (!mounted) return null;
 
   return (
     <header className={headerClasses}>
+      {/* Animated gradient border */}
+      {(isScrolled || !isHomePage) && (
+        <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#0FA3A8]/30 to-transparent" />
+      )}
+
       <div
         className={`
           max-w-7xl mx-auto flex items-center justify-between px-4 md:px-10
@@ -252,12 +266,12 @@ export default function Header() {
           {/* Cart Button */}
           <button
             onClick={() => dispatchEvent("open-cart")}
-            className="relative p-2 rounded-full hover:bg-gray-100 transition-all"
+            className="relative p-2 rounded-full hover:bg-gray-100/20 transition-all"
             aria-label={`Cart with ${totalQty} items`}
           >
             <ShoppingCart size={20} className={getTextColor()} />
             {totalQty > 0 && (
-              <span className="absolute -top-1 -right-1 bg-[#0FA3A8] text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg">
+              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg">
                 {totalQty > 9 ? '9+' : totalQty}
               </span>
             )}
@@ -279,24 +293,22 @@ export default function Header() {
 
         {/* MOBILE: Cart & Menu Buttons */}
         <div className="flex items-center gap-2 md:hidden">
-          {/* Cart Button Mobile */}
           <button
             onClick={() => dispatchEvent("open-cart")}
-            className="relative p-2 rounded-full hover:bg-gray-100 transition-all"
+            className="relative p-2 rounded-full hover:bg-gray-100/20 transition-all"
             aria-label={`Cart with ${totalQty} items`}
           >
             <ShoppingCart size={22} className={getTextColor()} />
             {totalQty > 0 && (
-              <span className="absolute -top-1 -right-1 bg-[#0FA3A8] text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg">
+              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg">
                 {totalQty > 9 ? '9+' : totalQty}
               </span>
             )}
           </button>
 
-          {/* Menu Button */}
           <button
             onClick={openMenu}
-            className="p-2 rounded-full hover:bg-gray-100 transition-all"
+            className="p-2 rounded-full hover:bg-gray-100/20 transition-all"
             aria-label="Open menu"
           >
             <Menu size={24} className={getTextColor()} />
@@ -307,25 +319,18 @@ export default function Header() {
       {/* MOBILE MENU - BOTTOM SHEET */}
       {menuOpen && (
         <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50 z-[9998]"
-            onClick={closeMenu}
-          />
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9998]" onClick={closeMenu} />
           
-          {/* Menu Panel */}
           <div
             className={`
               fixed bottom-0 left-0 right-0 z-[9999] bg-white rounded-t-3xl
-              transition-all duration-300 ease-out
-              transform
+              transition-all duration-300 ease-out transform
             `}
             style={{
               transform: menuOpen ? 'translateY(0)' : 'translateY(100%)',
               opacity: menuOpen ? 1 : 0,
             }}
           >
-            {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <span className="font-playfair text-xl font-bold text-gray-800">
                 KOJE<span className="text-[#0FA3A8]">24</span>
@@ -333,13 +338,11 @@ export default function Header() {
               <button
                 onClick={closeMenu}
                 className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition"
-                aria-label="Close menu"
               >
                 <X size={20} className="text-gray-600" />
               </button>
             </div>
 
-            {/* Navigation Items */}
             <div className="p-5">
               {NAV_ITEMS.map((item) => (
                 <button
@@ -352,7 +355,6 @@ export default function Header() {
               ))}
             </div>
 
-            {/* Chat Button Mobile */}
             <div className="p-5 pt-0">
               <button
                 onClick={() => {
@@ -366,7 +368,6 @@ export default function Header() {
               </button>
             </div>
 
-            {/* Footer */}
             <div className="p-5 pt-0 pb-8 text-center text-xs text-gray-400">
               © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
             </div>
