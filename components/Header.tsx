@@ -156,26 +156,13 @@ export default function Header() {
       return;
     }
     
-    // Jika di halaman lain, pindah ke homepage dulu
-    router.push('/');
-    
-    // Setelah pindah, scroll ke section
-    setTimeout(() => {
-      const target = document.querySelector(href);
-      if (target) {
-        const headerHeight = shrink ? SCROLL.MOBILE_SHRINK : SCROLL.DESKTOP_SHRINK;
-        const y = target.getBoundingClientRect().top + window.scrollY - headerHeight;
-        window.scrollTo({ 
-          top: y, 
-          behavior: prefersReducedMotion ? 'auto' : 'smooth' 
-        });
-      }
-    }, 300);
+    // 🔥 FIX: Pindah langsung ke /#target, biar browser yang handle scroll
+    router.push(`/${href}`);
     return;
   }
 
   router.push(href);
-}, [closeMenu, scrollToSection, router, prefersReducedMotion, shrink]);
+}, [closeMenu, scrollToSection, router, prefersReducedMotion]);
 
   // Dynamic classes dengan useMemo - UPDATED
   const headerClasses = useMemo(() => {
