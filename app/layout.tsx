@@ -5,6 +5,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
 
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import StickyCartBar from "@/components/StickyCartBar";
 import PromoPopup from "@/components/PromoPopup";
 import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO";
@@ -103,6 +105,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
 
       <body className="antialiased font-inter bg-white text-[#0B4B50] max-w-[100vw] overflow-x-hidden">
+        {/* Header - di layout biar konsisten */}
+        <Header />
+
         {/* SEO Schemas */}
         <TestimonialSchemaSEO />
         
@@ -114,7 +119,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
 
         {/* Main content */}
-        {children}
+        <main className="min-h-screen">{children}</main>
+
+        {/* Footer - di layout biar konsisten */}
+        <Footer />
 
         {/* Toaster for notifications */}
         <Toaster 
