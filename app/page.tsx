@@ -56,6 +56,19 @@ export default function HomePage() {
 
       <FaqSection />
 
+      {/* REDIRECT UNTUK MENU BANTUAN */}
+      <section id="bantuan" className="h-0 overflow-hidden">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (window.location.hash === '#bantuan') {
+                window.location.href = '/pusat-bantuan';
+              }
+            `
+          }}
+        />
+      </section>
+
       <CartPopup />
       <PackagePopup />
       <RatingPopup />
