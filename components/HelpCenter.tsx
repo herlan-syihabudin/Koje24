@@ -247,7 +247,7 @@ export default function HelpCenter() {
             <div className="absolute -bottom-8 left-20 w-72 h-72 bg-[#0B4B50]/20 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-2000" />
           </div>
           
-          <div className="relative max-w-6xl mx-auto px-6 md:px-10 pt-24 pb-20">
+          <div className="relative max-w-6xl mx-auto px-6 md:px-10 pb-20">
             {/* Breadcrumb */}
             <nav className="flex items-center gap-2 text-sm mb-8">
               <a href="/" className="text-gray-500 hover:text-[#0FA3A8] transition">Beranda</a>
