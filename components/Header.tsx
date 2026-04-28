@@ -197,17 +197,17 @@ export default function Header() {
     router.push(href);
   }, [closeMenu, router, shrink]);
 
-  // Dynamic classes - FIXED (background putih untuk semua halaman non-homepage)
+  // Dynamic classes - FIXED (background PUTIH SOLID untuk halaman non-homepage)
   const headerClasses = useMemo(() => {
     if (menuOpen) return "fixed top-0 w-full z-[200] bg-transparent py-5";
     
     // Untuk halaman NON-homepage (pusat-bantuan, testimoni, tentang-koje, dll)
-    // Background putih dari awal, konsisten dengan halaman lain
+    // Background PUTIH SOLID, bukan transparan
     if (!isHomePage) {
       return `
         fixed top-0 w-full z-[200]
         transition-all duration-700
-        backdrop-blur-xl bg-white/90 shadow-[0_4px_20px_rgba(0,0,0,0.05)]
+        bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)]
         ${shrink ? "py-2" : "py-5"}
       `;
     }
@@ -217,7 +217,7 @@ export default function Header() {
       fixed top-0 w-full z-[200]
       transition-all duration-700
       ${isScrolled
-        ? "backdrop-blur-xl bg-white/90 shadow-[0_4px_20px_rgba(0,0,0,0.05)]" 
+        ? "bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)]" 
         : "bg-transparent"
       }
       ${shrink ? "py-2" : "py-5"}
@@ -233,7 +233,7 @@ export default function Header() {
       return `
         font-playfair font-bold transition-all duration-700
         ${shrink ? "text-xl" : "text-2xl"}
-        text-[#0B4B50]
+        text-gray-800
       `;
     }
     
@@ -241,19 +241,19 @@ export default function Header() {
     return `
       font-playfair font-bold transition-all duration-700
       ${shrink ? "text-xl" : "text-2xl"}
-      ${isScrolled ? "text-[#0B4B50]" : "text-white"}
+      ${isScrolled ? "text-gray-800" : "text-white"}
     `;
   }, [menuOpen, shrink, isScrolled, isHomePage]);
 
-  // Text color - FIXED
+  // Text color - FIXED (lebih gelap biar jelas)
   const getTextColor = useCallback(() => {
     if (menuOpen) return "text-white";
     
-    // Di halaman non-homepage, background putih → teks gelap
-    if (!isHomePage) return "text-[#0B4B50]";
+    // Di halaman non-homepage, background putih solid → teks gelap pekat
+    if (!isHomePage) return "text-gray-800";
     
     // Di homepage
-    if (isScrolled) return "text-[#0B4B50]";
+    if (isScrolled) return "text-gray-800";
     return "text-white";
   }, [menuOpen, isScrolled, isHomePage]);
 
