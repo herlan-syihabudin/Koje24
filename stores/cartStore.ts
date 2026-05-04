@@ -17,23 +17,27 @@ export type Promo = {
   nilai: number
   minimal: number
   maxDiskon: number | null
+  expiresAt?: Date
 }
 
 // ================== STATE ==================
 interface CartState {
   items: CartItem[]
-  totalQty: number
-  totalPrice: number
-
   promo: Promo | null
+  shippingCost: number
 
+  // ACTION
   addItem: (item: Omit<CartItem, "qty">) => void
   removeItem: (id: string) => void
   clearCart: () => void
 
   setPromo: (promo: Promo) => void
   clearPromo: () => void
+  setShippingCost: (cost: number) => void
 
+  // DERIVED
+  totalQty: () => number
+  totalPrice: () => number
   getDiscount: () => number
   getFinalTotal: () => number
 }
@@ -43,10 +47,8 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
-      totalQty: 0,
-      totalPrice: 0,
-
       promo: null,
+      shippingCost: 0,
 
       // ================= CART =================
       addItem: (item) => {
@@ -56,11 +58,7 @@ export const useCartStore = create<CartState>()(
         if (exist) exist.qty += 1
         else items.push({ ...item, qty: 1 })
 
-        set({
-          items,
-          totalQty: items.reduce((s, i) => s + i.qty, 0),
-          totalPrice: items.reduce((s, i) => s + i.qty * i.price, 0),
-        })
+        set({ items })
       },
 
       removeItem: (id) => {
@@ -77,52 +75,75 @@ export const useCartStore = create<CartState>()(
 
         set({
           items,
-          totalQty: items.reduce((s, i) => s + i.qty, 0),
-          totalPrice: items.reduce((s, i) => s + i.qty * i.price, 0),
-          // 🔥 AUTO CLEAR PROMO JIKA CART KOSONG
-          promo: items.length === 0 ? null : get().promo,
+          // auto clear promo kalau cart kosong
+          promo: items.length === 0 ? null : get().promo
         })
       },
 
       clearCart: () =>
         set({
           items: [],
-          totalQty: 0,
-          totalPrice: 0,
           promo: null,
+          shippingCost: 0
         }),
 
       // ================= PROMO =================
-      setPromo: (promo) => set({ promo }),
+      setPromo: (promo) => {
+        // validasi expired
+        if (promo.expiresAt && new Date() > promo.expiresAt) {
+          console.warn("Promo expired")
+          return
+        }
+
+        set({ promo })
+      },
+
       clearPromo: () => set({ promo: null }),
 
-      // ================= CALC =================
+      setShippingCost: (cost) => set({ shippingCost: cost }),
+
+      // ================= DERIVED =================
+      totalQty: () =>
+        get().items.reduce((sum, i) => sum + i.qty, 0),
+
+      totalPrice: () =>
+        get().items.reduce((sum, i) => sum + i.qty * i.price, 0),
+
       getDiscount: () => {
-        const { promo, totalPrice } = get()
+        const { promo, shippingCost } = get()
+        const subtotal = get().totalPrice()
+
         if (!promo) return 0
-        if (totalPrice < promo.minimal) return 0
+        if (subtotal < promo.minimal) return 0
 
-        let d = 0
+        let discount = 0
 
-        if (promo.tipe === "percent") {
-          d = (totalPrice * promo.nilai) / 100
-        } else if (promo.tipe === "flat") {
-          d = promo.nilai
-        } else if (promo.tipe === "free_shipping") {
-          // 🔧 Placeholder — ongkir di-handle di checkout
-          d = 0
+        switch (promo.tipe) {
+          case "percent":
+            discount = (subtotal * promo.nilai) / 100
+            break
+          case "flat":
+            discount = promo.nilai
+            break
+          case "free_shipping":
+            discount = shippingCost
+            break
+          case "cashback":
+            discount = promo.nilai
+            break
         }
 
         if (promo.maxDiskon) {
-          d = Math.min(d, promo.maxDiskon)
+          discount = Math.min(discount, promo.maxDiskon)
         }
 
-        return Math.floor(d)
+        return Math.floor(discount)
       },
 
       getFinalTotal: () => {
-        const { totalPrice } = get()
-        return Math.max(totalPrice - get().getDiscount(), 0)
+        const subtotal = get().totalPrice()
+        const discount = get().getDiscount()
+        return Math.max(subtotal - discount, 0)
       },
     }),
     {
