@@ -4,36 +4,16 @@ import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
-import dynamic from "next/dynamic";
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import StickyCartBar from "@/components/StickyCartBar";
+import PromoPopup from "@/components/PromoPopup";
 import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO";
+import InstallPWAButton from "@/components/InstallPWAButton";
+import ChatWidget from "@/components/ChatWidget";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
-
-/* =====================
-   DYNAMIC IMPORTS (Load hanya saat dibutuhkan)
-   ===================== */
-const StickyCartBar = dynamic(() => import("@/components/StickyCartBar"), {
-  ssr: false,
-  loading: () => null,
-});
-
-const PromoPopup = dynamic(() => import("@/components/PromoPopup"), {
-  ssr: false,
-  loading: () => null,
-});
-
-const InstallPWAButton = dynamic(() => import("@/components/InstallPWAButton"), {
-  ssr: false,
-  loading: () => null,
-});
-
-const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
-  ssr: false,
-  loading: () => null,
-});
 
 /* =====================
    FONTS
@@ -128,24 +108,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <head>
-        {/* Preconnect fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-
-        {/* Apple Touch Icon */}
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-
-        {/* Preload hero image */}
-        <link
-          rel="preload"
-          as="image"
-          href="/image/hero2.webp"
-          type="image/webp"
-        />
+        <link rel="preload" as="image" href="/image/hero2.webp" type="image/webp" />
       </head>
 
       <body className="antialiased font-inter bg-white text-[#0B4B50] max-w-[100vw] overflow-x-hidden">
-        {/* Skip to content link (Aksesibilitas) */}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-[#0FA3A8] focus:text-white focus:p-4 focus:rounded-lg"
@@ -154,28 +123,18 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </a>
 
         <Header />
-
-        {/* SEO Schemas */}
         <TestimonialSchemaSEO />
         
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(organizationSchema)
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
-
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(localBusinessSchema)
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
         />
 
-        <main id="main-content" className="min-h-screen">
-          {children}
-        </main>
-
+        <main id="main-content" className="min-h-screen">{children}</main>
         <Footer />
 
         <Toaster 
@@ -192,19 +151,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         />
 
-        {/* ⭐ SEMUA KOMPONEN DI-DYNAMIC IMPORT + SUSPENSE */}
         <Suspense fallback={null}>
           <ChatWidget />
         </Suspense>
-
         <Suspense fallback={null}>
           <InstallPWAButton />
         </Suspense>
-
         <Suspense fallback={null}>
           <StickyCartBar />
         </Suspense>
-
         <Suspense fallback={null}>
           <PromoPopup />
         </Suspense>
