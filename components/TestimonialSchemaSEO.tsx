@@ -1,5 +1,5 @@
 // app/components/TestimonialSchemaSEO.tsx
-// ❌ TANPA "use client" - INI SERVER COMPONENT!
+// ✅ SUDAH DIPERBAIKI
 
 import { cache } from 'react'
 
@@ -22,7 +22,10 @@ interface ProductSchema {
   };
   review?: Array<{
     "@type": "Review";
-    author: string;
+    author: {
+      "@type": "Person";  // ✅ HARUS OBJECT, BUKAN STRING
+      name: string;
+    };
     reviewBody: string;
     reviewRating: {
       "@type": "Rating";
@@ -71,7 +74,7 @@ export default async function TestimonialSchemaSEO() {
   // Calculate average
   const avgRating = validRatings.reduce((acc, r) => acc + r, 0) / validRatings.length
 
-  // Build schema
+  // Build schema dengan author yang bener
   const schema: ProductSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -84,7 +87,10 @@ export default async function TestimonialSchemaSEO() {
     },
     "review": active.slice(0, 40).map((t) => ({
       "@type": "Review",
-      "author": t.nama || "Pelanggan KOJE24",
+      "author": {                        // ✅ SEKARANG JADI OBJECT
+        "@type": "Person",               // ✅ TYPE "Person"
+        "name": t.nama || "Pelanggan KOJE24"
+      },
       "reviewBody": t.pesan || "Produk berkualitas, sangat segar!",
       "reviewRating": {
         "@type": "Rating",
