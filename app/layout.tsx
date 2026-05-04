@@ -1,17 +1,14 @@
 import "./globals.css";
 import type { ReactNode } from "react";
-import { Suspense } from "react";
+import { Suspense, lazy } from "react";
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
+import dynamic from "next/dynamic";
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import StickyCartBar from "@/components/StickyCartBar";
-import PromoPopup from "@/components/PromoPopup";
 import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO";
-import InstallPWAButton from "@/components/InstallPWAButton";
-import ChatWidget from "@/components/ChatWidget";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -30,6 +27,29 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
   display: "swap",
   preload: true,
+});
+
+/* =====================
+   DYNAMIC IMPORTS (Optimasi Performa)
+===================== */
+const StickyCartBar = dynamic(() => import("@/components/StickyCartBar"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const PromoPopup = dynamic(() => import("@/components/PromoPopup"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const InstallPWAButton = dynamic(() => import("@/components/InstallPWAButton"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
+  ssr: false,
+  loading: () => null,
 });
 
 /* =====================
@@ -66,14 +86,34 @@ export const viewport: Viewport = {
 };
 
 /* =====================
-   ORGANIZATION SCHEMA
+   ORGANIZATION SCHEMA (PERBAIKAN URL)
 ===================== */
 const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "KOJE24",
-  "url": "https://webkoje24.vercel.app",
-  "logo": "https://webkoje24.vercel.app/icons/icon-512x512.png",
+  "url": "https://koje24.com",  // ✅ SUDAH DIPERBAIKI
+  "logo": "https://koje24.com/icons/icon-512x512.png",  // ✅ SUDAH DIPERBAIKI
+  "sameAs": [
+    "https://instagram.com/koje24",
+    "https://wa.me/6282213139580"
+  ]
+};
+
+/* =====================
+   LOCAL BUSINESS SCHEMA (TAMBAHAN BARU)
+===================== */
+const localBusinessSchema = {
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "KOJE24",
+  "url": "https://koje24.com",
+  "logo": "https://koje24.com/icons/icon-512x512.png",
+  "description": "Cold pressed juice delivery Jakarta & Tangerang. Jus detox tanpa gula, tanpa pengawet, fresh daily.",
+  "areaServed": ["Jakarta", "Tangerang", "Bekasi", "Depok", "Bogor"],
+  "priceRange": "$$",
+  "paymentAccepted": ["Cash", "Transfer Bank", "QRIS"],
+  "telephone": "+6282213139580",
   "sameAs": [
     "https://instagram.com/koje24",
     "https://wa.me/6282213139580"
@@ -105,7 +145,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
 
       <body className="antialiased font-inter bg-white text-[#0B4B50] max-w-[100vw] overflow-x-hidden">
-        {/* Header - di layout biar konsisten */}
+        {/* Skip to content link (Aksesibilitas) */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-[#0FA3A8] focus:text-white focus:p-4 focus:rounded-lg"
+        >
+          Langsung ke konten utama
+        </a>
+
         <Header />
 
         {/* SEO Schemas */}
@@ -118,13 +165,19 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         />
 
-        {/* Main content */}
-        <main className="min-h-screen">{children}</main>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(localBusinessSchema)
+          }}
+        />
 
-        {/* Footer - di layout biar konsisten */}
+        <main id="main-content" className="min-h-screen">
+          {children}
+        </main>
+
         <Footer />
 
-        {/* Toaster for notifications */}
         <Toaster 
           position="top-center" 
           richColors 
@@ -139,7 +192,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         />
 
-        {/* Client Components with Suspense */}
+        {/* Client Components with Suspense - all dynamic now */}
         <Suspense fallback={null}>
           <ChatWidget />
         </Suspense>
