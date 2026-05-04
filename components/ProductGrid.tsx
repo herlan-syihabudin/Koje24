@@ -228,6 +228,8 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
 
     setAddedId(product.id)
 
+    window.dispatchEvent(new Event("open-cart"))
+
     // Flying animation
     setTimeout(() => {
       const imgDom = document.querySelector(`[data-id="product-${product.id}"]`) as HTMLElement | null
