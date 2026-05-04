@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { motion, useScroll, useTransform } from "framer-motion"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
 
 const COLORS = {
@@ -16,12 +16,11 @@ export default function Hero() {
   const { scrollY } = useScroll()
   const isMobile = useMediaQuery("(max-width: 768px)")
 
-  // ✅ SEMUA useTransform DIPANGGIL DI TOP LEVEL (BENAR)
+  // ✅ SEMUA useTransform DIPANGGIL DI TOP LEVEL
   const yDesktop = useTransform(scrollY, [0, 400], [0, 110])
   const glowYDesktop = useTransform(scrollY, [0, 350], [0, 60])
   const opacity = useTransform(scrollY, [0, 200], [1, 0.88])
   
-  // CTA transforms - pakai range yang berbeda untuk mobile/desktop
   const ctaOpacity = useTransform(
     scrollY, 
     [0, isMobile ? 60 : 100], 
@@ -38,11 +37,9 @@ export default function Hero() {
     ["blur(0px)", "blur(10px)"]
   )
 
-  // ✅ Conditional values (ini aman karena bukan hook)
   const y = isMobile ? 0 : yDesktop
   const glowY = isMobile ? 0 : glowYDesktop
 
-  // ✅ Content animation variants (ini object biasa, bukan hook)
   const contentVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: (custom = 0) => ({
@@ -52,30 +49,33 @@ export default function Hero() {
     })
   }
 
+  // ✅ Efek buat set loaded biar fade-in smooth
+  useEffect(() => {
+    setLoaded(true)
+  }, [])
+
   return (
     <section className="relative min-h-screen w-full flex items-center bg-[#020507] overflow-hidden">
       
-      {/* SEO H1 */}
       <h1 className="sr-only">
-Jual Cold Pressed Juice Jakarta & Tangerang – Jus Detox Tanpa Gula | KOJE24
-</h1>
+        Jual Cold Pressed Juice Jakarta & Tangerang – Jus Detox Tanpa Gula | KOJE24
+      </h1>
 
-      {/* BACKGROUND IMAGE */}
+      {/* BACKGROUND IMAGE - OPTIMIZED */}
       <motion.div 
         style={{ y, opacity }} 
         className="absolute inset-0"
       >
         <Image
-  src="/image/hero2.png"
-  alt="Cold Pressed Juice Jakarta - KOJE24"
-  fill
-  priority
-  quality={70}
-  sizes="100vw"
-  className="object-cover object-center md:object-right"
-  placeholder="blur"
-  blurDataURL="/image/hero-blur.jpg"
-/>
+          src="/image/hero2.webp"  // ✅ GANTI KE .webp
+          alt="Cold Pressed Juice Jakarta - KOJE24"
+          fill
+          priority={true}           // ✅ SUDAH ADA
+          quality={75}              // ✅ TURUNIN DARI 70 JADI 75? WAIT, 70 lebih kecil? Quality 70-75 ok
+          sizes="100vw"
+          className="object-cover object-center md:object-right"
+          onLoadingComplete={() => setLoaded(true)}
+        />
 
         {/* Fade-in overlay */}
         <motion.div
@@ -99,10 +99,9 @@ Jual Cold Pressed Juice Jakarta & Tangerang – Jus Detox Tanpa Gula | KOJE24
       <motion.div 
         initial="hidden"
         animate="visible"
-        variants={contentVariants} // ✅ Pake variants di parent
+        variants={contentVariants}
         className="relative z-10 px-6 md:px-20 lg:px-32 w-full max-w-5xl"
       >
-        {/* BADGE - PAKE VARIANTS DARI PARENT */}
         <motion.p 
           variants={contentVariants}
           custom={0}
@@ -111,7 +110,6 @@ Jual Cold Pressed Juice Jakarta & Tangerang – Jus Detox Tanpa Gula | KOJE24
           ⚡ 100% NATURAL • COLD-PRESSED
         </motion.p>
 
-        {/* HEADLINE */}
         <motion.h2
           variants={contentVariants}
           custom={1}
@@ -121,7 +119,6 @@ Jual Cold Pressed Juice Jakarta & Tangerang – Jus Detox Tanpa Gula | KOJE24
           <span className="block text-[#0FA3A8]">Explore the World</span>
         </motion.h2>
 
-        {/* DESCRIPTION */}
         <motion.p
           variants={contentVariants}
           custom={2}
@@ -132,7 +129,6 @@ Jual Cold Pressed Juice Jakarta & Tangerang – Jus Detox Tanpa Gula | KOJE24
           Dibuat fresh setiap hari oleh KOJE24 di Bekasi.
         </motion.p>
 
-        {/* STATS */}
         <motion.div
           variants={contentVariants}
           custom={3}
@@ -143,7 +139,6 @@ Jual Cold Pressed Juice Jakarta & Tangerang – Jus Detox Tanpa Gula | KOJE24
           <span className="flex items-center gap-1">✓ Fresh Daily</span>
         </motion.div>
 
-        {/* CTA */}
         <motion.div
           style={{
             opacity: ctaOpacity,
@@ -164,7 +159,6 @@ Jual Cold Pressed Juice Jakarta & Tangerang – Jus Detox Tanpa Gula | KOJE24
         </motion.div>
       </motion.div>
 
-      {/* BOTTOM FADE */}
       <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-[#f8fcfc]/30 to-transparent pointer-events-none" />
     </section>
   )
