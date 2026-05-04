@@ -279,12 +279,12 @@ export default function Header() {
           <button
             onClick={() => dispatchEvent("open-cart")}
             className="relative p-2 rounded-full hover:bg-gray-100 transition-all"
-            aria-label={`Cart with ${totalQty} items`}
+            aria-label={`Cart with ${totalQty()} items`}
           >
             <ShoppingCart size={20} className={getTextColor()} />
-            {totalQty > 0 && (
+            {totalQty() > 0 && (
               <span className="absolute -top-1 -right-1 bg-[#0FA3A8] text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg">
-                {totalQty > 9 ? '9+' : totalQty}
+               {totalQty() > 9 ? '9+' : totalQty()}
               </span>
             )}
           </button>
@@ -308,12 +308,12 @@ export default function Header() {
           <button
             onClick={() => dispatchEvent("open-cart")}
             className="relative p-2 rounded-full hover:bg-gray-100 transition-all"
-            aria-label={`Cart with ${totalQty} items`}
+            aria-label={`Cart with ${totalQty()} items`}
           >
             <ShoppingCart size={22} className={getTextColor()} />
-            {totalQty > 0 && (
+            {totalQty() > 0 && (
               <span className="absolute -top-1 -right-1 bg-[#0FA3A8] text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg">
-                {totalQty > 9 ? '9+' : totalQty}
+                {totalQty() > 9 ? '9+' : totalQty()}
               </span>
             )}
           </button>
