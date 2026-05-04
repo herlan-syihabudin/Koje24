@@ -1,7 +1,10 @@
+// lib/products.ts
+
 export type Product = {
   id: string
   name: string
   desc?: string
+  description?: string  // ⭐ TAMBAHKAN INI biar kompatible
   price: number
   img: string
   color?: string
@@ -9,7 +12,7 @@ export type Product = {
   slogan?: string
   isPackage?: boolean
 
-  // === SEO & AI FRIENDLY (OPTIONAL) ===
+  // SEO & AI FRIENDLY
   category?: string
   benefits?: string[]
   goodFor?: string[]
@@ -26,6 +29,7 @@ export const products: Product[] = [
     slogan: "Clean Your Body, Boost Your Day.",
     ingredients: ["Kunyit", "Wortel", "Jahe", "Jeruk", "Lemon"],
     desc: "Detoks kuat untuk mendukung metabolisme & membantu membersihkan tubuh dari dalam.",
+    description: "Detoks kuat untuk mendukung metabolisme & membantu membersihkan tubuh dari dalam.", // ⭐ TAMBAH
 
     category: "Detox & Metabolisme",
     benefits: [
@@ -33,11 +37,7 @@ export const products: Product[] = [
       "Mendukung metabolisme tubuh",
       "Membantu membersihkan tubuh dari dalam",
     ],
-    goodFor: [
-      "Program detoks",
-      "Pola hidup sehat",
-      "Konsumsi setelah makan berat",
-    ],
+    goodFor: ["Program detoks", "Pola hidup sehat", "Konsumsi setelah makan berat"],
     consumeTime: "Pagi hari atau sore hari",
   },
 
@@ -45,11 +45,12 @@ export const products: Product[] = [
     id: "green-revive",
     name: "Green Revive",
     price: 18000,
-    img: "/images/products/green-revive.png",
+    img: "/product/green-revive.webp", // ⭐ DIPERBAIKI (pake .webp biar cepet)
     color: "#4CAF50",
     slogan: "Fresh Green Energy in Every Sip.",
     ingredients: ["Pakcoy", "Nanas", "Timun"],
     desc: "Memberikan hidrasi, energi hijau, dan rasa segar alami sepanjang hari.",
+    description: "Memberikan hidrasi, energi hijau, dan rasa segar alami sepanjang hari.", // ⭐ TAMBAH
 
     category: "Detox & Pencernaan",
     benefits: [
@@ -57,11 +58,7 @@ export const products: Product[] = [
       "Mendukung pencernaan",
       "Memberikan energi ringan & segar",
     ],
-    goodFor: [
-      "Pekerja aktif",
-      "Gaya hidup sehat",
-      "Konsumsi harian",
-    ],
+    goodFor: ["Pekerja aktif", "Gaya hidup sehat", "Konsumsi harian"],
     consumeTime: "Pagi hari atau siang hari",
   },
 
@@ -74,6 +71,7 @@ export const products: Product[] = [
     slogan: "Start Your Day with Natural Power.",
     ingredients: ["Wortel", "Apel", "Tomat"],
     desc: "Energi pagi kaya vitamin untuk bantu tubuh lebih siap memulai hari.",
+    description: "Energi pagi kaya vitamin untuk bantu tubuh lebih siap memulai hari.", // ⭐ TAMBAH
 
     category: "Energi & Vitalitas",
     benefits: [
@@ -81,11 +79,7 @@ export const products: Product[] = [
       "Mendukung aktivitas pagi",
       "Kaya vitamin untuk tubuh",
     ],
-    goodFor: [
-      "Sarapan sehat",
-      "Aktivitas pagi",
-      "Pekerja & pelajar",
-    ],
+    goodFor: ["Sarapan sehat", "Aktivitas pagi", "Pekerja & pelajar"],
     consumeTime: "Pagi hari",
   },
 
@@ -93,11 +87,12 @@ export const products: Product[] = [
     id: "lemongrass-fresh",
     name: "Lemongrass Fresh",
     price: 18000,
-    img: "/product/juice-redseries.jpg",
+    img: "/product/lemongrass-fresh.webp", // ⭐ DIPERBAIKI (pake nama file yang sesuai)
     color: "#E6F89A",
     slogan: "Calm. Fresh. Naturally Bright.",
     ingredients: ["Lemon", "Serai"],
     desc: "Rasa segar menenangkan untuk mood lebih stabil dan tubuh terasa lebih ringan.",
+    description: "Rasa segar menenangkan untuk mood lebih stabil dan tubuh terasa lebih ringan.", // ⭐ TAMBAH
 
     category: "Relaksasi & Mood",
     benefits: [
@@ -105,11 +100,7 @@ export const products: Product[] = [
       "Memberikan rasa segar alami",
       "Mendukung keseimbangan mood",
     ],
-    goodFor: [
-      "Relaksasi",
-      "Stres ringan",
-      "Konsumsi sore hari",
-    ],
+    goodFor: ["Relaksasi", "Stres ringan", "Konsumsi sore hari"],
     consumeTime: "Sore hari atau malam hari",
   },
 
@@ -122,6 +113,7 @@ export const products: Product[] = [
     slogan: "Stronger Immunity, Brighter Day.",
     ingredients: ["Nanas", "Lemon"],
     desc: "Vitamin C tinggi yang membantu memperkuat sistem imun secara alami.",
+    description: "Vitamin C tinggi yang membantu memperkuat sistem imun secara alami.", // ⭐ TAMBAH
 
     category: "Imunitas",
     benefits: [
@@ -129,11 +121,7 @@ export const products: Product[] = [
       "Sumber vitamin C alami",
       "Mendukung kesehatan harian",
     ],
-    goodFor: [
-      "Daya tahan tubuh",
-      "Cuaca tidak menentu",
-      "Konsumsi harian",
-    ],
+    goodFor: ["Daya tahan tubuh", "Cuaca tidak menentu", "Konsumsi harian"],
     consumeTime: "Pagi hari atau siang hari",
   },
 
@@ -146,6 +134,7 @@ export const products: Product[] = [
     slogan: "Natural Strength from Within.",
     ingredients: ["Bit", "Nanas", "Apel"],
     desc: "Booster stamina alami untuk menjaga performa tubuh sepanjang hari.",
+    description: "Booster stamina alami untuk menjaga performa tubuh sepanjang hari.", // ⭐ TAMBAH
 
     category: "Stamina & Vitalitas",
     benefits: [
@@ -153,11 +142,7 @@ export const products: Product[] = [
       "Mendukung performa tubuh",
       "Energi alami tanpa gula tambahan",
     ],
-    goodFor: [
-      "Aktivitas fisik",
-      "Hari padat aktivitas",
-      "Daya tahan tubuh",
-    ],
+    goodFor: ["Aktivitas fisik", "Hari padat aktivitas", "Daya tahan tubuh"],
     consumeTime: "Siang hari atau sore hari",
   },
 
@@ -168,6 +153,7 @@ export const products: Product[] = [
     img: "/image/paket-detox.jpg",
     isPackage: true,
     desc: "6 botol/hari kombinasi varian sehat untuk detoks total selama 3 hari.",
+    description: "6 botol/hari kombinasi varian sehat untuk detoks total selama 3 hari.", // ⭐ TAMBAH
 
     category: "Program Detox",
     benefits: [
@@ -175,11 +161,20 @@ export const products: Product[] = [
       "Kombinasi varian terbaik",
       "Membantu reset tubuh secara alami",
     ],
-    goodFor: [
-      "Program detoks",
-      "Reset tubuh",
-      "Gaya hidup sehat",
-    ],
+    goodFor: ["Program detoks", "Reset tubuh", "Gaya hidup sehat"],
     consumeTime: "Sesuai jadwal program",
   },
 ]
+
+// ⭐ TAMBAHKAN FUNGSI INI (PENTING!)
+export function getAllProducts(): Product[] {
+  return products
+}
+
+export function getProductBySlug(slug: string): Product | undefined {
+  return products.find((product) => product.id === slug)
+}
+
+export function getProductById(id: string): Product | undefined {
+  return products.find((product) => product.id === id)
+}
