@@ -4,16 +4,36 @@ import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
+import dynamic from "next/dynamic";
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import StickyCartBar from "@/components/StickyCartBar";
-import PromoPopup from "@/components/PromoPopup";
 import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO";
-import InstallPWAButton from "@/components/InstallPWAButton";
-import ChatWidget from "@/components/ChatWidget";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
+
+/* =====================
+   DYNAMIC IMPORTS (Load hanya saat dibutuhkan)
+   ===================== */
+const StickyCartBar = dynamic(() => import("@/components/StickyCartBar"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const PromoPopup = dynamic(() => import("@/components/PromoPopup"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const InstallPWAButton = dynamic(() => import("@/components/InstallPWAButton"), {
+  ssr: false,
+  loading: () => null,
+});
+
+const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
+  ssr: false,
+  loading: () => null,
+});
 
 /* =====================
    FONTS
@@ -66,14 +86,14 @@ export const viewport: Viewport = {
 };
 
 /* =====================
-   ORGANIZATION SCHEMA (PERBAIKAN URL)
+   ORGANIZATION SCHEMA
 ===================== */
 const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "KOJE24",
-  "url": "https://koje24.com",  // ✅ SUDAH DIPERBAIKI
-  "logo": "https://koje24.com/icons/icon-512x512.png",  // ✅ SUDAH DIPERBAIKI
+  "url": "https://koje24.com",
+  "logo": "https://koje24.com/icons/icon-512x512.png",
   "sameAs": [
     "https://instagram.com/koje24",
     "https://wa.me/6282213139580"
@@ -81,7 +101,7 @@ const organizationSchema = {
 };
 
 /* =====================
-   LOCAL BUSINESS SCHEMA (TAMBAHAN BARU)
+   LOCAL BUSINESS SCHEMA
 ===================== */
 const localBusinessSchema = {
   "@context": "https://schema.org",
@@ -172,7 +192,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         />
 
-        {/* Client Components with Suspense */}
+        {/* ⭐ SEMUA KOMPONEN DI-DYNAMIC IMPORT + SUSPENSE */}
         <Suspense fallback={null}>
           <ChatWidget />
         </Suspense>
