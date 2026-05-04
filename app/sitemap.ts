@@ -5,7 +5,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://koje24.com'
   
   // Halaman utama yang penting untuk di-index
-  const routes = [
+  const routes: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
       lastModified: new Date(),
@@ -32,7 +32,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ]
   
-  // Daftar semua produk KOJE24 (ganti sesuai data asli)
+  // Daftar semua produk KOJE24
   const products = [
     'red-vitality',
     'golden-detox',
@@ -42,7 +42,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     'yellow-immunity',
   ]
   
-  const productRoutes = products.map((product) => ({
+  const productRoutes: MetadataRoute.Sitemap = products.map((product) => ({
     url: `${baseUrl}/produk/${product}`,
     lastModified: new Date(),
     changeFrequency: 'weekly',
