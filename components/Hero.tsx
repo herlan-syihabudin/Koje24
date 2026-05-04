@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { motion, useScroll, useTransform } from "framer-motion"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
 
 const COLORS = {
@@ -16,30 +16,33 @@ export default function Hero() {
   const { scrollY } = useScroll()
   const isMobile = useMediaQuery("(max-width: 768px)")
 
-  // ✅ SEMUA useTransform DIPANGGIL DI TOP LEVEL
+  // PARALLAX
   const yDesktop = useTransform(scrollY, [0, 400], [0, 110])
   const glowYDesktop = useTransform(scrollY, [0, 350], [0, 60])
   const opacity = useTransform(scrollY, [0, 200], [1, 0.88])
-  
+
+  // CTA ANIMATION
   const ctaOpacity = useTransform(
-    scrollY, 
-    [0, isMobile ? 60 : 100], 
+    scrollY,
+    [0, isMobile ? 60 : 100],
     [1, 0]
   )
   const ctaY = useTransform(
-    scrollY, 
-    [0, isMobile ? 60 : 100], 
+    scrollY,
+    [0, isMobile ? 60 : 100],
     [0, -24]
   )
   const ctaBlur = useTransform(
-    scrollY, 
-    [0, isMobile ? 60 : 100], 
+    scrollY,
+    [0, isMobile ? 60 : 100],
     ["blur(0px)", "blur(10px)"]
   )
 
+  // CONDITIONAL VALUE
   const y = isMobile ? 0 : yDesktop
   const glowY = isMobile ? 0 : glowYDesktop
 
+  // CONTENT ANIMATION
   const contentVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: (custom = 0) => ({
@@ -49,60 +52,55 @@ export default function Hero() {
     })
   }
 
-  // ✅ Efek buat set loaded biar fade-in smooth
-  useEffect(() => {
-    setLoaded(true)
-  }, [])
-
   return (
     <section className="relative min-h-screen w-full flex items-center bg-[#020507] overflow-hidden">
       
+      {/* SEO */}
       <h1 className="sr-only">
         Jual Cold Pressed Juice Jakarta & Tangerang – Jus Detox Tanpa Gula | KOJE24
       </h1>
 
-      {/* BACKGROUND IMAGE - OPTIMIZED */}
-      <motion.div 
-        style={{ y, opacity }} 
-        className="absolute inset-0"
-      >
+      {/* BACKGROUND */}
+      <motion.div style={{ y, opacity }} className="absolute inset-0">
         <Image
-          src="/image/hero2.webp"  // ✅ GANTI KE .webp
+          src="/image/hero2.webp"
           alt="Cold Pressed Juice Jakarta - KOJE24"
           fill
-          priority={true}           // ✅ SUDAH ADA
-          quality={75}              // ✅ TURUNIN DARI 70 JADI 75? WAIT, 70 lebih kecil? Quality 70-75 ok
+          priority
+          quality={70}
           sizes="100vw"
+          fetchPriority="high"
           className="object-cover object-center md:object-right"
           onLoadingComplete={() => setLoaded(true)}
         />
 
-        {/* Fade-in overlay */}
+        {/* OVERLAY */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={loaded ? { opacity: 1 } : {}}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.6 }}
           className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/60 to-transparent"
         />
       </motion.div>
-      
-      {/* LIGHT EFFECTS */}
+
+      {/* LIGHT EFFECT */}
       <motion.div
         style={{ y: glowY }}
         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent blur-[100px] opacity-20 pointer-events-none"
       />
 
-      {/* NOISE TEXTURE */}
+      {/* NOISE */}
       <div className="absolute inset-0 opacity-[0.04] bg-[url('/noise.png')] mix-blend-overlay pointer-events-none" />
 
       {/* CONTENT */}
-      <motion.div 
+      <motion.div
         initial="hidden"
         animate="visible"
         variants={contentVariants}
         className="relative z-10 px-6 md:px-20 lg:px-32 w-full max-w-5xl"
       >
-        <motion.p 
+        {/* BADGE */}
+        <motion.p
           variants={contentVariants}
           custom={0}
           className="text-[#0FA3A8] text-sm tracking-[0.28em] uppercase mb-4 font-medium"
@@ -110,6 +108,7 @@ export default function Hero() {
           ⚡ 100% NATURAL • COLD-PRESSED
         </motion.p>
 
+        {/* TITLE */}
         <motion.h2
           variants={contentVariants}
           custom={1}
@@ -119,31 +118,35 @@ export default function Hero() {
           <span className="block text-[#0FA3A8]">Explore the World</span>
         </motion.h2>
 
+        {/* DESC */}
         <motion.p
           variants={contentVariants}
           custom={2}
           className="font-inter text-white/80 max-w-xl text-[1rem] sm:text-[1.2rem] mt-6 leading-relaxed"
         >
           Cold-pressed juice harian dari bahan alami terbaik untuk detox,
-          daya tahan tubuh, dan energi. <strong className="text-white">Tanpa gula, tanpa pengawet.</strong> 
+          daya tahan tubuh, dan energi.{" "}
+          <strong className="text-white">Tanpa gula, tanpa pengawet.</strong>{" "}
           Dibuat fresh setiap hari oleh KOJE24 di Bekasi.
         </motion.p>
 
+        {/* STATS */}
         <motion.div
           variants={contentVariants}
           custom={3}
           className="flex flex-wrap gap-4 md:gap-6 mt-4 text-white/60 text-sm"
         >
-          <span className="flex items-center gap-1">✓ 100% Natural</span>
-          <span className="flex items-center gap-1">✓ No Sugar Added</span>
-          <span className="flex items-center gap-1">✓ Fresh Daily</span>
+          <span>✓ 100% Natural</span>
+          <span>✓ No Sugar Added</span>
+          <span>✓ Fresh Daily</span>
         </motion.div>
 
+        {/* CTA */}
         <motion.div
           style={{
             opacity: ctaOpacity,
             y: ctaY,
-            filter: ctaBlur,
+            filter: ctaBlur
           }}
           variants={contentVariants}
           custom={4}
@@ -159,6 +162,7 @@ export default function Hero() {
         </motion.div>
       </motion.div>
 
+      {/* BOTTOM FADE */}
       <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-[#f8fcfc]/30 to-transparent pointer-events-none" />
     </section>
   )
