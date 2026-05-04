@@ -1,14 +1,17 @@
 import "./globals.css";
 import type { ReactNode } from "react";
-import { Suspense, lazy } from "react";
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
-import dynamic from "next/dynamic";
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import StickyCartBar from "@/components/StickyCartBar";
+import PromoPopup from "@/components/PromoPopup";
 import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO";
+import InstallPWAButton from "@/components/InstallPWAButton";
+import ChatWidget from "@/components/ChatWidget";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -27,29 +30,6 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
   display: "swap",
   preload: true,
-});
-
-/* =====================
-   DYNAMIC IMPORTS (Optimasi Performa)
-===================== */
-const StickyCartBar = dynamic(() => import("@/components/StickyCartBar"), {
-  ssr: false,
-  loading: () => null,
-});
-
-const PromoPopup = dynamic(() => import("@/components/PromoPopup"), {
-  ssr: false,
-  loading: () => null,
-});
-
-const InstallPWAButton = dynamic(() => import("@/components/InstallPWAButton"), {
-  ssr: false,
-  loading: () => null,
-});
-
-const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
-  ssr: false,
-  loading: () => null,
 });
 
 /* =====================
@@ -192,7 +172,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         />
 
-        {/* Client Components with Suspense - all dynamic now */}
+        {/* Client Components with Suspense */}
         <Suspense fallback={null}>
           <ChatWidget />
         </Suspense>
