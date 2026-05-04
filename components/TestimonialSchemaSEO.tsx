@@ -40,7 +40,7 @@ interface ProductSchema {
 const getTestimonials = cache(async () => {
   try {
     // Gunakan API_URL absolut untuk server component
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://webkoje24.vercel.app'
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://koje24.com'
     const res = await fetch(`${baseUrl}/api/testimonial`, {
       cache: 'force-cache',  // Cache di server
       next: { revalidate: 3600 } // Revalidate tiap jam
