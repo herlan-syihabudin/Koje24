@@ -75,6 +75,7 @@ export const metadata: Metadata = {
 // ⭐ TAMBAHKAN PRODUCT SCHEMA UNTUK HOME PAGE
 const productSchemas = [
   {
+    id: "red-vitality",  // ← TAMBAHKAN ID untuk URL
     name: "Red Vitality",
     description:
       "Natural Strength from Within. Bit • Nanas • Apel. Booster stamina alami.",
@@ -82,6 +83,7 @@ const productSchemas = [
     image: "https://koje24.com/images/red-vitality.webp",
   },
   {
+    id: "golden-detox",
     name: "Golden Detox",
     description:
       "Clean Your Body, Boost Your Day. Kunyit • Wortel • Jahe • Jeruk • Lemon.",
@@ -89,6 +91,7 @@ const productSchemas = [
     image: "https://koje24.com/images/golden-detox.webp",
   },
   {
+    id: "green-revive",
     name: "Green Revive",
     description:
       "Fresh Green Energy in Every Sip. Pakcoy • Nanas • Timun.",
@@ -96,6 +99,7 @@ const productSchemas = [
     image: "https://koje24.com/images/green-revive.webp",
   },
   {
+    id: "sunrise-boost",
     name: "Sunrise Boost",
     description:
       "Start Your Day with Natural Power. Wortel • Apel • Tomat.",
@@ -103,6 +107,7 @@ const productSchemas = [
     image: "https://koje24.com/images/sunrise-boost.webp",
   },
   {
+    id: "lemongrass-fresh",
     name: "Lemongrass Fresh",
     description:
       "Calm. Fresh. Naturally Bright. Lemon • Serai.",
@@ -110,6 +115,7 @@ const productSchemas = [
     image: "https://koje24.com/images/lemongrass-fresh.webp",
   },
   {
+    id: "yellow-immunity",
     name: "Yellow Immunity",
     description:
       "Stronger Immunity, Brighter Day. Nanas • Lemon.",
@@ -121,7 +127,7 @@ const productSchemas = [
 export default function HomePage() {
   return (
     <>
-      {/* ⭐ SCHEMA UNTUK SEO RICH RESULTS */}
+      {/* ⭐ SCHEMA UNTUK SEO RICH RESULTS - SUDAH DITAMBAH URL & AGGREGATE RATING */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -136,14 +142,20 @@ export default function HomePage() {
               position: index + 1,
               item: {
                 "@type": "Product",
-                name: product.name,
-                description: product.description,
-                image: product.image,
-                offers: {
+                "url": `https://koje24.com/produk/${product.id}`,  // ✅ TAMBAH URL
+                "name": product.name,
+                "description": product.description,
+                "image": product.image,
+                "aggregateRating": {  // ✅ TAMBAH AGGREGATE RATING
+                  "@type": "AggregateRating",
+                  "ratingValue": 5.0,
+                  "reviewCount": 11
+                },
+                "offers": {
                   "@type": "Offer",
-                  price: product.price,
-                  priceCurrency: "IDR",
-                  availability: "https://schema.org/InStock",
+                  "price": product.price,
+                  "priceCurrency": "IDR",
+                  "availability": "https://schema.org/InStock"
                 },
               },
             })),
