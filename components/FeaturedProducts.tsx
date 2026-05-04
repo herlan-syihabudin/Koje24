@@ -254,6 +254,7 @@ export default function FeaturedProducts() {
         img: img,
       })
     }
+    } 
     
 
   // =========================
