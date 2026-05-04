@@ -255,9 +255,6 @@ export default function FeaturedProducts() {
       })
     }
     
-    // ⭐ BIKIN HEADER LANGSUNG UPDATE
-    window.dispatchEvent(new Event("open-cart"))
-  }
 
   // =========================
   // LOADING STATE
