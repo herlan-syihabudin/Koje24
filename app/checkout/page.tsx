@@ -6,7 +6,11 @@ import Script from "next/script";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-declare const google: any;
+// ✅ HAPUS declare const google: any
+// ✅ Tambah interface Window
+interface Window {
+  google: any;
+}
 
 type CheckoutState = "idle" | "submitting" | "error";
 
@@ -79,31 +83,41 @@ export default function CheckoutPage() {
     }
   }, [items.length, hydrated, router]);
 
+  // ✅ GOOGLE MAPS SAFE INIT (FIXED)
   useEffect(() => {
     const el = alamatRef.current;
-    const w = window as any;
-    if (!el || !w.google?.maps?.places) return;
-    if ((el as any)._autocomplete_done) return;
-    (el as any)._autocomplete_done = true;
+    if (!el) return;
 
-    try {
-      const auto = new google.maps.places.Autocomplete(el, {
-        componentRestrictions: { country: "id" },
-        fields: ["formatted_address", "geometry"],
-      });
+    const checkGoogleMaps = setInterval(() => {
+      if (window.google?.maps?.places) {
+        clearInterval(checkGoogleMaps);
+        
+        if ((el as any)._autocomplete_done) return;
+        (el as any)._autocomplete_done = true;
 
-      auto.addListener("place_changed", () => {
-        const place = auto.getPlace();
-        if (!place?.geometry?.location) return;
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        const dKm = haversine(BASE_LAT, BASE_LNG, lat, lng);
+        try {
+          const auto = new window.google.maps.places.Autocomplete(el, {
+            componentRestrictions: { country: "id" },
+            fields: ["formatted_address", "geometry"],
+          });
 
-        setDistanceKm(dKm);
-        setOngkir(calcOngkir(dKm));
-        setAlamat((prev) => prev || place.formatted_address);
-      });
-    } catch {}
+          auto.addListener("place_changed", () => {
+            const place = auto.getPlace();
+            if (!place?.geometry?.location) return;
+            const lat = place.geometry.location.lat();
+            const lng = place.geometry.location.lng();
+            const dKm = haversine(BASE_LAT, BASE_LNG, lat, lng);
+            setDistanceKm(dKm);
+            setOngkir(calcOngkir(dKm));
+            setAlamat((prev) => prev || place.formatted_address);
+          });
+        } catch (err) {
+          console.error("Autocomplete error:", err);
+        }
+      }
+    }, 300);
+
+    return () => clearInterval(checkGoogleMaps);
   }, []);
 
   const handleDetectLocation = () => {
@@ -133,7 +147,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Validasi nomor HP
     const phoneClean = hp.replace(/\D/g, '');
     if (phoneClean.length < 10 || phoneClean.length > 13) {
       setErrorMsg("Nomor WhatsApp harus 10-13 digit angka 🙏");
@@ -222,103 +235,46 @@ export default function CheckoutPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
               
-              {/* RINGKASAN PESANAN */}
               <aside className="bg-white border rounded-3xl shadow p-6 space-y-4 h-fit">
                 <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
-
                 <div className="space-y-3">
                   {items.map((it) => (
-                    <div
-                      key={it.id}
-                      className="flex justify-between items-start border-b pb-2 text-sm gap-3"
-                    >
+                    <div key={it.id} className="flex justify-between items-start border-b pb-2 text-sm gap-3">
                       <div className="w-11 h-11 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                        <img
-                          src={it.img || "/placeholder-product.jpg"}
-                          alt={it.name}
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={it.img || "/placeholder-product.jpg"} alt={it.name} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1">
                         <p className="font-medium">{it.name}</p>
-                        <p className="text-[12px] text-gray-500">
-                          {it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs
-                        </p>
+                        <p className="text-[12px] text-gray-500">{it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs</p>
                       </div>
-                      <div className="font-semibold whitespace-nowrap">
-                        Rp{(it.qty * it.price).toLocaleString("id-ID")}
-                      </div>
+                      <div className="font-semibold whitespace-nowrap">Rp{(it.qty * it.price).toLocaleString("id-ID")}</div>
                     </div>
                   ))}
                 </div>
-
-                <p className="text-[11px] text-gray-500 pt-2">
-                  *Catatan tambahan dapat diisi di bawah
-                </p>
+                <p className="text-[11px] text-gray-500 pt-2">*Catatan tambahan dapat diisi di bawah</p>
               </aside>
 
-              {/* FORM */}
               <section className="bg-white border rounded-3xl shadow p-6 md:p-8 space-y-5">
                 <form onSubmit={handleSubmit} className="space-y-5">
-                  <input
-                    className="border rounded-lg px-3 py-2 w-full"
-                    placeholder="Nama lengkap"
-                    value={nama}
-                    onChange={(e) => setNama(e.target.value)}
-                  />
-                  <input
-                    className="border rounded-lg px-3 py-2 w-full"
-                    placeholder="Nomor WhatsApp"
-                    value={hp}
-                    onChange={(e) => setHp(e.target.value)}
-                  />
-                  <input
-                    className="border rounded-lg px-3 py-2 w-full"
-                    placeholder="Email (untuk menerima invoice)"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                  <input
-                    ref={alamatRef}
-                    className="border rounded-lg px-3 py-2 w-full"
-                    placeholder="Alamat lengkap"
-                    value={alamat}
-                    onChange={(e) => setAlamat(e.target.value)}
-                  />
+                  <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nama lengkap" value={nama} onChange={(e) => setNama(e.target.value)} />
+                  <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nomor WhatsApp" value={hp} onChange={(e) => setHp(e.target.value)} />
+                  <input className="border rounded-lg px-3 py-2 w-full" placeholder="Email (untuk menerima invoice)" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <input ref={alamatRef} className="border rounded-lg px-3 py-2 w-full" placeholder="Alamat lengkap" value={alamat} onChange={(e) => setAlamat(e.target.value)} />
 
-                  <button
-                    type="button"
-                    onClick={handleDetectLocation}
-                    className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm font-medium"
-                  >
-                    📍 Hitung Ongkir Pakai Lokasi Saya
-                  </button>
+                  <button type="button" onClick={handleDetectLocation} className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm font-medium">📍 Hitung Ongkir Pakai Lokasi Saya</button>
 
                   {distanceKm ? (
-                    <p className="text-[13px] text-gray-600">
-                      Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}
-                    </p>
+                    <p className="text-[13px] text-gray-600">Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}</p>
                   ) : (
                     <p className="text-[12px] text-gray-500">Ongkir sementara Rp15.000</p>
                   )}
 
-                  <textarea
-                    className="border rounded-lg px-3 py-2 w-full h-18 resize-none"
-                    placeholder="Catatan (opsional)"
-                    value={catatan}
-                    onChange={(e) => setCatatan(e.target.value)}
-                  />
+                  <textarea className="border rounded-lg px-3 py-2 w-full h-18 resize-none" placeholder="Catatan (opsional)" value={catatan} onChange={(e) => setCatatan(e.target.value)} />
 
                   <h2 className="font-playfair text-xl">Metode Pembayaran</h2>
                   <div className="rounded-xl bg-[#f7fbfb] border p-4 space-y-3">
                     {(["transfer", "qris", "cod"] as const).map((p) => (
-                      <label
-                        key={p}
-                        className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 ${
-                          payment === p ? "bg-white border border-[#0FA3A8]" : ""
-                        }`}
-                      >
+                      <label key={p} className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 ${payment === p ? "bg-white border border-[#0FA3A8]" : ""}`}>
                         <input type="radio" checked={payment === p} onChange={() => setPayment(p)} />
                         <span className="capitalize">{p === "cod" ? "COD (Bayar di tempat)" : p}</span>
                       </label>
@@ -329,21 +285,10 @@ export default function CheckoutPage() {
                         <p className="text-sm font-medium">Rekening Transfer:</p>
                         <div className="text-sm flex justify-between">
                           <span>BCA — 5350429695 (KOJE)</span>
-                          <button
-                            type="button"
-                            onClick={() => navigator.clipboard.writeText("5350429695")}
-                            className="text-[#0FA3A8] text-xs"
-                          >
-                            Copy
-                          </button>
+                          <button type="button" onClick={() => navigator.clipboard.writeText("5350429695")} className="text-[#0FA3A8] text-xs">Copy</button>
                         </div>
                         <label className="block text-sm font-medium">Upload Bukti Transfer</label>
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)}
-                          className="border rounded-lg px-3 py-2 w-full text-sm cursor-pointer"
-                        />
+                        <input type="file" accept="image/*,.pdf" onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)} className="border rounded-lg px-3 py-2 w-full text-sm cursor-pointer" />
                       </div>
                     )}
 
@@ -352,54 +297,22 @@ export default function CheckoutPage() {
                         <p className="text-sm font-medium">Scan QRIS untuk pembayaran:</p>
                         <img src="/qris-static.jpg" className="w-full rounded-lg" alt="QRIS" />
                         <label className="block text-sm font-medium">Upload Bukti Pembayaran</label>
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)}
-                          className="border rounded-lg px-3 py-2 w-full text-sm cursor-pointer"
-                        />
+                        <input type="file" accept="image/*,.pdf" onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)} className="border rounded-lg px-3 py-2 w-full text-sm cursor-pointer" />
                       </div>
                     )}
                   </div>
 
-                  {/* TOTAL PEMBAYARAN */}
                   <div className="border-t pt-4 space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Subtotal</span>
-                      <span>Rp{subtotal.toLocaleString("id-ID")}</span>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span>Ongkir</span>
-                      <span>Rp{ongkir.toLocaleString("id-ID")}</span>
-                    </div>
-
-                    {promoAmount > 0 && promoLabel && (
-                      <div className="flex justify-between text-green-600 font-medium">
-                        <span>{promoLabel}</span>
-                        <span>- Rp{promoAmount.toLocaleString("id-ID")}</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between font-semibold text-lg pt-2">
-                      <span>Total Pembayaran</span>
-                      <span>Rp{total.toLocaleString("id-ID")}</span>
-                    </div>
+                    <div className="flex justify-between"><span>Subtotal</span><span>Rp{subtotal.toLocaleString("id-ID")}</span></div>
+                    <div className="flex justify-between"><span>Ongkir</span><span>Rp{ongkir.toLocaleString("id-ID")}</span></div>
+                    {promoAmount > 0 && promoLabel && (<div className="flex justify-between text-green-600 font-medium"><span>{promoLabel}</span><span>- Rp{promoAmount.toLocaleString("id-ID")}</span></div>)}
+                    <div className="flex justify-between font-semibold text-lg pt-2"><span>Total Pembayaran</span><span>Rp{total.toLocaleString("id-ID")}</span></div>
                   </div>
 
                   {errorMsg && <p className="text-red-500 text-sm pt-1">{errorMsg}</p>}
 
-                  <button
-                    disabled={disabled}
-                    className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {status === "submitting" ? (
-                      <>
-                        <span className="animate-spin">⏳</span> Memproses pesanan...
-                      </>
-                    ) : (
-                      "Buat Pesanan"
-                    )}
+                  <button disabled={disabled} className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
+                    {status === "submitting" ? (<>⏳ Memproses pesanan...</>) : ("Buat Pesanan")}
                   </button>
                 </form>
               </section>
