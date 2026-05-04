@@ -4,7 +4,7 @@ export type Product = {
   id: string
   name: string
   desc?: string
-  description?: string  // ⭐ TAMBAHKAN INI biar kompatible
+  description?: string
   price: number
   img: string
   color?: string
@@ -24,12 +24,12 @@ export const products: Product[] = [
     id: "golden-detox",
     name: "Golden Detox",
     price: 18000,
-    img: "/product/Golden-detox.jpg",
+    img: "/product/Golden-detox.webp", // ✅ DIUBAH KE WEBP
     color: "#F4B940",
     slogan: "Clean Your Body, Boost Your Day.",
     ingredients: ["Kunyit", "Wortel", "Jahe", "Jeruk", "Lemon"],
     desc: "Detoks kuat untuk mendukung metabolisme & membantu membersihkan tubuh dari dalam.",
-    description: "Detoks kuat untuk mendukung metabolisme & membantu membersihkan tubuh dari dalam.", // ⭐ TAMBAH
+    description: "Detoks kuat untuk mendukung metabolisme & membantu membersihkan tubuh dari dalam.",
 
     category: "Detox & Metabolisme",
     benefits: [
@@ -45,12 +45,12 @@ export const products: Product[] = [
     id: "green-revive",
     name: "Green Revive",
     price: 18000,
-    img: "/product/green-revive.webp", // ⭐ DIPERBAIKI (pake .webp biar cepet)
+    img: "/product/green-revive.webp",
     color: "#4CAF50",
     slogan: "Fresh Green Energy in Every Sip.",
     ingredients: ["Pakcoy", "Nanas", "Timun"],
     desc: "Memberikan hidrasi, energi hijau, dan rasa segar alami sepanjang hari.",
-    description: "Memberikan hidrasi, energi hijau, dan rasa segar alami sepanjang hari.", // ⭐ TAMBAH
+    description: "Memberikan hidrasi, energi hijau, dan rasa segar alami sepanjang hari.",
 
     category: "Detox & Pencernaan",
     benefits: [
@@ -66,12 +66,12 @@ export const products: Product[] = [
     id: "sunrise-boost",
     name: "Sunrise Boost",
     price: 18000,
-    img: "/product/Sunrise-Boost.jpg",
+    img: "/product/Sunrise-Boost.webp", // ✅ DIUBAH KE WEBP
     color: "#FFA024",
     slogan: "Start Your Day with Natural Power.",
     ingredients: ["Wortel", "Apel", "Tomat"],
     desc: "Energi pagi kaya vitamin untuk bantu tubuh lebih siap memulai hari.",
-    description: "Energi pagi kaya vitamin untuk bantu tubuh lebih siap memulai hari.", // ⭐ TAMBAH
+    description: "Energi pagi kaya vitamin untuk bantu tubuh lebih siap memulai hari.",
 
     category: "Energi & Vitalitas",
     benefits: [
@@ -87,12 +87,12 @@ export const products: Product[] = [
     id: "lemongrass-fresh",
     name: "Lemongrass Fresh",
     price: 18000,
-    img: "/product/lemongrass-fresh.webp", // ⭐ DIPERBAIKI (pake nama file yang sesuai)
+    img: "/product/lemongrass-fresh.webp",
     color: "#E6F89A",
     slogan: "Calm. Fresh. Naturally Bright.",
     ingredients: ["Lemon", "Serai"],
     desc: "Rasa segar menenangkan untuk mood lebih stabil dan tubuh terasa lebih ringan.",
-    description: "Rasa segar menenangkan untuk mood lebih stabil dan tubuh terasa lebih ringan.", // ⭐ TAMBAH
+    description: "Rasa segar menenangkan untuk mood lebih stabil dan tubuh terasa lebih ringan.",
 
     category: "Relaksasi & Mood",
     benefits: [
@@ -108,12 +108,12 @@ export const products: Product[] = [
     id: "yellow-immunity",
     name: "Yellow Immunity",
     price: 18000,
-    img: "/product/Yellow-Immunity.jpg",
+    img: "/product/Yellow-Immunity.webp", // ✅ DIUBAH KE WEBP
     color: "#FFE65A",
     slogan: "Stronger Immunity, Brighter Day.",
     ingredients: ["Nanas", "Lemon"],
     desc: "Vitamin C tinggi yang membantu memperkuat sistem imun secara alami.",
-    description: "Vitamin C tinggi yang membantu memperkuat sistem imun secara alami.", // ⭐ TAMBAH
+    description: "Vitamin C tinggi yang membantu memperkuat sistem imun secara alami.",
 
     category: "Imunitas",
     benefits: [
@@ -129,12 +129,12 @@ export const products: Product[] = [
     id: "red-vitality",
     name: "Red Vitality",
     price: 18000,
-    img: "/product/Red-Vitality.jpg",
+    img: "/product/Red-Vitality.webp", // ✅ DIUBAH KE WEBP
     color: "#C9253E",
     slogan: "Natural Strength from Within.",
     ingredients: ["Bit", "Nanas", "Apel"],
     desc: "Booster stamina alami untuk menjaga performa tubuh sepanjang hari.",
-    description: "Booster stamina alami untuk menjaga performa tubuh sepanjang hari.", // ⭐ TAMBAH
+    description: "Booster stamina alami untuk menjaga performa tubuh sepanjang hari.",
 
     category: "Stamina & Vitalitas",
     benefits: [
@@ -150,10 +150,10 @@ export const products: Product[] = [
     id: "paket-detox-3hari",
     name: "Paket Detox 3 Hari",
     price: 320000,
-    img: "/image/paket-detox.jpg",
+    img: "/image/paket-detox.webp", // ✅ DIUBAH KE WEBP
     isPackage: true,
     desc: "6 botol/hari kombinasi varian sehat untuk detoks total selama 3 hari.",
-    description: "6 botol/hari kombinasi varian sehat untuk detoks total selama 3 hari.", // ⭐ TAMBAH
+    description: "6 botol/hari kombinasi varian sehat untuk detoks total selama 3 hari.",
 
     category: "Program Detox",
     benefits: [
@@ -166,7 +166,7 @@ export const products: Product[] = [
   },
 ]
 
-// ⭐ TAMBAHKAN FUNGSI INI (PENTING!)
+// ⭐ FUNGSI UNTUK AKSES DATA
 export function getAllProducts(): Product[] {
   return products
 }
