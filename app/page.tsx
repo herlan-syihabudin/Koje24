@@ -1,10 +1,11 @@
 // app/page.tsx (SERVER COMPONENT)
 
 import { Metadata } from "next"
+import { Suspense } from "react"
+import Image from "next/image"
 import PromoBanner from "@/components/PromoBanner"
 import Hero from "@/components/Hero"
 import AnimateOnScroll from "@/components/AnimateOnScroll"
-
 import FeaturedProducts from "@/components/FeaturedProducts"
 import ProductGrid from "@/components/ProductGrid"
 import AboutSection from "@/components/AboutSection"
@@ -16,49 +17,180 @@ import CartPopup from "@/components/CartPopup"
 import PackagePopup from "@/components/PackagePopup"
 import RatingPopup from "@/components/RatingPopup"
 
+// ⭐ METADATA YANG LEBIH KAYA UNTUK SEO
 export const metadata: Metadata = {
-  title: "KOJE24 - Natural Cold-Pressed Juice Jakarta",
+  title: {
+    default: "KOJE24 - Cold Pressed Juice Jakarta & Tangerang",
+    template: "%s | KOJE24",
+  },
   description:
-    "Cold-pressed juice segar tanpa gula tambahan. Delivery Jakarta & Tangerang.",
+    "Cold-pressed juice segar 100% alami tanpa gula tambahan. Detox harian, booster imun, dan energi alami. Delivery Jakarta, Bekasi, Tangerang.",
+  keywords: [
+    "cold pressed juice Jakarta",
+    "jus detox Tangerang",
+    "jus sehat tanpa gula",
+    "KOJE24",
+    "minuman detox alami",
+  ],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  openGraph: {
+    title: "KOJE24 - Cold Pressed Juice Sehat Alami",
+    description:
+      "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Jakarta, Bekasi, Tangerang.",
+    url: "https://koje24.com",
+    siteName: "KOJE24",
+    images: [
+      {
+        url: "https://koje24.com/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "KOJE24 Cold Pressed Juice",
+      },
+    ],
+    locale: "id_ID",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "KOJE24 - Cold Pressed Juice Sehat Alami",
+    description:
+      "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Jakarta, Bekasi, Tangerang.",
+    images: ["https://koje24.com/og-image.jpg"],
+  },
+  alternates: {
+    canonical: "https://koje24.com",
+  },
 }
+
+// ⭐ TAMBAHKAN PRODUCT SCHEMA UNTUK HOME PAGE
+const productSchemas = [
+  {
+    name: "Red Vitality",
+    description:
+      "Natural Strength from Within. Bit • Nanas • Apel. Booster stamina alami.",
+    price: 18000,
+    image: "https://koje24.com/images/red-vitality.webp",
+  },
+  {
+    name: "Golden Detox",
+    description:
+      "Clean Your Body, Boost Your Day. Kunyit • Wortel • Jahe • Jeruk • Lemon.",
+    price: 18000,
+    image: "https://koje24.com/images/golden-detox.webp",
+  },
+  {
+    name: "Green Revive",
+    description:
+      "Fresh Green Energy in Every Sip. Pakcoy • Nanas • Timun.",
+    price: 18000,
+    image: "https://koje24.com/images/green-revive.webp",
+  },
+  {
+    name: "Sunrise Boost",
+    description:
+      "Start Your Day with Natural Power. Wortel • Apel • Tomat.",
+    price: 18000,
+    image: "https://koje24.com/images/sunrise-boost.webp",
+  },
+  {
+    name: "Lemongrass Fresh",
+    description:
+      "Calm. Fresh. Naturally Bright. Lemon • Serai.",
+    price: 18000,
+    image: "https://koje24.com/images/lemongrass-fresh.webp",
+  },
+  {
+    name: "Yellow Immunity",
+    description:
+      "Stronger Immunity, Brighter Day. Nanas • Lemon.",
+    price: 18000,
+    image: "https://koje24.com/images/yellow-immunity.webp",
+  },
+]
 
 export default function HomePage() {
   return (
     <>
+      {/* ⭐ SCHEMA UNTUK SEO RICH RESULTS */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            name: "Produk KOJE24",
+            description: "Daftar produk cold pressed juice alami",
+            numberOfItems: productSchemas.length,
+            itemListElement: productSchemas.map((product, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              item: {
+                "@type": "Product",
+                name: product.name,
+                description: product.description,
+                image: product.image,
+                offers: {
+                  "@type": "Offer",
+                  price: product.price,
+                  priceCurrency: "IDR",
+                  availability: "https://schema.org/InStock",
+                },
+              },
+            })),
+          }),
+        }}
+      />
+
+      {/* ⭐ RENDER KOMPONEN */}
       <PromoBanner />
 
       <Hero />
 
-      {/* TAMBAHKAN ID DI SINI */}
-      <section id="produk">
+      {/* SECTION PRODUK */}
+      <section id="produk" aria-label="Produk KOJE24">
         <AnimateOnScroll direction="up">
           <FeaturedProducts />
         </AnimateOnScroll>
 
-        <ProductGrid />
+        <Suspense fallback={<div className="text-center py-10">Memuat produk...</div>}>
+          <ProductGrid />
+        </Suspense>
       </section>
 
-      {/* TAMBAHKAN ID DI SINI */}
-      <section id="about">
+      {/* SECTION TENTANG KAMI */}
+      <section id="about" aria-label="Tentang KOJE24">
         <AboutSection />
       </section>
 
-      {/* TAMBAHKAN ID DI SINI */}
-      <section id="langganan">
+      {/* SECTION LANGGANAN */}
+      <section id="langganan" aria-label="Paket Langganan">
         <PackagesSection />
         <SubscriptionSection />
       </section>
 
-      {/* TAMBAHKAN ID DI SINI */}
-      <section id="testimoni">
+      {/* SECTION TESTIMONI */}
+      <section id="testimoni" aria-label="Testimoni Pelanggan">
         <TestimonialsCarousel />
       </section>
 
       <FaqSection />
 
-      <CartPopup />
-      <PackagePopup />
-      <RatingPopup />
+      {/* ⭐ SEMUA POPUP DI-BUNGKUS SUSPENSE BIAR GAK BIKIN LCP BURUK */}
+      <Suspense fallback={null}>
+        <CartPopup />
+        <PackagePopup />
+        <RatingPopup />
+      </Suspense>
     </>
   )
 }
