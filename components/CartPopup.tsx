@@ -253,7 +253,7 @@ export default function CartPopup() {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal</span>
                   <span className="font-medium">
-                    Rp {totalPrice.toLocaleString("id-ID")}
+                    Rp {totalPrice().toLocaleString("id-ID")}
                   </span>
                 </div>
 
