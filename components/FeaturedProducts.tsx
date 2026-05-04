@@ -211,7 +211,7 @@ export default function FeaturedProducts() {
   // =========================
   // HANDLE ADD TO CART
   // =========================
-  const handleAddToCart = (
+    const handleAddToCart = (
     product: typeof products[number],
     price: number,
     img: string
@@ -233,7 +233,6 @@ export default function FeaturedProducts() {
     
     // Actual add to cart logic
     if (product.isPackage) {
-      // FIX ERROR 3: Safe access to items
       const packageItems = (product as any).items || []
       
       window.dispatchEvent(
@@ -255,6 +254,9 @@ export default function FeaturedProducts() {
         img: img,
       })
     }
+    
+    // ⭐ BIKIN HEADER LANGSUNG UPDATE
+    window.dispatchEvent(new Event("open-cart"))
   }
 
   // =========================
