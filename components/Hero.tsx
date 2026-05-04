@@ -2,7 +2,8 @@
 
 import Image from "next/image"
 import { motion, useScroll, useTransform } from "framer-motion"
-import { useState, useEffect } from "react"  // ← TAMBAH useEffect
+import { useState } from "react"
+import { useMediaQuery } from "@/hooks/useMediaQuery"
 
 const COLORS = {
   primary: "#0FA3A8",
@@ -12,25 +13,15 @@ const COLORS = {
 
 export default function Hero() {
   const [loaded, setLoaded] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)  // ← PAKAI STATE
   const { scrollY } = useScroll()
-
-  // ✅ CEK UKURAN LAYAR SETELAH CLIENT RENDER
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768)
-    }
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
+  const isMobile = useMediaQuery("(max-width: 768px)")
 
   // PARALLAX
   const yDesktop = useTransform(scrollY, [0, 400], [0, 110])
   const glowYDesktop = useTransform(scrollY, [0, 350], [0, 60])
   const opacity = useTransform(scrollY, [0, 200], [1, 0.88])
 
-  // CTA ANIMATION - PAKAI DEPENDENSI ARRAY BIAR RE-CREATE KETIKA isMobile BERUBAH
+  // CTA ANIMATION
   const ctaOpacity = useTransform(
     scrollY,
     [0, isMobile ? 60 : 100],
