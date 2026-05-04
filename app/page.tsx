@@ -1,8 +1,7 @@
 // app/page.tsx (SERVER COMPONENT)
 
 import { Metadata } from "next"
-import { Suspense, lazy } from "react"
-import dynamic from "next/dynamic"
+import { Suspense } from "react"
 import Image from "next/image"
 import PromoBanner from "@/components/PromoBanner"
 import Hero from "@/components/Hero"
@@ -14,28 +13,9 @@ import PackagesSection from "@/components/PackagesSection"
 import SubscriptionSection from "@/components/SubscriptionSection"
 import TestimonialsCarousel from "@/components/TestimonialsCarousel"
 import FaqSection from "@/components/FaqSection"
-
-// ⭐ DYNAMIC IMPORTS (LOAD HANYA KETIKA DIBUTUHKAN)
-const CartPopup = dynamic(() => import("@/components/CartPopup"), {
-  ssr: false,
-  loading: () => null
-})
-
-const PackagePopup = dynamic(() => import("@/components/PackagePopup"), {
-  ssr: false,
-  loading: () => null
-})
-
-const RatingPopup = dynamic(() => import("@/components/RatingPopup"), {
-  ssr: false,
-  loading: () => null
-})
-
-// ⭐ ChatWidget juga di-dynamic (gak nge-blok render awal)
-const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
-  ssr: false,
-  loading: () => null
-})
+import CartPopup from "@/components/CartPopup"
+import PackagePopup from "@/components/PackagePopup"
+import RatingPopup from "@/components/RatingPopup"
 
 // ⭐ METADATA YANG LEBIH KAYA UNTUK SEO
 export const metadata: Metadata = {
@@ -217,12 +197,11 @@ export default function HomePage() {
 
       <FaqSection />
 
-      {/* ⭐ SEMUA POPUP & CHAT DI-DYNAMIC IMPORT (GAK NGE-BLOCK RENDER) */}
+      {/* ⭐ POPUP DENGAN SUSPENSE */}
       <Suspense fallback={null}>
         <CartPopup />
         <PackagePopup />
         <RatingPopup />
-        <ChatWidget />
       </Suspense>
     </>
   )
