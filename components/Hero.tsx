@@ -82,7 +82,7 @@ export default function Hero() {
           initial={{ opacity: 0 }}
           animate={loaded ? { opacity: 1 } : {}}
           transition={{ duration: 0.6 }}
-          className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/60 to-transparent"
+          className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-transparent"
         />
       </motion.div>
 
