@@ -17,7 +17,7 @@ export default function StickyCartBar() {
 
   // 🛑 sembunyikan sticky bar di halaman checkout
   const isCheckoutPage = pathname?.includes("/checkout")
-  const shouldShow = totalQty() > 0 && !cartOpen && !isCheckoutPage  // ✅ FIX: tambah kurung ()
+  const shouldShow = totalQty > 0 && !cartOpen && !isCheckoutPage
 
   // 💰 Format harga dengan memo
   const hargaFormat = useMemo(() => {
@@ -25,12 +25,12 @@ export default function StickyCartBar() {
       style: "currency",
       currency: "IDR",
       maximumFractionDigits: 0,
-    }).format(totalPrice())  // ✅ FIX: tambah kurung ()
+    }).format(totalPrice)
   }, [totalPrice])
 
   // 🎁 Bonus ongkir logic
-  const bonusOngkir = totalPrice() >= 120000  // ✅ FIX: tambah kurung ()
-  const ongkirProgress = Math.min(100, (totalPrice() / 120000) * 100)  // ✅ FIX: tambah kurung ()
+  const bonusOngkir = totalPrice >= 120000
+  const ongkirProgress = Math.min(100, (totalPrice / 120000) * 100)
 
   // 🔥 Open cart handler
   const openCart = useCallback(() => {
@@ -45,7 +45,7 @@ export default function StickyCartBar() {
 
   // ✨ auto glowing (marketing attention)
   useEffect(() => {
-    if (totalQty() === 0) return  // ✅ FIX: tambah kurung ()
+    if (totalQty === 0) return
 
     const interval = setInterval(() => {
       setGlow(true)
@@ -106,7 +106,7 @@ export default function StickyCartBar() {
             bg-[#0FA3A8] text-white hover:bg-[#0DC1C7]
             ${glow ? "ring-4 ring-[#0FA3A8]/40" : ""}
           `}
-          aria-label={`Buka keranjang, total ${totalQty()} item, ${hargaFormat}`}
+          aria-label={`Buka keranjang, total ${totalQty} item, ${hargaFormat}`}
         >
           <ShoppingCart className="w-5 h-5" />
 
@@ -126,7 +126,7 @@ export default function StickyCartBar() {
             className="absolute -top-2 -right-2 bg-[#E8C46B] text-[#0B4B50]
               text-xs font-bold rounded-full min-w-[20px] h-[20px] flex items-center justify-center"
           >
-            {totalQty()}  {/* ✅ FIX: tambah kurung () */}
+            {totalQty}
           </motion.span>
 
           {/* BONUS ONGKIR - Enhanced */}
