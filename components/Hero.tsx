@@ -2,19 +2,22 @@
 
 import Image from "next/image"
 import { motion, useScroll, useTransform } from "framer-motion"
-import { useState } from "react"
-import { useMediaQuery } from "@/hooks/useMediaQuery"
-
-const COLORS = {
-  primary: "#0FA3A8",
-  primaryHover: "#0DC1C7",
-  dark: "#020507"
-}
+import { useState, useEffect } from "react"
 
 export default function Hero() {
   const [loaded, setLoaded] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const { scrollY } = useScroll()
-  const isMobile = useMediaQuery("(max-width: 768px)")
+
+  // ✅ DETEKSI MOBILE SETELAH CLIENT RENDER (NYELAMETIN DARI HYDRATION ERROR)
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // PARALLAX
   const yDesktop = useTransform(scrollY, [0, 400], [0, 110])
@@ -89,8 +92,8 @@ export default function Hero() {
         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent blur-[100px] opacity-20 pointer-events-none"
       />
 
-      {/* NOISE */}
-      <div className="absolute inset-0 opacity-[0.04] bg-[url('/noise.png')] mix-blend-overlay pointer-events-none" />
+      {/* ⚠️ HAPUS ATAU PERBAIKI BARIS INI KALAU GAK PUNYA FILE noise.png */}
+      {/* <div className="absolute inset-0 opacity-[0.04] bg-[url('/noise.png')] mix-blend-overlay pointer-events-none" /> */}
 
       {/* CONTENT */}
       <motion.div
