@@ -34,6 +34,36 @@ export default function ProductSchema({ product }: { product: ProductData }) {
         "@type": "Organization",
         name: "KOJE24",
       },
+      // ✅ TAMBAHAN 1: shippingDetails
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        shippingDestination: {
+          "@type": "DefinedRegion",
+          addressCountry: "ID",
+          addressRegion: "Jabodetabek"
+        },
+        shippingRate: {
+          "@type": "MonetaryAmount",
+          value: 0,
+          currency: "IDR"
+        },
+        deliveryTime: {
+          "@type": "ShippingDeliveryTime",
+          handlingTime: {
+            "@type": "QuantitativeValue",
+            minValue: 1,
+            maxValue: 2,
+            unitCode: "DAY"
+          }
+        }
+      },
+      // ✅ TAMBAHAN 2: hasMerchantReturnPolicy
+      hasMerchantReturnPolicy: {
+        "@type": "MerchantReturnPolicy",
+        applicableCountry: "ID",
+        returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+        returnFees: "https://schema.org/ReturnFeesNotPermitted"
+      }
     },
     ...(product.ratingValue && product.ratingCount && {
       aggregateRating: {
