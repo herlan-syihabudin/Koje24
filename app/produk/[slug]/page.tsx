@@ -34,7 +34,8 @@ export async function generateStaticParams() {
   }))
 }
 
-export default async function ProductPage({ params }: { params: { slug: string } }) {
+// ✅ HAPUS "async" DI SINI!
+export default function ProductPage({ params }: { params: { slug: string } }) {
   const product = getProductBySlug(params.slug)
   
   // Kalau produk gak ditemukan, tampilkan halaman 404
@@ -51,12 +52,10 @@ export default async function ProductPage({ params }: { params: { slug: string }
     imageUrl: product.img.startsWith("http") ? product.img : `https://koje24.com${product.img}`,
     sku: `KOJE-${product.id.toUpperCase().replace(/-/g, "")}`,
     availability: "InStock" as const,
-
-    // ✅ TAMBAHKAN 3 BARIS INI (WAJIB!)
-  brand: product.brand || "KOJE24",
-  shippingDetails: product.shippingDetails,
-  returnPolicy: product.returnPolicy
-}
+    brand: product.brand || "KOJE24",
+    shippingDetails: product.shippingDetails,
+    returnPolicy: product.returnPolicy
+  }
 
   return (
     <>
