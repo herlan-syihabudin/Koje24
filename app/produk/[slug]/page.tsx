@@ -51,7 +51,12 @@ export default async function ProductPage({ params }: { params: { slug: string }
     imageUrl: product.img.startsWith("http") ? product.img : `https://koje24.com${product.img}`,
     sku: `KOJE-${product.id.toUpperCase().replace(/-/g, "")}`,
     availability: "InStock" as const,
-  }
+
+    // ✅ TAMBAHKAN 3 BARIS INI (WAJIB!)
+  brand: product.brand || "KOJE24",
+  shippingDetails: product.shippingDetails,
+  returnPolicy: product.returnPolicy
+}
 
   return (
     <>
