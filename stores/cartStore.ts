@@ -23,8 +23,6 @@ interface CartState {
   items: CartItem[]
   promo: Promo | null
   shippingCost: number
-  
-  // ✅ SEKARANG JADI STATE (BUKAN FUNGSI)
   totalQty: number
   totalPrice: number
 
@@ -34,13 +32,10 @@ interface CartState {
   setPromo: (promo: Promo) => void
   clearPromo: () => void
   setShippingCost: (cost: number) => void
-
-  // ✅ TETAP FUNGSI UNTUK YANG BUTUH PERHITUNGAN DINAMIS
   getDiscount: () => number
   getFinalTotal: () => number
 }
 
-// Helper untuk hitung total
 const calculateTotals = (items: CartItem[]) => ({
   totalQty: items.reduce((sum, i) => sum + i.qty, 0),
   totalPrice: items.reduce((sum, i) => sum + i.qty * i.price, 0),
@@ -71,10 +66,23 @@ export const useCartStore = create<CartState>()(
         if (exist.qty > 1) exist.qty -= 1
         else items = items.filter((i) => i.id !== id)
         const { totalQty, totalPrice } = calculateTotals(items)
-        set({ items, totalQty, totalPrice, promo: items.length === 0 ? null : get().promo })
+        const shippingCost = items.length === 0 ? 0 : get().shippingCost
+        set({ 
+          items, 
+          totalQty, 
+          totalPrice, 
+          promo: items.length === 0 ? null : get().promo,
+          shippingCost
+        })
       },
 
-      clearCart: () => set({ items: [], totalQty: 0, totalPrice: 0, promo: null, shippingCost: 0 }),
+      clearCart: () => set({ 
+        items: [], 
+        totalQty: 0, 
+        totalPrice: 0, 
+        promo: null, 
+        shippingCost: 0 
+      }),
 
       setPromo: (promo) => {
         if (promo.expiresAt && new Date() > promo.expiresAt) {
@@ -85,11 +93,13 @@ export const useCartStore = create<CartState>()(
       },
 
       clearPromo: () => set({ promo: null }),
+      
       setShippingCost: (cost) => set({ shippingCost: cost }),
 
       getDiscount: () => {
         const { promo, shippingCost, totalPrice } = get()
         if (!promo || totalPrice < promo.minimal) return 0
+        
         let discount = 0
         switch (promo.tipe) {
           case "percent": discount = (totalPrice * promo.nilai) / 100; break
@@ -97,7 +107,10 @@ export const useCartStore = create<CartState>()(
           case "free_shipping": discount = shippingCost; break
           case "cashback": discount = promo.nilai; break
         }
+        
         if (promo.maxDiskon) discount = Math.min(discount, promo.maxDiskon)
+        discount = Math.min(discount, totalPrice)
+        
         return Math.floor(discount)
       },
 
