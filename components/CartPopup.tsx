@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
@@ -180,9 +179,9 @@ export default function CartPopup() {
     }
   }, [handleClose]);
 
-  // Computed values
-  const discount = useMemo(() => getDiscount(), [getDiscount]);
-  const finalTotal = useMemo(() => getFinalTotal(), [getFinalTotal]);
+  // ✅ COMPUTED VALUES - LANGSUNG PANGGIL, TANPA useMemo (Biar auto update!)
+  const discount = getDiscount();
+  const finalTotal = getFinalTotal();
 
   if (!mounted) return null;
 
