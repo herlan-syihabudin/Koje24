@@ -12,9 +12,7 @@ export default function PromoPopup() {
   const promoAktif = useCartStore((s) => s.promo);
   const setPromo = useCartStore((s) => s.setPromo);
 
-  // ===============================
   // AUTO OPEN 1x SAAT FIRST VISIT
-  // ===============================
   useEffect(() => {
     if (typeof window === "undefined") return;
     const KEY = "koje24_promo_seen";
@@ -25,9 +23,7 @@ export default function PromoPopup() {
     }
   }, []);
 
-  // ===============================
   // OPEN MANUAL VIA EVENT
-  // ===============================
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handler = () => setOpen(true);
@@ -35,9 +31,7 @@ export default function PromoPopup() {
     return () => window.removeEventListener("open-promo-popup", handler);
   }, []);
 
-  // ===============================
   // LOAD PROMO DARI API
-  // ===============================
   useEffect(() => {
     const load = async () => {
       try {
@@ -59,26 +53,31 @@ export default function PromoPopup() {
   const close = () => setOpen(false);
   const next = () => setIndex((i) => (i + 1) % promos.length);
 
-  // ===============================
-  // NORMALIZE TIPE PROMO (PENTING)
-  // ===============================
+  // NORMALIZE TIPE PROMO
   const normalizeType = (
     tipe: string
   ): "percent" | "flat" | "free_shipping" | "cashback" => {
     const t = String(tipe || "").toLowerCase();
 
-    if (t.includes("diskon")) return "percent";        // Diskon %
-    if (t.includes("potongan")) return "flat";         // Potongan Rp
-    if (t.includes("free")) return "free_shipping";    // Free Ongkir
-    if (t.includes("cashback")) return "cashback";     // Cashback
+    if (t.includes("percent") || t.includes("diskon") || t.includes("%")) return "percent";
+    if (t.includes("flat") || t.includes("potongan") || t.includes("rp")) return "flat";
+    if (t.includes("free") || t.includes("ongkir") || t.includes("shipping")) return "free_shipping";
+    if (t.includes("cashback")) return "cashback";
 
-    return "flat"; // default aman
+    return "flat";
   };
 
-  // ===============================
   // APPLY PROMO KE CART STORE
-  // ===============================
   const apply = () => {
+    const { totalPrice } = useCartStore.getState()
+    const minimal = Number(p.minimal || 0)
+    
+    // CEK MINIMAL BELANJA
+    if (minimal > 0 && totalPrice < minimal) {
+      alert(`Minimal belanja Rp ${minimal.toLocaleString("id-ID")} untuk menggunakan promo ini`)
+      return
+    }
+    
     // Jika promo yang sama sudah aktif → tutup saja
     if (promoAktif?.kode && promoAktif.kode === p.kode) {
       close();
@@ -90,10 +89,7 @@ export default function PromoPopup() {
       tipe: normalizeType(p.tipe),
       nilai: Number(p.nilai || 0),
       minimal: Number(p.minimal || 0),
-      maxDiskon:
-        p.maxDiskon === null || p.maxDiskon === undefined
-          ? null
-          : Number(p.maxDiskon || 0),
+      maxDiskon: p.maxDiskon === null || p.maxDiskon === undefined ? null : Number(p.maxDiskon || 0),
     });
 
     close();
@@ -120,6 +116,13 @@ export default function PromoPopup() {
           <p className="text-xs text-gray-500 mt-1">
             {p.tipe} • {Number(p.nilai || 0).toLocaleString("id-ID")}
           </p>
+          
+          {/* Minimal Belanja */}
+          {Number(p.minimal || 0) > 0 && (
+            <p className="text-xs text-gray-400 mt-1">
+              Min. belanja Rp {Number(p.minimal || 0).toLocaleString("id-ID")}
+            </p>
+          )}
         </div>
 
         <button
