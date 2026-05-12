@@ -11,6 +11,15 @@ interface ProductData {
   availability: "InStock" | "OutOfStock" | "PreOrder";
   ratingValue?: number;
   ratingCount?: number;
+
+  // ✅ TAMBAHKAN 3 BARIS INI (WAJIB!)
+  brand?: string;
+  shippingDetails?: {
+    area: string;
+    cost: string;
+    estimatedDays: string;
+  };
+  returnPolicy?: string;
 }
 
 export default function ProductSchema({ product }: { product: ProductData }) {
