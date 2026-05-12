@@ -6,8 +6,9 @@ import { getProductBySlug, getAllProducts } from "@/lib/products"
 import ProductSchema from "@/components/ProductSchema"
 
 // Generate metadata dinamis berdasarkan produk
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const product = getProductBySlug(params.slug)
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const product = getProductBySlug(slug)
   
   if (!product) {
     return {
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 }
 
-// Generate static params untuk semua produk (biar cepet loadingnya)
+// Generate static params untuk semua produk
 export async function generateStaticParams() {
   const products = getAllProducts()
   return products.map((product) => ({
@@ -34,9 +35,10 @@ export async function generateStaticParams() {
   }))
 }
 
-// ✅ HAPUS "async" DI SINI!
-export default function ProductPage({ params }: { params: { slug: string } }) {
-  const product = getProductBySlug(params.slug)
+// ✅ YANG BENAR: params berupa Promise, harus di-await
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params  // ← INI KUNCI NYA!
+  const product = getProductBySlug(slug)
   
   // Kalau produk gak ditemukan, tampilkan halaman 404
   if (!product) {
@@ -59,13 +61,10 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
 
   return (
     <>
-      {/* Product Schema untuk SEO */}
       <ProductSchema product={productSchemaData} />
       
-      {/* Konten halaman produk */}
       <div className="container mx-auto px-4 py-8">
         <div className="grid md:grid-cols-2 gap-8">
-          {/* Gambar Produk */}
           <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
             <Image
               src={product.img}
@@ -76,7 +75,6 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
             />
           </div>
           
-          {/* Info Produk */}
           <div>
             <h1 className="text-3xl font-bold text-[#0B4B50] mb-2">{product.name}</h1>
             {product.slogan && (
