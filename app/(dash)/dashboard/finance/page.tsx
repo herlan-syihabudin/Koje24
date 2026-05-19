@@ -1,7 +1,24 @@
-export default function FinancePage() {
-  return (
-    <div className="max-w-7xl mx-auto space-y-6">
+"use client";
 
+import { useState, useEffect } from "react";
+import FinanceChart from "@/components/dash/FinanceChart";
+
+export default function FinancePage() {
+  const [finance, setFinance] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/dashboard/finance")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setFinance(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6 px-4 sm:px-6 pb-8">
       {/* HEADER */}
       <div>
         <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">FINANCE</p>
@@ -11,64 +28,50 @@ export default function FinancePage() {
         </p>
       </div>
 
-      {/* SUMMARY */}
+      {/* SUMMARY CARDS */}
       <div className="grid gap-4 md:grid-cols-4">
-        <FinanceStat title="Total Pendapatan" />
-        <FinanceStat title="Pembayaran Masuk" />
-        <FinanceStat title="Invoice Pending" />
-        <FinanceStat title="Refund / Retur" />
+        <FinanceStat 
+          title="Total Pendapatan" 
+          value={finance ? formatRupiah(finance.summary?.totalRevenue) : "—"}
+        />
+        <FinanceStat title="Pembayaran Masuk" value="—" />
+        <FinanceStat title="Invoice Pending" value="—" />
+        <FinanceStat title="Refund / Retur" value="—" />
       </div>
 
-      {/* TABLE */}
-      <div className="bg-white border rounded-2xl overflow-hidden">
-        <div className="p-4 border-b flex items-center justify-between">
+      {/* FINANCE CHART */}
+      <div className="bg-white border rounded-2xl p-5 shadow-sm">
+        <FinanceChart 
+          data={finance?.chart || []}
+          loading={loading}
+        />
+      </div>
+
+      {/* RIWAYAT PEMBAYARAN */}
+      <div className="bg-white border rounded-2xl overflow-hidden shadow-sm">
+        <div className="p-4 border-b bg-gray-50">
           <h2 className="text-sm font-semibold">Riwayat Pembayaran</h2>
-          <span className="text-xs text-gray-400">UI Only</span>
         </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500">
-              <tr>
-                <th className="px-4 py-3 text-left">Invoice</th>
-                <th className="px-4 py-3 text-left">Tanggal</th>
-                <th className="px-4 py-3 text-left">Metode</th>
-                <th className="px-4 py-3 text-right">Nominal</th>
-                <th className="px-4 py-3 text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-gray-400">
-                  Belum ada data pembayaran.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div className="p-8 text-center text-gray-400">
+          Data pembayaran akan muncul di sini
         </div>
       </div>
-
-      {/* NOTE */}
-      <div className="border rounded-2xl p-4 bg-[#F7FBFB]">
-        <p className="text-sm font-semibold">Catatan Tahap E2</p>
-        <p className="text-sm text-gray-600 mt-1">
-          Modul keuangan masih tahap UI.
-          Data akan diaktifkan setelah order & pembayaran terkunci strukturnya.
-        </p>
-      </div>
-
     </div>
   );
 }
 
-/* --- COMPONENT --- */
-
-function FinanceStat({ title }: { title: string }) {
+function FinanceStat({ title, value }: { title: string; value?: string }) {
   return (
-    <div className="rounded-2xl border bg-white p-5">
+    <div className="rounded-2xl border bg-white p-5 shadow-sm">
       <p className="text-xs text-gray-500">{title}</p>
-      <p className="text-2xl font-semibold mt-2">—</p>
-      <p className="text-xs text-gray-500 mt-1">Belum ada data</p>
+      <p className="text-2xl font-semibold mt-2">{value ?? "—"}</p>
+      <p className="text-xs text-gray-400 mt-1">Data realtime</p>
     </div>
   );
+}
+
+function formatRupiah(value?: number | null) {
+  if (value === null || value === undefined) return "—";
+  if (value === 0) return "Rp 0";
+  return "Rp " + value.toLocaleString("id-ID");
 }
