@@ -9,6 +9,12 @@ function parseTanggal(raw: string): Date | null {
   return new Date(y, m - 1, d);
 }
 
+function normalizeStatus(s: any): string {
+  const status = String(s || "").trim().toUpperCase();
+  if (status === "PAID" || status === "SELESAI") return "PAID";
+  return status;
+}
+
 export async function GET() {
   try {
     const res = await sheets.spreadsheets.values.get({
@@ -23,18 +29,24 @@ export async function GET() {
     thirtyDaysAgo.setDate(now.getDate() - 30);
 
     rows.forEach((row) => {
-      const email = row[14]; // Kolom O (Email)
+      const email = row[14]?.trim(); // Kolom O (Email)
+      
+      // 🔥 SKIP kalo email kosong
       if (!email) return;
 
       const tanggalRaw = row[1];
       const dt = parseTanggal(tanggalRaw);
-      const tanggalTransaksi = dt || new Date(0);
+      if (!dt) return; // SKIP kalo tanggal invalid
 
       const nama = row[2] || email.split("@")[0];
       const telepon = row[3] || "";
       const alamat = row[4] || "";
       const total = Number(row[9] || 0);
-      const status = row[12] || "";
+      const statusRaw = row[12] || "";
+      const status = normalizeStatus(statusRaw);
+
+      // 🔥 Hanya hitung transaksi dengan status PAID
+      if (status !== "PAID") return;
 
       if (!customerMap.has(email)) {
         customerMap.set(email, {
@@ -45,30 +57,36 @@ export async function GET() {
           kota: alamat.split(",").pop()?.trim() || "Jakarta",
           totalOrder: 0,
           totalBelanja: 0,
-          firstOrderDate: tanggalTransaksi, // 🔥 simpan tanggal pertama
-          status: "aktif",
+          firstOrderDate: dt,
+          lastOrderDate: dt,
         });
       }
 
       const customer = customerMap.get(email);
       
       // Update first order date if earlier
-      if (tanggalTransaksi < customer.firstOrderDate) {
-        customer.firstOrderDate = tanggalTransaksi;
+      if (dt < customer.firstOrderDate) {
+        customer.firstOrderDate = dt;
+      }
+      
+      // Update last order date if later
+      if (dt > customer.lastOrderDate) {
+        customer.lastOrderDate = dt;
       }
 
-      if (status === "PAID") {
-        customer.totalOrder += 1;
-        customer.totalBelanja += total;
-      }
+      customer.totalOrder += 1;
+      customer.totalBelanja += total;
     });
 
-    const customers = Array.from(customerMap.values()).map((c) => ({
-      ...c,
-      firstOrderDate: c.firstOrderDate.toISOString().slice(0, 10),
-    }));
+    const customers = Array.from(customerMap.values())
+      .sort((a, b) => b.lastOrderDate.getTime() - a.lastOrderDate.getTime()) // Urutkan berdasarkan order terbaru
+      .map((c) => ({
+        ...c,
+        firstOrderDate: c.firstOrderDate.toISOString().slice(0, 10),
+        lastOrderDate: c.lastOrderDate.toISOString().slice(0, 10),
+      }));
 
-    // 🔥 Hitung pelanggan baru (30 hari terakhir)
+    // 🔥 Hitung pelanggan baru (30 hari terakhir dari firstOrderDate)
     const stats = {
       total: customers.length,
       aktif: customers.filter((c) => c.totalOrder > 0).length,
@@ -77,6 +95,8 @@ export async function GET() {
         return firstDate >= thirtyDaysAgo;
       }).length,
     };
+
+    console.log(`✅ Customers API: total=${stats.total}, aktif=${stats.aktif}, baru=${stats.baru}`);
 
     return NextResponse.json({
       success: true,
