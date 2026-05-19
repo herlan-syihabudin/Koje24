@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import SalesChart from "@/components/dash/SalesChart";
 import FinanceChart from "@/components/dash/FinanceChart";
@@ -10,7 +10,61 @@ import FinanceChart from "@/components/dash/FinanceChart";
 ===================== */
 function formatRupiah(value?: number | null) {
   if (value === null || value === undefined) return "—";
+  if (value === 0) return "Rp 0";
   return "Rp " + value.toLocaleString("id-ID");
+}
+
+/* =====================
+   LOADING SKELETON
+===================== */
+function DashboardSkeleton() {
+  return (
+    <div className="max-w-7xl mx-auto space-y-6 px-4 sm:px-6">
+      {/* Skeleton KPI */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="rounded-2xl border bg-white p-6 shadow-sm animate-pulse">
+            <div className="h-3 bg-gray-200 rounded w-24"></div>
+            <div className="h-8 bg-gray-200 rounded w-32 mt-3"></div>
+          </div>
+        ))}
+      </div>
+
+      {/* Skeleton Charts */}
+      <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
+        <div className="rounded-2xl border bg-white p-6 shadow-sm animate-pulse">
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
+        <div className="space-y-5">
+          <div className="rounded-2xl border bg-white p-5 shadow-sm animate-pulse">
+            <div className="h-32 bg-gray-200 rounded"></div>
+          </div>
+          <div className="rounded-2xl border bg-white p-5 shadow-sm animate-pulse">
+            <div className="h-48 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =====================
+   ERROR CARD
+===================== */
+function ErrorCard({ message }: { message: string }) {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+        <p className="text-red-600 font-semibold">⚠️ {message}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-3 text-sm text-red-600 underline"
+        >
+          Coba lagi
+        </button>
+      </div>
+    </div>
+  );
 }
 
 /* =====================
@@ -63,151 +117,170 @@ function QuickAction({
    DASHBOARD HOME
 ===================== */
 export default function DashboardHome() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [todayOrders, setTodayOrders] = useState<number | null>(null);
   const [monthOrders, setMonthOrders] = useState<number | null>(null);
-  const [totalRevenue, setTotalRevenue] = useState<number | null>(null);
-
-  const [latestOrders, setLatestOrders] = useState<any[]>([]);
+  const [finance, setFinance] = useState<any | null>(null);
   const [topProducts, setTopProducts] = useState<any[]>([]);
 
-  // 🔥 SATU SUMBER KEUANGAN
-  const [finance, setFinance] = useState<any | null>(null);
-
-  /* KPI */
+  // 🔥 SATU FETCH DENGAN PROMISE.ALL
   useEffect(() => {
-    fetch("/api/dashboard/stats", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.success) {
-          setTodayOrders(data.todayOrders ?? 0);
-          setMonthOrders(data.monthOrders ?? 0);
-          setTotalRevenue(data.totalRevenue ?? 0);
+    let isMounted = true;
+
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [statsRes, financeRes, productsRes] = await Promise.all([
+          fetch("/api/dashboard/stats"),
+          fetch("/api/dashboard/finance"),
+          fetch("/api/dashboard/products-top"),
+        ]);
+
+        const [stats, financeData, products] = await Promise.all([
+          statsRes.json(),
+          financeRes.json(),
+          productsRes.json(),
+        ]);
+
+        if (!isMounted) return;
+
+        // Stats
+        if (stats?.success) {
+          setTodayOrders(stats.todayOrders ?? 0);
+          setMonthOrders(stats.monthOrders ?? 0);
+        } else {
+          console.error("Failed to load stats");
         }
-      });
+
+        // Finance
+        if (financeData?.success) {
+          setFinance(financeData);
+        }
+
+        // Products
+        if (products?.success) {
+          setTopProducts(products.products ?? []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch dashboard data:", err);
+        if (isMounted) {
+          setError("Gagal memuat data dashboard. Periksa koneksi internet Anda.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchDashboardData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  /* 🔥 FINANCE (SUMBER TUNGGAL) */
-  useEffect(() => {
-    fetch("/api/dashboard/finance", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.success) setFinance(data);
-      });
-  }, []);
-
-  /* ORDER TERBARU */
-  useEffect(() => {
-    fetch("/api/dashboard/orders-latest", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.success) setLatestOrders(data.orders);
-      });
-  }, []);
-
-  /* PRODUK TERLARIS */
-  useEffect(() => {
-    fetch("/api/dashboard/products-top", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.success) setTopProducts(data.products);
-      });
-  }, []);
+  if (loading) return <DashboardSkeleton />;
+  if (error) return <ErrorCard message={error} />;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-
+    <div className="max-w-7xl mx-auto space-y-6 px-4 sm:px-6 pb-8">
       {/* KPI + INSIGHT (COMPACT) */}
-<section className="space-y-3">
-  {/* KPI */}
-  <div className="grid gap-4 md:grid-cols-3">
-    <StatCard title="Order Hari Ini" value={todayOrders} />
-    <StatCard title="Total Order Bulan Ini" value={monthOrders} />
-    <StatCard
-      title="Total Pendapatan"
-      value={formatRupiah(finance?.summary.totalRevenue)}
-    />
-  </div>
+      <section className="space-y-3">
+        {/* KPI */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard title="Order Hari Ini" value={todayOrders} />
+          <StatCard title="Total Order Bulan Ini" value={monthOrders} />
+          <StatCard
+            title="Total Pendapatan"
+            value={finance ? formatRupiah(finance.summary?.totalRevenue) : "—"}
+          />
+        </div>
 
-  {/* INSIGHT COMPACT BAR */}
-  {finance?.insights && (
-    <div className="rounded-xl border bg-[#F7FBFB] px-4 py-2 text-sm text-gray-700 flex flex-wrap gap-4">
-      <span>
-        {finance.insights.revenueTrend.status === "up" && "📈"}
-        {finance.insights.revenueTrend.status === "down" && "📉"}
-        {finance.insights.revenueTrend.status === "flat" && "➖"}{" "}
-        Pendapatan{" "}
-        <b>
-          {finance.insights.revenueTrend.status === "up"
-            ? "naik"
-            : finance.insights.revenueTrend.status === "down"
-            ? "turun"
-            : "stabil"}
-        </b>{" "}
-        {finance.insights.revenueTrend.percent}%
-      </span>
+        {/* INSIGHT COMPACT BAR */}
+        {finance?.insights && (
+          <div className="rounded-xl border bg-[#F7FBFB] px-4 py-2 text-sm text-gray-700 flex flex-wrap gap-4">
+            <span>
+              {finance.insights.revenueTrend?.status === "up" && "📈"}
+              {finance.insights.revenueTrend?.status === "down" && "📉"}
+              {finance.insights.revenueTrend?.status === "flat" && "➖"}{" "}
+              Pendapatan{" "}
+              <b>
+                {finance.insights.revenueTrend?.status === "up"
+                  ? "naik"
+                  : finance.insights.revenueTrend?.status === "down"
+                  ? "turun"
+                  : "stabil"}
+              </b>{" "}
+              {finance.insights.revenueTrend?.percent || 0}%
+            </span>
 
-      {finance.insights.topProduct?.name && (
-        <span>
-          🔥 Produk dominan:{" "}
-          <b>{finance.insights.topProduct.name}</b>
-        </span>
-      )}
+            {finance.insights.topProduct?.name && (
+              <span>
+                🔥 Produk dominan: <b>{finance.insights.topProduct.name}</b>
+              </span>
+            )}
 
-      {finance.insights.paymentRisk.warning && (
-        <span className="text-orange-600">
-          ⚠️ COD {finance.insights.paymentRisk.codRatio}%
-        </span>
-      )}
-    </div>
-  )}
-</section>
+            {finance.insights.paymentRisk?.warning && (
+              <span className="text-orange-600">
+                ⚠️ COD {finance.insights.paymentRisk.codRatio || 0}%
+              </span>
+            )}
+          </div>
+        )}
+      </section>
 
       {/* SALES + FINANCE */}
-<section className="grid gap-5 lg:grid-cols-[2fr_1fr] items-start">
-
-  {/* LEFT – SALES */}
-  <div className="rounded-2xl border bg-white p-6 shadow-sm">
-    <SalesChart />
-  </div>
-
-  {/* RIGHT – FINANCE */}
-  <div className="flex flex-col gap-5">
-
-    {/* 💰 RINGKASAN KEUANGAN */}
-    <div className="rounded-2xl border bg-white p-5 shadow-sm">
-      <p className="text-sm font-semibold mb-3">Ringkasan Keuangan</p>
-
-      <div className="space-y-2 text-sm">
-        <div>
-          <p className="text-xs text-gray-500">Total Pendapatan</p>
-          <p className="text-xl font-semibold">
-            {formatRupiah(finance?.summary.totalRevenue)}
-          </p>
+      <section className="grid gap-5 lg:grid-cols-[2fr_1fr] items-start">
+        {/* LEFT – SALES */}
+        <div className="rounded-2xl border bg-white p-6 shadow-sm">
+          <SalesChart />
         </div>
 
-        <div className="flex justify-between">
-          <span className="text-gray-500">Transfer / QRIS</span>
-          <span className="font-semibold">
-            {formatRupiah(finance?.methods.transfer.amount)}
-          </span>
+        {/* RIGHT – FINANCE */}
+        <div className="flex flex-col gap-5">
+          {/* 💰 RINGKASAN KEUANGAN */}
+          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+            <p className="text-sm font-semibold mb-3">Ringkasan Keuangan</p>
+
+            <div className="space-y-2 text-sm">
+              <div>
+                <p className="text-xs text-gray-500">Total Pendapatan</p>
+                <p className="text-xl font-semibold">
+                  {finance
+                    ? formatRupiah(finance.summary?.totalRevenue)
+                    : "—"}
+                </p>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-500">Transfer / QRIS</span>
+                <span className="font-semibold">
+                  {finance
+                    ? formatRupiah(finance.methods?.transfer?.amount)
+                    : "—"}
+                </span>
+              </div>
+
+              <div className="flex justify-between">
+                <span className="text-gray-500">COD</span>
+                <span className="font-semibold">
+                  {finance ? formatRupiah(finance.methods?.cod?.amount) : "—"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 🍩 DONUT CHART */}
+          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+            <FinanceChart data={finance?.chart || []} />
+          </div>
         </div>
-
-        <div className="flex justify-between">
-          <span className="text-gray-500">COD</span>
-          <span className="font-semibold">
-            {formatRupiah(finance?.methods.cod.amount)}
-          </span>
-        </div>
-      </div>
-    </div>
-
-    {/* 🍩 DONUT CHART (PAKE CONTAINER, BIAR SOPAN) */}
-    <div className="rounded-2xl border bg-white p-5 shadow-sm">
-      <FinanceChart data={finance?.chart || []} />
-    </div>
-
-  </div>
-</section>
+      </section>
 
       {/* QUICK ACTION */}
       <section>
@@ -232,43 +305,43 @@ export default function DashboardHome() {
           />
         </div>
       </section>
-       
-       {/* 🔥 PRODUK TERLARIS */}
-<section>
-  <p className="text-sm font-semibold text-gray-900 mb-4">
-    Produk Terlaris Bulan Ini
-  </p>
 
-  <div className="rounded-2xl border bg-white p-6 shadow-sm">
-    {topProducts.length === 0 ? (
-      <p className="text-sm text-gray-400 text-center py-8">
-        Belum ada produk terjual bulan ini
-      </p>
-    ) : (
-      <div className="space-y-3">
-        {topProducts.map((p, i) => (
-          <div
-            key={i}
-            className="flex items-center justify-between border-b pb-2 text-sm"
-          >
-            <div>
-              <p className="font-medium text-gray-900">
-                #{i + 1} {p.produk}
-              </p>
-              <p className="text-xs text-gray-500">
-                Terjual {p.totalQty} pcs
-              </p>
-            </div>
+      {/* 🔥 PRODUK TERLARIS */}
+      <section>
+        <p className="text-sm font-semibold text-gray-900 mb-4">
+          Produk Terlaris Bulan Ini
+        </p>
 
-            <p className="font-semibold">
-              {formatRupiah(p.totalRevenue)}
+        <div className="rounded-2xl border bg-white p-6 shadow-sm">
+          {topProducts.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-8">
+              Belum ada produk terjual bulan ini
             </p>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-</section>
+          ) : (
+            <div className="space-y-3">
+              {topProducts.map((p, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between border-b pb-2 text-sm"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      #{i + 1} {p.produk}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Terjual {p.totalQty} pcs
+                    </p>
+                  </div>
+
+                  <p className="font-semibold">
+                    {formatRupiah(p.totalRevenue)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
