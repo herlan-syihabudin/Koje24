@@ -19,7 +19,7 @@ export default function TopbarClient({ user }: TopbarClientProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // 🔥 Click outside handler (tanpa onMouseLeave)
+  // Click outside handler
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -56,8 +56,6 @@ export default function TopbarClient({ user }: TopbarClientProps) {
       if (response.ok) {
         router.push("/dashboard/login");
         router.refresh();
-      } else {
-        console.error("Logout failed:", await response.text());
       }
     } catch (error) {
       console.error("Logout error:", error);
@@ -65,8 +63,6 @@ export default function TopbarClient({ user }: TopbarClientProps) {
       setIsLoggingOut(false);
     }
   }, [router]);
-
-  const toggleDropdown = () => setIsOpen((prev) => !prev);
 
   return (
     <header className="border-b bg-white sticky top-0 z-10 shadow-sm">
@@ -81,14 +77,13 @@ export default function TopbarClient({ user }: TopbarClientProps) {
           </p>
         </div>
 
-        {/* RIGHT - DROPDOWN PREMIUM */}
+        {/* RIGHT */}
         <div className="relative">
           <button
             ref={buttonRef}
-            onClick={toggleDropdown}
+            onClick={() => setIsOpen(!isOpen)}
             className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-[#0FA3A8] focus:ring-offset-2"
             aria-label="Menu pengguna"
-            aria-expanded={isOpen}
           >
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0FA3A8] to-[#0D8B8F] text-white flex items-center justify-center font-semibold text-sm">
               {user.initial}
@@ -100,16 +95,12 @@ export default function TopbarClient({ user }: TopbarClientProps) {
             />
           </button>
 
-          {/* DROPDOWN MENU - PREMIUM ANIMATION */}
+          {/* DROPDOWN */}
           {isOpen && (
             <div
               ref={dropdownRef}
-              className="absolute right-0 mt-2 w-56 rounded-xl border bg-white shadow-xl overflow-hidden z-20 origin-top-right"
-              style={{
-                animation: "dropdownFadeIn 0.2s ease-out",
-              }}
+              className="absolute right-0 mt-2 w-56 rounded-xl border bg-white shadow-xl overflow-hidden z-20"
             >
-              {/* User Info */}
               <div className="px-4 py-3 border-b bg-gray-50/50">
                 <p className="font-semibold text-gray-800 text-sm">{user.name}</p>
                 <p className="text-xs text-gray-500 truncate mt-0.5">
@@ -117,7 +108,6 @@ export default function TopbarClient({ user }: TopbarClientProps) {
                 </p>
               </div>
 
-              {/* Menu Items */}
               <div className="py-1">
                 <button
                   onClick={() => router.push("/dashboard/profile")}
@@ -135,12 +125,11 @@ export default function TopbarClient({ user }: TopbarClientProps) {
                 </button>
               </div>
 
-              {/* Divider & Logout */}
               <div className="border-t">
                 <button
                   onClick={handleLogout}
                   disabled={isLoggingOut}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition disabled:opacity-50"
                 >
                   {isLoggingOut ? (
                     <>
@@ -159,20 +148,6 @@ export default function TopbarClient({ user }: TopbarClientProps) {
           )}
         </div>
       </div>
-
-      {/* 🔥 CSS untuk animation */}
-      <style jsx>{`
-        @keyframes dropdownFadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.95) translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-        }
-      `}</style>
     </header>
   );
 }
