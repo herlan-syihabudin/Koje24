@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { verifySession, getCookieName } from "@/lib/dashboardAuth";
 
 import Sidebar from "@/components/dash/Sidebar";
-import Topbar from "@/components/dash/Topbar";
+import TopbarClient from "@/components/dash/TopbarClient";
 
 export default async function ProtectedLayout({
   children,
@@ -19,21 +19,25 @@ export default async function ProtectedLayout({
     redirect("/dashboard/login");
   }
 
+  // 🔥 Ambil data user dari session, bukan fetch tambahan
+  const user = {
+    name: session.user?.name || "Admin",
+    email: session.user?.email || "admin@koje24",
+    initial: (session.user?.name?.charAt(0) || "A").toUpperCase(),
+  };
+
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-      {/* SIDEBAR */}
       <aside className="w-64 border-r bg-white flex-shrink-0 overflow-y-auto">
         <Sidebar />
       </aside>
 
-      {/* MAIN AREA */}
       <div className="flex flex-col flex-1 min-w-0 min-h-0">
-        {/* TOPBAR */}
+        {/* 🔥 TOPBAR - PASS USER DATA VIA PROPS */}
         <div className="flex-shrink-0">
-          <Topbar />
+          <TopbarClient user={user} />
         </div>
 
-        {/* CONTENT */}
         <main className="flex-1 overflow-y-auto min-h-0">
           {children}
         </main>
