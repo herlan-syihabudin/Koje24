@@ -24,7 +24,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <body className="antialiased font-inter bg-white text-[#0B4B50] max-w-[100vw] overflow-x-hidden">
-        {/* HANYA CHILDREN, TANPA HEADER/FOOTER */}
         {children}
       </body>
     </html>
