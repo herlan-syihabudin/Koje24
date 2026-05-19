@@ -37,7 +37,6 @@ const NAV = [
     title: "PELANGGAN",
     items: [
       { label: "Pelanggan", href: "/dashboard/customers", icon: Users },
-      { label: "Riwayat Order", href: "/dashboard/customers/orders", icon: Users },
     ],
   },
   {
