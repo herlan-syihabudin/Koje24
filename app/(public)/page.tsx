@@ -1,8 +1,7 @@
-// app/page.tsx (SERVER COMPONENT)
+// app/(public)/page.tsx (SERVER COMPONENT)
 
 import { Metadata } from "next"
 import { Suspense } from "react"
-import Image from "next/image"
 import PromoBanner from "@/components/PromoBanner"
 import Hero from "@/components/Hero"
 import AnimateOnScroll from "@/components/AnimateOnScroll"
@@ -17,7 +16,7 @@ import CartPopup from "@/components/CartPopup"
 import PackagePopup from "@/components/PackagePopup"
 import RatingPopup from "@/components/RatingPopup"
 
-// ⭐ METADATA YANG LEBIH KAYA UNTUK SEO
+// ⭐ METADATA UNTUK HOME PAGE PUBLIC
 export const metadata: Metadata = {
   title: {
     default: "KOJE24 - Cold Pressed Juice Jakarta & Tangerang",
@@ -72,7 +71,7 @@ export const metadata: Metadata = {
   },
 }
 
-// ⭐ TAMBAHKAN PRODUCT SCHEMA UNTUK HOME PAGE
+// ⭐ PRODUCT SCHEMA
 const productSchemas = [
   {
     id: "red-vitality",
