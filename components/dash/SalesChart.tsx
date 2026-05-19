@@ -17,18 +17,13 @@ const MODES = [
   { key: "monthly", label: "Bulanan" },
 ];
 
-// Format label untuk display yang lebih bagus
 function formatLabel(label: string, mode: string): string {
   if (mode === "monthly") {
     const [year, month] = label.split("-");
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
     return `${monthNames[parseInt(month) - 1]} ${year}`;
   }
-  if (mode === "daily") {
-    const [year, month, day] = label.split("-");
-    return `${day}/${month}`;
-  }
-  if (mode === "weekly") {
+  if (mode === "daily" || mode === "weekly") {
     const [year, month, day] = label.split("-");
     return `${day}/${month}`;
   }
@@ -55,11 +50,11 @@ function formatYAxis(value: number) {
 }
 
 export default function SalesChart() {
-  const [mode, setMode] = useState("daily");
+  // 🔥 FIX 1: Mode default ke "monthly"
+  const [mode, setMode] = useState("monthly");
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [apiResponse, setApiResponse] = useState<any>(null); // Debug
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -82,19 +77,16 @@ export default function SalesChart() {
 
       const json = await res.json();
       
-      // Debug log
       console.log(`📊 SalesChart [${mode}]:`, json);
-      setApiResponse(json);
 
-      if (json.success) {
-        // Format data dengan displayLabel
+      if (json.success && json.data && json.data.length > 0) {
         const formattedData = json.data.map((item: any) => ({
           ...item,
           displayLabel: formatLabel(item.label, mode),
         }));
         setData(formattedData);
       } else {
-        throw new Error(json.message || "Gagal memuat data");
+        setData([]);
       }
     } catch (err: any) {
       if (err.name === "AbortError") {
@@ -121,11 +113,6 @@ export default function SalesChart() {
   const maxSale = Math.max(...data.map(d => d.total || 0), 0);
   const bestDay = data.find(d => d.total === maxSale);
 
-  // Debug: Tampilkan info di console
-  if (!loading && data.length === 0 && !error) {
-    console.warn("⚠️ SalesChart: Data kosong untuk mode", mode);
-  }
-
   return (
     <div className="rounded-2xl border bg-white p-4 shadow-sm h-full flex flex-col">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -134,11 +121,6 @@ export default function SalesChart() {
           {!loading && data.length > 0 && (
             <p className="text-[10px] text-gray-400 mt-0.5">
               Total: Rp {totalSales.toLocaleString("id-ID")} • {data.length} periode
-            </p>
-          )}
-          {!loading && data.length === 0 && !error && (
-            <p className="text-[10px] text-orange-400 mt-0.5">
-              Tidak ada data untuk mode {mode}
             </p>
           )}
         </div>
@@ -184,15 +166,16 @@ export default function SalesChart() {
           </div>
         ) : data.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-xs text-gray-400">
-            <p>Belum ada data penjualan</p>
-            <p className="text-[10px] mt-1">Coba klik mode "Bulanan" atau refresh</p>
+            <p>Belum ada data penjualan untuk mode {mode}</p>
+            <p className="text-[10px] mt-1">Coba klik mode "Bulanan"</p>
           </div>
         ) : (
           <>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={data}
-                margin={{ top: 10, right: 20, left: -20, bottom: 10 }}
+                // 🔥 FIX 2: Hapus left: -20
+                margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
               >
                 <defs>
                   <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
