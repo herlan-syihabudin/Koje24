@@ -17,7 +17,24 @@ const MODES = [
   { key: "monthly", label: "Bulanan" },
 ];
 
-// Loading Skeleton
+// Format label untuk display yang lebih bagus
+function formatLabel(label: string, mode: string): string {
+  if (mode === "monthly") {
+    const [year, month] = label.split("-");
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+    return `${monthNames[parseInt(month) - 1]} ${year}`;
+  }
+  if (mode === "daily") {
+    const [year, month, day] = label.split("-");
+    return `${day}/${month}`;
+  }
+  if (mode === "weekly") {
+    const [year, month, day] = label.split("-");
+    return `${day}/${month}`;
+  }
+  return label;
+}
+
 function ChartSkeleton() {
   return (
     <div className="h-[260px] animate-pulse">
@@ -31,7 +48,6 @@ function ChartSkeleton() {
   );
 }
 
-// Y-Axis formatter yang lebih baik
 function formatYAxis(value: number) {
   if (value >= 1_000_000) return `Rp ${(value / 1_000_000).toFixed(1)}jt`;
   if (value >= 1_000) return `Rp ${(value / 1_000).toFixed(0)}rb`;
@@ -43,10 +59,10 @@ export default function SalesChart() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [apiResponse, setApiResponse] = useState<any>(null); // Debug
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchData = useCallback(async () => {
-    // Cancel previous request
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -65,9 +81,18 @@ export default function SalesChart() {
       if (!res.ok) throw new Error("HTTP error " + res.status);
 
       const json = await res.json();
+      
+      // Debug log
+      console.log(`📊 SalesChart [${mode}]:`, json);
+      setApiResponse(json);
 
       if (json.success) {
-        setData(json.data);
+        // Format data dengan displayLabel
+        const formattedData = json.data.map((item: any) => ({
+          ...item,
+          displayLabel: formatLabel(item.label, mode),
+        }));
+        setData(formattedData);
       } else {
         throw new Error(json.message || "Gagal memuat data");
       }
@@ -85,7 +110,6 @@ export default function SalesChart() {
 
   useEffect(() => {
     fetchData();
-
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -93,28 +117,33 @@ export default function SalesChart() {
     };
   }, [fetchData]);
 
-  // Calculate total and max for insights
   const totalSales = data.reduce((sum, d) => sum + (d.total || 0), 0);
   const maxSale = Math.max(...data.map(d => d.total || 0), 0);
   const bestDay = data.find(d => d.total === maxSale);
 
+  // Debug: Tampilkan info di console
+  if (!loading && data.length === 0 && !error) {
+    console.warn("⚠️ SalesChart: Data kosong untuk mode", mode);
+  }
+
   return (
     <div className="rounded-2xl border bg-white p-4 shadow-sm h-full flex flex-col">
-      {/* HEADER */}
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div>
-          <p className="text-sm font-semibold text-gray-900">
-            Grafik Penjualan
-          </p>
+          <p className="text-sm font-semibold text-gray-900">Grafik Penjualan</p>
           {!loading && data.length > 0 && (
             <p className="text-[10px] text-gray-400 mt-0.5">
-              Total: Rp {totalSales.toLocaleString("id-ID")}
+              Total: Rp {totalSales.toLocaleString("id-ID")} • {data.length} periode
+            </p>
+          )}
+          {!loading && data.length === 0 && !error && (
+            <p className="text-[10px] text-orange-400 mt-0.5">
+              Tidak ada data untuk mode {mode}
             </p>
           )}
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Mode buttons */}
           <div className="flex gap-1">
             {MODES.map((m) => (
               <button
@@ -132,7 +161,6 @@ export default function SalesChart() {
             ))}
           </div>
 
-          {/* Refresh button */}
           <button
             onClick={fetchData}
             disabled={loading}
@@ -144,30 +172,27 @@ export default function SalesChart() {
         </div>
       </div>
 
-      {/* CHART */}
       <div className="flex-1 min-h-[200px]">
         {loading ? (
           <ChartSkeleton />
         ) : error ? (
           <div className="h-full flex flex-col items-center justify-center gap-2">
             <p className="text-xs text-red-500">{error}</p>
-            <button
-              onClick={fetchData}
-              className="text-xs text-[#0FA3A8] hover:underline"
-            >
+            <button onClick={fetchData} className="text-xs text-[#0FA3A8] hover:underline">
               Coba lagi
             </button>
           </div>
         ) : data.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-xs text-gray-400">
-            Belum ada data penjualan
+          <div className="h-full flex flex-col items-center justify-center text-xs text-gray-400">
+            <p>Belum ada data penjualan</p>
+            <p className="text-[10px] mt-1">Coba klik mode "Bulanan" atau refresh</p>
           </div>
         ) : (
           <>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={data}
-                margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+                margin={{ top: 10, right: 20, left: -20, bottom: 10 }}
               >
                 <defs>
                   <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
@@ -177,7 +202,7 @@ export default function SalesChart() {
                 </defs>
 
                 <XAxis
-                  dataKey="label"
+                  dataKey="displayLabel"
                   tick={{ fontSize: 10, fill: "#6B7280" }}
                   interval="preserveStartEnd"
                 />
@@ -191,10 +216,7 @@ export default function SalesChart() {
                 />
 
                 <Tooltip
-                  formatter={(value: number) => [
-                    `Rp ${value.toLocaleString("id-ID")}`,
-                    "Penjualan"
-                  ]}
+                  formatter={(value: number) => [`Rp ${value.toLocaleString("id-ID")}`, "Penjualan"]}
                   labelFormatter={(label) => `📅 ${label}`}
                   contentStyle={{
                     borderRadius: "12px",
@@ -217,10 +239,9 @@ export default function SalesChart() {
               </AreaChart>
             </ResponsiveContainer>
 
-            {/* Insight footer */}
             {bestDay && maxSale > 0 && (
               <div className="mt-2 pt-2 border-t text-[10px] text-gray-400 flex justify-between">
-                <span>📊 Puncak: {bestDay.label}</span>
+                <span>📊 Puncak: {bestDay.displayLabel}</span>
                 <span>💰 Rp {maxSale.toLocaleString("id-ID")}</span>
               </div>
             )}
