@@ -1,7 +1,4 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { verifySession, getCookieName } from "@/lib/dashboardAuth";
-
+// app/(dash)/layout.tsx
 export default function DashLayout({
   children,
 }: {
