@@ -1,3 +1,5 @@
+// app/(dash)/dashboard/(protected)/page.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -19,7 +21,7 @@ function formatRupiah(value?: number | null) {
 ===================== */
 function DashboardSkeleton() {
   return (
-    <div className="max-w-7xl mx-auto space-y-6 px-4 sm:px-6">
+    <div className="max-w-7xl mx-auto space-y-6 px-4 sm:px-6 pb-8">
       {/* Skeleton KPI */}
       <div className="grid gap-4 md:grid-cols-3">
         {[1, 2, 3].map((i) => (
@@ -53,7 +55,7 @@ function DashboardSkeleton() {
 ===================== */
 function ErrorCard({ message }: { message: string }) {
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-8">
       <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
         <p className="text-red-600 font-semibold">⚠️ {message}</p>
         <button
@@ -124,6 +126,9 @@ export default function DashboardHome() {
   const [monthOrders, setMonthOrders] = useState<number | null>(null);
   const [finance, setFinance] = useState<any | null>(null);
   const [topProducts, setTopProducts] = useState<any[]>([]);
+  
+  // 🔥 BARU: State untuk previous finance data (trend analysis)
+  const [previousFinance, setPreviousFinance] = useState<any | null>(null);
 
   // 🔥 SATU FETCH DENGAN PROMISE.ALL
   useEffect(() => {
@@ -134,16 +139,19 @@ export default function DashboardHome() {
         setLoading(true);
         setError(null);
 
-        const [statsRes, financeRes, productsRes] = await Promise.all([
+        // 🔥 BARU: Fetch data bulan ini dan bulan lalu
+        const [statsRes, financeRes, productsRes, prevFinanceRes] = await Promise.all([
           fetch("/api/dashboard/stats"),
           fetch("/api/dashboard/finance"),
           fetch("/api/dashboard/products-top"),
+          fetch("/api/dashboard/finance?period=previous"), // untuk trend
         ]);
 
-        const [stats, financeData, products] = await Promise.all([
+        const [stats, financeData, products, prevFinanceData] = await Promise.all([
           statsRes.json(),
           financeRes.json(),
           productsRes.json(),
+          prevFinanceRes.json(),
         ]);
 
         if (!isMounted) return;
@@ -152,13 +160,16 @@ export default function DashboardHome() {
         if (stats?.success) {
           setTodayOrders(stats.todayOrders ?? 0);
           setMonthOrders(stats.monthOrders ?? 0);
-        } else {
-          console.error("Failed to load stats");
         }
 
         // Finance
         if (financeData?.success) {
           setFinance(financeData);
+        }
+
+        // 🔥 BARU: Previous finance data
+        if (prevFinanceData?.success) {
+          setPreviousFinance(prevFinanceData);
         }
 
         // Products
@@ -191,7 +202,6 @@ export default function DashboardHome() {
     <div className="max-w-7xl mx-auto space-y-6 px-4 sm:px-6 pb-8">
       {/* KPI + INSIGHT (COMPACT) */}
       <section className="space-y-3">
-        {/* KPI */}
         <div className="grid gap-4 md:grid-cols-3">
           <StatCard title="Order Hari Ini" value={todayOrders} />
           <StatCard title="Total Order Bulan Ini" value={monthOrders} />
@@ -201,7 +211,6 @@ export default function DashboardHome() {
           />
         </div>
 
-        {/* INSIGHT COMPACT BAR */}
         {finance?.insights && (
           <div className="rounded-xl border bg-[#F7FBFB] px-4 py-2 text-sm text-gray-700 flex flex-wrap gap-4">
             <span>
@@ -236,14 +245,11 @@ export default function DashboardHome() {
 
       {/* SALES + FINANCE */}
       <section className="grid gap-5 lg:grid-cols-[2fr_1fr] items-start">
-        {/* LEFT – SALES */}
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <SalesChart />
         </div>
 
-        {/* RIGHT – FINANCE */}
         <div className="flex flex-col gap-5">
-          {/* 💰 RINGKASAN KEUANGAN */}
           <div className="rounded-2xl border bg-white p-5 shadow-sm">
             <p className="text-sm font-semibold mb-3">Ringkasan Keuangan</p>
 
@@ -251,18 +257,14 @@ export default function DashboardHome() {
               <div>
                 <p className="text-xs text-gray-500">Total Pendapatan</p>
                 <p className="text-xl font-semibold">
-                  {finance
-                    ? formatRupiah(finance.summary?.totalRevenue)
-                    : "—"}
+                  {finance ? formatRupiah(finance.summary?.totalRevenue) : "—"}
                 </p>
               </div>
 
               <div className="flex justify-between">
                 <span className="text-gray-500">Transfer / QRIS</span>
                 <span className="font-semibold">
-                  {finance
-                    ? formatRupiah(finance.methods?.transfer?.amount)
-                    : "—"}
+                  {finance ? formatRupiah(finance.methods?.transfer?.amount) : "—"}
                 </span>
               </div>
 
@@ -275,18 +277,20 @@ export default function DashboardHome() {
             </div>
           </div>
 
-          {/* 🍩 DONUT CHART */}
+          {/* 🔥 UPDATE: FinanceChart dengan loading dan previousData */}
           <div className="rounded-2xl border bg-white p-5 shadow-sm">
-            <FinanceChart data={finance?.chart || []} />
+            <FinanceChart 
+              data={finance?.chart || []}
+              loading={loading}
+              previousData={previousFinance?.chart || []}
+            />
           </div>
         </div>
       </section>
 
       {/* QUICK ACTION */}
       <section>
-        <p className="text-sm font-semibold text-gray-900 mb-4">
-          Akses Cepat
-        </p>
+        <p className="text-sm font-semibold text-gray-900 mb-4">Akses Cepat</p>
         <div className="grid gap-5 md:grid-cols-3">
           <QuickAction
             title="Kelola Order"
@@ -306,7 +310,7 @@ export default function DashboardHome() {
         </div>
       </section>
 
-      {/* 🔥 PRODUK TERLARIS */}
+      {/* PRODUK TERLARIS */}
       <section>
         <p className="text-sm font-semibold text-gray-900 mb-4">
           Produk Terlaris Bulan Ini
@@ -332,10 +336,7 @@ export default function DashboardHome() {
                       Terjual {p.totalQty} pcs
                     </p>
                   </div>
-
-                  <p className="font-semibold">
-                    {formatRupiah(p.totalRevenue)}
-                  </p>
+                  <p className="font-semibold">{formatRupiah(p.totalRevenue)}</p>
                 </div>
               ))}
             </div>
