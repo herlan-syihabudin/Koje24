@@ -15,28 +15,29 @@ export default async function ProtectedLayout({
 
   const session = verifySession(token);
 
-if (!session) {
-  redirect("/dashboard/login");
-}
+  if (!session) {
+    redirect("/dashboard/login");
+  }
+
   return (
-  <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-    {/* SIDEBAR */}
-    <aside className="w-64 border-r bg-white flex-shrink-0">
-      <Sidebar />
-    </aside>
+    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
+      {/* SIDEBAR */}
+      <aside className="w-64 border-r bg-white flex-shrink-0 overflow-y-auto">
+        <Sidebar />
+      </aside>
 
-    {/* MAIN AREA */}
-    <div className="flex flex-col flex-1 min-w-0">
-      {/* TOPBAR (tidak ikut scroll) */}
-      <div className="flex-shrink-0">
-        <Topbar />
+      {/* MAIN AREA */}
+      <div className="flex flex-col flex-1 min-w-0 min-h-0">
+        {/* TOPBAR */}
+        <div className="flex-shrink-0">
+          <Topbar />
+        </div>
+
+        {/* CONTENT */}
+        <main className="flex-1 overflow-y-auto min-h-0">
+          {children}
+        </main>
       </div>
-
-      {/* CONTENT (scroll di sini saja) */}
-      <main className="flex-1 overflow-y-auto px-6 py-4">
-        {children}
-      </main>
     </div>
-  </div>
-);
+  );
 }
