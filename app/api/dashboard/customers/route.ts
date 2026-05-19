@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 
+function parseTanggal(raw: string): Date | null {
+  if (!raw) return null;
+  const datePart = raw.split(",")[0];
+  const [d, m, y] = datePart.split("/").map(Number);
+  if (!d || !m || !y) return null;
+  return new Date(y, m - 1, d);
+}
+
 export async function GET() {
   try {
     const res = await sheets.spreadsheets.values.get({
@@ -10,10 +18,17 @@ export async function GET() {
 
     const rows = res.data.values || [];
     const customerMap = new Map();
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(now.getDate() - 30);
 
     rows.forEach((row) => {
       const email = row[14]; // Kolom O (Email)
       if (!email) return;
+
+      const tanggalRaw = row[1];
+      const dt = parseTanggal(tanggalRaw);
+      const tanggalTransaksi = dt || new Date(0);
 
       const nama = row[2] || email.split("@")[0];
       const telepon = row[3] || "";
@@ -30,27 +45,36 @@ export async function GET() {
           kota: alamat.split(",").pop()?.trim() || "Jakarta",
           totalOrder: 0,
           totalBelanja: 0,
+          firstOrderDate: tanggalTransaksi, // 🔥 simpan tanggal pertama
           status: "aktif",
         });
       }
 
       const customer = customerMap.get(email);
+      
+      // Update first order date if earlier
+      if (tanggalTransaksi < customer.firstOrderDate) {
+        customer.firstOrderDate = tanggalTransaksi;
+      }
+
       if (status === "PAID") {
         customer.totalOrder += 1;
         customer.totalBelanja += total;
       }
     });
 
-    const customers = Array.from(customerMap.values());
-    const now = new Date();
-    const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30));
+    const customers = Array.from(customerMap.values()).map((c) => ({
+      ...c,
+      firstOrderDate: c.firstOrderDate.toISOString().slice(0, 10),
+    }));
 
+    // 🔥 Hitung pelanggan baru (30 hari terakhir)
     const stats = {
       total: customers.length,
       aktif: customers.filter((c) => c.totalOrder > 0).length,
       baru: customers.filter((c) => {
-        // Perlu data created_at dari sheet
-        return false;
+        const firstDate = new Date(c.firstOrderDate);
+        return firstDate >= thirtyDaysAgo;
       }).length,
     };
 
