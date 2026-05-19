@@ -154,7 +154,7 @@ export default function SalesChart() {
         </div>
       </div>
 
-      <div className="flex-1 min-h-[200px]">
+      <div style={{ height: 320 }}>
         {loading ? (
           <ChartSkeleton />
         ) : error ? (
