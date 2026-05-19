@@ -19,11 +19,11 @@ export default async function ProtectedLayout({
     redirect("/dashboard/login");
   }
 
-  // 🔥 Ambil data user dari session, bukan fetch tambahan
+  // 🔥 FIX: Ambil dari session atau default (karena verifySession return type beda)
   const user = {
-    name: session.user?.name || "Admin",
-    email: session.user?.email || "admin@koje24",
-    initial: (session.user?.name?.charAt(0) || "A").toUpperCase(),
+    name: "Admin",
+    email: session.email || "admin@koje24",
+    initial: "A",
   };
 
   return (
@@ -33,7 +33,6 @@ export default async function ProtectedLayout({
       </aside>
 
       <div className="flex flex-col flex-1 min-w-0 min-h-0">
-        {/* 🔥 TOPBAR - PASS USER DATA VIA PROPS */}
         <div className="flex-shrink-0">
           <TopbarClient user={user} />
         </div>
