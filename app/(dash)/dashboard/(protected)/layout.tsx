@@ -28,16 +28,18 @@ export default async function ProtectedLayout({
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
-      <aside className="w-64 border-r bg-white flex-shrink-0 overflow-y-auto">
-        <Sidebar />
-      </aside>
+      {/* SIDEBAR - SUDAH RESPONSIVE (hamburger menu di HP) */}
+      <Sidebar />
 
+      {/* MAIN AREA */}
       <div className="flex flex-col flex-1 min-w-0 min-h-0">
+        {/* TOPBAR */}
         <div className="flex-shrink-0">
           <TopbarClient user={user} />
         </div>
 
-        <main className="flex-1 overflow-y-auto min-h-0">
+        {/* CONTENT - padding khusus untuk mobile (karena hamburger menu) */}
+        <main className="flex-1 overflow-y-auto min-h-0 px-4 pt-16 md:pt-4 md:px-6 pb-4">
           {children}
         </main>
       </div>
