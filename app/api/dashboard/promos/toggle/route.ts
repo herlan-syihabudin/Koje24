@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import { NextRequest } from "next/server"; // 🔥 IMPORT INI
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) { // 🔥 UBAH JADI NextRequest
   const guard = await requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Promo tidak ditemukan" });
     }
 
-    const sheetRow = rowIndex + 2; // +2 karena header di baris 1
+    const sheetRow = rowIndex + 2;
 
     // Update status di kolom F
     await sheets.spreadsheets.values.update({
