@@ -25,7 +25,6 @@ const NAV = [
     title: "ORDER",
     items: [
       { label: "Semua Order", href: "/dashboard/orders", icon: ShoppingBag },
-      { label: "Proses Order", href: "/dashboard/orders?status=PENDING", icon: Clock }, // 🔥 TAMBAH
     ],
   },
   {
@@ -34,14 +33,12 @@ const NAV = [
       { label: "Daftar Produk", href: "/dashboard/products", icon: Package },
       { label: "Stok & Inventory", href: "/dashboard/products/stock", icon: Package },
       { label: "Harga & Promo", href: "/dashboard/products/pricing", icon: Package },
-      { label: "Kategori", href: "/dashboard/categories", icon: Tag }, // 🔥 TAMBAH
     ],
   },
   {
     title: "PELANGGAN",
     items: [
-      { label: "Semua Pelanggan", href: "/dashboard/customers", icon: Users },
-      { label: "Riwayat Order", href: "/dashboard/customers/orders", icon: History }, // 🔥 TAMBAH
+      { label: "Pelanggan", href: "/dashboard/customers", icon: Users },
     ],
   },
   {
@@ -49,14 +46,7 @@ const NAV = [
     items: [
       { label: "Ringkasan", href: "/dashboard/finance", icon: DollarSign },
       { label: "Pembayaran", href: "/dashboard/finance/payments", icon: DollarSign },
-      { label: "Laporan", href: "/dashboard/finance/reports", icon: FileText }, // 🔥 TAMBAH
-    ],
-  },
-  {
-    title: "PENGATURAN",
-    items: [
-      { label: "Profile Toko", href: "/dashboard/settings", icon: Settings }, // 🔥 TAMBAH
-      { label: "Pengguna", href: "/dashboard/users", icon: Users2 }, // 🔥 TAMBAH
+      { label: "Ongkir & Kurir", href: "/dashboard/finance/shipping", icon: Truck },
     ],
   },
 ];
