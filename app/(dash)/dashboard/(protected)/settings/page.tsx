@@ -70,7 +70,8 @@ export default function SettingsPage() {
   if (loading) return <div className="flex justify-center h-64"><div className="w-8 h-8 border-2 border-[#0FA3A8] border-t-transparent rounded-full animate-spin" /></div>;
   if (!settings) return null;
 
-  const update = (section: string, value: any) => {
+  // 🔥 FIX: Tambahkan tipe untuk update function
+  const update = (section: string, value: Record<string, any>) => {
     setSettings((prev: any) => ({ ...prev, [section]: { ...prev[section], ...value } }));
   };
 
@@ -97,13 +98,13 @@ export default function SettingsPage() {
       {activeTab === "toko" && (
         <>
           <SettingCard title="Informasi Toko" icon={Building}>
-            <SettingInput label="Nama Toko" value={settings.store.name} onChange={(val) => update("store", { name: val })} />
-            <SettingInput label="Logo URL" value={settings.store.logo} onChange={(val) => update("store", { logo: val })} />
-            <SettingInput label="Favicon URL" value={settings.store.favicon} onChange={(val) => update("store", { favicon: val })} />
+            <SettingInput label="Nama Toko" value={settings.store.name} onChange={(val: string) => update("store", { name: val })} />
+            <SettingInput label="Logo URL" value={settings.store.logo} onChange={(val: string) => update("store", { logo: val })} />
+            <SettingInput label="Favicon URL" value={settings.store.favicon} onChange={(val: string) => update("store", { favicon: val })} />
           </SettingCard>
           <SettingCard title="Warna Branding" icon={Paintbrush}>
-            <SettingInput label="Warna Utama" value={settings.store.primaryColor} onChange={(val) => update("store", { primaryColor: val })} />
-            <SettingInput label="Warna Sekunder" value={settings.store.secondaryColor} onChange={(val) => update("store", { secondaryColor: val })} />
+            <SettingInput label="Warna Utama" value={settings.store.primaryColor} onChange={(val: string) => update("store", { primaryColor: val })} />
+            <SettingInput label="Warna Sekunder" value={settings.store.secondaryColor} onChange={(val: string) => update("store", { secondaryColor: val })} />
           </SettingCard>
         </>
       )}
@@ -111,17 +112,17 @@ export default function SettingsPage() {
       {/* Shipping Tab */}
       {activeTab === "pengiriman" && (
         <SettingCard title="Biaya Pengiriman" icon={Truck}>
-          <SettingInput label="Ongkir (Rp)" value={settings.shipping.cost} onChange={(val) => update("shipping", { cost: val })} type="currency" />
-          <SettingInput label="Gratis Ongkir Min (Rp)" value={settings.shipping.freeShippingMin} onChange={(val) => update("shipping", { freeShippingMin: val })} type="currency" />
+          <SettingInput label="Ongkir (Rp)" value={settings.shipping.cost} onChange={(val: number) => update("shipping", { cost: val })} type="currency" />
+          <SettingInput label="Gratis Ongkir Min (Rp)" value={settings.shipping.freeShippingMin} onChange={(val: number) => update("shipping", { freeShippingMin: val })} type="currency" />
         </SettingCard>
       )}
 
       {/* Contact Tab */}
       {activeTab === "kontak" && (
         <SettingCard title="Kontak" icon={Phone}>
-          <SettingInput label="WhatsApp" value={settings.contact.whatsapp} onChange={(val) => update("contact", { whatsapp: val })} />
-          <SettingInput label="Email" value={settings.contact.email} onChange={(val) => update("contact", { email: val })} />
-          <SettingInput label="Alamat" value={settings.contact.address} onChange={(val) => update("contact", { address: val })} />
+          <SettingInput label="WhatsApp" value={settings.contact.whatsapp} onChange={(val: string) => update("contact", { whatsapp: val })} />
+          <SettingInput label="Email" value={settings.contact.email} onChange={(val: string) => update("contact", { email: val })} />
+          <SettingInput label="Alamat" value={settings.contact.address} onChange={(val: string) => update("contact", { address: val })} />
         </SettingCard>
       )}
 
@@ -129,10 +130,10 @@ export default function SettingsPage() {
       {activeTab === "keamanan" && (
         <>
           <SettingCard title="Mode Pemeliharaan" icon={Shield}>
-            <SettingToggle label="Aktifkan Maintenance Mode" value={settings.security.maintenanceMode} onChange={(val) => update("security", { maintenanceMode: val })} />
+            <SettingToggle label="Aktifkan Maintenance Mode" value={settings.security.maintenanceMode} onChange={(val: boolean) => update("security", { maintenanceMode: val })} />
           </SettingCard>
           <SettingCard title="Session" icon={Lock}>
-            <SettingInput label="Session Timeout (menit)" value={settings.security.sessionTimeout} onChange={(val) => update("security", { sessionTimeout: val })} type="number" />
+            <SettingInput label="Session Timeout (menit)" value={settings.security.sessionTimeout} onChange={(val: number) => update("security", { sessionTimeout: val })} type="number" />
           </SettingCard>
         </>
       )}
