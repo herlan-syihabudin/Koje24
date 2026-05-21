@@ -38,7 +38,11 @@ function StatCard({ title, value, icon: Icon }: { title: string; value: number; 
 }
 
 // Customer Detail Modal
-function CustomerDetailModal({ customer, onClose, onExportOrder }: { 
+function CustomerDetailModal({ 
+  customer, 
+  onClose, 
+  onExportOrder 
+}: { 
   customer: Customer | null; 
   onClose: () => void;
   onExportOrder: (email: string, nama: string) => void;
@@ -70,100 +74,101 @@ function CustomerDetailModal({ customer, onClose, onExportOrder }: {
         <div className="p-6 border-b sticky top-0 bg-white">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Detail Pelanggan</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg">✕</button>
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg">✕</button>
+          </div>
         </div>
-      </div>
         
-      <div className="p-6 space-y-6">
-        {/* Tombol Export di Modal */}
-        <div className="flex justify-end">
-          <button
-            onClick={() => onExportOrder(customer.email, customer.nama)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0FA3A8] text-white rounded-xl text-sm font-semibold hover:bg-[#0D8B8F] transition"
-          >
-            <FileText className="w-4 h-4" />
-            Export PDF (Riwayat Order)
-          </button>
-        </div>
+        <div className="p-6 space-y-6">
+          {/* Tombol Export di Modal */}
+          <div className="flex justify-end">
+            <button
+              onClick={() => onExportOrder(customer.email, customer.nama)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#0FA3A8] text-white rounded-xl text-sm font-semibold hover:bg-[#0D8B8F] transition"
+            >
+              <FileText className="w-4 h-4" />
+              Export PDF (Riwayat Order)
+            </button>
+          </div>
 
-        {/* Info Customer */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-xs text-gray-500">Nama</p>
-            <p className="font-semibold">{customer.nama}</p>
+          {/* Info Customer */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-gray-500">Nama</p>
+              <p className="font-semibold">{customer.nama}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Email</p>
+              <p className="text-sm">{customer.email}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Telepon</p>
+              <p>{customer.telepon}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Kota</p>
+              <p>{customer.kota}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Total Order</p>
+              <p className="font-semibold">{customer.totalOrder} x</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Total Belanja</p>
+              <p className="font-semibold text-[#0FA3A8]">Rp {customer.totalBelanja.toLocaleString("id-ID")}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-gray-500">Email</p>
-            <p className="text-sm">{customer.email}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Telepon</p>
-            <p>{customer.telepon}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Kota</p>
-            <p>{customer.kota}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Total Order</p>
-            <p className="font-semibold">{customer.totalOrder} x</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Total Belanja</p>
-            <p className="font-semibold text-[#0FA3A8]">Rp {customer.totalBelanja.toLocaleString("id-ID")}</p>
-          </div>
-        </div>
 
-        {/* Ringkasan Repeat Order */}
-        {totalOrder > 1 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-            <p className="text-sm text-orange-700">
-              🎯 <strong>Repeat Customer!</strong> Telah melakukan {totalOrder} kali transaksi dengan total belanja Rp {totalBelanja.toLocaleString("id-ID")}
-            </p>
-          </div>
-        )}
-
-        {/* Riwayat Order */}
-        <div>
-          <h3 className="font-semibold mb-3">Riwayat Order ({totalOrder} transaksi)</h3>
-          {loading ? (
-            <div className="text-center py-4">Memuat...</div>
-          ) : orders.length === 0 ? (
-            <div className="text-center py-4 text-gray-400">Belum ada order</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 py-2 text-left">Invoice</th>
-                    <th className="px-3 py-2 text-left">Tanggal</th>
-                    <th className="px-3 py-2 text-right">Total</th>
-                    <th className="px-3 py-2 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => (
-                    <tr key={order.invoice} className="border-t">
-                      <td className="px-3 py-2 font-mono text-xs">{order.invoice}</td>
-                      <td className="px-3 py-2">{order.tanggal}</td>
-                      <td className="px-3 py-2 text-right">Rp {order.total.toLocaleString("id-ID")}</td>
-                      <td className="px-3 py-2 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${
-                          order.status === "PAID" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-                        }`}>
-                          {order.status}
-                        </span>
-                       </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* Ringkasan Repeat Order */}
+          {totalOrder > 1 && (
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+              <p className="text-sm text-orange-700">
+                🎯 <strong>Repeat Customer!</strong> Telah melakukan {totalOrder} kali transaksi dengan total belanja Rp {totalBelanja.toLocaleString("id-ID")}
+              </p>
             </div>
           )}
+
+          {/* Riwayat Order */}
+          <div>
+            <h3 className="font-semibold mb-3">Riwayat Order ({totalOrder} transaksi)</h3>
+            {loading ? (
+              <div className="text-center py-4">Memuat...</div>
+            ) : orders.length === 0 ? (
+              <div className="text-center py-4 text-gray-400">Belum ada order</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-3 py-2 text-left">Invoice</th>
+                      <th className="px-3 py-2 text-left">Tanggal</th>
+                      <th className="px-3 py-2 text-right">Total</th>
+                      <th className="px-3 py-2 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => (
+                      <tr key={order.invoice} className="border-t">
+                        <td className="px-3 py-2 font-mono text-xs">{order.invoice}</td>
+                        <td className="px-3 py-2">{order.tanggal}</td>
+                        <td className="px-3 py-2 text-right">Rp {order.total.toLocaleString("id-ID")}</td>
+                        <td className="px-3 py-2 text-center">
+                          <span className={`px-2 py-0.5 rounded-full text-xs ${
+                            order.status === "PAID" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                          }`}>
+                            {order.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
-}
 }
 
 // Export semua customer ke PDF
