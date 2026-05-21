@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Users, UserCheck, UserPlus, Download, Eye } from "lucide-react";
+import { Search, Users, UserCheck, UserPlus, Download, Eye, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 type Customer = {
@@ -38,7 +38,11 @@ function StatCard({ title, value, icon: Icon }: { title: string; value: number; 
 }
 
 // Customer Detail Modal
-function CustomerDetailModal({ customer, onClose }: { customer: Customer | null; onClose: () => void }) {
+function CustomerDetailModal({ customer, onClose, onExportOrder }: { 
+  customer: Customer | null; 
+  onClose: () => void;
+  onExportOrder: (email: string, nama: string) => void;
+}) {
   const [orders, setOrders] = useState<OrderHistory[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -57,53 +61,77 @@ function CustomerDetailModal({ customer, onClose }: { customer: Customer | null;
 
   if (!customer) return null;
 
+  const totalOrder = orders.length;
+  const totalBelanja = orders.reduce((sum, o) => sum + o.total, 0);
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b sticky top-0 bg-white">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Detail Pelanggan</h2>
-            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg">✕</button>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg">✕</button>
+        </div>
+      </div>
+        
+      <div className="p-6 space-y-6">
+        {/* Tombol Export di Modal */}
+        <div className="flex justify-end">
+          <button
+            onClick={() => onExportOrder(customer.email, customer.nama)}
+            className="flex items-center gap-2 px-4 py-2 bg-[#0FA3A8] text-white rounded-xl text-sm font-semibold hover:bg-[#0D8B8F] transition"
+          >
+            <FileText className="w-4 h-4" />
+            Export PDF (Riwayat Order)
+          </button>
+        </div>
+
+        {/* Info Customer */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs text-gray-500">Nama</p>
+            <p className="font-semibold">{customer.nama}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Email</p>
+            <p className="text-sm">{customer.email}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Telepon</p>
+            <p>{customer.telepon}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Kota</p>
+            <p>{customer.kota}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Total Order</p>
+            <p className="font-semibold">{customer.totalOrder} x</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Total Belanja</p>
+            <p className="font-semibold text-[#0FA3A8]">Rp {customer.totalBelanja.toLocaleString("id-ID")}</p>
           </div>
         </div>
-        
-        <div className="p-6 space-y-6">
-          {/* Info Customer */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-gray-500">Nama</p>
-              <p className="font-semibold">{customer.nama}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Email</p>
-              <p className="text-sm">{customer.email}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Telepon</p>
-              <p>{customer.telepon}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Kota</p>
-              <p>{customer.kota}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Total Order</p>
-              <p className="font-semibold">{customer.totalOrder} x</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Total Belanja</p>
-              <p className="font-semibold text-[#0FA3A8]">Rp {customer.totalBelanja.toLocaleString("id-ID")}</p>
-            </div>
-          </div>
 
-          {/* Riwayat Order */}
-          <div>
-            <h3 className="font-semibold mb-3">Riwayat Order</h3>
-            {loading ? (
-              <div className="text-center py-4">Memuat...</div>
-            ) : orders.length === 0 ? (
-              <div className="text-center py-4 text-gray-400">Belum ada order</div>
-            ) : (
+        {/* Ringkasan Repeat Order */}
+        {totalOrder > 1 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+            <p className="text-sm text-orange-700">
+              🎯 <strong>Repeat Customer!</strong> Telah melakukan {totalOrder} kali transaksi dengan total belanja Rp {totalBelanja.toLocaleString("id-ID")}
+            </p>
+          </div>
+        )}
+
+        {/* Riwayat Order */}
+        <div>
+          <h3 className="font-semibold mb-3">Riwayat Order ({totalOrder} transaksi)</h3>
+          {loading ? (
+            <div className="text-center py-4">Memuat...</div>
+          ) : orders.length === 0 ? (
+            <div className="text-center py-4 text-gray-400">Belum ada order</div>
+          ) : (
+            <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
@@ -125,33 +153,56 @@ function CustomerDetailModal({ customer, onClose }: { customer: Customer | null;
                         }`}>
                           {order.status}
                         </span>
-                       </td>
-                     </tr>
+                       </tr>
                   ))}
                 </tbody>
-               </table>
-            )}
-          </div>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
+}
 
-// Export to PDF
-async function exportToPDF() {
+// Export semua customer ke PDF
+async function exportAllCustomers() {
   try {
-    const res = await fetch("/api/dashboard/customers/export");
+    toast.info("Sedang memproses export...");
+    const res = await fetch("/api/dashboard/customers/export-all");
+    if (!res.ok) throw new Error("Export gagal");
+    
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `customers_${new Date().toISOString().slice(0, 10)}.pdf`;
+    a.download = `semua_pelanggan_${new Date().toISOString().slice(0, 10)}.html`;
     a.click();
     window.URL.revokeObjectURL(url);
-    toast.success("PDF berhasil diunduh");
+    toast.success("Export semua pelanggan berhasil");
   } catch (error) {
-    toast.error("Gagal export PDF");
+    toast.error("Gagal export data pelanggan");
+  }
+}
+
+// Export 1 customer (riwayat order)
+async function exportCustomerOrders(customerId: string, customerName: string) {
+  try {
+    toast.info("Sedang memproses export...");
+    const res = await fetch(`/api/dashboard/customers/${encodeURIComponent(customerId)}/export`);
+    if (!res.ok) throw new Error("Export gagal");
+    
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `riwayat_${customerName.replace(/\s/g, "_")}_${new Date().toISOString().slice(0, 10)}.html`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast.success("Export riwayat order berhasil");
+  } catch (error) {
+    toast.error("Gagal export riwayat order");
   }
 }
 
@@ -198,13 +249,13 @@ export default function CustomersPage() {
           </p>
         </div>
         
-        {/* Tombol Export PDF */}
+        {/* Tombol Export Semua Customer */}
         <button
-          onClick={exportToPDF}
+          onClick={exportAllCustomers}
           className="flex items-center gap-2 px-4 py-2 bg-[#0FA3A8] text-white rounded-xl text-sm font-semibold hover:bg-[#0D8B8F] transition"
         >
           <Download className="w-4 h-4" />
-          Export PDF
+          Export Semua Customer
         </button>
       </div>
 
@@ -303,7 +354,11 @@ export default function CustomersPage() {
       </div>
 
       {/* Customer Detail Modal */}
-      <CustomerDetailModal customer={selectedCustomer} onClose={() => setSelectedCustomer(null)} />
+      <CustomerDetailModal 
+        customer={selectedCustomer} 
+        onClose={() => setSelectedCustomer(null)}
+        onExportOrder={exportCustomerOrders}
+      />
     </div>
   );
 }
