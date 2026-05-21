@@ -1,7 +1,5 @@
-// app/api/master-produk/route.ts
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
-import { products } from "@/lib/products"; // 🔥 UBAH: pake "products" (bukan productsStatic)
 
 export async function GET() {
   try {
@@ -20,38 +18,43 @@ export async function GET() {
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Produk!A2:J",
+      range: "Produk!A2:P",
     });
 
     const rows = res.data.values ?? [];
 
+    const parseJSONArray = (str: string) => {
+      if (!str) return [];
+      try {
+        const parsed = JSON.parse(str);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return str.split(",").map(s => s.trim()).filter(Boolean);
+      }
+    };
+
     const productsData = rows
       .filter((r) => r[6] && r[6].toString().toUpperCase() === "YES")
-      .map((r) => {
-        const id = r[0] ?? "";
-        // 🔥 Cari dari array "products" (bukan productsStatic)
-        const staticData = products.find((p) => p.id === id);
-
-        return {
-          id: id,
-          slug: r[1] ?? "",
-          nama: r[2] ?? "",
-          kategori: r[3] ?? "",
-          harga: Number(r[4]) || 0,
-          stok: Number(r[5]) || 0,
-          aktif: r[6] ?? "",
-          img: r[7] ?? "",
-          updatedAt: r[8] ?? "",
-          createdAt: r[9] ?? "",
-          slogan: staticData?.slogan || "",
-          ingredients: staticData?.ingredients || [],
-          benefits: staticData?.benefits || [],
-          goodFor: staticData?.goodFor || [],
-          consumeTime: staticData?.consumeTime || "",
-          isPackage: staticData?.isPackage || false,
-          brand: staticData?.brand || "KOJE24",
-        };
-      });
+      .map((r) => ({
+        id: r[0] ?? "",
+        slug: r[1] ?? "",
+        nama: r[2] ?? "",
+        kategori: r[3] ?? "",
+        harga: Number(r[4]) || 0,
+        stok: Number(r[5]) || 0,
+        aktif: r[6] ?? "",
+        img: r[7] ?? "",
+        updatedAt: r[8] ?? "",
+        createdAt: r[9] ?? "",
+        slogan: r[10] ?? "",
+        ingredients: parseJSONArray(r[11]),
+        benefits: parseJSONArray(r[12]),
+        goodFor: parseJSONArray(r[13]),
+        consumeTime: r[14] ?? "",
+        desc: r[15] ?? "",
+        isPackage: false,
+        brand: "KOJE24",
+      }));
 
     return NextResponse.json({ success: true, products: productsData });
   } catch (err: any) {
