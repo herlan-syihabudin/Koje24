@@ -1,113 +1,62 @@
 import { NextResponse } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 
-/* =====================
-   UTIL TANGGAL
-===================== */
 function parseTanggal(tanggalRaw: string) {
   if (!tanggalRaw) return null;
-
   const datePart = String(tanggalRaw).split(",")[0];
   const [d, m, y] = datePart.split("/").map(Number);
   if (!d || !m || !y) return null;
-
   return new Date(y, m - 1, d);
 }
 
-/* =====================
-   NORMALISASI PRODUK
-===================== */
-const PRODUCT_ALIASES: Record<string, string> = {
-  "golden detox": "Golden Detox",
-  "green revive": "Green Revive",
-  "red vitality": "Red Vitality",
-  "lemongrass fresh": "Lemongrass Fresh",
-};
-
-function normalizeProducts(raw: string): string[] {
-  if (!raw) return [];
-
-  const cleaned = raw
-    .replace(/â€”|—/g, "-")
-    .replace(/\[.*?\]/g, "")
-    .replace(/\(.*?\)/g, "")
-    .trim();
-
-  const parts = cleaned
-    .split(",")
-    .map((p) => p.trim())
-    .filter(Boolean);
-
-  const results: string[] = [];
-
-  parts.forEach((p) => {
-    const key = p.toLowerCase();
-    for (const alias in PRODUCT_ALIASES) {
-      if (key.includes(alias)) {
-        results.push(PRODUCT_ALIASES[alias]);
-        return;
-      }
-    }
-  });
-
-  return results;
-}
-
-/* =====================
-   TYPE
-===================== */
-type ProductAgg = {
-  qty: number;
-  revenue: number;
-};
-
-/* =====================
-   GET TOP PRODUCTS (BULAN INI)
-===================== */
 export async function GET() {
   try {
+    // 🔥 FIX: Range sampai kolom P
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Transaksi!A2:O",
+      range: "Transaksi!A2:P", // ← UBAH DARI A2:O JADI A2:P
     });
 
     const rows = res.data.values || [];
     const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
 
-    const productMap: Record<string, ProductAgg> = {};
+    const productMap: Record<string, { qty: number; revenue: number }> = {};
 
     rows.forEach((row) => {
-      const tanggal = row[1];               // B
-      const produkRaw = row[5];             // F
-      const qty = Number(row[6] || 1);      // G
-      const totalBayar = Number(row[9] || 0); // J
-      const status = String(row[12] || "").toUpperCase(); // M
+      const tanggal = row[1];
+      const produkRaw = row[5];
+      const qty = Number(row[6] || 1);
+      const totalBayar = Number(row[9] || 0);
+      const status = String(row[12] || "").trim().toUpperCase();
 
+      // Validasi dasar
       if (!tanggal || !produkRaw) return;
       if (status !== "PAID") return;
 
       const dt = parseTanggal(String(tanggal));
       if (!dt) return;
 
-      // filter bulan & tahun sekarang
-      if (
-        dt.getMonth() !== now.getMonth() ||
-        dt.getFullYear() !== now.getFullYear()
-      ) return;
+      // Filter bulan dan tahun sekarang
+      if (dt.getMonth() !== currentMonth || dt.getFullYear() !== currentYear) return;
 
-      const products = normalizeProducts(String(produkRaw));
-      if (products.length === 0) return;
+      // 🔥 SEDERHANAKAN PARSING PRODUK
+      let productName = String(produkRaw).trim();
+      // Hapus teks dalam kurung dan tanda kurung siku
+      productName = productName.replace(/\[.*?\]/g, "").replace(/\(.*?\)/g, "").trim();
+      // Ambil hanya bagian sebelum koma pertama (produk utama)
+      if (productName.includes(",")) {
+        productName = productName.split(",")[0].trim();
+      }
 
-      const qtyPerProduct = qty / products.length;
-      const revenuePerProduct = totalBayar / products.length;
+      if (!productName) return;
 
-      products.forEach((name) => {
-        if (!productMap[name]) {
-          productMap[name] = { qty: 0, revenue: 0 };
-        }
-        productMap[name].qty += qtyPerProduct;
-        productMap[name].revenue += revenuePerProduct;
-      });
+      if (!productMap[productName]) {
+        productMap[productName] = { qty: 0, revenue: 0 };
+      }
+      productMap[productName].qty += qty;
+      productMap[productName].revenue += totalBayar;
     });
 
     const result = Object.entries(productMap)
@@ -124,6 +73,7 @@ export async function GET() {
       products: result,
     });
   } catch (error: any) {
+    console.error("Products-top API error:", error);
     return NextResponse.json(
       { success: false, message: error.message },
       { status: 500 }
