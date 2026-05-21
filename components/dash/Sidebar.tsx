@@ -11,6 +11,7 @@ import {
   Users, 
   DollarSign, 
   Truck,
+  Tag,        // 🔥 TAMBAHKAN INI
   LogOut 
 } from "lucide-react";
 
@@ -47,6 +48,13 @@ const NAV = [
       { label: "Ringkasan", href: "/dashboard/finance", icon: DollarSign },
       { label: "Pembayaran", href: "/dashboard/finance/payments", icon: DollarSign },
       { label: "Ongkir & Kurir", href: "/dashboard/finance/shipping", icon: Truck },
+    ],
+  },
+  // 🔥 TAMBAHKAN SECTION MARKETING DI SINI
+  {
+    title: "MARKETING",
+    items: [
+      { label: "Promo & Diskon", href: "/dashboard/promos", icon: Tag },
     ],
   },
 ];
@@ -90,7 +98,7 @@ export default function Sidebar() {
     }
   };
 
-  // ✅ SIDEBAR CONTENT (yang sama untuk desktop dan mobile)
+  // SIDEBAR CONTENT
   const SidebarContent = () => (
     <div className="h-full flex flex-col">
       {/* HEADER */}
@@ -161,7 +169,7 @@ export default function Sidebar() {
     </div>
   );
 
-  // ✅ DESKTOP: Sidebar tetap di samping
+  // DESKTOP
   if (!isMobile) {
     return (
       <aside className="w-64 bg-white border-r flex-shrink-0 h-screen sticky top-0">
@@ -170,10 +178,9 @@ export default function Sidebar() {
     );
   }
 
-  // ✅ MOBILE: Hamburger menu + overlay
+  // MOBILE
   return (
     <>
-      {/* Tombol Hamburger */}
       <button
         onClick={() => setIsMobileOpen(true)}
         className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-md border md:hidden"
@@ -182,7 +189,6 @@ export default function Sidebar() {
         <Menu className="w-5 h-5 text-gray-600" />
       </button>
 
-      {/* Overlay gelap */}
       {isMobileOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-50 md:hidden"
@@ -190,13 +196,11 @@ export default function Sidebar() {
         />
       )}
 
-      {/* Sidebar Panel Mobile */}
       <div
         className={`fixed top-0 left-0 h-full w-72 bg-white shadow-xl z-50 transition-transform duration-300 ease-in-out md:hidden ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Tombol Close */}
         <button
           onClick={() => setIsMobileOpen(false)}
           className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100"
