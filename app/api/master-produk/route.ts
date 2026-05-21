@@ -1,7 +1,7 @@
 // app/api/master-produk/route.ts
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
-import { productsStatic } from "@/lib/products"; // 🔥 UBAH: pake productsStatic langsung
+import { products } from "@/lib/products"; // 🔥 UBAH: pake "products" (bukan productsStatic)
 
 export async function GET() {
   try {
@@ -18,7 +18,6 @@ export async function GET() {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // Ambil data dari Sheet "Produk"
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: "Produk!A2:J",
@@ -26,12 +25,12 @@ export async function GET() {
 
     const rows = res.data.values ?? [];
 
-    const products = rows
-      .filter((r) => r[6] && r[6].toString().toUpperCase() === "YES") // aktif=YES
+    const productsData = rows
+      .filter((r) => r[6] && r[6].toString().toUpperCase() === "YES")
       .map((r) => {
         const id = r[0] ?? "";
-        // 🔥 UBAH: cari langsung tanpa fungsi
-        const staticData = productsStatic.find((p) => p.id === id);
+        // 🔥 Cari dari array "products" (bukan productsStatic)
+        const staticData = products.find((p) => p.id === id);
 
         return {
           id: id,
@@ -41,10 +40,9 @@ export async function GET() {
           harga: Number(r[4]) || 0,
           stok: Number(r[5]) || 0,
           aktif: r[6] ?? "",
-          img: r[7] ?? "", // thumbnail dari Google Sheets
+          img: r[7] ?? "",
           updatedAt: r[8] ?? "",
           createdAt: r[9] ?? "",
-          // Data statis dari lib
           slogan: staticData?.slogan || "",
           ingredients: staticData?.ingredients || [],
           benefits: staticData?.benefits || [],
@@ -55,7 +53,7 @@ export async function GET() {
         };
       });
 
-    return NextResponse.json({ success: true, products });
+    return NextResponse.json({ success: true, products: productsData });
   } catch (err: any) {
     console.error("API MASTER PRODUK ERROR:", err);
     return NextResponse.json({ success: false, products: [], message: err.message }, { status: 500 });
