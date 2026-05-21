@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, RefreshCw } from "lucide-react";
+import { 
+  Save, RefreshCw, 
+  Building, Paintbrush, Truck, Phone, 
+  Shield, Lock, Globe 
+} from "lucide-react";
 import { toast } from "sonner";
 import SettingCard from "./components/SettingCard";
 import SettingInput from "./components/SettingInput";
