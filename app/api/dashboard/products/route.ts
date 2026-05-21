@@ -4,7 +4,7 @@ import { sheets, SHEET_ID } from "@/lib/googleSheets";
 import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 
 const SHEET_NAME = "Produk";
-const RANGE = `${SHEET_NAME}!A2:J`;
+const RANGE = `${SHEET_NAME}!A2:P`; // 🔥 UBAH: sampai kolom P
 
 function now() {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
@@ -38,6 +38,12 @@ type Product = {
   stok: number;
   aktif: "YES" | "NO";
   thumbnail?: string;
+  slogan?: string;
+  ingredients?: string[];
+  benefits?: string[];
+  goodFor?: string[];
+  consumeTime?: string;
+  desc?: string;
   updatedAt?: string;
   createdAt?: string;
 };
@@ -52,20 +58,31 @@ function rowToProduct(row: any[]): Product {
     stok: toNum(row[5], 0),
     aktif: asYESNO(row[6]),
     thumbnail: String(row[7] || "").trim(),
+    slogan: String(row[10] || "").trim(),
+    ingredients: parseJSONArray(row[11]),
+    benefits: parseJSONArray(row[12]),
+    goodFor: parseJSONArray(row[13]),
+    consumeTime: String(row[14] || "").trim(),
+    desc: String(row[15] || "").trim(),
     updatedAt: String(row[8] || "").trim(),
     createdAt: String(row[9] || "").trim(),
   };
 }
 
+function parseJSONArray(str: string): string[] {
+  if (!str) return [];
+  try {
+    const parsed = JSON.parse(str);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function makeId() {
-  // simple, cukup kuat utk internal (bukan security id)
   return "P" + Date.now().toString(36).toUpperCase();
 }
 
-/* =====================
-   GET: LIST PRODUK
-   /api/dashboard/products?q=detox&aktif=YES|NO|ALL&sort=updatedAt|nama&dir=asc|desc
-===================== */
 export async function GET(req: NextRequest) {
   const guard = requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
@@ -87,12 +104,10 @@ export async function GET(req: NextRequest) {
       .map(rowToProduct)
       .filter((p) => p.id && p.nama);
 
-    // filter aktif
     if (aktif !== "ALL") {
       products = products.filter((p) => p.aktif === (aktif as any));
     }
 
-    // search
     if (q) {
       products = products.filter((p) => {
         const hay = `${p.nama} ${p.slug} ${p.kategori}`.toLowerCase();
@@ -100,12 +115,10 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // sort
     products.sort((a, b) => {
       let av: any = (a as any)[sort];
       let bv: any = (b as any)[sort];
 
-      // fallback
       if (sort === "harga" || sort === "stok") {
         av = Number(av || 0);
         bv = Number(bv || 0);
@@ -127,9 +140,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/* =====================
-   POST: TAMBAH PRODUK
-===================== */
 export async function POST(req: NextRequest) {
   const guard = requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
@@ -150,19 +160,19 @@ export async function POST(req: NextRequest) {
     const stok = toNum(body?.stok, 0);
     const aktif = asYESNO(body?.aktif || "YES");
     const thumbnail = String(body?.thumbnail || "").trim();
+    const slogan = String(body?.slogan || "").trim();
+    const ingredients = JSON.stringify(body?.ingredients || []);
+    const benefits = JSON.stringify(body?.benefits || []);
+    const goodFor = JSON.stringify(body?.goodFor || []);
+    const consumeTime = String(body?.consumeTime || "").trim();
+    const desc = String(body?.desc || "").trim();
     
-    // 🔥 PRIORITASKAN slug dari body, kalo gak ada baru generate
     let slug = body?.slug ? String(body.slug).trim() : slugify(nama);
-    
-    // 🔥 Validasi slug tidak boleh kosong
-    if (!slug) {
-      slug = slugify(nama);
-    }
+    if (!slug) slug = slugify(nama);
 
     const id = makeId();
     const ts = now();
 
-    // cek slug unik
     const existing = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: RANGE,
@@ -171,7 +181,6 @@ export async function POST(req: NextRequest) {
     const rows = existing.data.values || [];
     let slugExists = rows.some((r) => String(r?.[1] || "").trim() === slug);
     
-    // 🔥 Jika slug duplikat, tambahkan angka
     let originalSlug = slug;
     let counter = 1;
     while (slugExists) {
@@ -182,14 +191,13 @@ export async function POST(req: NextRequest) {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:J`,
+      range: `${SHEET_NAME}!A:P`,
       valueInputOption: "RAW",
       requestBody: {
-        values: [[id, slug, nama, kategori, harga, stok, aktif, thumbnail, ts, ts]],
+        values: [[id, slug, nama, kategori, harga, stok, aktif, thumbnail, ts, ts, slogan, ingredients, benefits, goodFor, consumeTime, desc]],
       },
     });
 
-    // audit log optional
     try {
       await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
