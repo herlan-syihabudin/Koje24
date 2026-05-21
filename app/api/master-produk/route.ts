@@ -1,7 +1,7 @@
 // app/api/master-produk/route.ts
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
-import { getProductStaticById } from "@/lib/products";
+import { productsStatic } from "@/lib/products"; // 🔥 UBAH: pake productsStatic langsung
 
 export async function GET() {
   try {
@@ -30,7 +30,8 @@ export async function GET() {
       .filter((r) => r[6] && r[6].toString().toUpperCase() === "YES") // aktif=YES
       .map((r) => {
         const id = r[0] ?? "";
-        const staticData = getProductStaticById(id);
+        // 🔥 UBAH: cari langsung tanpa fungsi
+        const staticData = productsStatic.find((p) => p.id === id);
 
         return {
           id: id,
@@ -40,7 +41,7 @@ export async function GET() {
           harga: Number(r[4]) || 0,
           stok: Number(r[5]) || 0,
           aktif: r[6] ?? "",
-          img: r[7] ?? "", // 🔥 thumbnail dari Google Sheets
+          img: r[7] ?? "", // thumbnail dari Google Sheets
           updatedAt: r[8] ?? "",
           createdAt: r[9] ?? "",
           // Data statis dari lib
