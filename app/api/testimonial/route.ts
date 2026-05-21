@@ -6,10 +6,10 @@ export async function GET() {
 
     const res = await fetch(url, { cache: "no-store" })
     const text = await res.text()
-
     const data = JSON.parse(text)
 
-    const safeData = (Array.isArray(data) ? data : []).map((r: any) => ({
+    // 🔥 PARSING DATA DARI APPS SCRIPT
+    const allData = (Array.isArray(data) ? data : []).map((r: any) => ({
       timestamp: r?.timestamp?.toString?.() ?? "",
       nama: r?.nama?.toString?.() ?? "",
       kota: r?.kota?.toString?.() ?? "",
@@ -17,21 +17,22 @@ export async function GET() {
       pesan: r?.pesan?.toString?.() ?? "",
       rating: Number(r?.rating ?? 0),
       img: r?.img?.toString?.() ?? "",
-
-      // ⭐ YANG ADA DI KODE LU (TIDAK DIUBAH)
       showOnHome: (r?.showOnHome ?? r?.ShowOnHome ?? "false")
         .toString()
         .trim()
         .toLowerCase(),
-
-      // ⭐⭐ FIX TERPENTING: AMBIL KOLOM ACTIVE
       active: (r?.active ?? r?.Active ?? "false")
         .toString()
         .trim()
         .toLowerCase(),
     }))
 
-    return Response.json(safeData)
+    // 🔥🔥 FILTER: HANYA YANG AKTIF (true) 🔥🔥
+    const activeTestimonials = allData.filter(
+      (t) => t.active === "true" || t.active === "yes" || t.active === "1"
+    )
+
+    return Response.json(activeTestimonials)
   } catch (err) {
     console.error("Error GET testimonial:", err)
     return new Response("Failed to fetch", { status: 500 })
