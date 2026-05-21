@@ -8,47 +8,39 @@ export async function GET() {
     const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
     const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? "";
 
-    // Fix newline
-    const PRIVATE_KEY = PRIVATE_KEY_RAW
-      .replace(/\\n/g, "\n")
-      .replace(/\\\\n/g, "\n");
-
-    if (!CLIENT_EMAIL || !PRIVATE_KEY || !SHEET_ID) {
-      throw new Error("Missing Google Sheet ENV");
-    }
+    const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n");
 
     const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: CLIENT_EMAIL,
-        private_key: PRIVATE_KEY,
-      },
+      credentials: { client_email: CLIENT_EMAIL, private_key: PRIVATE_KEY },
       scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
     });
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // Format sheet:
-    // A:Kode | B:Nama | C:Harga | D:Promo | E:Gambar | F:Active (TRUE/FALSE)
+    // 🔥 UBAH: pake sheet "Produk" (A:J)
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Master Produk!A2:F",
+      range: "Produk!A2:J", // ← UBAH INI!
     });
 
     const rows = res.data.values ?? [];
 
     const products = rows
-      .filter((r) => r[5] && r[5].toString().toLowerCase() === "true") // hanya active=true
+      .filter((r) => r[6] && r[6].toString().toUpperCase() === "YES") // aktif=YES
       .map((r) => ({
-        kode: r[0] ?? "",
-        nama: r[1] ?? "",
-        harga: Number(r[2]) || 0,
-        promo: Number(r[3]) || 0,
-        img: r[4] ?? "",
+        id: r[0] ?? "",        // A: id
+        slug: r[1] ?? "",      // B: slug
+        nama: r[2] ?? "",      // C: nama
+        kategori: r[3] ?? "",  // D: kategori
+        harga: Number(r[4]) || 0, // E: harga
+        stok: Number(r[5]) || 0,  // F: stok
+        aktif: r[6] ?? "",      // G: aktif
+        img: r[7] ?? "",        // H: thumbnail
       }));
 
-    return NextResponse.json(products, { status: 200 });
+    return NextResponse.json({ success: true, products }, { status: 200 });
   } catch (err: any) {
     console.error("API MASTER PRODUK ERROR:", err);
-    return NextResponse.json([], { status: 200 }); // aman, tidak crash
+    return NextResponse.json({ success: false, products: [], message: err.message }, { status: 500 });
   }
 }
