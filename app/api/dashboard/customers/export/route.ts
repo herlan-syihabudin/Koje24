@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import { NextRequest } from "next/server"; // 🔥 IMPORT INI
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) { // 🔥 UBAH JADI NextRequest
   const guard = await requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
@@ -85,11 +86,14 @@ export async function GET(req: Request) {
       </html>
     `;
 
-    // Convert HTML to PDF (gunakan library seperti puppeteer atau api lain)
-    // Untuk sementara, return JSON dulu
-    
-    return NextResponse.json({ success: true, customers });
+    // Return HTML (untuk sementara)
+    return new NextResponse(html, {
+      headers: {
+        "Content-Type": "text/html",
+      },
+    });
   } catch (error) {
-    return NextResponse.json({ success: false });
+    console.error("Export error:", error);
+    return NextResponse.json({ success: false, message: "Gagal export" });
   }
 }
