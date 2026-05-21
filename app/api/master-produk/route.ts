@@ -35,26 +35,34 @@ export async function GET() {
 
     const productsData = rows
       .filter((r) => r[6] && r[6].toString().toUpperCase() === "YES")
-      .map((r) => ({
-        id: r[0] ?? "",
-        slug: r[1] ?? "",
-        nama: r[2] ?? "",
-        kategori: r[3] ?? "",
-        harga: Number(r[4]) || 0,
-        stok: Number(r[5]) || 0,
-        aktif: r[6] ?? "",
-        img: r[7] ?? "",
-        updatedAt: r[8] ?? "",
-        createdAt: r[9] ?? "",
-        slogan: r[10] ?? "",
-        ingredients: parseJSONArray(r[11]),
-        benefits: parseJSONArray(r[12]),
-        goodFor: parseJSONArray(r[13]),
-        consumeTime: r[14] ?? "",
-        desc: r[15] ?? "",
-        isPackage: false,
-        brand: "KOJE24",
-      }));
+      .map((r) => {
+        const kategori = r[3] ?? "";
+        const nama = r[2] ?? "";
+        
+        // 🔥 Tentukan isPackage: berdasarkan kategori "Paket" atau nama mengandung "Paket"
+        const isPackage = kategori === "Paket" || nama.toLowerCase().includes("paket");
+        
+        return {
+          id: r[0] ?? "",
+          slug: r[1] ?? "",
+          nama: nama,
+          kategori: kategori,
+          harga: Number(r[4]) || 0,
+          stok: Number(r[5]) || 0,
+          aktif: r[6] ?? "",
+          img: r[7] ?? "",
+          updatedAt: r[8] ?? "",
+          createdAt: r[9] ?? "",
+          slogan: r[10] ?? "",
+          ingredients: parseJSONArray(r[11]),
+          benefits: parseJSONArray(r[12]),
+          goodFor: parseJSONArray(r[13]),
+          consumeTime: r[14] ?? "",
+          desc: r[15] ?? "",
+          isPackage: isPackage,  // 🔥 SEKARANG BENER
+          brand: "KOJE24",
+        };
+      });
 
     return NextResponse.json({ success: true, products: productsData });
   } catch (err: any) {
