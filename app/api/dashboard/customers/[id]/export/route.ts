@@ -9,7 +9,6 @@ function parseTanggal(raw: string): string {
   return datePart;
 }
 
-// 🔥 TIPE UNTUK CUSTOMER INFO
 type CustomerInfo = {
   nama: string;
   email: string;
@@ -43,7 +42,6 @@ export async function GET(
 
     const rows = res.data.values || [];
     
-    // 🔥 TAMBAHKAN TYPE ANNOTATION
     let customerInfo: CustomerInfo | null = null;
     const orders: OrderItem[] = [];
     let totalBelanja = 0;
@@ -78,16 +76,20 @@ export async function GET(
       }
     });
 
+    // 🔥 CEK APAKAH CUSTOMER DITEMUKAN
     if (!customerInfo) {
       return new NextResponse("Customer tidak ditemukan", { status: 404 });
     }
+
+    // 🔥 AMBIL DATA DENGAN AMAN (sudah pasti ada)
+    const { nama, email: customerEmail, telepon, alamat } = customerInfo;
 
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Riwayat Order ${customerInfo.nama}</title>
+        <title>Riwayat Order ${nama}</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 40px; }
           .header { text-align: center; margin-bottom: 30px; }
@@ -110,10 +112,10 @@ export async function GET(
 
         <div class="info-box">
           <h3>Informasi Pelanggan</h3>
-          <p><strong>Nama:</strong> ${customerInfo.nama}</p>
-          <p><strong>Email:</strong> ${customerInfo.email}</p>
-          <p><strong>Telepon:</strong> ${customerInfo.telepon || "-"}</p>
-          <p><strong>Alamat:</strong> ${customerInfo.alamat || "-"}</p>
+          <p><strong>Nama:</strong> ${nama}</p>
+          <p><strong>Email:</strong> ${customerEmail}</p>
+          <p><strong>Telepon:</strong> ${telepon || "-"}</p>
+          <p><strong>Alamat:</strong> ${alamat || "-"}</p>
         </div>
 
         <div class="summary">
@@ -124,7 +126,7 @@ export async function GET(
         </div>
 
         <h3>📋 Daftar Order (${totalOrder} transaksi)</h3>
-        </table>
+        <table>
           <thead>
             <tr>
               <th>Tanggal</th>
