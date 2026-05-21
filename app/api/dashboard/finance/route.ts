@@ -25,12 +25,18 @@ function normalizeMethod(v: any) {
 
 function isDateInRange(date: Date, now: Date, period: string): boolean {
   if (period === "previous") {
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-    return date >= lastMonth && date <= lastMonthEnd;
+    // 30-60 hari yang lalu
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(now.getDate() - 30);
+    const sixtyDaysAgo = new Date(now);
+    sixtyDaysAgo.setDate(now.getDate() - 60);
+    return date >= sixtyDaysAgo && date < thirtyDaysAgo;
   }
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  return date >= startOfMonth;
+  
+  // DEFAULT "current": 30 HARI TERAKHIR
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(now.getDate() - 30);
+  return date >= thirtyDaysAgo;
 }
 
 /* =====================
