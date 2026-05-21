@@ -12,6 +12,7 @@ import {
   DollarSign, 
   Truck,
   Tag,
+  Settings,
   MessageSquare,  // 🔥 UNTUK ICON TESTIMONI
   LogOut 
 } from "lucide-react";
@@ -57,6 +58,12 @@ const NAV = [
     items: [
       { label: "Promo & Diskon", href: "/dashboard/promos", icon: Tag },
       { label: "Testimoni", href: "/dashboard/testimonials", icon: MessageSquare },
+    ],
+  },
+ {
+    title: "PENGATURAN",
+    items: [
+      { label: "Pengaturan Sistem", href: "/dashboard/settings", icon: Settings },
     ],
   },
 ];
