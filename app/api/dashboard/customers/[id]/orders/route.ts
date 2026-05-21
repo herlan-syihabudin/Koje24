@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 
@@ -8,15 +9,16 @@ function parseTanggal(raw: string): string {
   return datePart;
 }
 
+// 🔥 PARAMS HARUS PROMISE (Next.js 15)
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const guard = await requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
   try {
-    const { id } = await params;
+    const { id } = await params; // 🔥 AWAIT PARAMS
     const email = decodeURIComponent(id);
 
     const res = await sheets.spreadsheets.values.get({
@@ -37,6 +39,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, orders });
   } catch (error) {
+    console.error("Customer orders error:", error);
     return NextResponse.json({ success: false, orders: [] });
   }
 }
