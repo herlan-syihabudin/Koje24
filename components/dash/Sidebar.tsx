@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
+  Menu, X,
   LayoutDashboard, 
   ShoppingBag, 
   Package, 
@@ -29,8 +31,6 @@ const NAV = [
     title: "PRODUK",
     items: [
       { label: "Daftar Produk", href: "/dashboard/products", icon: Package },
-      { label: "Stok & Inventory", href: "/dashboard/products/stock", icon: Package },
-      { label: "Harga & Promo", href: "/dashboard/products/pricing", icon: Package },
     ],
   },
   {
@@ -43,14 +43,41 @@ const NAV = [
     title: "KEUANGAN",
     items: [
       { label: "Ringkasan", href: "/dashboard/finance", icon: DollarSign },
-      { label: "Pembayaran", href: "/dashboard/finance/payments", icon: DollarSign },
-      { label: "Ongkir & Kurir", href: "/dashboard/finance/shipping", icon: Truck },
     ],
   },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Deteksi layar mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Tutup sidebar saat navigasi di mobile
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [pathname]);
+
+  // Cegah scroll body saat sidebar mobile terbuka
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileOpen]);
 
   const handleLogout = async () => {
     if (confirm("Yakin mau logout?")) {
@@ -59,8 +86,9 @@ export default function Sidebar() {
     }
   };
 
-  return (
-    <aside className="h-screen w-64 bg-white border-r flex flex-col">
+  // ✅ SIDEBAR CONTENT (yang sama untuk desktop dan mobile)
+  const SidebarContent = () => (
+    <div className="h-full flex flex-col">
       {/* HEADER */}
       <div className="px-5 pt-6 pb-4 border-b">
         <p className="text-xs tracking-[0.25em] text-[#0FA3A8] font-semibold">
@@ -95,13 +123,13 @@ export default function Sidebar() {
                         ? "bg-[#0FA3A8]/10 text-[#0FA3A8] font-medium"
                         : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                     }`}
+                    onClick={() => setIsMobileOpen(false)}
                   >
                     <item.icon className="w-4 h-4" />
-                    <span>{item.label}</span>
+                    <span className="flex-1">{item.label}</span>
                     
-                    {/* Active indicator */}
                     {isActive && (
-                      <div className="ml-auto w-1 h-5 rounded-full bg-[#0FA3A8]" />
+                      <div className="w-1 h-5 rounded-full bg-[#0FA3A8]" />
                     )}
                   </Link>
                 );
@@ -111,14 +139,13 @@ export default function Sidebar() {
         ))}
       </div>
 
-      {/* FOOTER - VERSI PREMIUM */}
+      {/* FOOTER */}
       <div className="border-t p-3 space-y-2">
-        <div className="px-3 py-2 text-xs text-gray-400">
-          <p>UI: Stabil ✅</p>
-          <p>Data: Aktif</p>
+        <div className="px-3 py-2 text-[10px] text-gray-400">
+          <p>KOJE24 Dashboard</p>
+          <p>v1.0.0</p>
         </div>
         
-        {/* Tombol Logout di Sidebar (opsional) */}
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 rounded-lg px-3 py-2 w-full text-sm text-red-600 hover:bg-red-50 transition-all duration-200"
@@ -127,6 +154,55 @@ export default function Sidebar() {
           <span>Logout</span>
         </button>
       </div>
-    </aside>
+    </div>
+  );
+
+  // ✅ DESKTOP: Sidebar tetap di samping
+  if (!isMobile) {
+    return (
+      <aside className="w-64 bg-white border-r flex-shrink-0 h-screen sticky top-0">
+        <SidebarContent />
+      </aside>
+    );
+  }
+
+  // ✅ MOBILE: Hamburger menu + overlay
+  return (
+    <>
+      {/* Tombol Hamburger */}
+      <button
+        onClick={() => setIsMobileOpen(true)}
+        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-white shadow-md border md:hidden"
+        aria-label="Buka menu"
+      >
+        <Menu className="w-5 h-5 text-gray-600" />
+      </button>
+
+      {/* Overlay gelap */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 md:hidden"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Panel Mobile */}
+      <div
+        className={`fixed top-0 left-0 h-full w-72 bg-white shadow-xl z-50 transition-transform duration-300 ease-in-out md:hidden ${
+          isMobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Tombol Close */}
+        <button
+          onClick={() => setIsMobileOpen(false)}
+          className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100"
+          aria-label="Tutup menu"
+        >
+          <X className="w-5 h-5 text-gray-600" />
+        </button>
+
+        <SidebarContent />
+      </div>
+    </>
   );
 }
