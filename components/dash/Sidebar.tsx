@@ -11,7 +11,8 @@ import {
   Users, 
   DollarSign, 
   Truck,
-  Tag,        // 🔥 TAMBAHKAN INI
+  Tag,
+  MessageSquare,  // 🔥 UNTUK ICON TESTIMONI
   LogOut 
 } from "lucide-react";
 
