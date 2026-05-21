@@ -1,6 +1,7 @@
 // app/api/master-produk/route.ts
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
+import { getProductStaticById } from "@/lib/products";
 
 export async function GET() {
   try {
@@ -17,28 +18,43 @@ export async function GET() {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // 🔥 UBAH: pake sheet "Produk" (A:J)
+    // Ambil data dari Sheet "Produk"
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Produk!A2:J", // ← UBAH INI!
+      range: "Produk!A2:J",
     });
 
     const rows = res.data.values ?? [];
 
     const products = rows
       .filter((r) => r[6] && r[6].toString().toUpperCase() === "YES") // aktif=YES
-      .map((r) => ({
-        id: r[0] ?? "",        // A: id
-        slug: r[1] ?? "",      // B: slug
-        nama: r[2] ?? "",      // C: nama
-        kategori: r[3] ?? "",  // D: kategori
-        harga: Number(r[4]) || 0, // E: harga
-        stok: Number(r[5]) || 0,  // F: stok
-        aktif: r[6] ?? "",      // G: aktif
-        img: r[7] ?? "",        // H: thumbnail
-      }));
+      .map((r) => {
+        const id = r[0] ?? "";
+        const staticData = getProductStaticById(id);
 
-    return NextResponse.json({ success: true, products }, { status: 200 });
+        return {
+          id: id,
+          slug: r[1] ?? "",
+          nama: r[2] ?? "",
+          kategori: r[3] ?? "",
+          harga: Number(r[4]) || 0,
+          stok: Number(r[5]) || 0,
+          aktif: r[6] ?? "",
+          img: r[7] ?? "", // 🔥 thumbnail dari Google Sheets
+          updatedAt: r[8] ?? "",
+          createdAt: r[9] ?? "",
+          // Data statis dari lib
+          slogan: staticData?.slogan || "",
+          ingredients: staticData?.ingredients || [],
+          benefits: staticData?.benefits || [],
+          goodFor: staticData?.goodFor || [],
+          consumeTime: staticData?.consumeTime || "",
+          isPackage: staticData?.isPackage || false,
+          brand: staticData?.brand || "KOJE24",
+        };
+      });
+
+    return NextResponse.json({ success: true, products });
   } catch (err: any) {
     console.error("API MASTER PRODUK ERROR:", err);
     return NextResponse.json({ success: false, products: [], message: err.message }, { status: 500 });
