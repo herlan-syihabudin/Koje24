@@ -1,6 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { X, Upload, Image as ImageIcon } from "lucide-react";
+
+// Schema validasi
+const productSchema = z.object({
+  nama: z.string().min(1, "Nama produk wajib diisi").max(100, "Nama maksimal 100 karakter"),
+  kategori: z.string().optional(),
+  harga: z.number().min(1, "Harga harus lebih dari 0").max(999999999, "Harga terlalu besar"),
+  stok: z.number().min(0, "Stok tidak boleh negatif").max(999999, "Stok terlalu besar"),
+  aktif: z.enum(["YES", "NO"]),
+  thumbnail: z.string().url("URL tidak valid").optional().or(z.literal("")),
+});
+
+type ProductFormData = z.infer<typeof productSchema>;
 
 type Product = {
   id: string;
@@ -25,83 +42,116 @@ export default function AddProductModal({
   onClose: () => void;
   onSuccess: () => void | Promise<void>;
 }) {
-  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
-  const emptyForm = useMemo(
-    () => ({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting, isDirty },
+  } = useForm<ProductFormData>({
+    resolver: zodResolver(productSchema),
+    defaultValues: {
       nama: "",
       kategori: "",
-      harga: "",
-      stok: "",
-      aktif: "YES" as "YES" | "NO",
+      harga: 0,
+      stok: 0,
+      aktif: "YES",
       thumbnail: "",
-    }),
-    []
-  );
+    },
+  });
 
-  const [form, setForm] = useState(emptyForm);
+  const thumbnailUrl = watch("thumbnail");
 
+  // Reset form saat modal ditutup
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      reset({
+        nama: "",
+        kategori: "",
+        harga: 0,
+        stok: 0,
+        aktif: "YES",
+        thumbnail: "",
+      });
+    }
+  }, [open, reset]);
 
-    if (mode === "edit" && initialData) {
-      setForm({
+  // Isi data saat EDIT
+  useEffect(() => {
+    if (mode === "edit" && initialData && open) {
+      reset({
         nama: initialData.nama || "",
         kategori: initialData.kategori || "",
-        harga: String(initialData.harga ?? ""),
-        stok: String(initialData.stok ?? ""),
+        harga: initialData.harga || 0,
+        stok: initialData.stok || 0,
         aktif: initialData.aktif || "YES",
         thumbnail: initialData.thumbnail || "",
       });
-    } else {
-      setForm(emptyForm);
     }
-  }, [open, mode, initialData, emptyForm]);
+  }, [mode, initialData, open, reset]);
 
-  if (!open) return null;
+  // Close on ESC
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && open && !isSubmitting) {
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [open, isSubmitting, onClose]);
 
-  /* =====================
-     UPLOAD IMAGE
-  ===================== */
+  // Close on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node) && !isSubmitting) {
+        onClose();
+      }
+    };
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open, isSubmitting, onClose]);
+
+  // Upload image
   async function uploadImage(file: File) {
     setUploading(true);
 
     const fd = new FormData();
     fd.append("file", file);
 
-    const res = await fetch("/api/dashboard/upload-image", {
-      method: "POST",
-      body: fd,
-    });
+    try {
+      const res = await fetch("/api/dashboard/upload-image", {
+        method: "POST",
+        body: fd,
+      });
 
-    const json = await res.json();
-    setUploading(false);
+      const json = await res.json();
 
-    if (!json.success) {
-      alert(json.message || "Upload gagal");
-      return;
+      if (!json.success) {
+        throw new Error(json.message || "Upload gagal");
+      }
+
+      setValue("thumbnail", json.url);
+      toast.success("Gambar berhasil diupload");
+    } catch (err: any) {
+      toast.error(err.message || "Gagal upload gambar");
+    } finally {
+      setUploading(false);
     }
-
-    setForm((f) => ({ ...f, thumbnail: json.url }));
   }
 
-  /* =====================
-     SUBMIT
-  ===================== */
-  async function submit() {
-    if (!form.nama.trim()) {
-      alert("Nama produk wajib diisi");
-      return;
-    }
-
-    setLoading(true);
-
+  // Submit form
+  const onSubmit = async (data: ProductFormData) => {
     try {
       const payload = {
-        ...form,
-        harga: Number(form.harga || 0),
-        stok: Number(form.stok || 0),
+        ...data,
+        kategori: data.kategori || undefined,
       };
 
       if (mode === "add") {
@@ -113,128 +163,260 @@ export default function AddProductModal({
 
         const json = await res.json();
         if (!json.success) {
-          alert(json.message || "Gagal tambah produk");
-          return;
+          throw new Error(json.message || "Gagal tambah produk");
         }
-      }
 
-      if (mode === "edit") {
+        toast.success("Produk berhasil ditambahkan");
+      } else {
         if (!initialData?.id) {
-          alert("ID produk tidak ditemukan");
-          return;
+          throw new Error("ID produk tidak ditemukan");
         }
 
-        const res = await fetch(
-          `/api/dashboard/products/${initialData.id}`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          }
-        );
+        const res = await fetch(`/api/dashboard/products/${initialData.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
         const json = await res.json();
         if (!json.success) {
-          alert(json.message || "Gagal update produk");
-          return;
+          throw new Error(json.message || "Gagal update produk");
         }
+
+        toast.success("Produk berhasil diupdate");
       }
 
       await onSuccess();
       onClose();
-    } finally {
-      setLoading(false);
+    } catch (err: any) {
+      toast.error(err.message || "Terjadi kesalahan");
     }
-  }
+  };
+
+  if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-md rounded-2xl p-6 space-y-4">
-        <h2 className="text-lg font-semibold">
-          {mode === "add" ? "Tambah Produk" : "Edit Produk"}
-        </h2>
-
-        {/* IMAGE UPLOAD */}
-        <div className="space-y-2">
-          {form.thumbnail ? (
-            <img
-              src={form.thumbnail}
-              className="w-full h-40 object-cover rounded-xl border"
-            />
-          ) : (
-            <div className="w-full h-40 rounded-xl border border-dashed flex items-center justify-center text-sm text-gray-400">
-              Belum ada gambar
-            </div>
-          )}
-
-          <label className="block">
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) =>
-                e.target.files && uploadImage(e.target.files[0])
-              }
-            />
-            <span className="inline-block cursor-pointer text-sm text-[#0FA3A8] font-semibold">
-              {uploading ? "Uploading..." : "Upload Gambar"}
-            </span>
-          </label>
-        </div>
-
-        <input
-          placeholder="Nama produk"
-          className="border rounded-xl px-4 py-2 w-full"
-          value={form.nama}
-          onChange={(e) => setForm({ ...form, nama: e.target.value })}
-        />
-
-        <input
-          placeholder="Kategori"
-          className="border rounded-xl px-4 py-2 w-full"
-          value={form.kategori}
-          onChange={(e) => setForm({ ...form, kategori: e.target.value })}
-        />
-
-        <input
-          placeholder="Harga"
-          type="number"
-          className="border rounded-xl px-4 py-2 w-full"
-          value={form.harga}
-          onChange={(e) => setForm({ ...form, harga: e.target.value })}
-        />
-
-        <input
-          placeholder="Stok"
-          type="number"
-          className="border rounded-xl px-4 py-2 w-full"
-          value={form.stok}
-          onChange={(e) => setForm({ ...form, stok: e.target.value })}
-        />
-
-        <select
-          className="border rounded-xl px-4 py-2 w-full"
-          value={form.aktif}
-          onChange={(e) =>
-            setForm({ ...form, aktif: e.target.value as "YES" | "NO" })
-          }
-        >
-          <option value="YES">Aktif</option>
-          <option value="NO">Nonaktif</option>
-        </select>
-
-        <div className="flex justify-end gap-3 pt-4">
-          <button onClick={onClose} className="text-sm">
-            Batal
-          </button>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div
+        ref={modalRef}
+        className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col animate-in fade-in zoom-in duration-200"
+      >
+        {/* HEADER */}
+        <div className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center flex-shrink-0">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800">
+              {mode === "add" ? "Tambah Produk" : "Edit Produk"}
+            </h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {mode === "add" ? "Isi data produk baru" : "Ubah data produk"}
+            </p>
+          </div>
           <button
-            onClick={submit}
-            disabled={loading || uploading}
-            className="bg-[#0FA3A8] text-white px-5 py-2 rounded-xl text-sm font-semibold"
+            onClick={onClose}
+            className="p-1 rounded-lg hover:bg-gray-200 transition"
+            disabled={isSubmitting}
           >
-            {loading ? "Menyimpan..." : "Simpan"}
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
+
+        {/* FORM */}
+        <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto">
+          <div className="p-6 space-y-4">
+            {/* IMAGE UPLOAD */}
+            <div className="space-y-2">
+              {thumbnailUrl ? (
+                <div className="relative">
+                  <img
+                    src={thumbnailUrl}
+                    alt="Preview"
+                    className="w-full h-40 object-cover rounded-xl border"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "https://placehold.co/400x200?text=Invalid+URL";
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setValue("thumbnail", "")}
+                    className="absolute top-2 right-2 p-1 bg-black/50 rounded-full hover:bg-black/70 transition"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full h-40 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 text-gray-400">
+                  <ImageIcon className="w-8 h-8" />
+                  <p className="text-xs">Belum ada gambar</p>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <label className="flex-1 cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => e.target.files && uploadImage(e.target.files[0])}
+                    disabled={uploading}
+                  />
+                  <span className={`flex items-center justify-center gap-2 w-full px-4 py-2 rounded-xl text-sm font-semibold border transition ${
+                    uploading
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-white text-[#0FA3A8] border-[#0FA3A8] hover:bg-[#F7FBFB]"
+                  }`}>
+                    {uploading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        Upload Gambar
+                      </>
+                    )}
+                  </span>
+                </label>
+
+                <input
+                  {...register("thumbnail")}
+                  placeholder="Atau URL gambar"
+                  className="flex-1 border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]"
+                  disabled={uploading}
+                />
+              </div>
+              {errors.thumbnail && (
+                <p className="text-xs text-red-500">{errors.thumbnail.message}</p>
+              )}
+            </div>
+
+            {/* Nama Produk */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Nama Produk <span className="text-red-500">*</span>
+              </label>
+              <input
+                {...register("nama")}
+                placeholder="Contoh: Red Vitality"
+                className={`w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#0FA3A8] ${
+                  errors.nama ? "border-red-500" : "border-gray-200"
+                }`}
+                disabled={isSubmitting}
+                autoFocus
+              />
+              {errors.nama && (
+                <p className="text-xs text-red-500 mt-1">{errors.nama.message}</p>
+              )}
+            </div>
+
+            {/* Kategori */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Kategori
+              </label>
+              <input
+                {...register("kategori")}
+                placeholder="Contoh: Juice, Paket, Detox"
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#0FA3A8]"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            {/* Harga & Stok */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Harga <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  {...register("harga", { valueAsNumber: true })}
+                  placeholder="Harga"
+                  className={`w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#0FA3A8] ${
+                    errors.harga ? "border-red-500" : "border-gray-200"
+                  }`}
+                  disabled={isSubmitting}
+                />
+                {errors.harga && (
+                  <p className="text-xs text-red-500 mt-1">{errors.harga.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Stok
+                </label>
+                <input
+                  type="number"
+                  {...register("stok", { valueAsNumber: true })}
+                  placeholder="Stok"
+                  className={`w-full border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#0FA3A8] ${
+                    errors.stok ? "border-red-500" : "border-gray-200"
+                  }`}
+                  disabled={isSubmitting}
+                />
+                {errors.stok && (
+                  <p className="text-xs text-red-500 mt-1">{errors.stok.message}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Status Aktif */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    value="YES"
+                    {...register("aktif")}
+                    disabled={isSubmitting}
+                    className="w-4 h-4 text-[#0FA3A8] accent-[#0FA3A8]"
+                  />
+                  <span className="text-sm">Aktif</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    value="NO"
+                    {...register("aktif")}
+                    disabled={isSubmitting}
+                    className="w-4 h-4 text-red-500"
+                  />
+                  <span className="text-sm">Nonaktif</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* FOOTER */}
+          <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3 flex-shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-5 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting || (mode === "edit" && !isDirty)}
+              className="bg-[#0FA3A8] hover:bg-[#0D8B8F] text-white px-5 py-2 rounded-xl text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Menyimpan...
+                </>
+              ) : (
+                mode === "add" ? "Tambah Produk" : "Simpan Perubahan"
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
