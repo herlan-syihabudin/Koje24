@@ -1,11 +1,10 @@
 // app/api/dashboard/upload-image/route.ts
 import { NextResponse } from "next/server";
-import { NextRequest } from "next/server"; // 🔥 IMPORT INI!
-import { google } from "googleapis";
-import { Readable } from "stream";
+import { NextRequest } from "next/server";
+import { put } from "@vercel/blob";
 import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 
-export async function POST(req: NextRequest) { // 🔥 UBAH JADI NextRequest
+export async function POST(req: NextRequest) {
   const guard = await requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
@@ -38,78 +37,27 @@ export async function POST(req: NextRequest) { // 🔥 UBAH JADI NextRequest
       );
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const stream = Readable.from(buffer);
-
-    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-    const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-
-    if (!clientEmail || !privateKey || !folderId) {
-      return NextResponse.json(
-        { success: false, message: "Konfigurasi server tidak lengkap" },
-        { status: 500 }
-      );
-    }
-
-    const auth = new google.auth.JWT({
-      email: clientEmail,
-      key: privateKey,
-      scopes: ["https://www.googleapis.com/auth/drive"],
-    });
-
-    const drive = google.drive({ version: "v3", auth });
-
+    // Sanitasi nama file
     const safeName = file.name
       .toLowerCase()
       .replace(/[^a-z0-9.]/g, "-")
       .replace(/-+/g, "-");
-    const fileName = `${Date.now()}-${safeName}`;
+    const fileName = `products/${Date.now()}-${safeName}`;
 
-    const res = await drive.files.create({
-      requestBody: {
-        name: fileName,
-        parents: [folderId],
-      },
-      media: {
-        mimeType: file.type,
-        body: stream,
-      },
-      fields: "id",
+    // 🔥 UPLOAD KE VERCEL BLOB (bukan Google Drive)
+    const blob = await put(fileName, file, {
+      access: "public",
+      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
-
-    const fileId = res.data.id;
-    if (!fileId) {
-      throw new Error("Upload gagal, tidak mendapat fileId");
-    }
-
-    await drive.permissions.create({
-      fileId,
-      requestBody: {
-        role: "reader",
-        type: "anyone",
-      },
-    });
-
-    const directUrl = `https://drive.google.com/uc?id=${fileId}&export=view`;
 
     return NextResponse.json({
       success: true,
-      url: directUrl,
-      fileId: fileId,
+      url: blob.url,
     });
   } catch (error: any) {
     console.error("UPLOAD_ERROR:", error.message);
-    
-    let errorMessage = "Gagal upload gambar";
-    if (error.message?.includes("permission")) {
-      errorMessage = "Gagal mengakses Google Drive, cek permission";
-    } else if (error.message?.includes("folder")) {
-      errorMessage = "Folder Google Drive tidak ditemukan";
-    }
-    
     return NextResponse.json(
-      { success: false, message: errorMessage },
+      { success: false, message: error.message || "Gagal upload gambar" },
       { status: 500 }
     );
   }
