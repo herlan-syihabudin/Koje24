@@ -129,7 +129,6 @@ export async function GET(req: NextRequest) {
 
 /* =====================
    POST: TAMBAH PRODUK
-   body: { nama, kategori?, harga?, stok?, aktif?, thumbnail? }
 ===================== */
 export async function POST(req: NextRequest) {
   const guard = requireAdminFromRequest(req);
@@ -151,9 +150,16 @@ export async function POST(req: NextRequest) {
     const stok = toNum(body?.stok, 0);
     const aktif = asYESNO(body?.aktif || "YES");
     const thumbnail = String(body?.thumbnail || "").trim();
+    
+    // 🔥 PRIORITASKAN slug dari body, kalo gak ada baru generate
+    let slug = body?.slug ? String(body.slug).trim() : slugify(nama);
+    
+    // 🔥 Validasi slug tidak boleh kosong
+    if (!slug) {
+      slug = slugify(nama);
+    }
 
     const id = makeId();
-    const slug = slugify(body?.slug || nama);
     const ts = now();
 
     // cek slug unik
@@ -163,12 +169,15 @@ export async function POST(req: NextRequest) {
     });
 
     const rows = existing.data.values || [];
-    const slugExists = rows.some((r) => String(r?.[1] || "").trim() === slug);
-    if (slugExists) {
-      return NextResponse.json(
-        { success: false, message: "slug sudah dipakai, ganti nama/slug" },
-        { status: 409 }
-      );
+    let slugExists = rows.some((r) => String(r?.[1] || "").trim() === slug);
+    
+    // 🔥 Jika slug duplikat, tambahkan angka
+    let originalSlug = slug;
+    let counter = 1;
+    while (slugExists) {
+      slug = `${originalSlug}-${counter}`;
+      slugExists = rows.some((r) => String(r?.[1] || "").trim() === slug);
+      counter++;
     }
 
     await sheets.spreadsheets.values.append({
@@ -180,7 +189,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // audit log optional (kalau sheet Audit_Log ada)
+    // audit log optional
     try {
       await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
@@ -194,6 +203,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, id, slug });
   } catch (e: any) {
+    console.error("POST product error:", e);
     return NextResponse.json(
       { success: false, message: e.message },
       { status: 500 }
