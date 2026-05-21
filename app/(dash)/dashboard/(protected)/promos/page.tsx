@@ -20,20 +20,21 @@ export default function PromosPage() {
   const [updating, setUpdating] = useState<string | null>(null);
 
   const loadPromos = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/promos");
-      const data = await res.json();
-      console.log("API Response:", data); // Debug
-      // API return array langsung, bukan { success, promos }
-      setPromos(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Error loading promos:", error);
-      toast.error("Gagal memuat data promo");
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  try {
+    // 🔥 PAKAI API DASHBOARD
+    const res = await fetch("/api/dashboard/promos");
+    const data = await res.json();
+    console.log("API Response:", data);
+    // API return { success, promos }
+    setPromos(data.success ? data.promos : []);
+  } catch (error) {
+    console.error("Error loading promos:", error);
+    toast.error("Gagal memuat data promo");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const toggleStatus = async (kode: string, currentStatus: string) => {
     const newStatus = currentStatus === "aktif" ? "nonaktif" : "aktif";
