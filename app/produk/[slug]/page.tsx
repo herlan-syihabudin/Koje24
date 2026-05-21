@@ -2,13 +2,30 @@
 import { notFound } from "next/navigation"
 import { Metadata } from "next"
 import Image from "next/image"
-import { getProductBySlug, getAllProducts } from "@/lib/products"
 import ProductSchema from "@/components/ProductSchema"
+
+// 🔥 AMBIL DATA DARI API LIVE (BUKAN DARI lib/products)
+async function getProductBySlug(slug: string) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "https://koje24.com"}/api/master-produk`, {
+    cache: "no-store",
+  })
+  const data = await res.json()
+  const products = data?.success ? data.products : []
+  return products.find((p: any) => p.slug === slug)
+}
+
+async function getAllProducts() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "https://koje24.com"}/api/master-produk`, {
+    cache: "no-store",
+  })
+  const data = await res.json()
+  return data?.success ? data.products : []
+}
 
 // Generate metadata dinamis berdasarkan produk
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const product = getProductBySlug(slug)
+  const product = await getProductBySlug(slug)
   
   if (!product) {
     return {
@@ -17,41 +34,38 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
   
   return {
-    title: `${product.name} | KOJE24 - Cold Pressed Juice`,
-    description: product.desc || product.description,
+    title: `${product.nama} | KOJE24 - Cold Pressed Juice`,
+    description: product.desc || product.description || `Cold-pressed juice ${product.nama} alami tanpa gula tambahan`,
     openGraph: {
-      title: product.name,
-      description: product.desc || product.description,
-      images: [product.img.startsWith("http") ? product.img : `https://koje24.com${product.img}`],
+      title: product.nama,
+      description: product.desc || product.description || `Cold-pressed juice ${product.nama}`,
+      images: [product.img],
     },
   }
 }
 
-// Generate static params untuk semua produk
+// Generate static params untuk semua produk (opsional, untuk build time)
 export async function generateStaticParams() {
-  const products = getAllProducts()
-  return products.map((product) => ({
-    slug: product.id,
+  const products = await getAllProducts()
+  return products.map((product: any) => ({
+    slug: product.slug,
   }))
 }
 
-// ✅ YANG BENAR: params berupa Promise, harus di-await
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params  // ← INI KUNCI NYA!
-  const product = getProductBySlug(slug)
+  const { slug } = await params
+  const product = await getProductBySlug(slug)
   
-  // Kalau produk gak ditemukan, tampilkan halaman 404
   if (!product) {
     notFound()
   }
   
-  // Data untuk Product Schema
   const productSchemaData = {
     id: product.id,
-    name: product.name,
+    name: product.nama,
     description: product.desc || product.description || "",
-    price: product.price,
-    imageUrl: product.img.startsWith("http") ? product.img : `https://koje24.com${product.img}`,
+    price: product.harga,
+    imageUrl: product.img,
     sku: `KOJE-${product.id.toUpperCase().replace(/-/g, "")}`,
     availability: "InStock" as const,
     brand: product.brand || "KOJE24",
@@ -67,8 +81,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div className="grid md:grid-cols-2 gap-8">
           <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
             <Image
-              src={product.img}
-              alt={product.name}
+              src={product.img || "/placeholder.png"}
+              alt={product.nama}
               fill
               className="object-cover"
               priority
@@ -76,20 +90,20 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
           
           <div>
-            <h1 className="text-3xl font-bold text-[#0B4B50] mb-2">{product.name}</h1>
+            <h1 className="text-3xl font-bold text-[#0B4B50] mb-2">{product.nama}</h1>
             {product.slogan && (
               <p className="text-lg text-[#E63946] mb-2 italic">{product.slogan}</p>
             )}
             <p className="text-2xl font-semibold text-[#E63946] mb-4">
-              Rp {product.price.toLocaleString()}
+              Rp {product.harga.toLocaleString()}
             </p>
-            <p className="text-gray-600 mb-6">{product.desc || product.description}</p>
+            <p className="text-gray-600 mb-6">{product.desc || product.description || `Cold-pressed juice ${product.nama} alami tanpa gula tambahan.`}</p>
             
             {product.ingredients && product.ingredients.length > 0 && (
               <div className="mb-6">
                 <h2 className="font-semibold text-[#0B4B50] mb-2">Bahan-bahan:</h2>
                 <ul className="list-disc list-inside text-gray-600">
-                  {product.ingredients.map((ingredient) => (
+                  {product.ingredients.map((ingredient: string) => (
                     <li key={ingredient}>{ingredient}</li>
                   ))}
                 </ul>
@@ -100,7 +114,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <div className="mb-6">
                 <h2 className="font-semibold text-[#0B4B50] mb-2">Manfaat:</h2>
                 <ul className="list-disc list-inside text-gray-600">
-                  {product.benefits.map((benefit) => (
+                  {product.benefits.map((benefit: string) => (
                     <li key={benefit}>{benefit}</li>
                   ))}
                 </ul>
@@ -111,7 +125,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <div className="mb-6">
                 <h2 className="font-semibold text-[#0B4B50] mb-2">Cocok untuk:</h2>
                 <ul className="list-disc list-inside text-gray-600">
-                  {product.goodFor.map((item) => (
+                  {product.goodFor.map((item: string) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
