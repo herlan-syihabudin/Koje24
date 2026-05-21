@@ -4,41 +4,33 @@ import Image from "next/image"
 import { useState, useEffect, memo, useCallback } from "react"
 import { useCartStore } from "@/stores/cartStore"
 import { useBestSellerRanking } from "@/lib/bestSeller"
-import { products } from "@/lib/products"
 
 // Types
-interface SheetRow {
-  kode: string;
-  harga: string | number;
-  hargapromo: string | number;
-  img: string | null;
-  active: string;
+interface ProductFromAPI {
+  id: string;
+  slug: string;
+  nama: string;
+  kategori: string;
+  harga: number;
+  stok: number;
+  aktif: string;
+  img: string;
+  slogan?: string;
+  ingredients?: string[];
+  benefits?: string[];
+  goodFor?: string[];
+  consumeTime?: string;
+  isPackage?: boolean;
+  brand?: string;
+  desc?: string;
 }
 
-interface SheetData {
-  [key: string]: {
-    harga: number;
-    promo: number;
-    img: string | null;
-    active: boolean;
-  };
-}
-
-// Helper functions - pure, di luar component
-const toNumber = (p: number | string): number => {
-  if (typeof p === "number") return p
-  const cleaned = String(p).replace(/[^0-9,-]/g, "").replace(",", ".")
-  const num = parseFloat(cleaned)
-  return isNaN(num) ? 0 : num
-}
-
+// Helper functions
 const formatIDR = (n: number) => `Rp${n.toLocaleString("id-ID")}`
 
-// Product Card Component - memoized
+// Product Card Component
 const ProductCard = memo(({ 
   product, 
-  sheetData, 
-  rankStats,
   onAdd,
   onRemove,
   onOpenPackage,
@@ -47,19 +39,10 @@ const ProductCard = memo(({
   onImageLoad
 }: any) => {
   const p = product
-  const db = sheetData[p.id]
-  
-  const priceNum = db?.promo && db.promo > 0 ? db.promo :
-                   db?.harga && db.harga > 0 ? db.harga :
-                   toNumber(p.price)
-
-  const imgFix = db?.img || p.img
   const qty = useCartStore((state) => 
     state.items.find((i) => i.id === p.id)?.qty || 0
   )
   const isAdded = addedId === p.id
-  const stats = rankStats?.[String(p.id)]
-  const isBest = stats?.isBestSeller === true
 
   return (
     <div
@@ -77,8 +60,8 @@ const ProductCard = memo(({
 
         <Image
           data-id={`product-${p.id}`}
-          src={imgFix}
-          alt={p.name}
+          src={p.img || "/placeholder.png"}
+          alt={p.nama}
           fill
           priority={parseInt(p.id) < 4}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -88,16 +71,10 @@ const ProductCard = memo(({
             ${imgReady[p.id] ? "opacity-100" : "opacity-0"}`}
           onLoadingComplete={() => onImageLoad(p.id)}
         />
-
-        {isBest && (
-          <span className="absolute top-4 left-4 bg-[#E8C46B] text-[#0B4B50] text-[11px] font-bold px-3 py-1 rounded-full shadow">
-            ⭐ Best Seller
-          </span>
-        )}
       </div>
 
       <div className="p-5 flex flex-col flex-1">
-        <h3 className="font-playfair text-xl font-semibold mb-1">{p.name}</h3>
+        <h3 className="font-playfair text-xl font-semibold mb-1">{p.nama}</h3>
 
         {p.slogan && (
           <p className="text-sm text-[#0B4B50] font-semibold leading-snug mb-2">
@@ -105,7 +82,7 @@ const ProductCard = memo(({
           </p>
         )}
 
-        {p.ingredients && (
+        {p.ingredients && p.ingredients.length > 0 && (
           <p className="text-xs text-gray-500 mb-3">
             {p.ingredients.join(" • ")}
           </p>
@@ -119,12 +96,12 @@ const ProductCard = memo(({
 
         <div className="flex items-center justify-between mt-auto pt-2 border-t border-[#e6eeee]/60">
           <span className="font-bold text-[#0B4B50] text-lg">
-            {formatIDR(priceNum)}
+            {formatIDR(p.harga)}
           </span>
 
           {p.isPackage ? (
             <button
-              onClick={() => onOpenPackage(p.name, priceNum)}
+              onClick={() => onOpenPackage(p.nama, p.harga)}
               className="ml-auto bg-[#E8C46B] text-[#0B4B50] text-sm px-6 py-2 rounded-full font-semibold hover:brightness-110 active:scale-95 transition-all"
             >
               Ambil Paket
@@ -140,7 +117,7 @@ const ProductCard = memo(({
               </button>
               <span className="font-bold w-6 text-center">{qty}</span>
               <button
-                onClick={() => onAdd(p, priceNum, imgFix)}
+                onClick={() => onAdd(p, p.harga, p.img)}
                 className="bg-[#0FA3A8] text-white text-sm px-3 py-2 rounded-full hover:bg-[#0DC1C7] active:scale-95 transition-all"
                 aria-label="Tambah"
               >
@@ -149,7 +126,7 @@ const ProductCard = memo(({
             </div>
           ) : (
             <button
-              onClick={() => onAdd(p, priceNum, imgFix)}
+              onClick={() => onAdd(p, p.harga, p.img)}
               className={`ml-auto text-white text-sm px-6 py-2 rounded-full min-w-[120px] active:scale-95 transition-all ${
                 isAdded ? "bg-emerald-500 scale-105" : "bg-[#0FA3A8] hover:bg-[#0DC1C7]"
               }`}
@@ -167,18 +144,17 @@ ProductCard.displayName = 'ProductCard'
 
 // Main Component
 export default function ProductGrid({ showHeading = true }: { showHeading?: boolean }) {
-  const items = useCartStore((state) => state.items)
   const addToCart = useCartStore((state) => state.addItem)
   const removeFromCart = useCartStore((state) => state.removeItem)
   const rankStats = useBestSellerRanking()
 
   const [imgReady, setImgReady] = useState<Record<string, boolean>>({})
   const [addedId, setAddedId] = useState<string | null>(null)
-  const [sheetData, setSheetData] = useState<SheetData>({})
+  const [products, setProducts] = useState<ProductFromAPI[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // 🔥 FIX: Fetch sheet data dengan response yang benar
+  // 🔥 FETCH DATA DARI API (LIVE)
   useEffect(() => {
     let isMounted = true
 
@@ -190,93 +166,43 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
       .then((response) => {
         if (!isMounted) return
         
-        // 🔥 Ambil products dari response
-        const rows = response?.success ? response.products : (Array.isArray(response) ? response : [])
+        console.log("API Response:", response)
         
-        // 🔥 Validasi array
-        if (!Array.isArray(rows)) {
-          console.error("productsData is not an array:", rows)
+        // 🔥 Ambil products dari response
+        const productsData = response?.success ? response.products : (Array.isArray(response) ? response : [])
+        
+        if (!Array.isArray(productsData)) {
+          console.error("productsData is not an array:", productsData)
           setError("Gagal memuat data produk")
           setLoading(false)
           return
         }
         
-        const map: SheetData = {}
-        rows.forEach((x: SheetRow) => {
-          map[x.kode] = {
-            harga: Number(x.harga) || 0,
-            promo: Number(x.hargapromo) || 0,
-            img: x.img || null,
-            active: String(x.active).toLowerCase() === "true",
-          }
-        })
-        setSheetData(map)
+        setProducts(productsData)
         setError(null)
+        setLoading(false)
       })
       .catch((err) => {
-        console.error("Failed to fetch sheet data:", err)
-        setError("Gagal memuat data produk")
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false)
+        console.error("Failed to fetch products:", err)
+        setError(err.message || "Gagal memuat data produk")
+        setLoading(false)
       })
 
     return () => { isMounted = false }
   }, [])
 
   // Handlers
-  const handleAddProduct = useCallback((product: any, priceNum: number, imgFix: string) => {
+  const handleAddProduct = useCallback((product: ProductFromAPI, priceNum: number, imgFix: string) => {
     addToCart({
       id: product.id,
-      name: product.name,
+      name: product.nama,
       price: priceNum,
       img: imgFix,
     })
 
     setAddedId(product.id)
-
-    setTimeout(() => {
-      const imgDom = document.querySelector(`[data-id="product-${product.id}"]`) as HTMLElement | null
-      const cartBtn = document.querySelector(".fixed.bottom-5.right-5 button") as HTMLElement | null
-      
-      if (!imgDom || !cartBtn || !imgReady[product.id]) return
-
-      const clone = imgDom.cloneNode(true) as HTMLElement
-      const rectImg = imgDom.getBoundingClientRect()
-      const rectCart = cartBtn.getBoundingClientRect()
-
-      Object.assign(clone.style, {
-        position: "fixed",
-        top: `${rectImg.top}px`,
-        left: `${rectImg.left}px`,
-        width: `${rectImg.width}px`,
-        height: `${rectImg.height}px`,
-        borderRadius: "12px",
-        zIndex: "9999",
-        opacity: "1",
-        transform: "scale(1)",
-        transition: "all 0.9s cubic-bezier(0.45, 0, 0.55, 1)",
-        boxShadow: "0 0 30px 10px rgba(15,163,168,0.4)",
-        pointerEvents: "none",
-      })
-
-      document.body.appendChild(clone)
-
-      requestAnimationFrame(() => {
-        clone.style.top = `${rectCart.top}px`
-        clone.style.left = `${rectCart.left}px`
-        clone.style.width = "0px"
-        clone.style.height = "0px"
-        clone.style.opacity = "0"
-        clone.style.transform = "scale(0.2)"
-        clone.style.boxShadow = "0 0 10px 2px rgba(15,163,168,0.1)"
-      })
-
-      setTimeout(() => clone.remove(), 900)
-    }, 30)
-
     setTimeout(() => setAddedId(null), 1000)
-  }, [addToCart, imgReady])
+  }, [addToCart])
 
   const handleRemoveProduct = useCallback((id: string) => {
     removeFromCart(id)
@@ -294,12 +220,6 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
     setImgReady((prev) => ({ ...prev, [id]: true }))
   }, [])
 
-  // Filter active products
-  const activeProducts = products.filter((p) => {
-    const db = sheetData[p.id]
-    return db ? db.active !== false : true
-  })
-
   if (loading) {
     return <ProductGridSkeleton />
   }
@@ -308,6 +228,14 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
     return (
       <section className="py-20 px-6 text-center">
         <p className="text-red-500">{error}</p>
+      </section>
+    )
+  }
+
+  if (products.length === 0) {
+    return (
+      <section className="py-20 px-6 text-center">
+        <p className="text-gray-500">Belum ada produk yang tersedia</p>
       </section>
     )
   }
@@ -327,12 +255,10 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 md:gap-10 xl:gap-12 max-w-[1400px] mx-auto place-items-stretch">
-        {activeProducts.map((product) => (
+        {products.map((product) => (
           <ProductCard
             key={product.id}
             product={product}
-            sheetData={sheetData}
-            rankStats={rankStats}
             onAdd={handleAddProduct}
             onRemove={handleRemoveProduct}
             onOpenPackage={handleOpenPackage}
