@@ -10,6 +10,7 @@ import { X, Upload, Image as ImageIcon } from "lucide-react";
 // Schema validasi
 const productSchema = z.object({
   nama: z.string().min(1, "Nama produk wajib diisi").max(100, "Nama maksimal 100 karakter"),
+  slug: z.string().optional(),
   kategori: z.string().optional(),
   harga: z.number().min(1, "Harga harus lebih dari 0").max(999999999, "Harga terlalu besar"),
   stok: z.number().min(0, "Stok tidak boleh negatif").max(999999, "Stok terlalu besar"),
@@ -29,6 +30,16 @@ type Product = {
   thumbnail?: string;
 };
 
+// Fungsi generate slug
+function generateSlug(nama: string): string {
+  return nama
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
 export default function AddProductModal({
   open,
   mode,
@@ -44,6 +55,7 @@ export default function AddProductModal({
 }) {
   const [uploading, setUploading] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
 
   const {
     register,
@@ -56,6 +68,7 @@ export default function AddProductModal({
     resolver: zodResolver(productSchema),
     defaultValues: {
       nama: "",
+      slug: "",
       kategori: "",
       harga: 0,
       stok: 0,
@@ -65,18 +78,30 @@ export default function AddProductModal({
   });
 
   const thumbnailUrl = watch("thumbnail");
+  const namaValue = watch("nama");
+  const slugValue = watch("slug");
+
+  // Auto-generate slug saat nama berubah (hanya untuk mode add dan belum diedit manual)
+  useEffect(() => {
+    if (mode === "add" && !slugManuallyEdited && namaValue) {
+      const newSlug = generateSlug(namaValue);
+      setValue("slug", newSlug);
+    }
+  }, [namaValue, slugManuallyEdited, mode, setValue]);
 
   // Reset form saat modal ditutup
   useEffect(() => {
     if (!open) {
       reset({
         nama: "",
+        slug: "",
         kategori: "",
         harga: 0,
         stok: 0,
         aktif: "YES",
         thumbnail: "",
       });
+      setSlugManuallyEdited(false);
     }
   }, [open, reset]);
 
@@ -85,12 +110,14 @@ export default function AddProductModal({
     if (mode === "edit" && initialData && open) {
       reset({
         nama: initialData.nama || "",
+        slug: initialData.id || generateSlug(initialData.nama),
         kategori: initialData.kategori || "",
         harga: initialData.harga || 0,
         stok: initialData.stok || 0,
         aktif: initialData.aktif || "YES",
         thumbnail: initialData.thumbnail || "",
       });
+      setSlugManuallyEdited(true);
     }
   }, [mode, initialData, open, reset]);
 
@@ -150,8 +177,13 @@ export default function AddProductModal({
   const onSubmit = async (data: ProductFormData) => {
     try {
       const payload = {
-        ...data,
+        nama: data.nama,
+        slug: data.slug || generateSlug(data.nama),
         kategori: data.kategori || undefined,
+        harga: data.harga,
+        stok: data.stok,
+        aktif: data.aktif,
+        thumbnail: data.thumbnail || "",
       };
 
       if (mode === "add") {
@@ -308,6 +340,9 @@ export default function AddProductModal({
                 <p className="text-xs text-red-500 mt-1">{errors.nama.message}</p>
               )}
             </div>
+
+            {/* Slug (Hidden / Auto) */}
+            <input type="hidden" {...register("slug")} />
 
             {/* Kategori */}
             <div>
