@@ -55,6 +55,7 @@ const NAV = [
     title: "MARKETING",
     items: [
       { label: "Promo & Diskon", href: "/dashboard/promos", icon: Tag },
+      { label: "Testimoni", href: "/dashboard/testimonials", icon: MessageSquare },
     ],
   },
 ];
