@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Users, UserCheck, UserPlus } from "lucide-react";
+import { Search, Users, UserCheck, UserPlus, Download, Eye } from "lucide-react";
+import { toast } from "sonner";
 
 type Customer = {
   id: string;
@@ -12,19 +13,16 @@ type Customer = {
   totalOrder: number;
   totalBelanja: number;
   status: "aktif" | "nonaktif";
+  firstOrderDate?: string;
+  lastOrderDate?: string;
 };
 
-// Loading Skeleton
-function TableSkeleton() {
-  return (
-    <div className="animate-pulse">
-      <div className="h-10 bg-gray-100 rounded mb-2" />
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="h-12 bg-gray-50 rounded mb-1" />
-      ))}
-    </div>
-  );
-}
+type OrderHistory = {
+  invoice: string;
+  tanggal: string;
+  total: number;
+  status: string;
+};
 
 // Stat Card
 function StatCard({ title, value, icon: Icon }: { title: string; value: number; icon: any }) {
@@ -39,10 +37,129 @@ function StatCard({ title, value, icon: Icon }: { title: string; value: number; 
   );
 }
 
+// Customer Detail Modal
+function CustomerDetailModal({ customer, onClose }: { customer: Customer | null; onClose: () => void }) {
+  const [orders, setOrders] = useState<OrderHistory[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (customer) {
+      setLoading(true);
+      fetch(`/api/dashboard/customers/${customer.id}/orders`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setOrders(data.orders);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    }
+  }, [customer]);
+
+  if (!customer) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b sticky top-0 bg-white">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Detail Pelanggan</h2>
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg">✕</button>
+          </div>
+        </div>
+        
+        <div className="p-6 space-y-6">
+          {/* Info Customer */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-gray-500">Nama</p>
+              <p className="font-semibold">{customer.nama}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Email</p>
+              <p className="text-sm">{customer.email}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Telepon</p>
+              <p>{customer.telepon}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Kota</p>
+              <p>{customer.kota}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Total Order</p>
+              <p className="font-semibold">{customer.totalOrder} x</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Total Belanja</p>
+              <p className="font-semibold text-[#0FA3A8]">Rp {customer.totalBelanja.toLocaleString("id-ID")}</p>
+            </div>
+          </div>
+
+          {/* Riwayat Order */}
+          <div>
+            <h3 className="font-semibold mb-3">Riwayat Order</h3>
+            {loading ? (
+              <div className="text-center py-4">Memuat...</div>
+            ) : orders.length === 0 ? (
+              <div className="text-center py-4 text-gray-400">Belum ada order</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Invoice</th>
+                    <th className="px-3 py-2 text-left">Tanggal</th>
+                    <th className="px-3 py-2 text-right">Total</th>
+                    <th className="px-3 py-2 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((order) => (
+                    <tr key={order.invoice} className="border-t">
+                      <td className="px-3 py-2 font-mono text-xs">{order.invoice}</td>
+                      <td className="px-3 py-2">{order.tanggal}</td>
+                      <td className="px-3 py-2 text-right">Rp {order.total.toLocaleString("id-ID")}</td>
+                      <td className="px-3 py-2 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${
+                          order.status === "PAID" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                        }`}>
+                          {order.status}
+                        </span>
+                       </td>
+                     </tr>
+                  ))}
+                </tbody>
+               </table>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Export to PDF
+async function exportToPDF() {
+  try {
+    const res = await fetch("/api/dashboard/customers/export");
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `customers_${new Date().toISOString().slice(0, 10)}.pdf`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast.success("PDF berhasil diunduh");
+  } catch (error) {
+    toast.error("Gagal export PDF");
+  }
+}
+
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [stats, setStats] = useState({
     total: 0,
     aktif: 0,
@@ -72,12 +189,23 @@ export default function CustomersPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-6 px-4 sm:px-6 pb-8">
       {/* HEADER */}
-      <div>
-        <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">CUSTOMERS</p>
-        <h1 className="text-2xl font-semibold">Manajemen Pelanggan</h1>
-        <p className="text-sm text-gray-600 mt-1">
-          Data pelanggan KOJE24 dan riwayat interaksi.
-        </p>
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">CUSTOMERS</p>
+          <h1 className="text-2xl font-semibold">Manajemen Pelanggan</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Data pelanggan KOJE24 dan riwayat interaksi.
+          </p>
+        </div>
+        
+        {/* Tombol Export PDF */}
+        <button
+          onClick={exportToPDF}
+          className="flex items-center gap-2 px-4 py-2 bg-[#0FA3A8] text-white rounded-xl text-sm font-semibold hover:bg-[#0D8B8F] transition"
+        >
+          <Download className="w-4 h-4" />
+          Export PDF
+        </button>
       </div>
 
       {/* STATS */}
@@ -92,7 +220,6 @@ export default function CustomersPage() {
         <div className="p-4 border-b flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-sm font-semibold">Daftar Pelanggan</h2>
           
-          {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -107,9 +234,7 @@ export default function CustomersPage() {
 
         <div className="overflow-x-auto">
           {loading ? (
-            <div className="p-6">
-              <TableSkeleton />
-            </div>
+            <div className="p-6 text-center">Memuat data...</div>
           ) : filteredCustomers.length === 0 ? (
             <div className="px-4 py-12 text-center text-gray-400">
               {search ? "Tidak ada pelanggan yang cocok" : "Belum ada data pelanggan"}
@@ -124,12 +249,20 @@ export default function CustomersPage() {
                   <th className="px-4 py-3 text-right">Total Order</th>
                   <th className="px-4 py-3 text-right">Total Belanja</th>
                   <th className="px-4 py-3 text-center">Status</th>
+                  <th className="px-4 py-3 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredCustomers.map((customer) => (
                   <tr key={customer.id} className="border-b hover:bg-gray-50 transition">
-                    <td className="px-4 py-3 font-medium">{customer.nama}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setSelectedCustomer(customer)}
+                        className="font-medium text-[#0FA3A8] hover:underline"
+                      >
+                        {customer.nama}
+                      </button>
+                    </td>
                     <td className="px-4 py-3 text-gray-600">
                       <div>{customer.telepon}</div>
                       <div className="text-xs text-gray-400">{customer.email}</div>
@@ -140,15 +273,20 @@ export default function CustomersPage() {
                       Rp {customer.totalBelanja.toLocaleString("id-ID")}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span
-                        className={`inline-flex px-2 py-1 rounded-full text-[10px] font-semibold ${
-                          customer.status === "aktif"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-500"
-                        }`}
-                      >
+                      <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-semibold ${
+                        customer.status === "aktif" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                      }`}>
                         {customer.status === "aktif" ? "Aktif" : "Nonaktif"}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => setSelectedCustomer(customer)}
+                        className="p-1 rounded-lg hover:bg-gray-100 transition"
+                        title="Lihat detail"
+                      >
+                        <Eye className="w-4 h-4 text-gray-500" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -157,13 +295,15 @@ export default function CustomersPage() {
           )}
         </div>
 
-        {/* Info footer */}
         {!loading && filteredCustomers.length > 0 && (
           <div className="px-4 py-3 border-t bg-gray-50 text-xs text-gray-500">
             Menampilkan {filteredCustomers.length} dari {customers.length} pelanggan
           </div>
         )}
       </div>
+
+      {/* Customer Detail Modal */}
+      <CustomerDetailModal customer={selectedCustomer} onClose={() => setSelectedCustomer(null)} />
     </div>
   );
 }
