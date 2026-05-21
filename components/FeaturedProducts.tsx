@@ -30,21 +30,8 @@ interface RankStats {
   [key: string]: { count: number };
 }
 
-// Extend Product type untuk package items
-interface ProductWithItems {
-  id: string;
-  name: string;
-  price: number | string;
-  img?: string;
-  slogan?: string;
-  desc?: string;
-  isPackage?: boolean;
-  items?: Array<{ id: string; name: string; price: number }>;
-}
-
 // === CONSTANTS ===
 const FALLBACK_IDS = process.env.NEXT_PUBLIC_FALLBACK_IDS?.split(',') || ["1", "2", "3"]
-const BEST_SELLER_THRESHOLD = 10
 
 const formatIDR = (n: number) => {
   return new Intl.NumberFormat("id-ID", {
@@ -58,12 +45,10 @@ const formatIDR = (n: number) => {
 export default function FeaturedProducts() {
   const addToCart = useCartStore((s) => s.addItem)
   
-  // FIX ERROR 2: Proper type conversion
   const rankData = useBestSellerRanking()
   const [rankStats, setRankStats] = useState<RankStats>({})
 
   useEffect(() => {
-    // Convert rankData to proper RankStats format
     const stats: RankStats = {}
     if (rankData && typeof rankData === 'object') {
       Object.keys(rankData).forEach(key => {
@@ -92,8 +77,19 @@ export default function FeaturedProducts() {
       fetch("/api/master-produk", { cache: "no-store" }).then(r => r.json()),
       fetch("/api/weekly-sales", { cache: "no-store" }).then(r => r.json()).catch(() => ({}))
     ])
-      .then(([productsData, salesData]) => {
+      .then(([productsRes, salesData]) => {
         if (!isMounted) return;
+        
+        // 🔥 FIX: Ambil products dari response (bukan langsung)
+        const productsData = productsRes?.success ? productsRes.products : (Array.isArray(productsRes) ? productsRes : []);
+        
+        // 🔥 FIX: Validasi array
+        if (!Array.isArray(productsData)) {
+          console.error("productsData is not an array:", productsData);
+          setError("Gagal memuat data produk");
+          setLoading(false);
+          return;
+        }
         
         // Process product data
         const map: SheetMap = {}
@@ -143,7 +139,6 @@ export default function FeaturedProducts() {
       return db ? db.active !== false : true
     })
 
-    // Gabungkan dengan best seller score
     const scored = activeProducts.map((p) => {
       const stats = rankStats[String(p.id)]
       const score = stats?.count || 0
@@ -155,17 +150,14 @@ export default function FeaturedProducts() {
       }
     })
 
-    // Sort: 1. Package dulu, 2. Score tertinggi
     const sorted = [...scored].sort((a, b) => {
       if (a.__isPackage && !b.__isPackage) return -1
       if (!a.__isPackage && b.__isPackage) return 1
       return b.__score - a.__score
     })
 
-    // Ambil top 3
     const top = sorted.slice(0, 3)
 
-    // Fallback kalau kosong
     if (top.length === 0) {
       return products.filter((p) => FALLBACK_IDS.includes(p.id))
     }
@@ -174,33 +166,23 @@ export default function FeaturedProducts() {
   }, [rankStats, sheetData, loading, error])
 
   // =========================
-  // AI RANKING (SIMPLIFIED)
+  // AI RANKING
   // =========================
   useEffect(() => {
     if (featured.length === 0) return;
     
-    // Simple AI logic based on time and keywords
     const hour = new Date().getHours();
     const month = new Date().getMonth();
     
     const scores: Record<string, number> = {};
     
     featured.forEach(product => {
-      let score = 5; // base score
+      let score = 5;
       
-      // Time-based
       if (hour < 10 && product.name.toLowerCase().includes('energi')) score += 2;
       if (hour > 18 && product.name.toLowerCase().includes('relax')) score += 2;
-      
-      // Season-based (rainy season = imun)
-      if (month >= 10 || month <= 2) { // Nov-Mar
-        if (product.name.toLowerCase().includes('imun')) score += 2;
-      }
-      
-      // Summer = detox
-      if (month >= 5 && month <= 8) { // Jun-Sep
-        if (product.name.toLowerCase().includes('detox')) score += 2;
-      }
+      if ((month >= 10 || month <= 2) && product.name.toLowerCase().includes('imun')) score += 2;
+      if (month >= 5 && month <= 8 && product.name.toLowerCase().includes('detox')) score += 2;
       
       scores[product.id] = Math.min(10, Math.max(1, score));
     });
@@ -211,16 +193,14 @@ export default function FeaturedProducts() {
   // =========================
   // HANDLE ADD TO CART
   // =========================
-    const handleAddToCart = (
+  const handleAddToCart = (
     product: typeof products[number],
     price: number,
     img: string
   ) => {
-    // Trigger animation
     setAnimatingId(product.id)
     setTimeout(() => setAnimatingId(null), 500)
     
-    // Show toast
     toast.success(`${product.name} ditambahkan ke keranjang!`, {
       icon: '🛒',
       duration: 2000,
@@ -231,7 +211,6 @@ export default function FeaturedProducts() {
       }
     })
     
-    // Actual add to cart logic
     if (product.isPackage) {
       const packageItems = (product as any).items || []
       
@@ -254,8 +233,7 @@ export default function FeaturedProducts() {
         img: img,
       })
     }
-    } 
-    
+  }
 
   // =========================
   // LOADING STATE
@@ -325,7 +303,6 @@ export default function FeaturedProducts() {
               >
                 {/* IMAGE */}
                 <div className="relative h-[220px] bg-white overflow-hidden">
-                  {/* Badges Container */}
                   <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
                     {isBestSeller && (
                       <div className="flex items-center gap-1 bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
@@ -374,7 +351,6 @@ export default function FeaturedProducts() {
                     </p>
                   )}
 
-                  {/* Weekly Sales */}
                   <div className="mt-2 mb-3">
                     <div className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
                       <span className="text-green-600">📦</span>
