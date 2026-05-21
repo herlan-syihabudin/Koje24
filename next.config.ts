@@ -7,14 +7,16 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       
-      // ⭐ TAMBAHKAN INI (domain utama)
-      { protocol: "https", hostname: "koje24.com" },           // ← TAMBAH!
-      
-      // 🔥 DOMAIN PRODUKSI LAMA (vercel.app)
+      // Domain utama
+      { protocol: "https", hostname: "koje24.com" },
       { protocol: "https", hostname: "koje24.vercel.app" },
-      { protocol: "https", hostname: "webkoje24.vercel.app" }, // ← TAMBAH juga
+      { protocol: "https", hostname: "webkoje24.vercel.app" },
       
-      // 🔁 preview / deployment vercel lain
+      // 🔥 TAMBAHKAN INI! - VERCEL BLOB STORAGE
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
+      { protocol: "https", hostname: "*.blob.vercel-storage.com" },
+      
+      // Preview deployment lain
       { protocol: "https", hostname: "*.vercel.app" },
     ],
     formats: ["image/avif", "image/webp"],
@@ -24,7 +26,11 @@ const nextConfig: NextConfig = {
     optimizeCss: true,
     scrollRestoration: true,
     serverActions: {
-      allowedOrigins: ["https://koje24.com", "https://koje24.vercel.app"], // ← TAMBAH
+      allowedOrigins: [
+        "https://koje24.com", 
+        "https://koje24.vercel.app",
+        "https://*.vercel.app"
+      ],
     },
   },
 
