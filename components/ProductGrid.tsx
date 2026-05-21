@@ -27,7 +27,6 @@ interface SheetData {
 // Helper functions - pure, di luar component
 const toNumber = (p: number | string): number => {
   if (typeof p === "number") return p
-  // Hapus semua non-digit kecuali koma/titik, lalu parse
   const cleaned = String(p).replace(/[^0-9,-]/g, "").replace(",", ".")
   const num = parseFloat(cleaned)
   return isNaN(num) ? 0 : num
@@ -50,7 +49,6 @@ const ProductCard = memo(({
   const p = product
   const db = sheetData[p.id]
   
-  // Price priority: promo → normal → hardcode
   const priceNum = db?.promo && db.promo > 0 ? db.promo :
                    db?.harga && db.harga > 0 ? db.harga :
                    toNumber(p.price)
@@ -72,7 +70,6 @@ const ProductCard = memo(({
         hover:border-[#0FA3A8]/40
         transition-all duration-500 flex flex-col"
     >
-      {/* Image */}
       <div className="relative w-full h-[230px] bg-[#f3f9f9] overflow-hidden rounded-t-3xl">
         {!imgReady[p.id] && (
           <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#e3f4f4] via-[#f0fafa] to-[#d7f0f0]" />
@@ -83,7 +80,7 @@ const ProductCard = memo(({
           src={imgFix}
           alt={p.name}
           fill
-          priority={parseInt(p.id) < 4} // Priority hanya untuk 4 produk pertama
+          priority={parseInt(p.id) < 4}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className={`object-cover object-center 
             transition-transform duration-[900ms] 
@@ -99,7 +96,6 @@ const ProductCard = memo(({
         )}
       </div>
 
-      {/* Info */}
       <div className="p-5 flex flex-col flex-1">
         <h3 className="font-playfair text-xl font-semibold mb-1">{p.name}</h3>
 
@@ -182,7 +178,7 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch sheet data
+  // 🔥 FIX: Fetch sheet data dengan response yang benar
   useEffect(() => {
     let isMounted = true
 
@@ -191,11 +187,22 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
       })
-      .then((rows: SheetRow[]) => {
+      .then((response) => {
         if (!isMounted) return
         
+        // 🔥 Ambil products dari response
+        const rows = response?.success ? response.products : (Array.isArray(response) ? response : [])
+        
+        // 🔥 Validasi array
+        if (!Array.isArray(rows)) {
+          console.error("productsData is not an array:", rows)
+          setError("Gagal memuat data produk")
+          setLoading(false)
+          return
+        }
+        
         const map: SheetData = {}
-        rows.forEach((x) => {
+        rows.forEach((x: SheetRow) => {
           map[x.kode] = {
             harga: Number(x.harga) || 0,
             promo: Number(x.hargapromo) || 0,
@@ -228,7 +235,6 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
 
     setAddedId(product.id)
 
-    // Flying animation
     setTimeout(() => {
       const imgDom = document.querySelector(`[data-id="product-${product.id}"]`) as HTMLElement | null
       const cartBtn = document.querySelector(".fixed.bottom-5.right-5 button") as HTMLElement | null
@@ -294,12 +300,10 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
     return db ? db.active !== false : true
   })
 
-  // Loading state
   if (loading) {
     return <ProductGridSkeleton />
   }
 
-  // Error state
   if (error) {
     return (
       <section className="py-20 px-6 text-center">
@@ -322,7 +326,6 @@ export default function ProductGrid({ showHeading = true }: { showHeading?: bool
         </div>
       )}
 
-      {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 md:gap-10 xl:gap-12 max-w-[1400px] mx-auto place-items-stretch">
         {activeProducts.map((product) => (
           <ProductCard
