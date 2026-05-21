@@ -29,7 +29,7 @@ export default function PackagesSection() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch data dari Google Sheet
+  // 🔥 FIX: Fetch data dari Google Sheet dengan response yang benar
   useEffect(() => {
     let isMounted = true
 
@@ -38,11 +38,22 @@ export default function PackagesSection() {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
       })
-      .then((rows: SheetRow[]) => {
+      .then((response) => {
         if (!isMounted) return
         
+        // 🔥 Ambil products dari response
+        const rows = response?.success ? response.products : (Array.isArray(response) ? response : [])
+        
+        // 🔥 Validasi array
+        if (!Array.isArray(rows)) {
+          console.error("productsData is not an array:", rows)
+          setError("Gagal memuat data paket")
+          setLoading(false)
+          return
+        }
+        
         const map: Record<string, any> = {}
-        rows.forEach((x) => {
+        rows.forEach((x: SheetRow) => {
           map[x.kode] = {
             harga: Number(x.harga) || 0,
             promo: Number(x.hargapromo) || 0,
