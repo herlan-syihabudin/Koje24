@@ -9,6 +9,22 @@ function parseTanggal(raw: string): string {
   return datePart;
 }
 
+// 🔥 TIPE UNTUK CUSTOMER INFO
+type CustomerInfo = {
+  nama: string;
+  email: string;
+  telepon: string;
+  alamat: string;
+};
+
+type OrderItem = {
+  invoice: string;
+  tanggal: string;
+  produk: string;
+  qty: number;
+  total: number;
+};
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -27,8 +43,9 @@ export async function GET(
 
     const rows = res.data.values || [];
     
-    let customerInfo = null;
-    const orders = [];
+    // 🔥 TAMBAHKAN TYPE ANNOTATION
+    let customerInfo: CustomerInfo | null = null;
+    const orders: OrderItem[] = [];
     let totalBelanja = 0;
     let totalOrder = 0;
 
@@ -101,13 +118,13 @@ export async function GET(
 
         <div class="summary">
           <h3>📊 Ringkasan Belanja</h3>
-          <p>Total Order: <strong>${totalOrder} kali</strong> ${totalOrder > 5 ? '<span class="repeat-badge">⭐ Repeat Customer</span>' : ''}</p>
+          <p>Total Order: <strong>${totalOrder} kali</strong> ${totalOrder > 1 ? '<span class="repeat-badge">⭐ Repeat Customer</span>' : ''}</p>
           <p>Total Belanja: <strong class="total">Rp ${totalBelanja.toLocaleString("id-ID")}</strong></p>
-          <p>Rata-rata per order: <strong>Rp ${Math.round(totalBelanja / totalOrder).toLocaleString("id-ID")}</strong></p>
+          <p>Rata-rata per order: <strong>Rp ${totalOrder > 0 ? Math.round(totalBelanja / totalOrder).toLocaleString("id-ID") : 0}</strong></p>
         </div>
 
         <h3>📋 Daftar Order (${totalOrder} transaksi)</h3>
-        <table>
+        </table>
           <thead>
             <tr>
               <th>Tanggal</th>
