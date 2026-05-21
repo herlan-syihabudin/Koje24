@@ -11,7 +11,7 @@ type Promo = {
   minimal: number;
   maxDiskon: number | null;
   status: string;
-  expired: string;
+  expired?: string;
 };
 
 export default function PromosPage() {
@@ -24,8 +24,11 @@ export default function PromosPage() {
     try {
       const res = await fetch("/api/promos");
       const data = await res.json();
+      console.log("API Response:", data); // Debug
+      // API return array langsung, bukan { success, promos }
       setPromos(Array.isArray(data) ? data : []);
     } catch (error) {
+      console.error("Error loading promos:", error);
       toast.error("Gagal memuat data promo");
     } finally {
       setLoading(false);
@@ -76,6 +79,10 @@ export default function PromosPage() {
       default: return "🏷️";
     }
   };
+
+  useEffect(() => {
+    loadPromos();
+  }, []);
 
   if (loading) {
     return (
@@ -130,7 +137,6 @@ export default function PromosPage() {
                 <th className="px-4 py-3 text-left">Nilai</th>
                 <th className="px-4 py-3 text-left">Min. Belanja</th>
                 <th className="px-4 py-3 text-left">Max Diskon</th>
-                <th className="px-4 py-3 text-left">Expired</th>
                 <th className="px-4 py-3 text-center">Status</th>
               </tr>
             </thead>
@@ -142,7 +148,7 @@ export default function PromosPage() {
                       <span className="text-lg">{getTipeIcon(p.tipe)}</span>
                       <span className="font-mono font-semibold">{p.kode}</span>
                     </div>
-                   </td>
+                  </td>
                   <td className="px-4 py-3">{getTipeLabel(p.tipe)}</td>
                   <td className="px-4 py-3 font-semibold">
                     {p.tipe === "percent" 
@@ -156,9 +162,6 @@ export default function PromosPage() {
                   </td>
                   <td className="px-4 py-3">
                     {p.maxDiskon ? `Rp ${p.maxDiskon.toLocaleString("id-ID")}` : "-"}
-                  </td>
-                  <td className="px-4 py-3">
-                    {p.expired ? new Date(p.expired).toLocaleDateString("id-ID") : "-"}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <button
