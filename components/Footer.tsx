@@ -104,8 +104,8 @@ export default function Footer() {
                 <Image
                   src="/image/logo-koje24-putih-removebg-preview.png"
                   alt="KOJE24 - Natural Cold-Pressed Juice"
-                  width={82}
-                  height={82}
+                  width={120}
+                  height={120}
                   className="object-contain"
                   loading="lazy"
                 />
