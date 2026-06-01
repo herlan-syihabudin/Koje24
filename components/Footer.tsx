@@ -6,7 +6,7 @@ import { FaInstagram, FaWhatsapp, FaTiktok } from "react-icons/fa"
 
 // Constants from env
 const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WA_NUMBER || '6282213139580'
-const EMAIL = process.env.NEXT_PUBLIC_EMAIL || 'info@koje24.id'
+const EMAIL = process.env.NEXT_PUBLIC_EMAIL || 'info@koje24.com'
 const INSTAGRAM = process.env.NEXT_PUBLIC_INSTAGRAM || 'koje24'
 const TIKTOK = process.env.NEXT_PUBLIC_TIKTOK || '@koje24'
 
