@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
+import { Redis } from "@upstash/redis";
+
+const kv = Redis.fromEnv();
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
