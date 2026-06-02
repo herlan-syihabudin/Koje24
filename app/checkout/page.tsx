@@ -34,6 +34,23 @@ function calcOngkir(distanceKm: number | null) {
   return Math.max(10000, rounded);
 }
 
+// 🔥 Fungsi reverse geocoding (koordinat → alamat)
+async function reverseGeocode(lat: number, lng: number) {
+  try {
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+    );
+    const data = await res.json();
+    if (data.results && data.results[0]) {
+      return data.results[0].formatted_address;
+    }
+    return null;
+  } catch (error) {
+    console.error("Reverse geocoding error:", error);
+    return null;
+  }
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
 
@@ -58,10 +75,30 @@ export default function CheckoutPage() {
   const [buktiBayarFile, setBuktiBayarFile] = useState<File | null>(null);
   const alamatRef = useRef<HTMLInputElement | null>(null);
 
+  // 🔥 State untuk loading location
+  const [isLocating, setIsLocating] = useState(false);
+
   const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0);
   const promoAmount = getDiscount();
   const promoLabel = promo?.kode ?? "";
   const total = Math.max(0, subtotal + ongkir - promoAmount);
+
+  // 🔥 Load data tersimpan dari localStorage
+  useEffect(() => {
+    const savedNama = localStorage.getItem("checkout_nama");
+    const savedHp = localStorage.getItem("checkout_hp");
+    const savedAlamat = localStorage.getItem("checkout_alamat");
+    if (savedNama) setNama(savedNama);
+    if (savedHp) setHp(savedHp);
+    if (savedAlamat) setAlamat(savedAlamat);
+  }, []);
+
+  // 🔥 Simpan data ke localStorage saat berubah
+  useEffect(() => {
+    if (nama) localStorage.setItem("checkout_nama", nama);
+    if (hp) localStorage.setItem("checkout_hp", hp);
+    if (alamat) localStorage.setItem("checkout_alamat", alamat);
+  }, [nama, hp, alamat]);
 
   useEffect(() => {
     setHydrated(true);
@@ -106,20 +143,53 @@ export default function CheckoutPage() {
     } catch {}
   }, []);
 
+  // 🔥 Upgrade fungsi handleDetectLocation dengan loading state, error handling, dan reverse geocoding
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
-      alert("Perangkat tidak mendukung GPS.");
+      setErrorMsg("Perangkat tidak mendukung GPS.");
       return;
     }
+
+    setIsLocating(true);
+    setErrorMsg("");
+
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const dKm = haversine(BASE_LAT, BASE_LNG, pos.coords.latitude, pos.coords.longitude);
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const dKm = haversine(BASE_LAT, BASE_LNG, lat, lng);
+        
         setDistanceKm(dKm);
         setOngkir(calcOngkir(dKm));
-        alert("GPS berhasil! Ongkir sudah dihitung 🚚");
+        
+        // 🔥 Reverse geocoding: dapetin alamat dari koordinat
+        const address = await reverseGeocode(lat, lng);
+        if (address) {
+          setAlamat(address);
+        }
+        
+        setIsLocating(false);
       },
-      () => alert("Izin lokasi ditolak 🙏"),
-      { enableHighAccuracy: true }
+      (error) => {
+        setIsLocating(false);
+        let errorMessage = "Gagal mendapatkan lokasi. ";
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage += "Izinkan akses lokasi di browser Anda.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage += "Lokasi tidak tersedia. Coba lagi.";
+            break;
+          case error.TIMEOUT:
+            errorMessage += "Waktu habis. Coba lagi.";
+            break;
+          default:
+            errorMessage += "Terjadi kesalahan.";
+            break;
+        }
+        setErrorMsg(errorMessage);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
@@ -287,12 +357,20 @@ export default function CheckoutPage() {
                     onChange={(e) => setAlamat(e.target.value)}
                   />
 
+                  {/* 🔥 Tombol dengan loading state */}
                   <button
                     type="button"
                     onClick={handleDetectLocation}
-                    className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm font-medium"
+                    disabled={isLocating}
+                    className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    📍 Hitung Ongkir Pakai Lokasi Saya
+                    {isLocating ? (
+                      <>
+                        <span className="animate-spin">⏳</span> Mendeteksi lokasi...
+                      </>
+                    ) : (
+                      "📍 Hitung Ongkir Pakai Lokasi Saya"
+                    )}
                   </button>
 
                   {distanceKm ? (
