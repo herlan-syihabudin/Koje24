@@ -10,8 +10,8 @@ declare const google: any;
 
 type CheckoutState = "idle" | "submitting" | "error";
 
-const BASE_LAT = -6.2903238;
-const BASE_LNG = 107.087373;
+const BASE_LAT = -6.317905523078763;
+const BASE_LNG = 107.04266219924195;
 
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
