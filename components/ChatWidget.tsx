@@ -65,12 +65,11 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
     case "UPDATE_USER":
       return { ...state, userData: { ...state.userData, ...action.payload } };
     case "ADD_MESSAGES":
-      return {
-        ...state,
-        messages: [...state.messages, ...action.payload]
-          .filter((m, i, arr) => arr.findIndex(m2 => m2.id === m.id) === i) // unique
-          .sort((a, b) => a.ts - b.ts),
-      };
+      // 🔥 DEDUPLIKASI ID BIAR GAK DOUBLE
+      const uniqueMessages = [...state.messages, ...action.payload]
+        .filter((m, i, arr) => arr.findIndex(m2 => m2.id === m.id) === i)
+        .sort((a, b) => a.ts - b.ts);
+      return { ...state, messages: uniqueMessages };
     case "SET_ADMIN_STATUS":
       return {
         ...state,
@@ -88,7 +87,7 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
     case "RESET_CHAT":
       return {
         ...initialState,
-        sid: state.sid, // retain sid
+        sid: state.sid,
         open: state.open,
       };
     default:
@@ -96,15 +95,13 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
   }
 }
 
-const POLL_INTERVAL = 3000; // naikkin dikit biar gak terlalu berat
+const POLL_INTERVAL = 3000;
 const MAX_RETRIES = 3;
 
-// Safe UUID generator dengan fallback
 const generateUUID = () => {
   if (typeof crypto?.randomUUID === 'function') {
     return crypto.randomUUID();
   }
-  // Fallback untuk non-HTTPS / browser lama
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -151,82 +148,79 @@ export default function ChatWidget() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [state.messages, state.adminTyping, state.closed]);
 
-  // Polling dengan AbortController
+  // Polling
   useEffect(() => {
-  if (!state.open || state.step !== "chat" || !state.sid) return;
+    if (!state.open || state.step !== "chat" || !state.sid) return;
 
-  const poll = async () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    try {
-      const res = await fetch(
-        `/api/chat/poll?sid=${state.sid}&after=${lastTsRef.current}`,
-        {
-          signal: controller.signal,
-          cache: "no-store",
-          headers: { "Cache-Control": "no-cache" },
-        }
-      );
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const data = await res.json();
-      if (!data?.ok) throw new Error("Invalid response");
-
-      dispatch({
-        type: "SET_ADMIN_STATUS",
-        payload: { online: !!data.adminOnline, typing: !!data.adminTyping },
-      });
-
-      dispatch({ type: "SET_CLOSED", payload: !!data.closed });
-      setPollRetries(0);
-
-      if (Array.isArray(data.messages) && data.messages.length) {
-        dispatch({ type: "ADD_MESSAGES", payload: data.messages });
-        lastTsRef.current = Math.max(
-          lastTsRef.current,
-          ...data.messages.map((m: ChatMessage) => m.ts)
-        );
+    const poll = async () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === "AbortError") return;
 
-      console.error("Polling error:", err);
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
 
-      setPollRetries((prev) => {
-        const next = prev + 1;
+      try {
+        const res = await fetch(
+          `/api/chat/poll?sid=${state.sid}&after=${lastTsRef.current}`,
+          {
+            signal: controller.signal,
+            cache: "no-store",
+            headers: { "Cache-Control": "no-cache" },
+          }
+        );
 
-        if (next >= MAX_RETRIES) {
-          dispatch({
-            type: "SET_ERROR",
-            payload: "Koneksi terputus. Menghubungkan kembali...",
-          });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        if (!data?.ok) throw new Error("Invalid response");
+
+        dispatch({
+          type: "SET_ADMIN_STATUS",
+          payload: { online: !!data.adminOnline, typing: !!data.adminTyping },
+        });
+
+        dispatch({ type: "SET_CLOSED", payload: !!data.closed });
+        setPollRetries(0);
+
+        if (Array.isArray(data.messages) && data.messages.length) {
+          dispatch({ type: "ADD_MESSAGES", payload: data.messages });
+          lastTsRef.current = Math.max(
+            lastTsRef.current,
+            ...data.messages.map((m: ChatMessage) => m.ts)
+          );
         }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") return;
 
-        return next;
-      });
-    }
-  };
+        console.error("Polling error:", err);
 
-  pollingIntervalRef.current = setInterval(poll, POLL_INTERVAL);
-  poll();
+        setPollRetries((prev) => {
+          const next = prev + 1;
+          if (next >= MAX_RETRIES) {
+            dispatch({
+              type: "SET_ERROR",
+              payload: "Koneksi terputus. Menghubungkan kembali...",
+            });
+          }
+          return next;
+        });
+      }
+    };
 
-  return () => {
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-    }
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-  };
-}, [state.open, state.step, state.sid, pollRetries]);
+    pollingIntervalRef.current = setInterval(poll, POLL_INTERVAL);
+    poll();
 
-  // Validasi form
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [state.open, state.step, state.sid, pollRetries]);
+
   const validateForm = useCallback(() => {
     if (!state.userData.name.trim()) {
       dispatch({ type: "SET_ERROR", payload: "Nama harus diisi" });
@@ -239,7 +233,6 @@ export default function ChatWidget() {
     return true;
   }, [state.userData]);
 
-  // Start chat
   const startChat = async () => {
     if (!validateForm()) return;
     dispatch({ type: "SET_ERROR", payload: null });
@@ -266,13 +259,16 @@ export default function ChatWidget() {
     }
   };
 
-  // Send message
+  // 🔥 FIX DOUBLE MESSAGE - SEND FUNCTION YANG SUDAH DIPERBAIKI
   const send = async () => {
     if (!msg.trim() || state.sending || state.closed) return;
 
     const text = msg.trim();
     const ts = Date.now();
     const tempId = `temp_${ts}_${Math.random()}`;
+
+    // 🔥 SET SENDING SEBELUM OPTIMISTIC UPDATE
+    dispatch({ type: "SET_SENDING", payload: true });
 
     // Optimistic update
     dispatch({
@@ -288,7 +284,6 @@ export default function ChatWidget() {
 
     lastTsRef.current = ts;
     setMsg("");
-    dispatch({ type: "SET_SENDING", payload: true });
 
     try {
       const res = await fetch("/api/chat/send", {
@@ -315,7 +310,6 @@ export default function ChatWidget() {
     }
   };
 
-  // Start new session
   const startNewSession = async () => {
     const newSid = generateUUID();
     localStorage.setItem("chat_session_id", newSid);
