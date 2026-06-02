@@ -142,7 +142,7 @@ export default function InvoicePage() {
   {/* LEFT */}
   <div>
     <img
-      src="/image/logo-koje24.png"
+      src="/image/logo_koje24_hitam.webp"
       alt="KOJE24"
       className="h-16 w-auto mb-1"
     />
