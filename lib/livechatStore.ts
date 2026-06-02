@@ -1,4 +1,6 @@
-import { kv } from "@vercel/kv";
+import { Redis } from "@upstash/redis";
+
+const kv = Redis.fromEnv();
 
 /* =====================
    TYPES
@@ -182,13 +184,16 @@ export async function initSession(
 
   await kv.expire(`chat:session:${sid}`, 60 * 60 * 24);
 }
-// ================= ADMIN ACTIVE SESSION (QUEUE MODE) ================
+
+/* =====================
+   ADMIN ACTIVE SESSION (QUEUE MODE)
+===================== */
 const ADMIN_ACTIVE_KEY = "admin:activeSession";
 
 /** Set admin sedang melayani sid ini */
 export async function setAdminActiveSession(sid: string) {
   if (!sid) return;
-  await kv.set(ADMIN_ACTIVE_KEY, sid, { ex: 60 * 60 }); // 1 jam
+  await kv.set(ADMIN_ACTIVE_KEY, sid, { ex: 60 * 60 });
 }
 
 /** Get sid yang sedang dilayani admin */
