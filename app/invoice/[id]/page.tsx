@@ -142,7 +142,7 @@ export default function InvoicePage() {
   {/* LEFT */}
   <div>
     <img
-      src="/image/logo_koje24_hitam.webp"
+      src={`${process.env.NEXT_PUBLIC_BASE_URL || "https://koje24.com"}/image/logo_koje24_hitam.webp`}
       alt="KOJE24"
       className="h-16 w-auto mb-1"
     />
