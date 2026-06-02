@@ -10,6 +10,6 @@ export async function GET(req: NextRequest) {
   const position = await getQueuePosition(sid);
   return NextResponse.json({
     ok: true,
-    position, // number | null
+    position,
   });
 }
