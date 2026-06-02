@@ -168,16 +168,20 @@ export default function InvoicePage() {
 
   {/* RIGHT */}
   <div className="text-right">
-    <p className="text-3xl font-bold">INVOICE</p>
-    <img
-      src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
-      alt="barcode"
-      className="h-14 w-auto ml-auto"
-    />
-    <p className="text-xs mt-1">
-      Tanggal: {invoice.timestamp.replace(",", " — ")}
-    </p>
-  </div>
+  <p className="text-3xl font-bold">INVOICE</p>
+  <img
+    src={`https://barcode.tec-it.com/barcode.ashx?data=${invoice.invoiceId}&code=Code128&dpi=96`}
+    alt="barcode"
+    className="h-14 w-auto ml-auto"
+    onError={(e) => {
+      const target = e.target as HTMLImageElement;
+      target.src = `https://quickchart.io/barcode?text=${invoice.invoiceId}&format=png`;
+    }}
+  />
+  <p className="text-xs mt-1">
+    Tanggal: {invoice.timestamp.replace(",", " — ")}
+  </p>
+</div>
 </div>
 
         <div className="border-t border-black mb-4" />
@@ -308,7 +312,7 @@ export default function InvoicePage() {
 ===================== */}
 <div className="mt-6 flex flex-col items-center text-[9px] text-gray-500">
   <img
-    src="/image/halal-black.png"
+    src={`${process.env.NEXT_PUBLIC_BASE_URL || "https://koje24.com"}/image/halal-black.png`}
     alt="Sertifikasi Halal Indonesia"
     style={{
       height: 44,
