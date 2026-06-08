@@ -456,9 +456,9 @@ export default function ChatWidget() {
                   }`}
                 >
                   {m.text}
-                  {m.id.startsWith('temp_') && (
-                    <span className="text-[10px] opacity-70 ml-2">⏳</span>
-                  )}
+                  {m.id.startsWith('temp_') && state.sending && (
+  <span className="text-[10px] opacity-70 ml-2">⏳</span>
+)}
                 </div>
               </div>
             ))}
