@@ -184,12 +184,18 @@ export default function ChatWidget() {
         setPollRetries(0);
 
         if (Array.isArray(data.messages) && data.messages.length) {
-          dispatch({ type: "ADD_MESSAGES", payload: data.messages });
-          lastTsRef.current = Math.max(
-            lastTsRef.current,
-            ...data.messages.map((m: ChatMessage) => m.ts)
-          );
-        }
+  // 🔥 FILTER: hanya pesan yang belum ada di state
+  const existingIds = new Set(state.messages.map(m => m.id));
+  const newMessages = data.messages.filter(m => !existingIds.has(m.id));
+  
+  if (newMessages.length) {
+    dispatch({ type: "ADD_MESSAGES", payload: newMessages });
+    lastTsRef.current = Math.max(
+      lastTsRef.current,
+      ...newMessages.map((m: ChatMessage) => m.ts)
+    );
+  }
+}
       } catch (err: unknown) {
         if (err instanceof Error && err.name === "AbortError") return;
 
