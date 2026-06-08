@@ -64,12 +64,13 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return { ...state, step: action.payload };
     case "UPDATE_USER":
       return { ...state, userData: { ...state.userData, ...action.payload } };
-    case "ADD_MESSAGES":
+    case "ADD_MESSAGES": {
       // 🔥 DEDUPLIKASI ID BIAR GAK DOUBLE
       const uniqueMessages = [...state.messages, ...action.payload]
         .filter((m, i, arr) => arr.findIndex(m2 => m2.id === m.id) === i)
         .sort((a, b) => a.ts - b.ts);
       return { ...state, messages: uniqueMessages };
+    }
     case "SET_ADMIN_STATUS":
       return {
         ...state,
@@ -148,7 +149,7 @@ export default function ChatWidget() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [state.messages, state.adminTyping, state.closed]);
 
-  // Polling
+  // Polling - FIXED DOUBLE MESSAGE
   useEffect(() => {
     if (!state.open || state.step !== "chat" || !state.sid) return;
 
@@ -183,19 +184,19 @@ export default function ChatWidget() {
         dispatch({ type: "SET_CLOSED", payload: !!data.closed });
         setPollRetries(0);
 
+        // 🔥 FIX DOUBLE MESSAGE: FILTER PESAN YANG UDAH ADA
         if (Array.isArray(data.messages) && data.messages.length) {
-  // 🔥 FILTER: hanya pesan yang belum ada di state
-  const existingIds = new Set(state.messages.map(m => m.id));
-  const newMessages = data.messages.filter(m => !existingIds.has(m.id));
-  
-  if (newMessages.length) {
-    dispatch({ type: "ADD_MESSAGES", payload: newMessages });
-    lastTsRef.current = Math.max(
-      lastTsRef.current,
-      ...newMessages.map((m: ChatMessage) => m.ts)
-    );
-  }
-}
+          const existingIds = new Set(state.messages.map((m: ChatMessage) => m.id));
+          const newMessages = data.messages.filter((m: ChatMessage) => !existingIds.has(m.id));
+          
+          if (newMessages.length) {
+            dispatch({ type: "ADD_MESSAGES", payload: newMessages });
+            lastTsRef.current = Math.max(
+              lastTsRef.current,
+              ...newMessages.map((m: ChatMessage) => m.ts)
+            );
+          }
+        }
       } catch (err: unknown) {
         if (err instanceof Error && err.name === "AbortError") return;
 
@@ -225,7 +226,7 @@ export default function ChatWidget() {
         abortControllerRef.current.abort();
       }
     };
-  }, [state.open, state.step, state.sid, pollRetries]);
+  }, [state.open, state.step, state.sid, pollRetries, state.messages]);
 
   const validateForm = useCallback(() => {
     if (!state.userData.name.trim()) {
@@ -265,7 +266,6 @@ export default function ChatWidget() {
     }
   };
 
-  // 🔥 FIX DOUBLE MESSAGE - SEND FUNCTION YANG SUDAH DIPERBAIKI
   const send = async () => {
     if (!msg.trim() || state.sending || state.closed) return;
 
@@ -273,7 +273,6 @@ export default function ChatWidget() {
     const ts = Date.now();
     const tempId = `temp_${ts}_${Math.random()}`;
 
-    // 🔥 SET SENDING SEBELUM OPTIMISTIC UPDATE
     dispatch({ type: "SET_SENDING", payload: true });
 
     // Optimistic update
