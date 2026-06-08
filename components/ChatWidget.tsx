@@ -186,17 +186,26 @@ export default function ChatWidget() {
 
         // 🔥 FIX DOUBLE MESSAGE: FILTER PESAN YANG UDAH ADA
         if (Array.isArray(data.messages) && data.messages.length) {
-          const existingIds = new Set(state.messages.map((m: ChatMessage) => m.id));
-          const newMessages = data.messages.filter((m: ChatMessage) => !existingIds.has(m.id));
-          
-          if (newMessages.length) {
-            dispatch({ type: "ADD_MESSAGES", payload: newMessages });
-            lastTsRef.current = Math.max(
-              lastTsRef.current,
-              ...newMessages.map((m: ChatMessage) => m.ts)
-            );
-          }
-        }
+  const newMessages = data.messages.filter((m: ChatMessage) => {
+    return !state.messages.some(existing =>
+      existing.id === m.id ||
+      (
+        existing.role === m.role &&
+        existing.text === m.text &&
+        Math.abs(existing.ts - m.ts) < 2000
+      )
+    );
+  });
+
+  if (newMessages.length) {
+    dispatch({ type: "ADD_MESSAGES", payload: newMessages });
+
+    lastTsRef.current = Math.max(
+      lastTsRef.current,
+      ...newMessages.map((m: ChatMessage) => m.ts)
+    );
+  }
+}
       } catch (err: unknown) {
         if (err instanceof Error && err.name === "AbortError") return;
 
