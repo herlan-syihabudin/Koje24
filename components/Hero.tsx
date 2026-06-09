@@ -60,14 +60,14 @@ export default function Hero() {
       
       {/* SEO */}
       <h1 className="sr-only">
-        Jual Cold Pressed Juice Jakarta & Tangerang – Jus Detox Tanpa Gula | KOJE24
+        Jual Cold Pressed Juice Bekasi & Jakarta – Jus Detox Tanpa Gula | KOJE24
       </h1>
 
       {/* BACKGROUND */}
       <motion.div style={{ y, opacity }} className="absolute inset-0">
         <Image
           src="/image/hero2.webp"
-          alt="Cold Pressed Juice Jakarta - KOJE24"
+          alt="Cold Pressed Juice Bekasi - KOJE24"
           fill
           priority
           quality={70}
