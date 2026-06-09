@@ -12,11 +12,13 @@ import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
   title: {
-    default: "KOJE24 • Natural Cold-Pressed Juice",
+    default: "KOJE24 • Cold Pressed Juice Bekasi",
     template: "%s | KOJE24",
   },
   description:
-    "KOJE24 — minuman cold-pressed alami premium tanpa gula tambahan dan tanpa pengawet. Cocok untuk detoks harian dan menjaga imunitas.",
+    "KOJE24 — cold pressed juice premium di Bekasi. 100% alami tanpa gula tambahan, tanpa pengawet. Cocok untuk detox harian & imunitas. Delivery Jabodetabek.",
+  keywords:
+    "cold pressed juice Bekasi, jus detox Bekasi, jus sehat Bekasi, KOJE24 Bekasi, minuman detox alami Bekasi, cold pressed juice terbaik Bekasi",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -26,9 +28,31 @@ export const metadata: Metadata = {
     ],
     apple: "/icons/apple-touch-icon.png",
   },
+  openGraph: {
+    title: "KOJE24 - Cold Pressed Juice Bekasi",
+    description: "Cold pressed juice premium di Bekasi. 100% natural, tanpa gula, fresh daily.",
+    url: "https://koje24.com",
+    siteName: "KOJE24",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "https://koje24.com/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "KOJE24 Cold Pressed Juice - Bekasi",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "KOJE24 - Cold Pressed Juice Bekasi",
+    description: "Cold pressed juice premium di Bekasi. 100% natural, tanpa gula.",
+    images: ["https://koje24.com/og-image.jpg"],
+  },
   other: {
-    'google-site-verification': '_cTz7gO2HdLMjoMfCIAp2Fud_Wb6X2Yy1t7j6L9Et9k',
-  }
+    "google-site-verification": "_cTz7gO2HdLMjoMfCIAp2Fud_Wb6X2Yy1t7j6L9Et9k",
+  },
 };
 
 export const viewport: Viewport = {
@@ -43,30 +67,25 @@ export const viewport: Viewport = {
 const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  "name": "KOJE24",
-  "url": "https://koje24.com",
-  "logo": "https://koje24.com/icons/icon-512x512.png",
-  "sameAs": [
-    "https://instagram.com/koje24",
-    "https://wa.me/6282213139580"
-  ]
+  name: "KOJE24",
+  url: "https://koje24.com",
+  logo: "https://koje24.com/icons/icon-512x512.png",
+  sameAs: ["https://instagram.com/koje24", "https://wa.me/6282213139580"],
 };
 
 const localBusinessSchema = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
-  "name": "KOJE24",
-  "url": "https://koje24.com",
-  "logo": "https://koje24.com/icons/icon-512x512.png",
-  "description": "Cold pressed juice delivery Bekasi & Jakarta. Jus detox tanpa gula, tanpa pengawet, fresh daily.",
-  "areaServed": ["Jakarta", "Bekasi", "Depok", "Bogor"],
-  "priceRange": "$$",
-  "paymentAccepted": ["Cash", "Transfer Bank", "QRIS"],
-  "telephone": "+6282213139580",
-  "sameAs": [
-    "https://instagram.com/koje24",
-    "https://wa.me/6282213139580"
-  ]
+  name: "KOJE24",
+  url: "https://koje24.com",
+  logo: "https://koje24.com/icons/icon-512x512.png",
+  description:
+    "Cold pressed juice delivery Bekasi & Jakarta. Jus detox tanpa gula, tanpa pengawet, fresh daily.",
+  areaServed: ["Bekasi", "Jakarta", "Depok", "Bogor"], // ✅ Bekasi pertama
+  priceRange: "$$",
+  paymentAccepted: ["Cash", "Transfer Bank", "QRIS"],
+  telephone: "+6282213139580",
+  sameAs: ["https://instagram.com/koje24", "https://wa.me/6282213139580"],
 };
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -81,7 +100,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
       <Header />
       <TestimonialSchemaSEO />
-      
+
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
@@ -91,18 +110,20 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
       />
 
-      <main id="main-content" className="min-h-screen">{children}</main>
+      <main id="main-content" className="min-h-screen">
+        {children}
+      </main>
       <Footer />
 
-      <Toaster 
-        position="top-center" 
-        richColors 
+      <Toaster
+        position="top-center"
+        richColors
         toastOptions={{
           style: {
-            background: '#fff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '12px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            background: "#fff",
+            border: "1px solid #e2e8f0",
+            borderRadius: "12px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           },
           duration: 3000,
         }}
