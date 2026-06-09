@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     "Cold-pressed juice segar 100% alami tanpa gula tambahan. Detox harian, booster imun, dan energi alami. Delivery Jakarta & Bekasi.",
   keywords: [
     "cold pressed juice Jakarta",
-    "jus detox Tangerang",
+    "jus detox Bekasi",
     "jus sehat tanpa gula",
     "KOJE24",
     "minuman detox alami",
