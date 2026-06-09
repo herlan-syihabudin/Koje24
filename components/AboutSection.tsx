@@ -71,7 +71,7 @@ export default function AboutSection() {
           </h2>
 
           <p className="font-inter text-gray-700 leading-relaxed text-base md:text-lg mb-5">
-            KOJE24 adalah <b>premium cold-pressed juice Jakarta</b> untuk mereka yang ingin
+            KOJE24 adalah <b>premium cold-pressed juice Bekasi</b> untuk mereka yang ingin
             menjaga tubuh tetap fit, segar, dan seimbang — tanpa ribet.
             Dibuat dari buah & sayuran segar pilihan dengan teknologi cold-pressed
             agar nutrisi tetap utuh dan maksimal terserap tubuh.
@@ -131,7 +131,7 @@ export default function AboutSection() {
         >
           <Image
             src="/image/koje.png"
-            alt="KOJE24 Cold-Pressed Juice Premium Jakarta"
+            alt="KOJE24 Cold-Pressed Juice Premium Bekasi"
             fill
             sizes="(max-width: 768px) 100vw, 50vw"
             loading="lazy"
