@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
 
-// 🔥 OPTIMASI: Cache untuk mengurangi request ke Google Sheets
-export const revalidate = 3600; // Cache selama 1 jam (ISR)
+// 🔥 PERUBAHAN: Hapus cache statis, pake dynamic biar selalu fresh
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export async function GET() {
   try {
@@ -19,7 +20,7 @@ export async function GET() {
       );
     }
 
-    // 🔥 Fix: Handle private key dengan lebih baik
+    // Fix: Handle private key dengan lebih baik
     const PRIVATE_KEY = PRIVATE_KEY_RAW
       .replace(/\\n/g, "\n")
       .replace(/\\\\n/g, "\n")
@@ -35,7 +36,7 @@ export async function GET() {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // 🔥 OPTIMASI: Fetch data dengan timeout
+    // Fetch data dengan timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 detik timeout
 
@@ -48,15 +49,13 @@ export async function GET() {
 
     const rows = res.data.values ?? [];
 
-    // 🔥 OPTIMASI: Parse JSON array lebih robust
+    // Parse JSON array lebih robust
     const parseJSONArray = (str: string): string[] => {
       if (!str || str === "") return [];
       try {
-        // Coba parse sebagai JSON dulu
         const parsed = JSON.parse(str);
         return Array.isArray(parsed) ? parsed : [str];
       } catch {
-        // Kalau gagal, coba split by koma
         return str
           .split(",")
           .map(s => s.trim())
@@ -64,7 +63,7 @@ export async function GET() {
       }
     };
 
-    // 🔥 OPTIMASI: Mapping produk dengan filtering yang lebih efisien
+    // Mapping produk dengan filtering yang lebih efisien
     const productsData = rows
       .filter((row) => {
         const aktif = row[6]?.toString().toUpperCase();
@@ -74,13 +73,11 @@ export async function GET() {
         const kategori = row[3] ?? "";
         const nama = row[2] ?? "";
         
-        // 🔥 Tentukan isPackage
         const isPackage = 
           kategori.toLowerCase() === "paket" || 
           nama.toLowerCase().includes("paket") ||
           kategori.toLowerCase().includes("bundle");
         
-        // 🔥 Pastikan harga valid
         const harga = Number(row[4]) || 0;
         const stok = Number(row[5]) || 0;
         
@@ -90,7 +87,7 @@ export async function GET() {
           nama: nama.trim(),
           kategori: kategori.trim(),
           harga: harga,
-          hargaAsli: harga, // Untuk promo nanti
+          hargaAsli: harga,
           stok: stok,
           aktif: row[6] ?? "NO",
           img: row[7]?.trim() ?? "/images/placeholder.jpg",
@@ -106,25 +103,23 @@ export async function GET() {
           brand: "KOJE24",
         };
       })
-      // 🔥 Filter produk dengan harga valid
       .filter((product) => product.harga > 0);
 
-    // 🔥 Tambahkan cache headers
+    // 🔥 PERUBAHAN: Hapus cache headers, pake no-cache
     return NextResponse.json(
       { success: true, products: productsData, total: productsData.length },
       {
         status: 200,
         headers: {
-          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
-          "CDN-Cache-Control": "public, s-maxage=3600",
-          "Vercel-CDN-Cache-Control": "public, s-maxage=3600",
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
         },
       }
     );
   } catch (err: any) {
     console.error("API MASTER PRODUK ERROR:", err);
     
-    // 🔥 Return error yang lebih informatif
     return NextResponse.json(
       {
         success: false,
