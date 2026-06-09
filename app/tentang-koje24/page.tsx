@@ -3,10 +3,14 @@
 import { motion } from "framer-motion"
 import Image from "next/image"
 import Link from "next/link"
+import Header from "@/components/Header"
+import Footer from "@/components/Footer"
+
 
 export default function KenapaKOJE() {
   return (
     <>
+      <Header />
       
       <main className="min-h-screen bg-gradient-to-b from-[#f8fcfc] via-[#eef8f8] to-[#e4f3f3] text-[#0B4B50] relative overflow-hidden pt-24">
         {/* Aura Background */}
@@ -217,6 +221,7 @@ export default function KenapaKOJE() {
           </motion.section>
         </div>
       </main>
+     <Footer />
     </>
   )
 }
