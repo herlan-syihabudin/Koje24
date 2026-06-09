@@ -178,7 +178,7 @@ export default function KenapaKOJE() {
               className="relative h-[300px] md:h-[380px] rounded-3xl overflow-hidden shadow-[0_15px_45px_rgba(0,0,0,0.15)]"
             >
               <Image
-                src="/image/koje-bottles.png"
+                src="/image/WhatsApp Image 2026-06-01 at 15.32.25.webp"
                 alt="KOJE24 Variants"
                 fill
                 className="object-cover"
