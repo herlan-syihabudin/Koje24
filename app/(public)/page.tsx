@@ -19,11 +19,11 @@ import RatingPopup from "@/components/RatingPopup"
 // ⭐ METADATA UNTUK HOME PAGE PUBLIC
 export const metadata: Metadata = {
   title: {
-    default: "KOJE24 - Cold Pressed Juice Jakarta & Tangerang",
+    default: "KOJE24 - Cold Pressed Juice Bekasi",
     template: "%s | KOJE24",
   },
   description:
-    "Cold-pressed juice segar 100% alami tanpa gula tambahan. Detox harian, booster imun, dan energi alami. Delivery Jakarta, Bekasi, Tangerang.",
+    "Cold-pressed juice segar 100% alami tanpa gula tambahan. Detox harian, booster imun, dan energi alami. Delivery Jakarta & Bekasi.",
   keywords: [
     "cold pressed juice Jakarta",
     "jus detox Tangerang",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "KOJE24 - Cold Pressed Juice Sehat Alami",
     description:
-      "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Jakarta, Bekasi, Tangerang.",
+      "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Jakarta & Bekasi.",
     url: "https://koje24.com",
     siteName: "KOJE24",
     images: [
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "KOJE24 - Cold Pressed Juice Sehat Alami",
     description:
-      "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Jakarta, Bekasi, Tangerang.",
+      "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Jakarta & Bekasi.",
     images: ["https://koje24.com/og-image.jpg"],
   },
   alternates: {
