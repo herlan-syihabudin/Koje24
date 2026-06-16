@@ -1,10 +1,12 @@
+// app/api/dashboard/products/route.ts
+
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 
 const SHEET_NAME = "Produk";
-const RANGE = `${SHEET_NAME}!A2:P`; // 🔥 UBAH: sampai kolom P
+const RANGE = `${SHEET_NAME}!A2:P`;
 
 function now() {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
@@ -84,7 +86,8 @@ function makeId() {
 }
 
 export async function GET(req: NextRequest) {
-  const guard = requireAdminFromRequest(req);
+  // 🔐 GUARD ADMIN (PAKE AWAIT!)
+  const guard = await requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
   try {
@@ -133,6 +136,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, products });
   } catch (e: any) {
+    console.error("❌ GET products error:", e);
     return NextResponse.json(
       { success: false, message: e.message },
       { status: 500 }
@@ -141,7 +145,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const guard = requireAdminFromRequest(req);
+  // 🔐 GUARD ADMIN (PAKE AWAIT!)
+  const guard = await requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
   try {
@@ -194,7 +199,10 @@ export async function POST(req: NextRequest) {
       range: `${SHEET_NAME}!A:P`,
       valueInputOption: "RAW",
       requestBody: {
-        values: [[id, slug, nama, kategori, harga, stok, aktif, thumbnail, ts, ts, slogan, ingredients, benefits, goodFor, consumeTime, desc]],
+        values: [[
+          id, slug, nama, kategori, harga, stok, aktif, thumbnail, 
+          ts, ts, slogan, ingredients, benefits, goodFor, consumeTime, desc
+        ]],
       },
     });
 
@@ -204,14 +212,19 @@ export async function POST(req: NextRequest) {
         range: "Audit_Log!A:G",
         valueInputOption: "RAW",
         requestBody: {
-          values: [[ts, id, "CREATE_PRODUCT", "-", nama, "dashboard", guard.admin.email]],
+          values: [[
+            ts, id, "CREATE_PRODUCT", "-", nama, "dashboard", 
+            guard.admin?.email || "unknown"
+          ]],
         },
       });
-    } catch {}
+    } catch (err) {
+      console.warn("⚠️ Failed to write audit log:", err);
+    }
 
     return NextResponse.json({ success: true, id, slug });
   } catch (e: any) {
-    console.error("POST product error:", e);
+    console.error("❌ POST product error:", e);
     return NextResponse.json(
       { success: false, message: e.message },
       { status: 500 }
