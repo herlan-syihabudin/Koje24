@@ -1,3 +1,5 @@
+// app/api/dashboard/orders/update-status/route.ts
+
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
@@ -10,14 +12,14 @@ function now() {
 }
 
 export async function POST(req: NextRequest) {
-  // 🔐 GUARD ADMIN
-  const guard = requireAdminFromRequest(req);
-if (!guard.ok) return guard.res;
-
-const { admin } = guard; // <- TS sekarang yakin
-const adminEmail = admin.email;
-
   try {
+    // 🔐 GUARD ADMIN (PAKE AWAIT!)
+    const guard = await requireAdminFromRequest(req);
+    if (!guard.ok) return guard.res;
+
+    const { admin } = guard;
+    const adminEmail = admin.email;
+
     const { invoice, status } = await req.json();
 
     if (!invoice || !status) {
@@ -26,6 +28,7 @@ const adminEmail = admin.email;
         { status: 400 }
       );
     }
+
     const cleanInvoice = String(invoice).trim();
     const cleanStatus = String(status).trim().toUpperCase();
 
@@ -107,6 +110,7 @@ const adminEmail = admin.email;
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
+    console.error("❌ Update status error:", err);
     return NextResponse.json(
       { success: false, message: err.message },
       { status: 500 }
