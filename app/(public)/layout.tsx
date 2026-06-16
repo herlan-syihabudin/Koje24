@@ -1,3 +1,7 @@
+// app/(public)/layout.tsx
+
+"use client"; // 🔥 BISA JADI CLIENT COMPONENT (karena pake hooks)
+
 import { Suspense } from "react";
 import { Toaster } from "sonner";
 import Header from "@/components/Header";
@@ -8,89 +12,14 @@ import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO";
 import InstallPWAButton from "@/components/InstallPWAButton";
 import ChatWidget from "@/components/ChatWidget";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import type { Metadata, Viewport } from "next";
 
-export const metadata: Metadata = {
-  title: {
-    default: "KOJE24 • Cold Pressed Juice Bekasi",
-    template: "%s | KOJE24",
-  },
-  description:
-    "KOJE24 — cold pressed juice premium di Bekasi. 100% alami tanpa gula tambahan, tanpa pengawet. Cocok untuk detox harian & imunitas. Delivery Jabodetabek.",
-  keywords:
-    "cold pressed juice Bekasi, jus detox Bekasi, jus sehat Bekasi, KOJE24 Bekasi, minuman detox alami Bekasi, cold pressed juice terbaik Bekasi",
-  manifest: "/manifest.json",
-  icons: {
-    icon: [
-      { url: "/favicon.ico" },
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: "/icons/apple-touch-icon.png",
-  },
-  openGraph: {
-    title: "KOJE24 - Cold Pressed Juice Bekasi",
-    description: "Cold pressed juice premium di Bekasi. 100% natural, tanpa gula, fresh daily.",
-    url: "https://koje24.com",
-    siteName: "KOJE24",
-    locale: "id_ID",
-    type: "website",
-    images: [
-      {
-        url: "https://koje24.com/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "KOJE24 Cold Pressed Juice - Bekasi",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "KOJE24 - Cold Pressed Juice Bekasi",
-    description: "Cold pressed juice premium di Bekasi. 100% natural, tanpa gula.",
-    images: ["https://koje24.com/og-image.jpg"],
-  },
-  other: {
-    "google-site-verification": "_cTz7gO2HdLMjoMfCIAp2Fud_Wb6X2Yy1t7j6L9Et9k",
-  },
-};
-
-export const viewport: Viewport = {
-  themeColor: "#0FA3A8",
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 2,
-  userScalable: true,
-  viewportFit: "cover",
-};
-
-const organizationSchema = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  name: "KOJE24",
-  url: "https://koje24.com",
-  logo: "https://koje24.com/icons/icon-512x512.png",
-  sameAs: ["https://instagram.com/koje24", "https://wa.me/6282213139580"],
-};
-
-const localBusinessSchema = {
-  "@context": "https://schema.org",
-  "@type": "LocalBusiness",
-  name: "KOJE24",
-  url: "https://koje24.com",
-  logo: "https://koje24.com/icons/icon-512x512.png",
-  description:
-    "Cold pressed juice delivery Bekasi & Jakarta. Jus detox tanpa gula, tanpa pengawet, fresh daily.",
-  areaServed: ["Bekasi", "Jakarta", "Depok", "Bogor"], // ✅ Bekasi pertama
-  priceRange: "$$",
-  paymentAccepted: ["Cash", "Transfer Bank", "QRIS"],
-  telephone: "+6282213139580",
-  sameAs: ["https://instagram.com/koje24", "https://wa.me/6282213139580"],
-};
+// 🔥 HAPUS METADATA & VIEWPORT (sudah di root layout)
+// 🔥 HAPUS organizationSchema & localBusinessSchema (pindah ke root atau component terpisah)
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
+      {/* Skip to content */}
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-[#0FA3A8] focus:text-white focus:p-4 focus:rounded-lg"
@@ -101,13 +30,37 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <Header />
       <TestimonialSchemaSEO />
 
+      {/* 🔥 PINDAHKAN SCHEMA KE KOMPONEN TERPISAH ATAU TARUH DI SINI */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "KOJE24",
+            url: "https://koje24.com",
+            logo: "https://koje24.com/icons/icon-512x512.png",
+            sameAs: ["https://instagram.com/koje24", "https://wa.me/6282213139580"],
+          }),
+        }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            name: "KOJE24",
+            url: "https://koje24.com",
+            logo: "https://koje24.com/icons/icon-512x512.png",
+            description: "Cold pressed juice delivery Bekasi & Jakarta. Jus detox tanpa gula, tanpa pengawet, fresh daily.",
+            areaServed: ["Bekasi", "Jakarta", "Depok", "Bogor"],
+            priceRange: "$$",
+            paymentAccepted: ["Cash", "Transfer Bank", "QRIS"],
+            telephone: "+6282213139580",
+            sameAs: ["https://instagram.com/koje24", "https://wa.me/6282213139580"],
+          }),
+        }}
       />
 
       <main id="main-content" className="min-h-screen">
