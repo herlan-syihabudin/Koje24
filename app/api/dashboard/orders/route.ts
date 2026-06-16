@@ -1,3 +1,5 @@
+// app/api/dashboard/orders/route.ts
+
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
@@ -55,7 +57,8 @@ function normalizeStatus(s: any): OrderStatus {
    GET ORDERS
 ===================== */
 export async function GET(req: NextRequest) {
-  const guard = requireAdminFromRequest(req);
+  // 🔐 GUARD ADMIN (PAKE AWAIT!)
+  const guard = await requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
   try {
@@ -134,7 +137,7 @@ export async function GET(req: NextRequest) {
       orders: data,
     });
   } catch (err) {
-    console.error("GET /dashboard/orders error:", err);
+    console.error("❌ GET /dashboard/orders error:", err);
     return NextResponse.json(
       { success: false, message: "Internal server error" },
       { status: 500 }
