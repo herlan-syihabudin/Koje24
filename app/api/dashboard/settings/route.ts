@@ -1,3 +1,5 @@
+// app/api/dashboard/settings/route.ts
+
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
@@ -45,7 +47,7 @@ async function loadSettings(): Promise<Settings> {
 
     return settings;
   } catch (error) {
-    console.error("Error loading settings:", error);
+    console.error("❌ Error loading settings:", error);
     return defaultSettings;
   }
 }
@@ -88,27 +90,56 @@ async function saveSettings(settings: Settings) {
 
 // GET: Load settings
 export async function GET(req: NextRequest) {
-  const guard = await requireAdminFromRequest(req);
-  if (!guard.ok) return guard.res;
-
   try {
+    const guard = await requireAdminFromRequest(req);
+    if (!guard.ok) return guard.res;
+
     const settings = await loadSettings();
+    
+    console.log(`✅ Settings loaded by: ${guard.admin?.email || "unknown"}`);
+    
     return NextResponse.json({ success: true, settings });
   } catch (error) {
-    return NextResponse.json({ success: false, message: "Gagal load settings" });
+    console.error("❌ GET settings error:", error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: error instanceof Error ? error.message : "Gagal load settings" 
+      },
+      { status: 500 }
+    );
   }
 }
 
 // POST: Save settings
 export async function POST(req: NextRequest) {
-  const guard = await requireAdminFromRequest(req);
-  if (!guard.ok) return guard.res;
-
   try {
+    const guard = await requireAdminFromRequest(req);
+    if (!guard.ok) return guard.res;
+
     const body = await req.json();
+
+    // 🔥 Validasi body
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { success: false, message: "Invalid request body" },
+        { status: 400 }
+      );
+    }
+
     await saveSettings(body);
+    
+    console.log(`✅ Settings saved by: ${guard.admin?.email || "unknown"}`);
+    
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ success: false, message: "Gagal save settings" });
+    console.error("❌ POST settings error:", error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: error instanceof Error ? error.message : "Gagal save settings" 
+      },
+      { status: 500 }
+    );
   }
 }
