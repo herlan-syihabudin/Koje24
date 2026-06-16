@@ -1,3 +1,5 @@
+// app/api/dashboard/products/[id]/route.ts
+
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
@@ -42,7 +44,8 @@ function parseJSONArray(str: string): string[] {
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, context: Ctx) {
-  const guard = requireAdminFromRequest(req);
+  // 🔐 GUARD ADMIN (PAKE AWAIT!)
+  const guard = await requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
   try {
@@ -104,24 +107,34 @@ export async function PATCH(req: NextRequest, context: Ctx) {
       range: `${SHEET_NAME}!A${sheetRow}:P${sheetRow}`,
       valueInputOption: "RAW",
       requestBody: {
-        values: [[cleanId, slug, nama, kategori, harga, stok, aktif, thumbnail, ts, String(current[9] || ts), slogan, ingredients, benefits, goodFor, consumeTime, desc]],
+        values: [[
+          cleanId, slug, nama, kategori, harga, stok, aktif, thumbnail, 
+          ts, String(current[9] || ts), slogan, ingredients, benefits, 
+          goodFor, consumeTime, desc
+        ]],
       },
     });
 
+    // Audit log
     try {
       await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
         range: "Audit_Log!A:G",
         valueInputOption: "RAW",
         requestBody: {
-          values: [[ts, cleanId, "UPDATE_PRODUCT", "-", nama, "dashboard", guard.admin.email]],
+          values: [[
+            ts, cleanId, "UPDATE_PRODUCT", "-", nama, "dashboard", 
+            guard.admin?.email || "unknown"
+          ]],
         },
       });
-    } catch {}
+    } catch (err) {
+      console.warn("⚠️ Failed to write audit log:", err);
+    }
 
     return NextResponse.json({ success: true });
   } catch (e: any) {
-    console.error("PATCH product error:", e);
+    console.error("❌ PATCH product error:", e);
     return NextResponse.json(
       { success: false, message: e.message },
       { status: 500 }
@@ -130,7 +143,8 @@ export async function PATCH(req: NextRequest, context: Ctx) {
 }
 
 export async function DELETE(req: NextRequest, context: Ctx) {
-  const guard = requireAdminFromRequest(req);
+  // 🔐 GUARD ADMIN (PAKE AWAIT!)
+  const guard = await requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
   try {
@@ -161,6 +175,7 @@ export async function DELETE(req: NextRequest, context: Ctx) {
 
     const sheetRow = idx + 2;
 
+    // Soft delete: set aktif = NO & update timestamp
     await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: SHEET_ID,
       requestBody: {
@@ -172,20 +187,26 @@ export async function DELETE(req: NextRequest, context: Ctx) {
       },
     });
 
+    // Audit log
     try {
       await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
         range: "Audit_Log!A:G",
         valueInputOption: "RAW",
         requestBody: {
-          values: [[ts, cleanId, "SOFT_DELETE_PRODUCT", "-", "aktif=NO", "dashboard", guard.admin.email]],
+          values: [[
+            ts, cleanId, "SOFT_DELETE_PRODUCT", "-", "aktif=NO", "dashboard", 
+            guard.admin?.email || "unknown"
+          ]],
         },
       });
-    } catch {}
+    } catch (err) {
+      console.warn("⚠️ Failed to write audit log:", err);
+    }
 
     return NextResponse.json({ success: true });
   } catch (e: any) {
-    console.error("DELETE product error:", e);
+    console.error("❌ DELETE product error:", e);
     return NextResponse.json(
       { success: false, message: e.message },
       { status: 500 }
