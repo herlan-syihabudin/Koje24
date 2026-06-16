@@ -1,21 +1,19 @@
 // lib/dashboardAuth.ts
+
 import crypto from "crypto";
 
-export const COOKIE_NAME = "koje_admin";
+export const COOKIE_NAME = "koje24_admin_session";
+
 const SECRET = process.env.ADMIN_COOKIE_SECRET || "";
 
-export function getCookieName() {
-  return COOKIE_NAME;
-}
-
 export function getMaxAgeSec() {
-  return 60 * 60 * 12;
+  return 60 * 60 * 12; // 12 jam
 }
 
-export function createSession(email: string) {
+export function createSession(email: string, role: string = "staff") {
   if (!SECRET) throw new Error("Missing ADMIN_COOKIE_SECRET");
 
-  const payload = { email, iat: Date.now() };
+  const payload = { email, role, iat: Date.now() };
   const payloadB64 = Buffer.from(JSON.stringify(payload)).toString("base64");
 
   const sig = crypto
@@ -25,6 +23,7 @@ export function createSession(email: string) {
 
   return `${payloadB64}.${sig}`;
 }
+
 export function verifySession(raw?: string) {
   if (!raw || !SECRET) return null;
 
@@ -38,7 +37,11 @@ export function verifySession(raw?: string) {
 
   if (expected !== sig) return null;
 
-  return JSON.parse(
-    Buffer.from(payloadB64, "base64").toString("utf8")
-  ) as { email: string };
+  try {
+    return JSON.parse(
+      Buffer.from(payloadB64, "base64").toString("utf8")
+    ) as { email: string; role: string };
+  } catch {
+    return null;
+  }
 }
