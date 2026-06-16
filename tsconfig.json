@@ -9,7 +9,7 @@
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
@@ -26,14 +26,13 @@
       { "name": "next" }
     ],
 
-    // ⚠️ Tambahan WAJIB untuk fix error nodemailer
-    "typeRoots": ["./types", "./node_modules/@types"]
+    // ✅ TypeRoots cukup ini
+    "typeRoots": ["./node_modules/@types"]
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/dev/types/**/*.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
