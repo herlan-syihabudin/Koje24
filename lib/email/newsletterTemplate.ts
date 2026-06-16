@@ -44,7 +44,7 @@ export function newsletterTemplate({
         Kamu menerima email ini karena pernah berinteraksi dengan KOJE24.
         <br/>
         Jika tidak ingin menerima email lagi,
-        <a href="https://koje24.id/unsubscribe?email=${email}">
+        <a href="https://koje24.com/unsubscribe?email=${email}">
           klik di sini untuk unsubscribe
         </a>.
       </p>
