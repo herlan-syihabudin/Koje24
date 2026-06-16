@@ -28,7 +28,7 @@ export async function GET(
     const BASE_URL =
       process.env.NEXT_PUBLIC_SITE_URL ||
       req.nextUrl.origin ||
-      "https://webkoje-cacs.vercel.app";
+      "https://koje24.com";
 
     const invoiceUrl = `${BASE_URL}/invoice/${invoiceId}?pdf=1`;
 
