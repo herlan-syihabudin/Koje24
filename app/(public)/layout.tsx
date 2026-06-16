@@ -1,3 +1,5 @@
+// app/(public)/layout.tsx
+
 import { Suspense } from "react";
 import { Toaster } from "sonner";
 import Header from "@/components/Header";
@@ -8,61 +10,9 @@ import TestimonialSchemaSEO from "@/components/TestimonialSchemaSEO";
 import InstallPWAButton from "@/components/InstallPWAButton";
 import ChatWidget from "@/components/ChatWidget";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import type { Metadata, Viewport } from "next";
 
-export const metadata: Metadata = {
-  title: {
-    default: "KOJE24 • Cold Pressed Juice Bekasi",
-    template: "%s | KOJE24",
-  },
-  description:
-    "KOJE24 — cold pressed juice premium di Bekasi. 100% alami tanpa gula tambahan, tanpa pengawet. Cocok untuk detox harian & imunitas. Delivery Jabodetabek.",
-  keywords:
-    "cold pressed juice Bekasi, jus detox Bekasi, jus sehat Bekasi, KOJE24 Bekasi, minuman detox alami Bekasi, cold pressed juice terbaik Bekasi",
-  manifest: "/manifest.json",
-  icons: {
-    icon: [
-      { url: "/favicon.ico" },
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: "/icons/apple-touch-icon.png",
-  },
-  openGraph: {
-    title: "KOJE24 - Cold Pressed Juice Bekasi",
-    description: "Cold pressed juice premium di Bekasi. 100% natural, tanpa gula, fresh daily.",
-    url: "https://koje24.com",
-    siteName: "KOJE24",
-    locale: "id_ID",
-    type: "website",
-    images: [
-      {
-        url: "https://koje24.com/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "KOJE24 Cold Pressed Juice - Bekasi",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "KOJE24 - Cold Pressed Juice Bekasi",
-    description: "Cold pressed juice premium di Bekasi. 100% natural, tanpa gula.",
-    images: ["https://koje24.com/og-image.jpg"],
-  },
-  other: {
-    "google-site-verification": "_cTz7gO2HdLMjoMfCIAp2Fud_Wb6X2Yy1t7j6L9Et9k",
-  },
-};
-
-export const viewport: Viewport = {
-  themeColor: "#0FA3A8",
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 2,
-  userScalable: true,
-  viewportFit: "cover",
-};
+// 🔥 HAPUS metadata & viewport (sudah di root layout)
+// 🔥 HAPUS export metadata & viewport
 
 const organizationSchema = {
   "@context": "https://schema.org",
@@ -81,7 +31,7 @@ const localBusinessSchema = {
   logo: "https://koje24.com/icons/icon-512x512.png",
   description:
     "Cold pressed juice delivery Bekasi & Jakarta. Jus detox tanpa gula, tanpa pengawet, fresh daily.",
-  areaServed: ["Bekasi", "Jakarta", "Depok", "Bogor"], // ✅ Bekasi pertama
+  areaServed: ["Bekasi", "Jakarta", "Depok", "Bogor"],
   priceRange: "$$",
   paymentAccepted: ["Cash", "Transfer Bank", "QRIS"],
   telephone: "+6282213139580",
