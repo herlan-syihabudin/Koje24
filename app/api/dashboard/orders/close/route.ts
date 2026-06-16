@@ -1,3 +1,5 @@
+// app/api/dashboard/orders/close/route.ts
+
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
@@ -19,20 +21,21 @@ function parseTanggalSheet(raw: string) {
 function now() {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
 }
+
 const ALLOWED_CLOSING_STATUS = ["PAID", "SELESAI"];
 
 /* =====================
    CLOSING ORDER
 ===================== */
 export async function POST(req: NextRequest) {
-  // 🔐 GUARD ADMIN
-  const guard = requireAdminFromRequest(req);
-if (!guard.ok) return guard.res;
-
-const { admin } = guard;
-const adminEmail = admin.email;
-
   try {
+    // 🔐 GUARD ADMIN (PAKE AWAIT!)
+    const guard = await requireAdminFromRequest(req);
+    if (!guard.ok) return guard.res;
+
+    const { admin } = guard;
+    const adminEmail = admin.email;
+
     const { from, to, status } = await req.json();
 
     if (!from || !to || !status) {
@@ -128,6 +131,7 @@ const adminEmail = admin.email;
       invoices: closedInvoices,
     });
   } catch (err: any) {
+    console.error("❌ Closing error:", err);
     return NextResponse.json(
       { success: false, message: err.message },
       { status: 500 }
