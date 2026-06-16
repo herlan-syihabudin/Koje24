@@ -1,51 +1,98 @@
-import { NextResponse } from "next/server";
-import { createSession, getMaxAgeSec } from "@/lib/dashboardAuth";
+// app/api/dashboard/login/route.ts
 
-const COOKIE_NAME = "koje_admin";
+import { NextResponse } from "next/server";
+import { google } from "googleapis";
+import { createSession, getMaxAgeSec, COOKIE_NAME } from "@/lib/dashboardAuth";
 
 export async function POST(req: Request) {
-  const { email, password } = await req.json();
+  try {
+    const { email, password } = await req.json();
 
-  const ADMIN_EMAILS = process.env.ADMIN_EMAILS; // ✅ INI YANG ADA
-  const ADMIN_PASSWORD = process.env.DASHBOARD_PASSWORD;
+    if (!email || !password) {
+      return NextResponse.json(
+        { success: false, message: "Email dan password wajib diisi" },
+        { status: 400 }
+      );
+    }
 
-  // ❌ ENV belum diset
-  if (!ADMIN_EMAILS || !ADMIN_PASSWORD) {
+    // 🔥 AMBIL DATA ADMIN DARI GOOGLE SHEETS
+    const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
+    const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY;
+    const SHEET_ID = process.env.GOOGLE_SHEET_ID;
+
+    if (!CLIENT_EMAIL || !PRIVATE_KEY_RAW || !SHEET_ID) {
+      console.error("❌ Google Sheets credentials missing");
+      return NextResponse.json(
+        { success: false, message: "Server configuration error" },
+        { status: 500 }
+      );
+    }
+
+    const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").trim();
+
+    const auth = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: CLIENT_EMAIL,
+        private_key: PRIVATE_KEY,
+      },
+      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+    });
+
+    const sheets = google.sheets({ version: "v4", auth });
+
+    // 🔥 BACA SHEET ADMIN
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: "Admin!A:D", // Email, Password, Role, Active
+    });
+
+    const rows = res.data.values || [];
+
+    // 🔥 Cari admin dengan email & password yang cocok
+    const admin = rows.find((row) => {
+      const adminEmail = row[0]?.trim().toLowerCase();
+      const adminPassword = row[1]?.trim();
+      const active = row[3]?.trim().toUpperCase() === "TRUE";
+      return adminEmail === email.toLowerCase() && adminPassword === password && active;
+    });
+
+    if (!admin) {
+      console.warn(`⚠️ Failed login attempt: ${email}`);
+      return NextResponse.json(
+        { success: false, message: "Email atau password salah" },
+        { status: 401 }
+      );
+    }
+
+    // ✅ Buat session
+    const role = admin[2]?.trim() || "staff";
+    const token = createSession(email.toLowerCase(), role);
+
+    const response = NextResponse.json({
+      success: true,
+      message: "Login successful",
+      role,
+    });
+
+    // ✅ Set cookie
+    response.cookies.set({
+      name: COOKIE_NAME,
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: getMaxAgeSec(),
+    });
+
+    console.log(`✅ Admin logged in: ${email} (${role})`);
+    return response;
+
+  } catch (error) {
+    console.error("❌ Login error:", error);
     return NextResponse.json(
-      { success: false, message: "ENV admin belum diset" },
+      { success: false, message: "Terjadi kesalahan server" },
       { status: 500 }
     );
   }
-
-  const allowEmails = ADMIN_EMAILS
-    .split(",")
-    .map((e) => e.trim().toLowerCase());
-
-  // ❌ kredensial salah
-  if (
-    !allowEmails.includes(String(email).toLowerCase()) ||
-    String(password) !== ADMIN_PASSWORD
-  ) {
-    return NextResponse.json(
-      { success: false, message: "Email atau password salah" },
-      { status: 401 }
-    );
-  }
-
-  // ✅ buat session
-  const token = createSession(String(email).toLowerCase());
-
-  const res = NextResponse.json({ success: true });
-
-  res.cookies.set({
-    name: COOKIE_NAME,
-    value: token,
-    httpOnly: true,
-    path: "/",
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: getMaxAgeSec(),
-  });
-
-  return res;
 }
