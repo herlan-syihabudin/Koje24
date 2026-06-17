@@ -10,11 +10,9 @@ import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 ===================== */
 function parseTanggalSheet(raw: string) {
   if (!raw) return null;
-
   const datePart = String(raw).split(",")[0];
   const [d, m, y] = datePart.split("/").map(Number);
   if (!d || !m || !y) return null;
-
   return new Date(y, m - 1, d);
 }
 
@@ -22,14 +20,14 @@ function now() {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
 }
 
-const ALLOWED_CLOSING_STATUS = ["PAID", "SELESAI"];
+// 🔥 TAMBAH COD & DIKIRIM
+const ALLOWED_CLOSING_STATUS = ["PAID", "SELESAI", "COD", "DIKIRIM"];
 
 /* =====================
    CLOSING ORDER
 ===================== */
 export async function POST(req: NextRequest) {
   try {
-    // 🔐 GUARD ADMIN (PAKE AWAIT!)
     const guard = await requireAdminFromRequest(req);
     if (!guard.ok) return guard.res;
 
@@ -53,12 +51,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ⏱️ RANGE TANGGAL (INKLUSIF)
     const fromDate = new Date(from);
     const toDate = new Date(to);
     toDate.setHours(23, 59, 59, 999);
 
-    // 📥 AMBIL DATA
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: "Transaksi!A2:P",
@@ -69,10 +65,10 @@ export async function POST(req: NextRequest) {
     const closedInvoices: string[] = [];
 
     rows.forEach((row, index) => {
-      const invoice = String(row[0] || "").trim(); // A
-      const tanggalRaw = row[1];                   // B
-      const orderStatus = String(row[12] || "").toUpperCase(); // M
-      const closed = String(row[15] || "").toUpperCase();      // P
+      const invoice = String(row[0] || "").trim();
+      const tanggalRaw = row[1];
+      const orderStatus = String(row[12] || "").toUpperCase();
+      const closed = String(row[15] || "").toUpperCase();
 
       if (!invoice) return;
       if (closed === "YES") return;
@@ -98,7 +94,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 📝 UPDATE SHEET (BATCH)
     await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: SHEET_ID,
       requestBody: {
@@ -107,7 +102,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 🔥 AUDIT LOG (DITAMBAH ADMIN EMAIL)
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: "Audit_Log!A:G",
@@ -124,6 +118,8 @@ export async function POST(req: NextRequest) {
         ]],
       },
     });
+
+    console.log(`✅ Closing ${closedInvoices.length} orders by ${adminEmail}`);
 
     return NextResponse.json({
       success: true,
