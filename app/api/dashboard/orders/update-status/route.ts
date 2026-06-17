@@ -5,7 +5,27 @@ import type { NextRequest } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
 import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 
-const ALLOWED_STATUS = ["PENDING", "PAID", "DIPROSES", "DIKIRIM", "SELESAI"] as const;
+// 🔥 STATUS YANG DIIZINKAN
+const ALLOWED_STATUS = [
+  "PENDING",
+  "PAID",
+  "COD",
+  "DIPROSES",
+  "DIKIRIM",
+  "SELESAI",
+  "CANCELLED"
+] as const;
+
+// 🔥 FLOW STATUS (CEGAH DOWNGRADE)
+const STATUS_FLOW: Record<string, string[]> = {
+  PENDING: ["PAID", "COD", "CANCELLED"],
+  COD: ["DIPROSES"],
+  PAID: ["DIPROSES"],
+  DIPROSES: ["DIKIRIM"],
+  DIKIRIM: ["SELESAI"],
+  SELESAI: [],
+  CANCELLED: [],
+};
 
 function now() {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
@@ -13,7 +33,7 @@ function now() {
 
 export async function POST(req: NextRequest) {
   try {
-    // 🔐 GUARD ADMIN (PAKE AWAIT!)
+    // 🔐 GUARD ADMIN
     const guard = await requireAdminFromRequest(req);
     if (!guard.ok) return guard.res;
 
@@ -22,6 +42,7 @@ export async function POST(req: NextRequest) {
 
     const { invoice, status } = await req.json();
 
+    // 🔥 VALIDASI INPUT
     if (!invoice || !status) {
       return NextResponse.json(
         { success: false, message: "invoice & status wajib diisi" },
@@ -32,14 +53,15 @@ export async function POST(req: NextRequest) {
     const cleanInvoice = String(invoice).trim();
     const cleanStatus = String(status).trim().toUpperCase();
 
+    // 🔥 VALIDASI STATUS
     if (!ALLOWED_STATUS.includes(cleanStatus as any)) {
       return NextResponse.json(
-        { success: false, message: "Status tidak valid" },
+        { success: false, message: `Status tidak valid. Gunakan: ${ALLOWED_STATUS.join(", ")}` },
         { status: 400 }
       );
     }
 
-    // 1️⃣ ambil data transaksi
+    // 1️⃣ AMBIL DATA TRANSAKSI
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: "Transaksi!A2:P",
@@ -58,15 +80,10 @@ export async function POST(req: NextRequest) {
     }
 
     const sheetRow = rowIndex + 2;
+    const oldStatus = String(rows[rowIndex][12] || "").toUpperCase().trim();
+    const closedFlag = String(rows[rowIndex][15] || "").toUpperCase().trim();
 
-    const oldStatus = String(rows[rowIndex][12] || "")
-      .toUpperCase()
-      .trim(); // kolom M
-    const closedFlag = String(rows[rowIndex][15] || "")
-      .toUpperCase()
-      .trim(); // kolom P
-
-    // 🔒 jika sudah CLOSED
+    // 🔒 CEK CLOSED
     if (closedFlag === "YES") {
       return NextResponse.json(
         { success: false, message: "Order sudah CLOSED, status tidak bisa diubah." },
@@ -74,7 +91,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 🔒 jika sudah SELESAI
+    // 🔒 CEK SELESAI (FINAL)
     if (oldStatus === "SELESAI") {
       return NextResponse.json(
         { success: false, message: "Order SELESAI bersifat final." },
@@ -82,7 +99,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2️⃣ update status
+    // 🔥 CEK STATUS FLOW (CEGAH DOWNGRADE)
+    const allowedNext = STATUS_FLOW[oldStatus] || [];
+    if (!allowedNext.includes(cleanStatus) && oldStatus !== cleanStatus) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: `Status tidak bisa berubah dari ${oldStatus} ke ${cleanStatus}. Status yang diizinkan: ${allowedNext.join(", ") || "tidak ada"}` 
+        },
+        { status: 400 }
+      );
+    }
+
+    // 2️⃣ UPDATE STATUS
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
       range: `Transaksi!M${sheetRow}`,
@@ -90,7 +119,7 @@ export async function POST(req: NextRequest) {
       requestBody: { values: [[cleanStatus]] },
     });
 
-    // 3️⃣ audit log (DITAMBAH ADMIN EMAIL)
+    // 3️⃣ AUDIT LOG
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
       range: "Audit_Log!A:G",
@@ -108,11 +137,16 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true });
+    console.log(`✅ Status ${cleanInvoice} updated: ${oldStatus} → ${cleanStatus} by ${adminEmail}`);
+
+    return NextResponse.json({ 
+      success: true,
+      message: `Status berhasil diubah dari ${oldStatus} ke ${cleanStatus}`
+    });
   } catch (err: any) {
     console.error("❌ Update status error:", err);
     return NextResponse.json(
-      { success: false, message: err.message },
+      { success: false, message: err.message || "Internal server error" },
       { status: 500 }
     );
   }
