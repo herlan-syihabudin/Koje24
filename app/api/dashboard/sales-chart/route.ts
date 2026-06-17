@@ -1,5 +1,9 @@
+// app/api/dashboard/sales-chart/route.ts
+
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
+import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 
 /* =====================
    HELPERS
@@ -19,8 +23,12 @@ function normalizeStatus(s: any) {
 /* =====================
    SALES CHART
 ===================== */
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
+    // ✅ GUARD ADMIN
+    const guard = await requireAdminFromRequest(req);
+    if (!guard.ok) return guard.res;
+
     const { searchParams } = new URL(req.url);
     const modeRaw = searchParams.get("mode") || "daily";
 
@@ -37,13 +45,16 @@ export async function GET(req: Request) {
     const rows = res.data.values || [];
     const map = new Map<string, number>();
 
+    // ✅ Status yang dihitung
+    const validStatuses = ["PAID", "SELESAI", "COD"];
+
     rows.forEach((row) => {
       const tanggalRaw = row[1];        // B
       const totalBayar = Number(row[9] || 0); // J
       const status = normalizeStatus(row[12]); // M
 
-      // ✅ hanya PAID
-      if (status !== "PAID") return;
+      // ✅ Cek status valid
+      if (!validStatuses.includes(status)) return;
 
       const dt = parseDate(tanggalRaw);
       if (!dt) return;
@@ -58,8 +69,9 @@ export async function GET(req: Request) {
       // 📆 WEEKLY (Senin)
       if (mode === "weekly") {
         const monday = new Date(dt);
-        const day = monday.getDay() || 7; // Minggu = 7
-        monday.setDate(monday.getDate() - day + 1);
+        const day = monday.getDay(); // 0=Sunday, 1=Monday
+        const diff = day === 0 ? 6 : day - 1; // Monday = 0
+        monday.setDate(monday.getDate() - diff);
         key = monday.toISOString().slice(0, 10);
       }
 
@@ -71,6 +83,7 @@ export async function GET(req: Request) {
       map.set(key, (map.get(key) || 0) + totalBayar);
     });
 
+    // Sort data
     const data = Array.from(map.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([label, total]) => ({
@@ -78,13 +91,15 @@ export async function GET(req: Request) {
         total,
       }));
 
+    console.log(`📊 Sales chart [${mode}]: ${data.length} data points`);
+
     return NextResponse.json({
       success: true,
       mode,
       data,
     });
   } catch (e: any) {
-    console.error("chart error:", e);
+    console.error("❌ chart error:", e);
     return NextResponse.json(
       { success: false, message: e.message },
       { status: 500 }
