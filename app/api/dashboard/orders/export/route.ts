@@ -1,10 +1,11 @@
+// app/api/dashboard/orders/export/route.ts
+
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { sheets, SHEET_ID } from "@/lib/googleSheets";
+import { requireAdminFromRequest } from "@/lib/requireAdminFromRequest";
 import * as XLSX from "xlsx";
 
-/* =====================
-   RUNTIME (WAJIB)
-===================== */
 export const runtime = "nodejs";
 
 /* =====================
@@ -12,11 +13,8 @@ export const runtime = "nodejs";
 ===================== */
 function parseTanggal(tanggalRaw: string) {
   if (!tanggalRaw) return null;
-
-  // support: "dd/mm/yyyy" atau "dd/mm/yyyy, hh:mm"
   const datePart = String(tanggalRaw).split(",")[0];
   const [d, m, y] = datePart.split("/").map(Number);
-
   if (!d || !m || !y) return null;
   return new Date(y, m - 1, d);
 }
@@ -28,8 +26,12 @@ function formatDateISO(d: Date) {
 /* =====================
    EXPORT EXCEL (CLOSED ONLY)
 ===================== */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    // ✅ GUARD ADMIN
+    const guard = await requireAdminFromRequest(req);
+    if (!guard.ok) return guard.res;
+
     const { from, to, status } = await req.json();
 
     if (!from || !to || !status) {
@@ -43,11 +45,8 @@ export async function POST(req: Request) {
 
     const start = new Date(from);
     const end = new Date(to);
-    end.setHours(23, 59, 59, 999); // ⏱️ INCLUDE HARI TERAKHIR
+    end.setHours(23, 59, 59, 999);
 
-    /* =====================
-       AMBIL DATA (SAMPAI P)
-    ===================== */
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
       range: "Transaksi!A2:P",
@@ -57,19 +56,19 @@ export async function POST(req: Request) {
     const exportRows: any[] = [];
 
     rows.forEach((row) => {
-      const invoice = row[0];          // A
-      const tanggalRaw = row[1];       // B
-      const nama = row[4];             // E
-      const produk = row[5];           // F
-      const qty = Number(row[6] || 0); // G
-      const total = Number(row[9] || 0); // J
-      const metode = row[11];          // L
-      const rowStatus = String(row[12] || "").toUpperCase(); // M
-      const closed = String(row[15] || "").toUpperCase();    // P 🔒
+      const invoice = row[0];
+      const tanggalRaw = row[1];
+      const nama = row[4];
+      const produk = row[5];
+      const qty = Number(row[6] || 0);
+      const total = Number(row[9] || 0);
+      const metode = row[11];
+      const rowStatus = String(row[12] || "").toUpperCase();
+      const closed = String(row[15] || "").toUpperCase();
 
       if (!invoice) return;
-      if (closed !== "YES") return;          // 🔒 WAJIB CLOSED
-      if (rowStatus !== cleanStatus) return; // filter status
+      if (closed !== "YES") return;
+      if (rowStatus !== cleanStatus) return;
 
       const dt = parseTanggal(tanggalRaw);
       if (!dt) return;
@@ -97,9 +96,6 @@ export async function POST(req: Request) {
       );
     }
 
-    /* =====================
-       GENERATE EXCEL
-    ===================== */
     const worksheet = XLSX.utils.json_to_sheet(exportRows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Closing Order");
@@ -111,6 +107,8 @@ export async function POST(req: Request) {
 
     const filename = `Closing_${cleanStatus}_${from}_to_${to}.xlsx`;
 
+    console.log(`✅ Export ${exportRows.length} orders by ${guard.admin?.email}`);
+
     return new NextResponse(buffer, {
       headers: {
         "Content-Type":
@@ -119,6 +117,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (err: any) {
+    console.error("❌ Export error:", err);
     return NextResponse.json(
       { success: false, message: err.message },
       { status: 500 }
