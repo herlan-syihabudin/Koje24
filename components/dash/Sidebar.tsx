@@ -13,57 +13,172 @@ import {
   Truck,
   Tag,
   Settings,
-  MessageSquare,  // 🔥 UNTUK ICON TESTIMONI
-  LogOut 
+  MessageSquare,
+  LogOut,
+  TrendingUp,
+  Activity,
+  Bell,
+  PackageCheck,
+  Clock,
+  RotateCw,
+  PlusCircle,
+  Folder,
+  Warehouse,
+  Droplet,
+  UserPlus,
+  Star,
+  Ban,
+  Calendar,
+  FileText,
+  CreditCard,
+  Receipt,
+  AlertCircle,
+  ShoppingCart,
+  Ticket,
+  Zap,
+  Megaphone,
+  BarChart,
+  PieChart,
+  Download,
+  Shield,
+  Database,
 } from "lucide-react";
 
 const NAV = [
+  // ========================================
+  // 1. DASHBOARD & ANALYTICS
+  // ========================================
   {
-    title: "OVERVIEW",
+    title: "📊 DASHBOARD",
     items: [
-      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Analytics", href: "/dashboard/analytics", icon: TrendingUp },
+      { label: "Real-time Monitor", href: "/dashboard/monitor", icon: Activity },
     ],
   },
+
+  // ========================================
+  // 2. ORDER MANAGEMENT
+  // ========================================
   {
-    title: "ORDER",
+    title: "📦 ORDER MANAGEMENT",
     items: [
       { label: "Semua Order", href: "/dashboard/orders", icon: ShoppingBag },
+      { label: "Order Baru", href: "/dashboard/orders/new", icon: Bell },
+      { label: "Proses & Kirim", href: "/dashboard/orders/process", icon: PackageCheck },
+      { label: "Riwayat Order", href: "/dashboard/orders/history", icon: Clock },
+      { label: "Retur & Cancel", href: "/dashboard/orders/returns", icon: RotateCw },
     ],
   },
+
+  // ========================================
+  // 3. PRODUCT MANAGEMENT
+  // ========================================
   {
-    title: "PRODUK",
+    title: "🧃 PRODUCT MANAGEMENT",
     items: [
       { label: "Daftar Produk", href: "/dashboard/products", icon: Package },
-      { label: "Stok & Inventory", href: "/dashboard/products/stock", icon: Package },
-      { label: "Harga & Promo", href: "/dashboard/products/pricing", icon: Package },
+      { label: "Tambah Produk", href: "/dashboard/products/add", icon: PlusCircle },
+      { label: "Kategori", href: "/dashboard/products/categories", icon: Folder },
+      { label: "Stok & Inventory", href: "/dashboard/products/stock", icon: Warehouse },
+      { label: "Harga & Promo", href: "/dashboard/products/pricing", icon: Tag },
+      { label: "Bahan Baku", href: "/dashboard/products/ingredients", icon: Droplet },
     ],
   },
+
+  // ========================================
+  // 4. CUSTOMER MANAGEMENT
+  // ========================================
   {
-    title: "PELANGGAN",
+    title: "👥 CUSTOMER MANAGEMENT",
     items: [
-      { label: "Pelanggan", href: "/dashboard/customers", icon: Users },
+      { label: "Semua Pelanggan", href: "/dashboard/customers", icon: Users },
+      { label: "Pelanggan Baru", href: "/dashboard/customers/new", icon: UserPlus },
+      { label: "Repeat Customer", href: "/dashboard/customers/repeat", icon: Star },
+      { label: "Blacklist", href: "/dashboard/customers/blacklist", icon: Ban },
     ],
   },
+
+  // ========================================
+  // 5. FINANCE & ACCOUNTING
+  // ========================================
   {
-    title: "KEUANGAN",
+    title: "💰 FINANCE & ACCOUNTING",
     items: [
-      { label: "Ringkasan", href: "/dashboard/finance", icon: DollarSign },
-      { label: "Pembayaran", href: "/dashboard/finance/payments", icon: DollarSign },
+      { label: "Ringkasan Keuangan", href: "/dashboard/finance", icon: DollarSign },
+      { label: "Pendapatan Harian", href: "/dashboard/finance/daily", icon: Calendar },
+      { label: "Laporan Bulanan", href: "/dashboard/finance/monthly", icon: FileText },
+      { label: "Pembayaran", href: "/dashboard/finance/payments", icon: CreditCard },
       { label: "Ongkir & Kurir", href: "/dashboard/finance/shipping", icon: Truck },
+      { label: "Pajak & Laporan", href: "/dashboard/finance/tax", icon: Receipt },
     ],
   },
-  // 🔥 TAMBAHKAN SECTION MARKETING DI SINI
+
+  // ========================================
+  // 6. INVENTORY & SUPPLY
+  // ========================================
   {
-    title: "MARKETING",
+    title: "📦 INVENTORY & SUPPLY",
+    items: [
+      { label: "Stok Gudang", href: "/dashboard/inventory", icon: Warehouse },
+      { label: "Stok Menipis", href: "/dashboard/inventory/low-stock", icon: AlertCircle },
+      { label: "Pemasok", href: "/dashboard/inventory/suppliers", icon: Truck },
+      { label: "Pembelian Stok", href: "/dashboard/inventory/purchases", icon: ShoppingCart },
+    ],
+  },
+
+  // ========================================
+  // 7. MARKETING & PROMOTION
+  // ========================================
+  {
+    title: "📢 MARKETING",
     items: [
       { label: "Promo & Diskon", href: "/dashboard/promos", icon: Tag },
+      { label: "Kode Voucher", href: "/dashboard/promos/vouchers", icon: Ticket },
+      { label: "Flash Sale", href: "/dashboard/promos/flash-sale", icon: Zap },
       { label: "Testimoni", href: "/dashboard/testimonials", icon: MessageSquare },
+      { label: "Campaign", href: "/dashboard/marketing/campaigns", icon: Megaphone },
     ],
   },
- {
-    title: "PENGATURAN",
+
+  // ========================================
+  // 8. REPORTS & ANALYTICS
+  // ========================================
+  {
+    title: "📈 REPORTS & ANALYTICS",
     items: [
-      { label: "Pengaturan Sistem", href: "/dashboard/settings", icon: Settings },
+      { label: "Laporan Penjualan", href: "/dashboard/reports/sales", icon: BarChart },
+      { label: "Laporan Produk", href: "/dashboard/reports/products", icon: PieChart },
+      { label: "Laporan Pelanggan", href: "/dashboard/reports/customers", icon: Users },
+      { label: "Export Data", href: "/dashboard/reports/export", icon: Download },
+    ],
+  },
+
+  // ========================================
+  // 9. TEAM & STAFF
+  // ========================================
+  {
+    title: "👨‍💼 TEAM MANAGEMENT",
+    items: [
+      { label: "Daftar Staff", href: "/dashboard/staff", icon: Users },
+      { label: "Tambah Staff", href: "/dashboard/staff/add", icon: UserPlus },
+      { label: "Role & Permission", href: "/dashboard/staff/roles", icon: Shield },
+      { label: "Aktivitas Staff", href: "/dashboard/staff/activity", icon: Activity },
+    ],
+  },
+
+  // ========================================
+  // 10. SYSTEM SETTINGS
+  // ========================================
+  {
+    title: "⚙️ SYSTEM SETTINGS",
+    items: [
+      { label: "Pengaturan Toko", href: "/dashboard/settings", icon: Settings },
+      { label: "Pengiriman", href: "/dashboard/settings/shipping", icon: Truck },
+      { label: "Pembayaran", href: "/dashboard/settings/payment", icon: CreditCard },
+      { label: "Notifikasi", href: "/dashboard/settings/notifications", icon: Bell },
+      { label: "Backup & Restore", href: "/dashboard/settings/backup", icon: Database },
+      { label: "Log Aktivitas", href: "/dashboard/settings/logs", icon: FileText },
     ],
   },
 ];
