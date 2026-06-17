@@ -34,7 +34,7 @@ type OrderRow = {
 ===================== */
 function parseTanggal(raw: string): number {
   if (!raw) return 0;
-  const datePart = raw.split(",")[0]; // "6/1/2026"
+  const datePart = raw.split(",")[0];
   const [d, m, y] = datePart.split("/").map(Number);
   if (!d || !m || !y) return 0;
   return new Date(y, m - 1, d).getTime();
@@ -57,7 +57,6 @@ function normalizeStatus(s: any): OrderStatus {
    GET ORDERS
 ===================== */
 export async function GET(req: NextRequest) {
-  // 🔐 GUARD ADMIN (PAKE AWAIT!)
   const guard = await requireAdminFromRequest(req);
   if (!guard.ok) return guard.res;
 
@@ -66,6 +65,8 @@ export async function GET(req: NextRequest) {
 
     const status = (searchParams.get("status") || "ALL").toUpperCase();
     const closed = (searchParams.get("closed") || "ALL").toUpperCase();
+    // 🔥 AMBIL SEARCH QUERY
+    const search = searchParams.get("search")?.trim().toLowerCase() || "";
 
     const page = Math.max(1, Number(searchParams.get("page") || 1));
     const limit = Math.min(100, Math.max(5, Number(searchParams.get("limit") || 25)));
@@ -89,7 +90,7 @@ export async function GET(req: NextRequest) {
           produk: String(row[5] || ""),
           qty: Number(row[6] || 0),
           totalBayar: Number(row[9] || 0),
-          status: normalizeStatus(row[12]), // kolom M
+          status: normalizeStatus(row[12]),
           closed: String(row[15] || "").toUpperCase() === "YES" ? "YES" : "NO",
           _dt: parseTanggal(row[1]),
         };
@@ -97,7 +98,7 @@ export async function GET(req: NextRequest) {
       .filter(Boolean) as OrderRow[];
 
     /* =====================
-       FILTER
+       FILTER STATUS & CLOSED
     ===================== */
     if (status !== "ALL") {
       orders = orders.filter((o) => o.status === status);
@@ -105,6 +106,17 @@ export async function GET(req: NextRequest) {
 
     if (closed !== "ALL") {
       orders = orders.filter((o) => o.closed === closed);
+    }
+
+    /* =====================
+       🔥 FILTER SEARCH (invoice atau nama)
+    ===================== */
+    if (search) {
+      orders = orders.filter((o) => {
+        const invoiceMatch = o.invoice.toLowerCase().includes(search);
+        const namaMatch = o.nama.toLowerCase().includes(search);
+        return invoiceMatch || namaMatch;
+      });
     }
 
     /* =====================
