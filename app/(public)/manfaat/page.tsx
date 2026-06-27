@@ -1,3 +1,22 @@
+import { Metadata } from "next"
+
+// ✅ TAMBAHKAN METADATA
+export const metadata: Metadata = {
+  title: "Manfaat Cold Pressed Juice | KOJE24 - Minuman Sehat Alami",
+  description: "Manfaat minum cold-pressed juice setiap hari: detox alami, meningkatkan imun, pencernaan sehat, energi stabil, dan kulit lebih cerah. Tanpa gula tambahan.",
+  keywords: "manfaat cold pressed juice, manfaat jus detox, manfaat KOJE24, jus kesehatan, minuman detox alami",
+  openGraph: {
+    title: "Manfaat Cold Pressed Juice | KOJE24",
+    description: "Rasakan manfaat cold-pressed juice alami setiap hari untuk kesehatan optimal!",
+    images: ["https://koje24.com/og-manfaat.jpg"],
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://koje24.com/manfaat",
+  },
+}
+
+
 "use client"
 
 import Link from "next/link"
