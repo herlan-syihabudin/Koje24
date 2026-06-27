@@ -84,8 +84,6 @@ export default function FeaturedProducts() {
   const [error, setError] = useState<string | null>(null)
   const [animatingId, setAnimatingId] = useState<string | null>(null)
   const [aiScores, setAiScores] = useState<Record<string, number>>({})
-  
-  // ✅ STATE UNTUK PRODUCTS DARI API
   const [products, setProducts] = useState<ProductFromAPI[]>([])
 
   // =========================
@@ -101,10 +99,8 @@ export default function FeaturedProducts() {
       .then(([productsRes, salesData]) => {
         if (!isMounted) return;
         
-        // 🔥 Ambil products dari response
         const productsData = productsRes?.success ? productsRes.products : (Array.isArray(productsRes) ? productsRes : []);
         
-        // 🔥 Validasi array
         if (!Array.isArray(productsData)) {
           console.error("productsData is not an array:", productsData);
           setError("Gagal memuat data produk");
@@ -112,10 +108,8 @@ export default function FeaturedProducts() {
           return;
         }
         
-        // ✅ SET PRODUCTS
         setProducts(productsData)
         
-        // Process product data
         const map: SheetMap = {}
         productsData.forEach((x: SheetRow) => {
           map[x.kode] = {
@@ -127,7 +121,6 @@ export default function FeaturedProducts() {
         })
         setSheetData(map)
         
-        // Process sales data
         const salesMap: Record<string, number> = {}
         if (Array.isArray(salesData)) {
           salesData.forEach((item: any) => {
@@ -153,7 +146,7 @@ export default function FeaturedProducts() {
   }, [])
 
   // =========================
-  // HITUNG FEATURED PRODUK
+  // HITUNG FEATURED PRODUK (✓ DIPERBAIKI)
   // =========================
   const featured = useMemo(() => {
     if (loading || error || products.length === 0) return []
@@ -174,12 +167,13 @@ export default function FeaturedProducts() {
       }
     })
 
+    // ✅ PERBAIKI: Sorting murni berdasarkan score (order terbanyak)
+    // Tidak ada prioritas paket, semua produk diperlakukan sama
     const sorted = [...scored].sort((a, b) => {
-      if (a.__isPackage && !b.__isPackage) return -1
-      if (!a.__isPackage && b.__isPackage) return 1
-      return b.__score - a.__score
+      return b.__score - a.__score  // Dari yang paling laris
     })
 
+    // Ambil 3 produk teratas (bisa campuran paket & reguler)
     const top = sorted.slice(0, 3)
 
     if (top.length === 0) {
