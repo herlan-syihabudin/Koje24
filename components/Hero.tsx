@@ -9,7 +9,7 @@ export default function Hero() {
   const [isMobile, setIsMobile] = useState(false)
   const { scrollY } = useScroll()
 
-  // ✅ DETEKSI MOBILE SETELAH CLIENT RENDER (NYELAMETIN DARI HYDRATION ERROR)
+  // ✅ DETEKSI MOBILE
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768)
@@ -41,7 +41,6 @@ export default function Hero() {
     ["blur(0px)", "blur(10px)"]
   )
 
-  // CONDITIONAL VALUE
   const y = isMobile ? 0 : yDesktop
   const glowY = isMobile ? 0 : glowYDesktop
 
@@ -70,7 +69,7 @@ export default function Hero() {
           alt="Cold Pressed Juice Bekasi - KOJE24"
           fill
           priority
-          quality={70}
+          quality={80} // ✅ TINGKATKAN KE 80 (lebih tajam)
           sizes="100vw"
           fetchPriority="high"
           className="object-cover object-center md:object-right"
@@ -92,8 +91,7 @@ export default function Hero() {
         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent blur-[100px] opacity-20 pointer-events-none"
       />
 
-      {/* ⚠️ HAPUS ATAU PERBAIKI BARIS INI KALAU GAK PUNYA FILE noise.png */}
-      {/* <div className="absolute inset-0 opacity-[0.04] bg-[url('/noise.png')] mix-blend-overlay pointer-events-none" /> */}
+      {/* ✅ HAPUS KOMENTAR noise.png KALAU GAK DIPAKAI */}
 
       {/* CONTENT */}
       <motion.div
@@ -111,17 +109,17 @@ export default function Hero() {
           ⚡ 100% NATURAL • COLD-PRESSED
         </motion.p>
 
-        {/* TITLE */}
-        <motion.h2
+        {/* TITLE - PAKAI h1 BUKAN h2 */}
+        <motion.h1 // ✅ UBAH DARI h2 KE h1
           variants={contentVariants}
           custom={1}
           className="font-playfair font-semibold text-white leading-[1.05] text-[2.7rem] sm:text-[3.4rem] md:text-[4.3rem] drop-shadow-[0_10px_30px_rgba(0,0,0,0.85)]"
         >
           Explore the Taste,
           <span className="block text-[#0FA3A8]">Explore the World</span>
-        </motion.h2>
+        </motion.h1>
 
-        {/* DESC */}
+        {/* DESC - TETAP */}
         <motion.p
           variants={contentVariants}
           custom={2}
