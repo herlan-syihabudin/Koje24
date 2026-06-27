@@ -142,15 +142,15 @@ export default function SubscriptionSection() {
                 h-full
               "
             >
-              {/* BADGE POPULAR */}
+              {/* ✅ BADGE POPULAR - DIPERBAIKI KONTRASNYA */}
               {isPopular && (
                 <span
                   className="
                     absolute top-2 left-2
-                    bg-[#0FA3A8]/90 text-white
+                    bg-[#0B4B50] text-white
                     text-[11px] font-semibold
                     px-3 py-1 rounded-full
-                    shadow-sm backdrop-blur
+                    shadow-sm
                     z-10
                   "
                 >
