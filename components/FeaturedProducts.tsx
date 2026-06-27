@@ -27,6 +27,13 @@ interface ProductFromAPI {
   desc?: string;
 }
 
+// ✅ TAMBAHKAN EXTENDED TYPE UNTUK FEATURED
+interface FeaturedProduct extends ProductFromAPI {
+  __score: number;
+  __isPackage: boolean;
+  __isBestSeller: boolean;
+}
+
 interface SheetRow {
   kode: string;
   harga: string | number;
@@ -44,14 +51,14 @@ interface SheetMap {
   };
 }
 
-// ✅ PERBAIKI: RankStats harus sesuai dengan RankData dari bestSeller
+// ✅ PERBAIKI: RankStats sesuai dengan RankData dari bestSeller
 interface RankStats {
   [key: string]: {
     rating: number;
     reviews: number;
     score: number;
     isBestSeller: boolean;
-    count: number; // ✅ count sekarang ada!
+    count: number;
   };
 }
 
@@ -84,7 +91,7 @@ export default function FeaturedProducts() {
           reviews: item?.reviews || 0,
           score: item?.score || 0,
           isBestSeller: item?.isBestSeller || false,
-          count: item?.count || 0, // ✅ count sekarang terbaca!
+          count: item?.count || 0,
         }
       })
     }
@@ -161,7 +168,7 @@ export default function FeaturedProducts() {
   // =========================
   // HITUNG FEATURED PRODUK (✓ DIPERBAIKI)
   // =========================
-  const featured = useMemo(() => {
+  const featured = useMemo((): FeaturedProduct[] => {
     if (loading || error || products.length === 0) return []
 
     const activeProducts = products.filter((p) => {
@@ -169,16 +176,15 @@ export default function FeaturedProducts() {
       return db ? db.active !== false : true
     })
 
-    const scored = activeProducts.map((p) => {
+    const scored: FeaturedProduct[] = activeProducts.map((p) => {
       const stats = rankStats[String(p.id)]
-      // ✅ PAKAI count (sudah ada di RankStats)
       const score = stats?.count || 0
 
       return {
         ...p,
         __score: score,
         __isPackage: p.isPackage === true,
-        __isBestSeller: stats?.isBestSeller || false, // ✅ Simpan status best seller
+        __isBestSeller: stats?.isBestSeller || false,
       }
     })
 
@@ -191,7 +197,14 @@ export default function FeaturedProducts() {
     const top = sorted.slice(0, 3)
 
     if (top.length === 0) {
-      return products.filter((p) => FALLBACK_IDS.includes(p.id))
+      return products
+        .filter((p) => FALLBACK_IDS.includes(p.id))
+        .map((p) => ({
+          ...p,
+          __score: 0,
+          __isPackage: p.isPackage === true,
+          __isBestSeller: false,
+        }))
     }
 
     return top
