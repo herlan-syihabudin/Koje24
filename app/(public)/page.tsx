@@ -2,19 +2,22 @@
 
 import { Metadata } from "next"
 import { Suspense } from "react"
-import dynamic from 'next/dynamic' // ✅ TAMBAHKAN INI
+import dynamic from 'next/dynamic'
 
-// ✅ KOMPONEN YANG LANGSUNG DITAMPILKAN (TIDAK PERLU LAZY)
+// ✅ KOMPONEN YANG TETAP SSR (tanpa ssr: false)
 import PromoBanner from "@/components/PromoBanner"
 import Hero from "@/components/Hero"
 import AnimateOnScroll from "@/components/AnimateOnScroll"
 
-// ✅ DYNAMIC IMPORT UNTUK KOMPONEN DI BAWAH FOLD
+// ✅ IMPORT CLIENT COMPONENTS (yang berisi ssr: false)
+import { ClientComponents } from "./ClientComponents"
+
+// ✅ DYNAMIC IMPORT TANPA ssr: false
 const FeaturedProducts = dynamic(
   () => import("@/components/FeaturedProducts"),
   { 
     loading: () => <div className="h-32 flex items-center justify-center">Memuat produk unggulan...</div>,
-    ssr: true // Tetap SSR untuk SEO
+    // ✅ HAPUS ssr: false, defaultnya true
   }
 )
 
@@ -22,7 +25,6 @@ const ProductGrid = dynamic(
   () => import("@/components/ProductGrid"),
   { 
     loading: () => <div className="h-32 flex items-center justify-center">Memuat daftar produk...</div>,
-    ssr: true
   }
 )
 
@@ -30,7 +32,6 @@ const AboutSection = dynamic(
   () => import("@/components/AboutSection"),
   { 
     loading: () => <div className="h-16" />,
-    ssr: true
   }
 )
 
@@ -38,51 +39,18 @@ const PackagesSection = dynamic(
   () => import("@/components/PackagesSection"),
   { 
     loading: () => <div className="h-16" />,
-    ssr: true
   }
 )
 
-const SubscriptionSection = dynamic(
-  () => import("@/components/SubscriptionSection"),
-  { 
-    loading: () => <div className="h-16" />,
-    ssr: false // Matikan SSR karena tidak kritis untuk SEO
-  }
-)
+// ✅ METADATA tetap sama
+export const metadata: Metadata = {
+  // ... metadata Anda
+}
 
-const TestimonialsCarousel = dynamic(
-  () => import("@/components/TestimonialsCarousel"),
-  { 
-    loading: () => <div className="h-32 flex items-center justify-center">Memuat testimoni...</div>,
-    ssr: false // Matikan SSR karena konten user-generated
-  }
-)
-
-const FaqSection = dynamic(
-  () => import("@/components/FaqSection"),
-  { 
-    loading: () => <div className="h-16" />,
-    ssr: false // FAQ tidak perlu SSR
-  }
-)
-
-// ✅ POPUP TETAP LAZY (SUDAH BAIK)
-const CartPopup = dynamic(
-  () => import("@/components/CartPopup"),
-  { ssr: false }
-)
-
-const PackagePopup = dynamic(
-  () => import("@/components/PackagePopup"),
-  { ssr: false }
-)
-
-const RatingPopup = dynamic(
-  () => import("@/components/RatingPopup"),
-  { ssr: false }
-)
-
-// ... metadata dan schema tetap sama
+// ✅ SCHEMA PRODUCT tetap sama
+const productSchemas = [
+  // ... data produk
+]
 
 export default function HomePage() {
   return (
@@ -146,22 +114,16 @@ export default function HomePage() {
       {/* SECTION LANGGANAN */}
       <section id="langganan" aria-label="Paket Langganan">
         <PackagesSection />
-        <SubscriptionSection />
+        {/* ✅ ClientComponents sudah include SubscriptionSection */}
       </section>
 
       {/* SECTION TESTIMONI */}
       <section id="testimoni" aria-label="Testimoni Pelanggan">
-        <TestimonialsCarousel />
+        {/* ✅ ClientComponents sudah include TestimonialsCarousel */}
       </section>
 
-      <FaqSection />
-
-      {/* POPUP */}
-      <Suspense fallback={null}>
-        <CartPopup />
-        <PackagePopup />
-        <RatingPopup />
-      </Suspense>
+      {/* ✅ ClientComponents sudah include FaqSection dan Popup */}
+      <ClientComponents />
     </>
   )
 }
