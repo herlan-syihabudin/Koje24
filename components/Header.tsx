@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { ShoppingCart, Menu, X, MessageCircle } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation"; // ✅ TAMBAHKAN INI
+import { usePathname } from "next/navigation";
 import { useCartStore } from "@/stores/cartStore";
 import { useRouter } from "next/navigation";
 
@@ -44,7 +44,7 @@ const debounce = (fn: Function, ms: number) => {
 };
 
 export default function Header() {
-  const pathname = usePathname(); // ✅ PAKAI HOOK INI
+  const pathname = usePathname();
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
 
@@ -55,17 +55,18 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   const [activeLink, setActiveLink] = useState("");
 
-  // ✅ CEK APAKAH HALAMAN MEMPUNYAI BACKGROUND GELAP
+  // ✅ HALAMAN DENGAN BACKGROUND GELAP DI ATAS (Cuma Homepage)
+  // Ubah sesuai kebutuhan jika halaman 'tentang' atau 'manfaat' aslinya background putih di atas.
   const isDarkPage = useMemo(() => {
-    // Homepage, tentang, manfaat → background gelap di hero
-    return pathname === '/' || 
-           pathname.startsWith('/tentang') || 
-           pathname.startsWith('/manfaat');
+    return pathname === '/';
   }, [pathname]);
 
-  // ✅ CEK APAKAH HALAMAN BANTUAN (background putih)
-  const isHelpPage = useMemo(() => {
-    return pathname === '/pusat-bantuan' || pathname.startsWith('/pusat-bantuan');
+  // ✅ HALAMAN DENGAN BACKGROUND TERANG/PUTIH DI ATAS 
+  // (Halaman Bantuan dan Tentang dipaksa header-nya warna gelap/text-gray-800)
+  const isLightPageAtTop = useMemo(() => {
+    return pathname.startsWith('/pusat-bantuan') || 
+           pathname.startsWith('/tentang') || 
+           pathname.startsWith('/about');
   }, [pathname]);
 
   // Mounted state
@@ -92,10 +93,9 @@ export default function Header() {
 
   // ✅ SET ACTIVE LINK BERDASARKAN PATHNAME
   useEffect(() => {
-    if (pathname === '/pusat-bantuan') setActiveLink('Bantuan');
-    else if (pathname === '/tentang-koje24') setActiveLink('Tentang KOJE24');
+    if (pathname.startsWith('/pusat-bantuan')) setActiveLink('Bantuan');
+    else if (pathname.startsWith('/tentang-koje24') || pathname.startsWith('/about')) setActiveLink('Tentang KOJE24');
     else if (pathname === '/') {
-      // Cek hash
       const hash = window.location.hash;
       if (hash === '#produk') setActiveLink('Produk');
       else if (hash === '#about') setActiveLink('Tentang KOJE24');
@@ -168,10 +168,10 @@ export default function Header() {
 
   // ✅ HEADER CLASSES
   const headerClasses = useMemo(() => {
-    if (!mounted) return "fixed top-0 w-full z-[200] bg-white py-5";
+    if (!mounted) return "fixed top-0 w-full z-[200] bg-white py-5 shadow-sm";
     if (menuOpen) return "fixed top-0 w-full z-[200] bg-white py-5 shadow-md";
     
-    // ✅ HALAMAN GELAP (Home, tentang, manfaat) → transparan, teks putih
+    // ✅ HALAMAN GELAP (Hanya Homepage saat belum di-scroll)
     if (isDarkPage) {
       return `
         fixed top-0 w-full z-[200]
@@ -184,52 +184,48 @@ export default function Header() {
       `;
     }
     
-    // ✅ HALAMAN PUTIH (produk, testimoni, pusat-bantuan) → selalu putih
+    // ✅ HALAMAN TERANG/PUTIH (Bantuan, Tentang, dll) → selalu background putih
     return `
       fixed top-0 w-full z-[200]
       transition-all duration-300
-      bg-white shadow-sm
+      bg-white/95 backdrop-blur-md shadow-sm
       ${shrink ? "py-2" : "py-5"}
     `;
   }, [menuOpen, isScrolled, shrink, isDarkPage, mounted]);
 
   // ✅ LOGO CLASSES
   const logoClasses = useMemo(() => {
-    if (!mounted) return "font-playfair font-bold text-2xl text-gray-800";
-    if (menuOpen) return "font-playfair font-bold text-2xl text-gray-800";
+    if (!mounted || menuOpen) return "font-playfair font-bold text-2xl text-gray-800";
     
     if (isDarkPage) {
       return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} ${isScrolled ? "text-gray-800" : "text-white"}`;
     }
     
     return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} text-gray-800`;
-  }, [menuOpen, shrink, isScrolled, isDarkPage, mounted]);
+  }, [menuOpen, shrink, isDarkPage, isScrolled, mounted]);
 
   const logoSpanClasses = useMemo(() => {
-    if (!mounted) return "text-[#0FA3A8]";
-    if (menuOpen) return "text-[#0FA3A8]";
+    if (!mounted || menuOpen) return "text-[#0FA3A8]";
     if (isDarkPage && !isScrolled) return "text-[#E8C46B]";
     return "text-[#0FA3A8]";
   }, [menuOpen, isDarkPage, isScrolled, mounted]);
 
-  // ✅ TEXT COLOR - PASTIKAN INI
+  // ✅ TEXT COLOR
   const getTextColor = useCallback(() => {
-    if (!mounted) return "text-gray-800";
-    if (menuOpen) return "text-gray-800";
+    if (!mounted || menuOpen) return "text-gray-800";
     
     // ✅ HALAMAN GELAP: putih saat transparan, hitam saat scroll
     if (isDarkPage) {
       return isScrolled ? "text-gray-800" : "text-white";
     }
     
-    // ✅ HALAMAN PUTIH: selalu hitam
+    // ✅ HALAMAN TERANG/PUTIH: selalu hitam
     return "text-gray-800";
   }, [menuOpen, isScrolled, isDarkPage, mounted]);
 
   // ✅ BUTTON BACKGROUND
   const getButtonBg = useCallback(() => {
-    if (!mounted) return "bg-[#0FA3A8] text-white";
-    if (menuOpen) return "bg-[#0FA3A8] text-white";
+    if (!mounted || menuOpen) return "bg-[#0FA3A8] text-white";
     
     if (isDarkPage && !isScrolled) {
       return "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30";
@@ -240,22 +236,10 @@ export default function Header() {
 
   // ✅ CART ICON COLOR
   const getCartColor = useCallback(() => {
-    if (!mounted) return "text-gray-800";
-    if (menuOpen) return "text-gray-800";
+    if (!mounted || menuOpen) return "text-gray-800";
     if (isDarkPage && !isScrolled) return "text-white";
     return "text-gray-800";
   }, [menuOpen, isDarkPage, isScrolled, mounted]);
-
-  // ✅ ADDITIONAL: TAMBAHKAN CONSOLE LOG UNTUK DEBUG
-  useEffect(() => {
-    console.log("Header state:", {
-      pathname,
-      isDarkPage,
-      isScrolled,
-      menuOpen,
-      activeLink
-    });
-  }, [pathname, isDarkPage, isScrolled, menuOpen, activeLink]);
 
   if (!mounted) return null;
 
