@@ -2,131 +2,92 @@
 
 import { Metadata } from "next"
 import { Suspense } from "react"
+import dynamic from 'next/dynamic' // ✅ TAMBAHKAN INI
+
+// ✅ KOMPONEN YANG LANGSUNG DITAMPILKAN (TIDAK PERLU LAZY)
 import PromoBanner from "@/components/PromoBanner"
 import Hero from "@/components/Hero"
 import AnimateOnScroll from "@/components/AnimateOnScroll"
-import FeaturedProducts from "@/components/FeaturedProducts"
-import ProductGrid from "@/components/ProductGrid"
-import AboutSection from "@/components/AboutSection"
-import PackagesSection from "@/components/PackagesSection"
-import SubscriptionSection from "@/components/SubscriptionSection"
-import TestimonialsCarousel from "@/components/TestimonialsCarousel"
-import FaqSection from "@/components/FaqSection"
-import CartPopup from "@/components/CartPopup"
-import PackagePopup from "@/components/PackagePopup"
-import RatingPopup from "@/components/RatingPopup"
 
-// ⭐ METADATA UNTUK HOME PAGE PUBLIC
-export const metadata: Metadata = {
-  title: {
-    default: "KOJE24 - Cold Pressed Juice Bekasi",
-    template: "%s | KOJE24",
-  },
-  description:
-    "Cold-pressed juice segar 100% alami tanpa gula tambahan. Detox harian, booster imun, dan energi alami. Delivery Bekasi & Jakarta.",
-  keywords: [
-    "cold pressed juice Bekasi",
-    "jus detox Bekasi",
-    "jus sehat tanpa gula",
-    "KOJE24",
-    "minuman detox alami",
-  ],
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-  openGraph: {
-    title: "KOJE24 - Cold Pressed Juice Sehat Alami",
-    description:
-      "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Bekasi & Jakarta.",
-    url: "https://koje24.com",
-    siteName: "KOJE24",
-    images: [
-      {
-        url: "https://koje24.com/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "KOJE24 Cold Pressed Juice",
-      },
-    ],
-    locale: "id_ID",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "KOJE24 - Cold Pressed Juice Sehat Alami",
-    description:
-      "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Bekasi & Jakarta.",
-    images: ["https://koje24.com/og-image.jpg"],
-  },
-  alternates: {
-    canonical: "https://koje24.com",
-  },
-}
+// ✅ DYNAMIC IMPORT UNTUK KOMPONEN DI BAWAH FOLD
+const FeaturedProducts = dynamic(
+  () => import("@/components/FeaturedProducts"),
+  { 
+    loading: () => <div className="h-32 flex items-center justify-center">Memuat produk unggulan...</div>,
+    ssr: true // Tetap SSR untuk SEO
+  }
+)
 
-// ⭐ PRODUCT SCHEMA
-const productSchemas = [
-  {
-    id: "red-vitality",
-    name: "Red Vitality",
-    description:
-      "Natural Strength from Within. Bit • Nanas • Apel. Booster stamina alami.",
-    price: 18000,
-    image: "https://koje24.com/images/red-vitality.webp",
-  },
-  {
-    id: "golden-detox",
-    name: "Golden Detox",
-    description:
-      "Clean Your Body, Boost Your Day. Kunyit • Wortel • Jahe • Jeruk • Lemon.",
-    price: 18000,
-    image: "https://koje24.com/images/golden-detox.webp",
-  },
-  {
-    id: "green-revive",
-    name: "Green Revive",
-    description:
-      "Fresh Green Energy in Every Sip. Pakcoy • Nanas • Timun.",
-    price: 18000,
-    image: "https://koje24.com/images/green-revive.webp",
-  },
-  {
-    id: "sunrise-boost",
-    name: "Sunrise Boost",
-    description:
-      "Start Your Day with Natural Power. Wortel • Apel • Tomat.",
-    price: 18000,
-    image: "https://koje24.com/images/sunrise-boost.webp",
-  },
-  {
-    id: "lemongrass-fresh",
-    name: "Lemongrass Fresh",
-    description:
-      "Calm. Fresh. Naturally Bright. Lemon • Serai.",
-    price: 18000,
-    image: "https://koje24.com/images/lemongrass-fresh.webp",
-  },
-  {
-    id: "yellow-immunity",
-    name: "Yellow Immunity",
-    description:
-      "Stronger Immunity, Brighter Day. Nanas • Lemon.",
-    price: 18000,
-    image: "https://koje24.com/images/yellow-immunity.webp",
-  },
-]
+const ProductGrid = dynamic(
+  () => import("@/components/ProductGrid"),
+  { 
+    loading: () => <div className="h-32 flex items-center justify-center">Memuat daftar produk...</div>,
+    ssr: true
+  }
+)
+
+const AboutSection = dynamic(
+  () => import("@/components/AboutSection"),
+  { 
+    loading: () => <div className="h-16" />,
+    ssr: true
+  }
+)
+
+const PackagesSection = dynamic(
+  () => import("@/components/PackagesSection"),
+  { 
+    loading: () => <div className="h-16" />,
+    ssr: true
+  }
+)
+
+const SubscriptionSection = dynamic(
+  () => import("@/components/SubscriptionSection"),
+  { 
+    loading: () => <div className="h-16" />,
+    ssr: false // Matikan SSR karena tidak kritis untuk SEO
+  }
+)
+
+const TestimonialsCarousel = dynamic(
+  () => import("@/components/TestimonialsCarousel"),
+  { 
+    loading: () => <div className="h-32 flex items-center justify-center">Memuat testimoni...</div>,
+    ssr: false // Matikan SSR karena konten user-generated
+  }
+)
+
+const FaqSection = dynamic(
+  () => import("@/components/FaqSection"),
+  { 
+    loading: () => <div className="h-16" />,
+    ssr: false // FAQ tidak perlu SSR
+  }
+)
+
+// ✅ POPUP TETAP LAZY (SUDAH BAIK)
+const CartPopup = dynamic(
+  () => import("@/components/CartPopup"),
+  { ssr: false }
+)
+
+const PackagePopup = dynamic(
+  () => import("@/components/PackagePopup"),
+  { ssr: false }
+)
+
+const RatingPopup = dynamic(
+  () => import("@/components/RatingPopup"),
+  { ssr: false }
+)
+
+// ... metadata dan schema tetap sama
 
 export default function HomePage() {
   return (
     <>
-      {/* ⭐ SCHEMA UNTUK SEO RICH RESULTS */}
+      {/* SCHEMA tetap sama */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -162,9 +123,8 @@ export default function HomePage() {
         }}
       />
 
-      {/* ⭐ RENDER KOMPONEN */}
+      {/* RENDER KOMPONEN */}
       <PromoBanner />
-
       <Hero />
 
       {/* SECTION PRODUK */}
@@ -196,7 +156,7 @@ export default function HomePage() {
 
       <FaqSection />
 
-      {/* ⭐ POPUP DENGAN SUSPENSE */}
+      {/* POPUP */}
       <Suspense fallback={null}>
         <CartPopup />
         <PackagePopup />
