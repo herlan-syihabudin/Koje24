@@ -22,9 +22,13 @@ const SCROLL = {
   DESKTOP_SHRINK: 110,
 };
 
-// ✅ DAFTAR HALAMAN YANG BACKGROUNDNYA GELAP (TRANSPARAN HEADER)
-// Halaman yang memiliki hero/background gelap di bagian atas
+// ✅ DAFTAR HALAMAN YANG BACKGROUNDNYA GELAP (HEADER TRANSPARAN + TEKS PUTIH)
+// Halaman dengan hero/background gelap di bagian atas
 const DARK_PAGES = ['/', '/tentang-koje24', '/manfaat'];
+
+// ✅ DAFTAR HALAMAN YANG BACKGROUNDNYA PUTIH (HEADER TETAP PUTIH + TEKS HITAM)
+// Halaman dengan background putih di bagian atas
+const LIGHT_PAGES = ['/produk', '/testimoni', '/pusat-bantuan'];
 
 const dispatchEvent = (eventName: string, detail?: any) => {
   if (typeof window === 'undefined') return;
@@ -58,13 +62,14 @@ export default function Header() {
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
 
-  // ✅ CEK APAKAH HALAMAN MEMPUNYAI BACKGROUND GELAP
+  // ✅ CEK JENIS HALAMAN
   const isDarkPage = useMemo(() => {
-    // Homepage, tentang, manfaat, dan halaman dengan hero gelap
-    return DARK_PAGES.includes(pathname) || 
-           pathname === '/' || 
-           pathname.startsWith('/tentang') || 
-           pathname.startsWith('/manfaat');
+    return DARK_PAGES.some(page => pathname === page || pathname.startsWith(page));
+  }, [pathname]);
+
+  // ✅ HALAMAN DENGAN BACKGROUND PUTIH (header selalu putih)
+  const isLightPage = useMemo(() => {
+    return LIGHT_PAGES.some(page => pathname === page || pathname.startsWith(page));
   }, [pathname]);
 
   // Mounted state
@@ -97,6 +102,7 @@ export default function Header() {
       setPathname(path);
       
       if (path === '/pusat-bantuan') setActiveLink('Bantuan');
+      else if (path === '/tentang-koje24') setActiveLink('Tentang KOJE24');
       else if (hash === '#produk') setActiveLink('Produk');
       else if (hash === '#about') setActiveLink('Tentang KOJE24');
       else if (hash === '#langganan') setActiveLink('Langganan');
@@ -177,7 +183,7 @@ export default function Header() {
     if (!mounted) return "fixed top-0 w-full z-[200] bg-white py-5";
     if (menuOpen) return "fixed top-0 w-full z-[200] bg-white py-5 shadow-md";
     
-    // ✅ UNTUK HALAMAN GELAP (Home, tentang, manfaat)
+    // ✅ HALAMAN GELAP (transparan → putih saat scroll)
     if (isDarkPage) {
       return `
         fixed top-0 w-full z-[200]
@@ -190,7 +196,7 @@ export default function Header() {
       `;
     }
     
-    // ✅ UNTUK HALAMAN PUTIH (produk, testimoni, pusat-bantuan)
+    // ✅ HALAMAN PUTIH (selalu putih)
     return `
       fixed top-0 w-full z-[200]
       transition-all duration-300
@@ -204,10 +210,12 @@ export default function Header() {
     if (!mounted) return "font-playfair font-bold text-2xl text-gray-800";
     if (menuOpen) return "font-playfair font-bold text-2xl text-gray-800";
     
+    // ✅ HALAMAN GELAP: putih saat transparan, hitam saat scroll
     if (isDarkPage) {
       return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} ${isScrolled ? "text-gray-800" : "text-white"}`;
     }
     
+    // ✅ HALAMAN PUTIH: selalu hitam
     return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} text-gray-800`;
   }, [menuOpen, shrink, isScrolled, isDarkPage, mounted]);
 
@@ -223,12 +231,12 @@ export default function Header() {
     if (!mounted) return "text-gray-800";
     if (menuOpen) return "text-gray-800";
     
-    // ✅ Halaman gelap: putih saat di atas, hitam saat scroll
+    // ✅ HALAMAN GELAP: putih saat transparan, hitam saat scroll
     if (isDarkPage) {
       return isScrolled ? "text-gray-800" : "text-white";
     }
     
-    // ✅ Halaman putih: selalu hitam
+    // ✅ HALAMAN PUTIH: selalu hitam (TERMASUK BANTUAN!)
     return "text-gray-800";
   }, [menuOpen, isScrolled, isDarkPage, mounted]);
 
