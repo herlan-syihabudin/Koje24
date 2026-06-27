@@ -1,3 +1,5 @@
+// lib/bestSeller.ts
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -7,13 +9,14 @@ export interface RankData {
   reviews: number
   score: number
   isBestSeller: boolean
+  count?: number // ✅ TAMBAHKAN count
 }
 
 const STORAGE_KEY = "koje24-best-seller-data"
 const UPDATE_EVENT = "bestseller-update"
 
 /* ======================================================
-   📌 SAFE LOCALSTORAGE (Universal / tidak bikin crash di SSR)
+   📌 SAFE LOCALSTORAGE
 ====================================================== */
 const safeGetItem = (key: string) => {
   if (typeof window === "undefined") return null
@@ -58,28 +61,25 @@ export function updateRating(productId: string, newRating: number) {
   const stats = getStats()
 
   if (!stats[productId]) {
-    // produk pertama kali dapat rating
     stats[productId] = {
       rating: newRating,
       reviews: 1,
       score: newRating * 5 + 3,
       isBestSeller: false,
+      count: 1, // ✅ TAMBAHKAN count
     }
   } else {
-    // update rating existing
     const prev = stats[productId]
     prev.rating =
       (prev.rating * prev.reviews + newRating) / (prev.reviews + 1)
     prev.reviews += 1
+    prev.count = (prev.count || 0) + 1 // ✅ UPDATE count
   }
 
-  // hitung score baru
   const s = stats[productId]
   s.score = s.rating * 5 + s.reviews * 3
 
   saveStats(stats)
-
-  // trigger UI refresh
   window.dispatchEvent(new Event(UPDATE_EVENT))
 }
 
@@ -92,25 +92,24 @@ export function getBestSellerList() {
 
   const before = JSON.stringify(stats)
 
-  // ranking score → ambil top 3
+  // Ranking berdasarkan score
   const top3 = Object.entries(stats)
     .sort((a, b) => b[1].score - a[1].score)
     .slice(0, 3)
 
-  // reset
+  // Reset semua
   Object.values(stats).forEach((s) => (s.isBestSeller = false))
 
-  // kasih bendera best seller
+  // Kasih badge best seller
   top3.forEach(([id]) => (stats[id].isBestSeller = true))
 
-  // hanya update kalau ada perubahan
   if (before !== JSON.stringify(stats)) saveStats(stats)
 
   return stats
 }
 
 /* ======================================================
-   🔥 HOOK UNTUK UI — auto update visual tanpa refresh
+   🔥 HOOK UNTUK UI
 ====================================================== */
 export function useBestSellerRanking() {
   const [stats, setStats] = useState<Record<string, RankData>>({})
@@ -123,7 +122,7 @@ export function useBestSellerRanking() {
       setStats({ ...s })
     }
 
-    load() // load awal
+    load()
     window.addEventListener(UPDATE_EVENT, load)
     return () => window.removeEventListener(UPDATE_EVENT, load)
   }, [])
