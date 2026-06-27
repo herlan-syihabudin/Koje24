@@ -44,8 +44,15 @@ interface SheetMap {
   };
 }
 
+// ✅ PERBAIKI: RankStats harus sesuai dengan RankData dari bestSeller
 interface RankStats {
-  [key: string]: { count: number };
+  [key: string]: {
+    rating: number;
+    reviews: number;
+    score: number;
+    isBestSeller: boolean;
+    count: number; // ✅ count sekarang ada!
+  };
 }
 
 // === CONSTANTS ===
@@ -66,12 +73,18 @@ export default function FeaturedProducts() {
   const rankData = useBestSellerRanking()
   const [rankStats, setRankStats] = useState<RankStats>({})
 
+  // ✅ PERBAIKI: Mapping data dari bestSeller
   useEffect(() => {
     const stats: RankStats = {}
     if (rankData && typeof rankData === 'object') {
       Object.keys(rankData).forEach(key => {
-        stats[key] = { 
-          count: (rankData as any)[key]?.count || 0 
+        const item = rankData[key]
+        stats[key] = {
+          rating: item?.rating || 0,
+          reviews: item?.reviews || 0,
+          score: item?.score || 0,
+          isBestSeller: item?.isBestSeller || false,
+          count: item?.count || 0, // ✅ count sekarang terbaca!
         }
       })
     }
@@ -158,22 +171,23 @@ export default function FeaturedProducts() {
 
     const scored = activeProducts.map((p) => {
       const stats = rankStats[String(p.id)]
+      // ✅ PAKAI count (sudah ada di RankStats)
       const score = stats?.count || 0
 
       return {
         ...p,
         __score: score,
         __isPackage: p.isPackage === true,
+        __isBestSeller: stats?.isBestSeller || false, // ✅ Simpan status best seller
       }
     })
 
-    // ✅ PERBAIKI: Sorting murni berdasarkan score (order terbanyak)
-    // Tidak ada prioritas paket, semua produk diperlakukan sama
+    // ✅ Sorting murni berdasarkan score (order terbanyak)
     const sorted = [...scored].sort((a, b) => {
-      return b.__score - a.__score  // Dari yang paling laris
+      return b.__score - a.__score
     })
 
-    // Ambil 3 produk teratas (bisa campuran paket & reguler)
+    // Ambil 3 produk teratas
     const top = sorted.slice(0, 3)
 
     if (top.length === 0) {
@@ -291,7 +305,9 @@ export default function FeaturedProducts() {
           {featured.map((p) => {
             const db = sheetData[p.id]
             const weeklySold = weeklySales[p.id] ?? 87
-            const isBestSeller = weeklySold >= 100
+            
+            // ✅ PAKAI isBestSeller dari rankStats
+            const isBestSeller = p.__isBestSeller || weeklySold >= 100
             const aiScore = aiScores[p.id] || 0
 
             const price =
@@ -319,6 +335,7 @@ export default function FeaturedProducts() {
                 {/* IMAGE */}
                 <div className="relative h-[220px] bg-white overflow-hidden">
                   <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
+                    {/* ✅ BEST SELLER BADGE dari rankStats */}
                     {isBestSeller && (
                       <div className="flex items-center gap-1 bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
                         <span className="text-yellow-200">🔥</span>
