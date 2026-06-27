@@ -1,25 +1,5 @@
 // app/(public)/tentang-koje24/page.tsx
 
-import { Metadata } from "next"
-
-// ✅ TAMBAHKAN METADATA
-export const metadata: Metadata = {
-  title: "Tentang KOJE24 - Cold Pressed Juice Premium Bekasi & Jakarta",
-  description: "Kenapa KOJE24? Cold-pressed juice alami tanpa gula tambahan. Dibuat dari bahan segar pilihan setiap hari untuk kesehatan optimal. Premium cold-pressed juice dari Bekasi.",
-  keywords: "tentang KOJE24, cold pressed juice premium, jus sehat Bekasi, cold pressed Jakarta, minuman sehat alami",
-  openGraph: {
-    title: "Tentang KOJE24 - Cold Pressed Juice Premium",
-    description: "Kenapa memilih KOJE24 untuk hidup sehat? Cold-pressed juice 100% natural.",
-    images: ["https://koje24.com/og-tentang.jpg"],
-    type: "website",
-  },
-  alternates: {
-    canonical: "https://koje24.com/tentang-koje24",
-  },
-}
-
-// app/(public)/tentang-koje24/page.tsx
-
 "use client"
 
 import { motion } from "framer-motion"
