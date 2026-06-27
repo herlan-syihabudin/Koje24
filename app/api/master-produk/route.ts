@@ -1,31 +1,51 @@
+// app/api/master-produk/route.ts
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
 
-// 🔥 PERUBAHAN: Hapus cache statis, pake dynamic biar selalu fresh
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET() {
   try {
+    // ✅ LOG UNTUK DEBUG (di production akan muncul di Vercel logs)
+    console.log("[API] Starting fetch products...");
+    
     const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? "";
     const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
     const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? "";
 
-    // Validasi environment variables
+    // ✅ VALIDASI DENGAN LOG
     if (!CLIENT_EMAIL || !PRIVATE_KEY_RAW || !SHEET_ID) {
-      console.error("Missing Google Sheets credentials");
+      console.error("[API] Missing credentials:", {
+        hasEmail: !!CLIENT_EMAIL,
+        hasKey: !!PRIVATE_KEY_RAW,
+        hasSheetId: !!SHEET_ID,
+      });
       return NextResponse.json(
         { success: false, products: [], message: "Server configuration error" },
         { status: 500 }
       );
     }
 
-    // Fix: Handle private key dengan lebih baik
-    const PRIVATE_KEY = PRIVATE_KEY_RAW
-      .replace(/\\n/g, "\n")
-      .replace(/\\\\n/g, "\n")
-      .trim();
+    // ✅ PERBAIKI: Handle private key dengan lebih baik
+    let PRIVATE_KEY = PRIVATE_KEY_RAW;
+    // Hapus semua escape sequence
+    PRIVATE_KEY = PRIVATE_KEY.replace(/\\n/g, "\n");
+    PRIVATE_KEY = PRIVATE_KEY.replace(/\\\\n/g, "\n");
+    // Jika masih ada "\\n" literal, replace lagi
+    PRIVATE_KEY = PRIVATE_KEY.replace(/\\n/g, "\n");
+    PRIVATE_KEY = PRIVATE_KEY.trim();
 
+    // ✅ VALIDASI: Pastikan private key mengandung BEGIN/END
+    if (!PRIVATE_KEY.includes("BEGIN PRIVATE KEY")) {
+      console.error("[API] Invalid private key format");
+      return NextResponse.json(
+        { success: false, products: [], message: "Invalid private key format" },
+        { status: 500 }
+      );
+    }
+
+    // ✅ PERBAIKI: Auth dengan cara yang lebih robust
     const auth = new google.auth.GoogleAuth({
       credentials: {
         client_email: CLIENT_EMAIL,
@@ -36,20 +56,16 @@ export async function GET() {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    // Fetch data dengan timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 detik timeout
-
+    // ✅ HAPUS TIMEOUT (tidak efektif untuk googleapis)
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: "Produk!A2:P",
+      range: "Produk!A2:P", // ✅ Pastikan nama sheet "Produk"
     });
 
-    clearTimeout(timeoutId);
-
     const rows = res.data.values ?? [];
+    console.log(`[API] Found ${rows.length} rows in sheet`);
 
-    // Parse JSON array lebih robust
+    // Parse JSON array
     const parseJSONArray = (str: string): string[] => {
       if (!str || str === "") return [];
       try {
@@ -63,7 +79,7 @@ export async function GET() {
       }
     };
 
-    // Mapping produk dengan filtering yang lebih efisien
+    // Mapping produk
     const productsData = rows
       .filter((row) => {
         const aktif = row[6]?.toString().toUpperCase();
@@ -105,7 +121,8 @@ export async function GET() {
       })
       .filter((product) => product.harga > 0);
 
-    // 🔥 PERUBAHAN: Hapus cache headers, pake no-cache
+    console.log(`[API] Returning ${productsData.length} products`);
+
     return NextResponse.json(
       { success: true, products: productsData, total: productsData.length },
       {
@@ -118,16 +135,29 @@ export async function GET() {
       }
     );
   } catch (err: any) {
-    console.error("API MASTER PRODUK ERROR:", err);
+    console.error("[API] ERROR:", err);
+    
+    // ✅ CEK ERROR TYPE UNTUK DEBUG
+    let message = err.message || "Failed to fetch products";
+    let status = 500;
+    
+    if (err.code === 401 || err.code === 403) {
+      message = "Google Sheets authentication failed. Please check credentials.";
+      status = 401;
+    } else if (err.code === 404) {
+      message = "Sheet not found. Please check sheet ID and name.";
+      status = 404;
+    }
     
     return NextResponse.json(
       {
         success: false,
         products: [],
-        message: err.message || "Failed to fetch products",
+        message: message,
         error: process.env.NODE_ENV === "development" ? err.stack : undefined,
+        code: err.code,
       },
-      { status: 500 }
+      { status }
     );
   }
 }
