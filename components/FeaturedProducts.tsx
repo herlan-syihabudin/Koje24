@@ -6,9 +6,27 @@ import toast from 'react-hot-toast'
 import { motion } from "framer-motion"
 import { useCartStore } from "@/stores/cartStore"
 import { useBestSellerRanking } from "@/lib/bestSeller"
-import { products } from "@/lib/products"
 
 // === TYPES ===
+interface ProductFromAPI {
+  id: string;
+  slug: string;
+  nama: string;
+  kategori: string;
+  harga: number;
+  stok: number;
+  aktif: string;
+  img: string;
+  slogan?: string;
+  ingredients?: string[];
+  benefits?: string[];
+  goodFor?: string[];
+  consumeTime?: string;
+  isPackage?: boolean;
+  brand?: string;
+  desc?: string;
+}
+
 interface SheetRow {
   kode: string;
   harga: string | number;
@@ -66,6 +84,9 @@ export default function FeaturedProducts() {
   const [error, setError] = useState<string | null>(null)
   const [animatingId, setAnimatingId] = useState<string | null>(null)
   const [aiScores, setAiScores] = useState<Record<string, number>>({})
+  
+  // ✅ STATE UNTUK PRODUCTS DARI API
+  const [products, setProducts] = useState<ProductFromAPI[]>([])
 
   // =========================
   // LOAD DATA GOOGLE SHEET
@@ -80,16 +101,19 @@ export default function FeaturedProducts() {
       .then(([productsRes, salesData]) => {
         if (!isMounted) return;
         
-        // 🔥 FIX: Ambil products dari response (bukan langsung)
+        // 🔥 Ambil products dari response
         const productsData = productsRes?.success ? productsRes.products : (Array.isArray(productsRes) ? productsRes : []);
         
-        // 🔥 FIX: Validasi array
+        // 🔥 Validasi array
         if (!Array.isArray(productsData)) {
           console.error("productsData is not an array:", productsData);
           setError("Gagal memuat data produk");
           setLoading(false);
           return;
         }
+        
+        // ✅ SET PRODUCTS
+        setProducts(productsData)
         
         // Process product data
         const map: SheetMap = {}
@@ -132,7 +156,7 @@ export default function FeaturedProducts() {
   // HITUNG FEATURED PRODUK
   // =========================
   const featured = useMemo(() => {
-    if (loading || error) return []
+    if (loading || error || products.length === 0) return []
 
     const activeProducts = products.filter((p) => {
       const db = sheetData[p.id]
@@ -163,7 +187,7 @@ export default function FeaturedProducts() {
     }
 
     return top
-  }, [rankStats, sheetData, loading, error])
+  }, [rankStats, sheetData, loading, error, products])
 
   // =========================
   // AI RANKING
@@ -179,10 +203,10 @@ export default function FeaturedProducts() {
     featured.forEach(product => {
       let score = 5;
       
-      if (hour < 10 && product.name.toLowerCase().includes('energi')) score += 2;
-      if (hour > 18 && product.name.toLowerCase().includes('relax')) score += 2;
-      if ((month >= 10 || month <= 2) && product.name.toLowerCase().includes('imun')) score += 2;
-      if (month >= 5 && month <= 8 && product.name.toLowerCase().includes('detox')) score += 2;
+      if (hour < 10 && product.nama?.toLowerCase().includes('energi')) score += 2;
+      if (hour > 18 && product.nama?.toLowerCase().includes('relax')) score += 2;
+      if ((month >= 10 || month <= 2) && product.nama?.toLowerCase().includes('imun')) score += 2;
+      if (month >= 5 && month <= 8 && product.nama?.toLowerCase().includes('detox')) score += 2;
       
       scores[product.id] = Math.min(10, Math.max(1, score));
     });
@@ -194,14 +218,14 @@ export default function FeaturedProducts() {
   // HANDLE ADD TO CART
   // =========================
   const handleAddToCart = (
-    product: typeof products[number],
+    product: ProductFromAPI,
     price: number,
     img: string
   ) => {
     setAnimatingId(product.id)
     setTimeout(() => setAnimatingId(null), 500)
     
-    toast.success(`${product.name} ditambahkan ke keranjang!`, {
+    toast.success(`${product.nama} ditambahkan ke keranjang!`, {
       icon: '🛒',
       duration: 2000,
       style: {
@@ -212,23 +236,20 @@ export default function FeaturedProducts() {
     })
     
     if (product.isPackage) {
-      const packageItems = (product as any).items || []
-      
       window.dispatchEvent(
         new CustomEvent("open-package", {
           detail: {
             id: product.id,
-            name: product.name,
+            name: product.nama,
             price: price,
             img: img,
-            items: packageItems,
           },
         })
       )
     } else {
       addToCart({
         id: product.id,
-        name: product.name,
+        name: product.nama,
         price: price,
         img: img,
       })
@@ -284,7 +305,7 @@ export default function FeaturedProducts() {
                 ? db.promo
                 : db?.harga && db.harga > 0
                 ? db.harga
-                : Number(p.price)
+                : Number(p.harga)
 
             const img = db?.img || p.img || "/images/placeholder.jpg"
 
@@ -320,7 +341,7 @@ export default function FeaturedProducts() {
                   
                   <Image
                     src={img}
-                    alt={p.name}
+                    alt={p.nama}
                     fill
                     sizes="(max-width: 768px) 100vw, 33vw"
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -336,7 +357,7 @@ export default function FeaturedProducts() {
                 {/* CONTENT */}
                 <div className="p-6 flex flex-col h-full">
                   <h3 className="font-playfair text-xl font-semibold mb-1 text-[#0B4B50]">
-                    {p.name}
+                    {p.nama}
                   </h3>
 
                   {p.slogan && (
