@@ -1,10 +1,3 @@
-// app/testimoni/page.tsx
-"use client"
-
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { motion } from "framer-motion"
-import TulisTestimoniForm from "@/components/TulisTestimoniForm"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -21,6 +14,15 @@ export const metadata: Metadata = {
     canonical: "https://koje24.com/testimoni",
   },
 }
+
+// app/testimoni/page.tsx
+"use client"
+
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { motion } from "framer-motion"
+import TulisTestimoniForm from "@/components/TulisTestimoniForm"
+
 
 type Testi = {
   timestamp: string
