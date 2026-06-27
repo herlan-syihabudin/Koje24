@@ -1,14 +1,6 @@
-// app/pusat-bantuan/page.tsx
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+// app/(public)/pusat-bantuan/page.tsx
 import HelpCenter from "@/components/HelpCenter";
 
 export default function PusatBantuanPage() {
-  return (
-    <>
-      <Header />
-      <HelpCenter />
-      <Footer />
-    </>
-  );
+  return <HelpCenter />;
 }
