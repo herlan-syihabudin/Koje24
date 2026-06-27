@@ -2,60 +2,131 @@
 
 import { Metadata } from "next"
 import { Suspense } from "react"
-import dynamic from 'next/dynamic'
-
-// ✅ KOMPONEN YANG TETAP SSR (tanpa ssr: false)
 import PromoBanner from "@/components/PromoBanner"
 import Hero from "@/components/Hero"
 import AnimateOnScroll from "@/components/AnimateOnScroll"
+import FeaturedProducts from "@/components/FeaturedProducts"
+import ProductGrid from "@/components/ProductGrid"
+import AboutSection from "@/components/AboutSection"
+import PackagesSection from "@/components/PackagesSection"
+import SubscriptionSection from "@/components/SubscriptionSection"
+import TestimonialsCarousel from "@/components/TestimonialsCarousel"
+import FaqSection from "@/components/FaqSection"
+import CartPopup from "@/components/CartPopup"
+import PackagePopup from "@/components/PackagePopup"
+import RatingPopup from "@/components/RatingPopup"
 
-// ✅ IMPORT CLIENT COMPONENTS (yang berisi ssr: false)
-import { ClientComponents } from "./ClientComponents"
-
-// ✅ DYNAMIC IMPORT TANPA ssr: false
-const FeaturedProducts = dynamic(
-  () => import("@/components/FeaturedProducts"),
-  { 
-    loading: () => <div className="h-32 flex items-center justify-center">Memuat produk unggulan...</div>,
-    // ✅ HAPUS ssr: false, defaultnya true
-  }
-)
-
-const ProductGrid = dynamic(
-  () => import("@/components/ProductGrid"),
-  { 
-    loading: () => <div className="h-32 flex items-center justify-center">Memuat daftar produk...</div>,
-  }
-)
-
-const AboutSection = dynamic(
-  () => import("@/components/AboutSection"),
-  { 
-    loading: () => <div className="h-16" />,
-  }
-)
-
-const PackagesSection = dynamic(
-  () => import("@/components/PackagesSection"),
-  { 
-    loading: () => <div className="h-16" />,
-  }
-)
-
-// ✅ METADATA tetap sama
+// ⭐ METADATA UNTUK HOME PAGE PUBLIC
 export const metadata: Metadata = {
-  // ... metadata Anda
+  title: {
+    default: "KOJE24 - Cold Pressed Juice Bekasi",
+    template: "%s | KOJE24",
+  },
+  description:
+    "Cold-pressed juice segar 100% alami tanpa gula tambahan. Detox harian, booster imun, dan energi alami. Delivery Bekasi & Jakarta.",
+  keywords: [
+    "cold pressed juice Bekasi",
+    "jus detox Bekasi",
+    "jus sehat tanpa gula",
+    "KOJE24",
+    "minuman detox alami",
+  ],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  openGraph: {
+    title: "KOJE24 - Cold Pressed Juice Sehat Alami",
+    description:
+      "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Bekasi & Jakarta.",
+    url: "https://koje24.com",
+    siteName: "KOJE24",
+    images: [
+      {
+        url: "https://koje24.com/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "KOJE24 Cold Pressed Juice",
+      },
+    ],
+    locale: "id_ID",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "KOJE24 - Cold Pressed Juice Sehat Alami",
+    description:
+      "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Bekasi & Jakarta.",
+    images: ["https://koje24.com/og-image.jpg"],
+  },
+  alternates: {
+    canonical: "https://koje24.com",
+  },
 }
 
-// ✅ SCHEMA PRODUCT tetap sama
+// ⭐ PRODUCT SCHEMA
 const productSchemas = [
-  // ... data produk
+  {
+    id: "red-vitality",
+    name: "Red Vitality",
+    description:
+      "Natural Strength from Within. Bit • Nanas • Apel. Booster stamina alami.",
+    price: 18000,
+    image: "https://koje24.com/images/red-vitality.webp",
+  },
+  {
+    id: "golden-detox",
+    name: "Golden Detox",
+    description:
+      "Clean Your Body, Boost Your Day. Kunyit • Wortel • Jahe • Jeruk • Lemon.",
+    price: 18000,
+    image: "https://koje24.com/images/golden-detox.webp",
+  },
+  {
+    id: "green-revive",
+    name: "Green Revive",
+    description:
+      "Fresh Green Energy in Every Sip. Pakcoy • Nanas • Timun.",
+    price: 18000,
+    image: "https://koje24.com/images/green-revive.webp",
+  },
+  {
+    id: "sunrise-boost",
+    name: "Sunrise Boost",
+    description:
+      "Start Your Day with Natural Power. Wortel • Apel • Tomat.",
+    price: 18000,
+    image: "https://koje24.com/images/sunrise-boost.webp",
+  },
+  {
+    id: "lemongrass-fresh",
+    name: "Lemongrass Fresh",
+    description:
+      "Calm. Fresh. Naturally Bright. Lemon • Serai.",
+    price: 18000,
+    image: "https://koje24.com/images/lemongrass-fresh.webp",
+  },
+  {
+    id: "yellow-immunity",
+    name: "Yellow Immunity",
+    description:
+      "Stronger Immunity, Brighter Day. Nanas • Lemon.",
+    price: 18000,
+    image: "https://koje24.com/images/yellow-immunity.webp",
+  },
 ]
 
 export default function HomePage() {
   return (
     <>
-      {/* SCHEMA tetap sama */}
+      {/* ⭐ SCHEMA UNTUK SEO RICH RESULTS */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -91,8 +162,9 @@ export default function HomePage() {
         }}
       />
 
-      {/* RENDER KOMPONEN */}
+      {/* ⭐ RENDER KOMPONEN */}
       <PromoBanner />
+
       <Hero />
 
       {/* SECTION PRODUK */}
@@ -114,16 +186,22 @@ export default function HomePage() {
       {/* SECTION LANGGANAN */}
       <section id="langganan" aria-label="Paket Langganan">
         <PackagesSection />
-        {/* ✅ ClientComponents sudah include SubscriptionSection */}
+        <SubscriptionSection />
       </section>
 
       {/* SECTION TESTIMONI */}
       <section id="testimoni" aria-label="Testimoni Pelanggan">
-        {/* ✅ ClientComponents sudah include TestimonialsCarousel */}
+        <TestimonialsCarousel />
       </section>
 
-      {/* ✅ ClientComponents sudah include FaqSection dan Popup */}
-      <ClientComponents />
+      <FaqSection />
+
+      {/* ⭐ POPUP DENGAN SUSPENSE */}
+      <Suspense fallback={null}>
+        <CartPopup />
+        <PackagePopup />
+        <RatingPopup />
+      </Suspense>
     </>
   )
 }
