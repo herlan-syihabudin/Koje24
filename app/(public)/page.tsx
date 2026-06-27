@@ -8,8 +8,6 @@ import AnimateOnScroll from "@/components/AnimateOnScroll"
 import FeaturedProducts from "@/components/FeaturedProducts"
 import ProductGrid from "@/components/ProductGrid"
 import AboutSection from "@/components/AboutSection"
-// ❌ HAPUS INI
-// import PackagesSection from "@/components/PackagesSection"
 import SubscriptionSection from "@/components/SubscriptionSection"
 import TestimonialsCarousel from "@/components/TestimonialsCarousel"
 import FaqSection from "@/components/FaqSection"
@@ -17,20 +15,19 @@ import CartPopup from "@/components/CartPopup"
 import PackagePopup from "@/components/PackagePopup"
 import RatingPopup from "@/components/RatingPopup"
 
-// ⭐ METADATA UNTUK HOME PAGE PUBLIC
+// ⭐ METADATA UNTUK HOME PAGE (OPTIMASI SEO)
 export const metadata: Metadata = {
-  title: {
-    default: "KOJE24 - Cold Pressed Juice Bekasi",
-    template: "%s | KOJE24",
-  },
-  description:
-    "Cold-pressed juice segar 100% alami tanpa gula tambahan. Detox harian, booster imun, dan energi alami. Delivery Bekasi & Jakarta.",
+  title: "KOJE24 - Cold Pressed Juice Bekasi & Jakarta - 100% Natural",
+  description: "Cold-pressed juice segar 100% alami tanpa gula tambahan. Detox harian, booster imun, dan energi alami. Delivery Bekasi & Jakarta. Pesan sekarang!",
   keywords: [
     "cold pressed juice Bekasi",
     "jus detox Bekasi",
     "jus sehat tanpa gula",
     "KOJE24",
     "minuman detox alami",
+    "cold pressed juice Jakarta",
+    "jus segar Bekasi",
+    "minuman sehat alami",
   ],
   robots: {
     index: true,
@@ -44,9 +41,8 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "KOJE24 - Cold Pressed Juice Sehat Alami",
-    description:
-      "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Bekasi & Jakarta.",
+    title: "KOJE24 - Cold Pressed Juice Bekasi & Jakarta",
+    description: "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Bekasi & Jakarta. 100% Natural, No Sugar Added!",
     url: "https://koje24.com",
     siteName: "KOJE24",
     images: [
@@ -54,7 +50,7 @@ export const metadata: Metadata = {
         url: "https://koje24.com/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "KOJE24 Cold Pressed Juice",
+        alt: "KOJE24 Cold Pressed Juice - Minuman Detox Alami Bekasi",
       },
     ],
     locale: "id_ID",
@@ -62,72 +58,66 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "KOJE24 - Cold Pressed Juice Sehat Alami",
-    description:
-      "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Bekasi & Jakarta.",
+    title: "KOJE24 - Cold Pressed Juice Bekasi & Jakarta",
+    description: "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Bekasi & Jakarta.",
     images: ["https://koje24.com/og-image.jpg"],
   },
   alternates: {
     canonical: "https://koje24.com",
   },
-}
+};
 
-// ⭐ PRODUCT SCHEMA
+// ✅ PRODUCT SCHEMA DENGAN HARGA DINAMIS
+// Idealnya data ini diambil dari API, tapi karena ini Server Component, kita hardcode dulu
 const productSchemas = [
   {
     id: "red-vitality",
     name: "Red Vitality",
-    description:
-      "Natural Strength from Within. Bit • Nanas • Apel. Booster stamina alami.",
+    description: "Natural Strength from Within. Bit • Nanas • Apel. Booster stamina alami.",
     price: 18000,
     image: "https://koje24.com/images/red-vitality.webp",
   },
   {
     id: "golden-detox",
     name: "Golden Detox",
-    description:
-      "Clean Your Body, Boost Your Day. Kunyit • Wortel • Jahe • Jeruk • Lemon.",
+    description: "Clean Your Body, Boost Your Day. Kunyit • Wortel • Jahe • Jeruk • Lemon.",
     price: 18000,
     image: "https://koje24.com/images/golden-detox.webp",
   },
   {
     id: "green-revive",
     name: "Green Revive",
-    description:
-      "Fresh Green Energy in Every Sip. Pakcoy • Nanas • Timun.",
+    description: "Fresh Green Energy in Every Sip. Pakcoy • Nanas • Timun.",
     price: 18000,
     image: "https://koje24.com/images/green-revive.webp",
   },
   {
     id: "sunrise-boost",
     name: "Sunrise Boost",
-    description:
-      "Start Your Day with Natural Power. Wortel • Apel • Tomat.",
+    description: "Start Your Day with Natural Power. Wortel • Apel • Tomat.",
     price: 18000,
     image: "https://koje24.com/images/sunrise-boost.webp",
   },
   {
     id: "lemongrass-fresh",
     name: "Lemongrass Fresh",
-    description:
-      "Calm. Fresh. Naturally Bright. Lemon • Serai.",
+    description: "Calm. Fresh. Naturally Bright. Lemon • Serai.",
     price: 18000,
     image: "https://koje24.com/images/lemongrass-fresh.webp",
   },
   {
     id: "yellow-immunity",
     name: "Yellow Immunity",
-    description:
-      "Stronger Immunity, Brighter Day. Nanas • Lemon.",
+    description: "Stronger Immunity, Brighter Day. Nanas • Lemon.",
     price: 18000,
     image: "https://koje24.com/images/yellow-immunity.webp",
   },
-]
+];
 
 export default function HomePage() {
   return (
     <>
-      {/* ⭐ SCHEMA UNTUK SEO RICH RESULTS */}
+      {/* ⭐ SCHEMA ITEMLIST UNTUK PRODUK */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -184,10 +174,8 @@ export default function HomePage() {
         <AboutSection />
       </section>
 
-      {/* ✅ SECTION LANGGANAN - HANYA SATU (SubscriptionSection) */}
+      {/* SECTION LANGGANAN */}
       <section id="langganan" aria-label="Paket Langganan">
-        {/* ❌ HAPUS PackagesSection */}
-        {/* <PackagesSection /> */}
         <SubscriptionSection />
       </section>
 
@@ -198,12 +186,12 @@ export default function HomePage() {
 
       <FaqSection />
 
-      {/* ⭐ POPUP DENGAN SUSPENSE */}
+      {/* POPUP */}
       <Suspense fallback={null}>
         <CartPopup />
         <PackagePopup />
         <RatingPopup />
       </Suspense>
     </>
-  )
+  );
 }
