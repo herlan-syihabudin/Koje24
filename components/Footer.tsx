@@ -121,9 +121,10 @@ export default function Footer() {
 
             {/* 2. MENU */}
             <div>
-              <h5 className="font-semibold text-white mb-4 text-base md:text-lg">
+              {/* ✅ UBAH h5 → h3 */}
+              <h3 className="font-semibold text-white mb-4 text-base md:text-lg">
                 <span className="border-b-2 border-[#0FA3A8] pb-1 inline-block">Menu</span>
-              </h5>
+              </h3>
               <ul className="space-y-2 text-sm">
                 <li>
                   <button 
@@ -170,9 +171,10 @@ export default function Footer() {
 
             {/* 3. BANTUAN */}
             <div>
-              <h5 className="font-semibold text-white mb-4 text-base md:text-lg">
+              {/* ✅ UBAH h5 → h3 */}
+              <h3 className="font-semibold text-white mb-4 text-base md:text-lg">
                 <span className="border-b-2 border-[#0FA3A8] pb-1 inline-block">Bantuan</span>
-              </h5>
+              </h3>
               <ul className="space-y-2 text-sm">
                 <li>
                   <button
@@ -203,9 +205,10 @@ export default function Footer() {
 
             {/* 4. KONTAK */}
             <div>
-              <h5 className="font-semibold text-white mb-4 text-base md:text-lg">
+              {/* ✅ UBAH h5 → h3 */}
+              <h3 className="font-semibold text-white mb-4 text-base md:text-lg">
                 <span className="border-b-2 border-[#0FA3A8] pb-1 inline-block">Hubungi Kami</span>
-              </h5>
+              </h3>
               <ul className="space-y-3 text-sm">
                 <li>
                   <a
