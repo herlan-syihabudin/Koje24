@@ -23,7 +23,6 @@ interface ProductFromAPI {
 
 export default function SubscriptionSection() {
   const [packages, setPackages] = useState<ProductFromAPI[]>([])
-  const [regularPrice, setRegularPrice] = useState(18000)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -48,7 +47,7 @@ export default function SubscriptionSection() {
           return
         }
         
-        // ✅ FILTER PAKET
+        // ✅ FILTER PAKET SAJA (Reguler Plan dihapus)
         const packageItems = productsData
           .filter((p: ProductFromAPI) => {
             return p.isPackage === true || 
@@ -58,18 +57,6 @@ export default function SubscriptionSection() {
           })
           .filter((p: ProductFromAPI) => p.aktif === "YES")
           .sort((a: ProductFromAPI, b: ProductFromAPI) => a.harga - b.harga)
-        
-        // ✅ AMBIL HARGA REGULER (dari produk pertama yang bukan paket)
-        const regularProducts = productsData
-          .filter((p: ProductFromAPI) => {
-            return !p.isPackage && 
-                   p.kategori?.toLowerCase() !== "paket" &&
-                   p.aktif === "YES"
-          })
-        
-        if (regularProducts.length > 0) {
-          setRegularPrice(regularProducts[0].harga)
-        }
         
         setPackages(packageItems)
         setError(null)
@@ -125,11 +112,10 @@ export default function SubscriptionSection() {
 
       <div className="text-center mb-16 relative z-10">
         <h2 className="font-playfair text-3xl md:text-4xl font-semibold mb-4 text-[#0B4B50]">
-          Langganan Paket KOJE24
+          Paket Hemat KOJE24
         </h2>
         <p className="font-inter text-gray-600 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-          Pilih paket sesuai kebutuhan <b>detoks & energi harianmu</b> — praktis,
-          hemat, dan tetap alami.
+          Pilih paket hemat untuk hasil maksimal — lebih praktis & lebih murah! 💰
           <br />
           Nikmati{" "}
           <span className="text-[#0FA3A8] font-semibold">
@@ -139,9 +125,9 @@ export default function SubscriptionSection() {
         </p>
       </div>
 
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-[1280px] mx-auto">
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-[1024px] mx-auto">
         {packages.map((pkg, index) => {
-          // Tentukan paket favorit (yang di tengah atau harga menengah)
+          // Tentukan paket favorit (yang di tengah)
           const isPopular = index === 1 || pkg.nama?.toLowerCase().includes("favorit")
           
           return (
@@ -209,47 +195,6 @@ export default function SubscriptionSection() {
             </div>
           )
         })}
-
-        {/* ✅ REGULER PLAN */}
-        <div
-          className="
-            group bg-white rounded-3xl border border-[#e6eeee]/60
-            shadow-[0_5px_25px_rgba(0,0,0,0.05)]
-            hover:-translate-y-3
-            hover:shadow-[0_10px_35px_rgba(15,163,168,0.25)]
-            transition-all duration-500
-            flex flex-col p-6 text-center relative overflow-hidden
-          "
-        >
-          <div className="absolute inset-x-0 top-0 h-[5px] bg-gradient-to-r from-[#0FA3A8] to-[#E8C46B] opacity-70 group-hover:opacity-100 transition-opacity duration-500" />
-
-          <h3 className="font-playfair text-xl font-semibold mb-3 text-[#0B4B50]">
-            Reguler Plan
-          </h3>
-
-          <p className="font-inter text-sm text-gray-700 mb-5 flex-1 leading-relaxed px-2">
-            Pilih varian favoritmu — fleksibel, praktis, dan tetap sehat setiap hari.
-          </p>
-
-          <div className="text-lg font-bold text-[#0FA3A8] mb-6 tracking-tight">
-            Harga per botol Rp{regularPrice.toLocaleString("id-ID")}
-          </div>
-
-          <button
-            onClick={() => openPackage("Reguler Plan", regularPrice)}
-            className="
-              bg-[#0FA3A8] hover:bg-[#0DC1C7]
-              text-white font-semibold rounded-full
-              py-2.5 px-7
-              shadow-[0_4px_15px_rgba(15,163,168,0.3)]
-              hover:shadow-[0_6px_25px_rgba(15,163,168,0.4)]
-              transition-all duration-300
-              active:scale-95
-            "
-          >
-            Ambil Paket
-          </button>
-        </div>
       </div>
     </section>
   )
@@ -263,8 +208,8 @@ function SubscriptionSkeleton() {
         <div className="h-10 w-64 bg-gray-200 rounded mx-auto mb-3 animate-pulse" />
         <div className="h-6 w-96 max-w-full bg-gray-200 rounded mx-auto animate-pulse" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-[1280px] mx-auto">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-[1024px] mx-auto">
+        {[1, 2, 3].map((i) => (
           <div key={i} className="bg-white rounded-3xl p-6 shadow animate-pulse">
             <div className="h-6 w-3/4 bg-gray-200 rounded mx-auto mb-3" />
             <div className="h-4 w-full bg-gray-200 rounded mx-auto mb-5" />
