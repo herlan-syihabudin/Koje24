@@ -8,7 +8,8 @@ import AnimateOnScroll from "@/components/AnimateOnScroll"
 import FeaturedProducts from "@/components/FeaturedProducts"
 import ProductGrid from "@/components/ProductGrid"
 import AboutSection from "@/components/AboutSection"
-import PackagesSection from "@/components/PackagesSection"
+// ❌ HAPUS INI
+// import PackagesSection from "@/components/PackagesSection"
 import SubscriptionSection from "@/components/SubscriptionSection"
 import TestimonialsCarousel from "@/components/TestimonialsCarousel"
 import FaqSection from "@/components/FaqSection"
@@ -183,9 +184,10 @@ export default function HomePage() {
         <AboutSection />
       </section>
 
-      {/* SECTION LANGGANAN */}
+      {/* ✅ SECTION LANGGANAN - HANYA SATU (SubscriptionSection) */}
       <section id="langganan" aria-label="Paket Langganan">
-        <PackagesSection />
+        {/* ❌ HAPUS PackagesSection */}
+        {/* <PackagesSection /> */}
         <SubscriptionSection />
       </section>
 
