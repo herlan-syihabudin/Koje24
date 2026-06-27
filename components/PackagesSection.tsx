@@ -3,33 +3,31 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 
-interface SheetRow {
-  kode: string;
-  harga: string | number;
-  hargapromo: string | number;
-  active: string;
-}
-
-interface Package {
+interface ProductFromAPI {
   id: string;
-  name: string;
-  price: number;
-  desc: string;
-  popular?: boolean;
+  slug: string;
+  nama: string;
+  kategori: string;
+  harga: number;
+  stok: number;
+  aktif: string;
+  img: string;
+  slogan?: string;
+  ingredients?: string[];
+  benefits?: string[];
+  goodFor?: string[];
+  consumeTime?: string;
+  isPackage?: boolean;
+  brand?: string;
+  desc?: string;
 }
-
-const plansLocal: Package[] = [
-  { id: "7", name: "7 Hari Detox Plan", price: 120000, desc: "Cocok untuk start ringan." },
-  { id: "14", name: "14 Hari Vitality", price: 230000, desc: "Stamina & kebiasaan sehat.", popular: true },
-  { id: "30", name: "30 Hari Premium Plan", price: 450000, desc: "Perubahan terasa maksimal." },
-]
 
 export default function PackagesSection() {
-  const [sheetData, setSheetData] = useState<Record<string, any>>({})
+  const [packages, setPackages] = useState<ProductFromAPI[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // 🔥 FIX: Fetch data dari Google Sheet dengan response yang benar
+  // ✅ FETCH DATA PAKET DARI API
   useEffect(() => {
     let isMounted = true
 
@@ -41,30 +39,35 @@ export default function PackagesSection() {
       .then((response) => {
         if (!isMounted) return
         
-        // 🔥 Ambil products dari response
-        const rows = response?.success ? response.products : (Array.isArray(response) ? response : [])
+        const productsData = response?.success ? response.products : (Array.isArray(response) ? response : [])
         
-        // 🔥 Validasi array
-        if (!Array.isArray(rows)) {
-          console.error("productsData is not an array:", rows)
+        if (!Array.isArray(productsData)) {
+          console.error("productsData is not an array:", productsData)
           setError("Gagal memuat data paket")
           setLoading(false)
           return
         }
         
-        const map: Record<string, any> = {}
-        rows.forEach((x: SheetRow) => {
-          map[x.kode] = {
-            harga: Number(x.harga) || 0,
-            promo: Number(x.hargapromo) || 0,
-            active: String(x.active).toLowerCase() === "true",
-          }
-        })
-        setSheetData(map)
+        // ✅ FILTER HANYA PAKET
+        const packageItems = productsData
+          .filter((p: ProductFromAPI) => {
+            // Filter berdasarkan kategori atau isPackage
+            return p.isPackage === true || 
+                   p.kategori?.toLowerCase() === "paket" ||
+                   p.kategori?.toLowerCase() === "program detox" ||
+                   p.nama?.toLowerCase().includes("paket")
+          })
+          .filter((p: ProductFromAPI) => p.aktif === "YES")
+          .sort((a: ProductFromAPI, b: ProductFromAPI) => {
+            // Urutkan berdasarkan harga
+            return a.harga - b.harga
+          })
+        
+        setPackages(packageItems)
         setError(null)
       })
       .catch((err) => {
-        console.error("Failed to fetch package data:", err)
+        console.error("Failed to fetch packages:", err)
         setError("Gagal memuat data paket")
       })
       .finally(() => {
@@ -86,10 +89,10 @@ export default function PackagesSection() {
   }
 
   // Error state
-  if (error) {
+  if (error || packages.length === 0) {
     return (
       <section className="bg-gradient-to-b from-white to-[#f3fafa] py-20 px-6 text-center">
-        <p className="text-red-500">{error}</p>
+        <p className="text-gray-500">{error || "Belum ada paket yang tersedia"}</p>
       </section>
     )
   }
@@ -111,75 +114,58 @@ export default function PackagesSection() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto relative z-10">
-        {plansLocal.map((p, index) => {
-          const db = sheetData[p.id]
-
-          // Skip if inactive in sheet
-          if (db && db.active === false) return null
-
-          // Price priority: promo → normal → local
-          const price =
-            db?.promo && db.promo > 0 ? db.promo :
-            db?.harga && db.harga > 0 ? db.harga :
-            p.price
-
-          const discount = db?.promo > 0 && db?.harga > db?.promo
-            ? Math.round((1 - db.promo / db.harga) * 100)
-            : 0
-
+        {packages.map((pkg, index) => {
+          // Cek apakah ini paket populer (misal: yang paling murah atau paling laris)
+          const isPopular = index === 1 || pkg.nama?.toLowerCase().includes("populer")
+          
           return (
             <motion.div
-              key={p.id}
+              key={pkg.id}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
               viewport={{ once: true, amount: 0.3 }}
-              className="
+              className={`
                 group relative rounded-3xl bg-white px-7 py-8 cursor-pointer
                 border border-white/60 shadow-[0_8px_25px_rgba(0,0,0,0.04)]
                 hover:shadow-[0_18px_45px_rgba(15,163,168,0.20)]
                 hover:-translate-y-2 hover:border-[#0FA3A8]/40
                 transition-all duration-500
-              "
+                ${isPopular ? "ring-2 ring-[#E8C46B] ring-offset-2" : ""}
+              `}
             >
               {/* Background gradient on hover */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br from-[#0FA3A8]/5 to-transparent rounded-3xl transition-opacity duration-500" />
 
               {/* Popular badge */}
-              {p.popular && (
+              {isPopular && (
                 <div className="absolute top-3 left-3 bg-[#E8C46B] text-[#0B4B50] text-xs px-3 py-1 rounded-full font-medium z-10">
                   🌟 Paling Populer
                 </div>
               )}
 
-              {/* Discount badge */}
-              {discount > 0 && (
-                <div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-3 py-1 rounded-full font-medium z-10">
-                  Hemat {discount}%
-                </div>
-              )}
-
               <h3 className="text-xl font-semibold text-[#0B4B50] mb-1 font-playfair relative z-10">
-                {p.name}
+                {pkg.nama}
               </h3>
 
+              {pkg.slogan && (
+                <p className="text-sm text-[#0FA3A8] font-medium mb-2 relative z-10">
+                  {pkg.slogan}
+                </p>
+              )}
+
               <p className="text-sm text-gray-600 mb-5 font-inter relative z-10 min-h-[40px]">
-                {p.desc}
+                {pkg.desc || "Paket hemat untuk gaya hidup sehat"}
               </p>
 
               <div className="mb-6 relative z-10">
-                {db?.promo > 0 && db?.harga > db?.promo && (
-                  <span className="text-sm text-gray-400 line-through mr-2">
-                    Rp{db.harga.toLocaleString("id-ID")}
-                  </span>
-                )}
                 <span className="text-3xl font-bold text-[#0FA3A8]">
-                  Rp{price.toLocaleString("id-ID")}
+                  Rp{pkg.harga.toLocaleString("id-ID")}
                 </span>
               </div>
 
               <button
-                onClick={() => openPackage(p.name, price)}
+                onClick={() => openPackage(pkg.nama, pkg.harga)}
                 className="
                   w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold
                   transition-all duration-300 relative z-10
