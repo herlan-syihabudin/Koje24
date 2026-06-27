@@ -1,10 +1,25 @@
 // app/sitemap.ts
 import { MetadataRoute } from 'next'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+// 🔥 AMBIL PRODUK DARI API (AGAR DINAMIS)
+async function getProducts() {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://koje24.com'
+    const res = await fetch(`${baseUrl}/api/master-produk`, {
+      cache: 'no-store'
+    })
+    const data = await res.json()
+    return data?.success ? data.products : []
+  } catch (error) {
+    console.error('Error fetching products for sitemap:', error)
+    return []
+  }
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://koje24.com'
   
-  // Halaman utama yang penting untuk di-index
+  // ✅ Halaman utama yang penting untuk di-index
   const routes: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
@@ -12,17 +27,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'daily',
       priority: 1.0,
     },
+    // ✅ PERBAIKI: /produk → sudah ada di ProductGrid
     {
-      url: `${baseUrl}/produk`,
+      url: `${baseUrl}/#produk`,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.9,
     },
+    // ✅ PERBAIKI: /tentang-koje24 (bukan /tentang-kami)
     {
-      url: `${baseUrl}/tentang-kami`,
+      url: `${baseUrl}/tentang-koje24`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 0.7,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/manfaat`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
     },
     {
       url: `${baseUrl}/testimoni`,
@@ -30,24 +53,35 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.8,
     },
+    {
+      url: `${baseUrl}/pusat-bantuan`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
   ]
   
-  // Daftar semua produk KOJE24
-  const products = [
-    'red-vitality',
-    'golden-detox',
-    'green-revive', 
-    'sunrise-boost',
-    'lemongrass-fresh',
-    'yellow-immunity',
-  ]
+  // ✅ DAFTAR PRODUK DARI API (BUKAN HARDCODE)
+  const products = await getProducts()
   
-  const productRoutes: MetadataRoute.Sitemap = products.map((product) => ({
-    url: `${baseUrl}/produk/${product}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly',
-    priority: 0.8,
-  }))
+  const productRoutes: MetadataRoute.Sitemap = products
+    .filter((p: any) => p.aktif === 'YES') // ✅ HANYA PRODUK AKTIF
+    .map((product: any) => ({
+      url: `${baseUrl}/produk/${product.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    }))
   
-  return [...routes, ...productRoutes]
+  // ✅ PAKET JUGA DI-INDEX
+  const packageRoutes: MetadataRoute.Sitemap = products
+    .filter((p: any) => p.isPackage && p.aktif === 'YES')
+    .map((product: any) => ({
+      url: `${baseUrl}/#langganan`, // Link ke section paket
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    }))
+  
+  return [...routes, ...productRoutes, ...packageRoutes]
 }
