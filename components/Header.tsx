@@ -22,7 +22,8 @@ const SCROLL = {
   DESKTOP_SHRINK: 110,
 };
 
-// ✅ DAFTAR HALAMAN YANG BACKGROUNDNYA GELAP
+// ✅ DAFTAR HALAMAN YANG BACKGROUNDNYA GELAP (TRANSPARAN HEADER)
+// Halaman yang memiliki hero/background gelap di bagian atas
 const DARK_PAGES = ['/', '/tentang-koje24', '/manfaat'];
 
 const dispatchEvent = (eventName: string, detail?: any) => {
@@ -59,7 +60,11 @@ export default function Header() {
 
   // ✅ CEK APAKAH HALAMAN MEMPUNYAI BACKGROUND GELAP
   const isDarkPage = useMemo(() => {
-    return DARK_PAGES.includes(pathname) || pathname.startsWith('/tentang') || pathname.startsWith('/manfaat');
+    // Homepage, tentang, manfaat, dan halaman dengan hero gelap
+    return DARK_PAGES.includes(pathname) || 
+           pathname === '/' || 
+           pathname.startsWith('/tentang') || 
+           pathname.startsWith('/manfaat');
   }, [pathname]);
 
   // Mounted state
@@ -67,7 +72,7 @@ export default function Header() {
     setMounted(true);
   }, []);
 
-  // Prefetch untuk performa
+  // Prefetch
   useEffect(() => {
     if (mounted) {
       router.prefetch('/pusat-bantuan');
@@ -84,7 +89,7 @@ export default function Header() {
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // ✅ DETEKSI PATHNAME & ACTIVE LINK
+  // ✅ DETEKSI PATHNAME
   useEffect(() => {
     const checkPage = () => {
       const path = window.location.pathname;
@@ -172,7 +177,7 @@ export default function Header() {
     if (!mounted) return "fixed top-0 w-full z-[200] bg-white py-5";
     if (menuOpen) return "fixed top-0 w-full z-[200] bg-white py-5 shadow-md";
     
-    // ✅ UNTUK HALAMAN GELAP
+    // ✅ UNTUK HALAMAN GELAP (Home, tentang, manfaat)
     if (isDarkPage) {
       return `
         fixed top-0 w-full z-[200]
@@ -185,7 +190,7 @@ export default function Header() {
       `;
     }
     
-    // ✅ UNTUK HALAMAN PUTIH (produk, testimoni, dll)
+    // ✅ UNTUK HALAMAN PUTIH (produk, testimoni, pusat-bantuan)
     return `
       fixed top-0 w-full z-[200]
       transition-all duration-300
@@ -194,17 +199,15 @@ export default function Header() {
     `;
   }, [menuOpen, isScrolled, shrink, isDarkPage, mounted]);
 
-  // ✅ LOGO CLASSES - DIPERBAIKI
+  // ✅ LOGO CLASSES
   const logoClasses = useMemo(() => {
     if (!mounted) return "font-playfair font-bold text-2xl text-gray-800";
     if (menuOpen) return "font-playfair font-bold text-2xl text-gray-800";
     
-    // ✅ UNTUK HALAMAN GELAP
     if (isDarkPage) {
       return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} ${isScrolled ? "text-gray-800" : "text-white"}`;
     }
     
-    // ✅ UNTUK HALAMAN PUTIH
     return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} text-gray-800`;
   }, [menuOpen, shrink, isScrolled, isDarkPage, mounted]);
 
@@ -215,31 +218,39 @@ export default function Header() {
     return "text-[#0FA3A8]";
   }, [menuOpen, isDarkPage, isScrolled, mounted]);
 
-  // ✅ TEXT COLOR - DIPERBAIKI
+  // ✅ TEXT COLOR
   const getTextColor = useCallback(() => {
     if (!mounted) return "text-gray-800";
     if (menuOpen) return "text-gray-800";
     
-    // ✅ UNTUK HALAMAN GELAP
+    // ✅ Halaman gelap: putih saat di atas, hitam saat scroll
     if (isDarkPage) {
       return isScrolled ? "text-gray-800" : "text-white";
     }
     
-    // ✅ UNTUK HALAMAN PUTIH
+    // ✅ Halaman putih: selalu hitam
     return "text-gray-800";
   }, [menuOpen, isScrolled, isDarkPage, mounted]);
 
+  // ✅ BUTTON BACKGROUND
   const getButtonBg = useCallback(() => {
     if (!mounted) return "bg-[#0FA3A8] text-white";
     if (menuOpen) return "bg-[#0FA3A8] text-white";
     
-    // ✅ UNTUK HALAMAN GELAP
     if (isDarkPage && !isScrolled) {
       return "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30";
     }
     
     return "bg-[#0FA3A8] text-white hover:bg-[#0DC1C7]";
   }, [menuOpen, isScrolled, isDarkPage, mounted]);
+
+  // ✅ CART ICON COLOR
+  const getCartColor = useCallback(() => {
+    if (!mounted) return "text-gray-800";
+    if (menuOpen) return "text-gray-800";
+    if (isDarkPage && !isScrolled) return "text-white";
+    return "text-gray-800";
+  }, [menuOpen, isDarkPage, isScrolled, mounted]);
 
   if (!mounted) return null;
 
@@ -297,7 +308,7 @@ export default function Header() {
             className="relative p-2 rounded-full hover:bg-gray-100 transition-all"
             aria-label={`Cart with ${totalQty} items`}
           >
-            <ShoppingCart size={20} className={getTextColor()} />
+            <ShoppingCart size={20} className={getCartColor()} />
             {totalQty > 0 && (
               <span className="absolute -top-1 -right-1 bg-[#0FA3A8] text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg">
                 {totalQty > 9 ? '9+' : totalQty}
@@ -326,7 +337,7 @@ export default function Header() {
             className="relative p-2 rounded-full hover:bg-gray-100 transition-all"
             aria-label={`Cart with ${totalQty} items`}
           >
-            <ShoppingCart size={22} className={getTextColor()} />
+            <ShoppingCart size={22} className={getCartColor()} />
             {totalQty > 0 && (
               <span className="absolute -top-1 -right-1 bg-[#0FA3A8] text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg">
                 {totalQty > 9 ? '9+' : totalQty}
@@ -339,12 +350,12 @@ export default function Header() {
             className="p-2 rounded-full hover:bg-gray-100 transition-all"
             aria-label="Open menu"
           >
-            <Menu size={24} className={getTextColor()} />
+            <Menu size={24} className={getCartColor()} />
           </button>
         </div>
       </div>
 
-      {/* MOBILE MENU */}
+      {/* MOBILE MENU - BOTTOM SHEET */}
       {menuOpen && (
         <>
           <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={closeMenu} />
