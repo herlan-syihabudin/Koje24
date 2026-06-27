@@ -69,7 +69,7 @@ export default function Hero() {
           alt="Cold Pressed Juice Bekasi - KOJE24"
           fill
           priority
-          quality={80} // ✅ TINGKATKAN KE 80 (lebih tajam)
+          quality={75}
           sizes="100vw"
           fetchPriority="high"
           className="object-cover object-center md:object-right"
@@ -91,8 +91,6 @@ export default function Hero() {
         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent blur-[100px] opacity-20 pointer-events-none"
       />
 
-      {/* ✅ HAPUS KOMENTAR noise.png KALAU GAK DIPAKAI */}
-
       {/* CONTENT */}
       <motion.div
         initial="hidden"
@@ -109,8 +107,8 @@ export default function Hero() {
           ⚡ 100% NATURAL • COLD-PRESSED
         </motion.p>
 
-        {/* TITLE - PAKAI h1 BUKAN h2 */}
-        <motion.h1 // ✅ UBAH DARI h2 KE h1
+        {/* TITLE */}
+        <motion.h1
           variants={contentVariants}
           custom={1}
           className="font-playfair font-semibold text-white leading-[1.05] text-[2.7rem] sm:text-[3.4rem] md:text-[4.3rem] drop-shadow-[0_10px_30px_rgba(0,0,0,0.85)]"
@@ -119,7 +117,7 @@ export default function Hero() {
           <span className="block text-[#0FA3A8]">Explore the World</span>
         </motion.h1>
 
-        {/* DESC - TETAP */}
+        {/* DESC */}
         <motion.p
           variants={contentVariants}
           custom={2}
@@ -142,7 +140,7 @@ export default function Hero() {
           <span>✓ Fresh Daily</span>
         </motion.div>
 
-        {/* CTA */}
+        {/* ✅ CTA - DIPERBAIKI KONTRASNYA */}
         <motion.div
           style={{
             opacity: ctaOpacity,
@@ -155,7 +153,7 @@ export default function Hero() {
         >
           <a
             href="#produk"
-            className="inline-block bg-[#0FA3A8] hover:bg-[#0DC1C7] text-white font-semibold px-8 md:px-10 py-3 md:py-4 rounded-full shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 focus:ring-4 focus:ring-[#0FA3A8]/50"
+            className="inline-block bg-[#0FA3A8] hover:bg-[#0DC1C7] text-white font-bold px-8 md:px-10 py-3 md:py-4 rounded-full shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 focus:ring-4 focus:ring-[#0FA3A8]/50"
             aria-label="Lihat produk cold-pressed juice KOJE24"
           >
             Coba Sekarang
