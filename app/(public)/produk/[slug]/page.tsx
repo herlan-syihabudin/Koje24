@@ -74,8 +74,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       title,
       description,
       images: [product.img],
-      type: 'product',
+      type: 'website', // ✅ HARUS "website" (BUKAN "product")
       locale: 'id_ID',
+      url: `https://koje24.com/produk/${product.slug}`, // ✅ TAMBAHKAN URL
+      siteName: 'KOJE24', // ✅ TAMBAHKAN SITE NAME
     },
     alternates: {
       canonical: `https://koje24.com/produk/${product.slug}`,
@@ -86,6 +88,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     },
   }
 }
+
 
 // Generate static params
 export async function generateStaticParams() {
