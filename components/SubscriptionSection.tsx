@@ -47,7 +47,7 @@ export default function SubscriptionSection() {
           return
         }
         
-        // ✅ FILTER PAKET SAJA (Reguler Plan dihapus)
+        // ✅ FILTER PAKET SAJA
         const packageItems = productsData
           .filter((p: ProductFromAPI) => {
             return p.isPackage === true || 
@@ -125,7 +125,8 @@ export default function SubscriptionSection() {
         </p>
       </div>
 
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-[1024px] mx-auto">
+      {/* ✅ PAKAI flex DENGAN items-stretch AGAR SEJAJAR */}
+      <div className="relative z-10 flex flex-wrap justify-center gap-8 max-w-[1024px] mx-auto">
         {packages.map((pkg, index) => {
           // Tentukan paket favorit (yang di tengah)
           const isPopular = index === 1 || pkg.nama?.toLowerCase().includes("favorit")
@@ -140,6 +141,8 @@ export default function SubscriptionSection() {
                 hover:shadow-[0_10px_35px_rgba(15,163,168,0.25)]
                 transition-all duration-500
                 flex flex-col p-6 text-center relative overflow-hidden
+                w-full sm:w-[280px] md:w-[300px] lg:w-[300px]
+                flex-1 min-w-[250px] max-w-[320px]
               "
             >
               {/* BADGE POPULAR */}
@@ -188,6 +191,7 @@ export default function SubscriptionSection() {
                   hover:shadow-[0_6px_25px_rgba(15,163,168,0.4)]
                   transition-all duration-300
                   active:scale-95
+                  mt-auto
                 "
               >
                 Ambil Paket
@@ -208,9 +212,9 @@ function SubscriptionSkeleton() {
         <div className="h-10 w-64 bg-gray-200 rounded mx-auto mb-3 animate-pulse" />
         <div className="h-6 w-96 max-w-full bg-gray-200 rounded mx-auto animate-pulse" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-[1024px] mx-auto">
+      <div className="flex flex-wrap justify-center gap-8 max-w-[1024px] mx-auto">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white rounded-3xl p-6 shadow animate-pulse">
+          <div key={i} className="bg-white rounded-3xl p-6 shadow animate-pulse w-full sm:w-[280px] md:w-[300px] flex-1 min-w-[250px] max-w-[320px]">
             <div className="h-6 w-3/4 bg-gray-200 rounded mx-auto mb-3" />
             <div className="h-4 w-full bg-gray-200 rounded mx-auto mb-5" />
             <div className="h-6 w-1/2 bg-gray-200 rounded mx-auto mb-6" />
