@@ -5,38 +5,98 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X, CheckCircle } from "lucide-react"
 import toast from 'react-hot-toast'
 import { useCartStore } from "@/stores/cartStore"
-import { products } from "@/lib/products"
+
+// ✅ TAMBAHKAN TYPE UNTUK PRODUK DARI API
+interface ProductFromAPI {
+  id: string;
+  slug: string;
+  nama: string;
+  kategori: string;
+  harga: number;
+  stok: number;
+  aktif: string;
+  img: string;
+  slogan?: string;
+  ingredients?: string[];
+  benefits?: string[];
+  goodFor?: string[];
+  consumeTime?: string;
+  isPackage?: boolean;
+  brand?: string;
+  desc?: string;
+}
 
 type PackageData = { 
+  id?: string
   name: string
   price: number
   img?: string 
+  items?: any[]
 }
-
-// Filter variants dari products (atau bisa dari API)
-const VARIANTS = products
-  .filter(p => p.category === 'variant' || !p.isPackage)
-  .map(p => p.name)
-  .slice(0, 6) // ambil 6 aja
-
-// Default variants kalau kosong
-const DEFAULT_VARIANTS = [
-  "Green Detox",
-  "Yellow Immunity",
-  "Green Revive",
-  "Sunrise Boost",
-  "Lemongrass Fresh",
-  "Red Vitality",
-]
-
-const ACTIVE_VARIANTS = VARIANTS.length > 0 ? VARIANTS : DEFAULT_VARIANTS
 
 export default function PackagePopup() {
   const [open, setOpen] = useState(false)
   const [pkg, setPkg] = useState<PackageData | null>(null)
   const [qty, setQty] = useState<Record<string, number>>({})
+  const [variants, setVariants] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
 
   const addItem = useCartStore((state) => state.addItem)
+
+  // ✅ FETCH VARIANTS DARI API
+  useEffect(() => {
+    let isMounted = true
+
+    fetch("/api/master-produk", { cache: "no-store" })
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then((response) => {
+        if (!isMounted) return
+        
+        const productsData = response?.success ? response.products : (Array.isArray(response) ? response : [])
+        
+        if (!Array.isArray(productsData)) {
+          setLoading(false)
+          return
+        }
+        
+        // ✅ FILTER PRODUK BUKAN PAKET
+        const variantNames = productsData
+          .filter((p: ProductFromAPI) => !p.isPackage && p.aktif === "YES")
+          .map((p: ProductFromAPI) => p.nama)
+          .slice(0, 6) // ambil 6 aja
+        
+        // ✅ FALLBACK VARIANT
+        const DEFAULT_VARIANTS = [
+          "Golden Detox",
+          "Yellow Immunity",
+          "Green Revive",
+          "Sunrise Boost",
+          "Lemongrass Fresh",
+          "Red Vitality",
+        ]
+        
+        setVariants(variantNames.length > 0 ? variantNames : DEFAULT_VARIANTS)
+        setLoading(false)
+      })
+      .catch((err) => {
+        console.error("Failed to fetch variants:", err)
+        // Fallback jika API error
+        setVariants([
+          "Golden Detox",
+          "Yellow Immunity",
+          "Green Revive",
+          "Sunrise Boost",
+          "Lemongrass Fresh",
+          "Red Vitality",
+        ])
+        setLoading(false)
+      })
+
+    return () => { isMounted = false }
+  }, [])
 
   // Body lock
   useEffect(() => {
@@ -53,9 +113,11 @@ export default function PackagePopup() {
   useEffect(() => {
     const onOpen = (e: CustomEvent<PackageData>) => {
       setPkg({
+        id: e.detail.id,
         name: e.detail.name,
         price: e.detail.price,
-        img: e.detail.img || "/images/package-placeholder.jpg"
+        img: e.detail.img || "/images/package-placeholder.jpg",
+        items: e.detail.items || []
       })
       setQty({})
       setOpen(true)
@@ -147,10 +209,9 @@ export default function PackagePopup() {
       id: itemId,
       name: itemName,
       price: pkg.price,
-      img: pkg.img,
+      img: pkg.img || "/images/package-placeholder.jpg",
     })
 
-    // Success toast
     toast.success('Paket berhasil ditambahkan ke keranjang!', {
       icon: '🛒',
       duration: 2000,
@@ -163,12 +224,16 @@ export default function PackagePopup() {
 
     close()
 
-    // Open cart
     try {
       window.dispatchEvent(new Event("open-cart"))
     } catch {
-      // Ignore if no listener
+      // Ignore
     }
+  }
+
+  // ✅ LOADING STATE
+  if (loading) {
+    return null
   }
 
   return (
@@ -272,7 +337,7 @@ export default function PackagePopup() {
 
               {/* Variants grid */}
               <div className="grid grid-cols-2 gap-3 mb-6">
-                {ACTIVE_VARIANTS.map((v) => (
+                {variants.map((v) => (
                   <motion.div
                     key={v}
                     whileHover={{ scale: qty[v] ? 1 : 1.02 }}
