@@ -20,24 +20,23 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    // ✅ TAMBAHKAN: Cache gambar lebih lama
     minimumCacheTTL: 60 * 60 * 24 * 365, // 1 tahun
   },
 
-  // ✅ TAMBAHKAN: Optimasi SWC dan bundle
-  swcMinify: true,
-  
+  // ❌ HAPUS swcMinify (sudah default di Next.js 16)
+  // swcMinify: true,
+
   compiler: {
-    // ✅ HAPUS CONSOLE DI PRODUCTION (opsional)
+    // ✅ HAPUS CONSOLE DI PRODUCTION
     removeConsole: process.env.NODE_ENV === "production" ? {
-      exclude: ["error", "warn"], // Tetap tampilkan error & warning
+      exclude: ["error", "warn"],
     } : false,
   },
 
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
-    // ✅ TAMBAHKAN: Optimasi bundle
+    // ✅ optimizePackageImports sudah ada di Next.js 16
     optimizePackageImports: ["lucide-react", "framer-motion"],
     serverActions: {
       allowedOrigins: [
@@ -65,7 +64,6 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // ✅ TAMBAHKAN: Cache untuk gambar
       {
         source: "/image/(.*)",
         headers: [
@@ -84,7 +82,6 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // ✅ TAMBAHKAN: Security headers
       {
         source: "/(.*)",
         headers: [
