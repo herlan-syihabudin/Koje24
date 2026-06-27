@@ -1,0 +1,69 @@
+import { NextRequest, NextResponse } from "next/server";
+
+export const runtime = "nodejs";
+
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params;
+    const invoiceId = id?.trim();
+
+    if (!invoiceId) {
+      return NextResponse.json(
+        { success: false, message: "Missing invoice ID" },
+        { status: 400 }
+      );
+    }
+
+    const API_KEY = process.env.HTML2PDF_KEY ?? "";
+    if (!API_KEY) {
+      return NextResponse.json(
+        { success: false, message: "Missing HTML2PDF API key" },
+        { status: 500 }
+      );
+    }
+
+    const BASE_URL =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      req.nextUrl.origin ||
+      "https://koje24.com";
+
+    const invoiceUrl = `${BASE_URL}/invoice/${invoiceId}?pdf=1`;
+
+    // 🟢 FIX: TANPA WAITFOR (INILAH YANG HARUS)
+    const pdfReqUrl = `https://api.html2pdf.app/v1/generate?apiKey=${API_KEY}&url=${encodeURIComponent(
+      invoiceUrl
+    )}&format=A4&printBackground=true&margin=10mm`;
+
+    const result = await fetch(pdfReqUrl);
+
+    if (!result.ok) {
+      const text = await result.text();
+      throw new Error(`PDF failed: ${text}`);
+    }
+
+    const pdf = await result.arrayBuffer();
+
+    return new NextResponse(pdf, {
+  status: 200,
+  headers: {
+    "Content-Type": "application/pdf",
+    "Content-Disposition": `attachment; filename="invoice-${invoiceId}.pdf"`,
+    "Cache-Control": "no-store",
+  },
+});
+
+  } catch (err: any) {
+    console.error("❌ INVOICE PDF ERROR:", err);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "PDF failed",
+        detail: err?.message ?? err,
+      },
+      { status: 500 }
+    );
+  }
+}

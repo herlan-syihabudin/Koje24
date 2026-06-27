@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import QRCode from "react-qr-code";
 
+/* =====================
+   TYPES
+===================== */
 interface InvoiceData {
   invoiceId: string;
   timestamp: string;
@@ -18,10 +21,12 @@ interface InvoiceData {
   effectiveOngkir: number;
   effectiveGrandTotal: number;
   invoiceUrl?: string;
-  // kolom "Promo" dari Sheet2 (Transaksi), misal: "KOJE10K (-Rp10.000)"
   promoRaw?: string;
 }
 
+/* =====================
+   HELPERS
+===================== */
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -29,42 +34,47 @@ const formatCurrency = (n: number) =>
     minimumFractionDigits: 0,
   }).format(n);
 
-// 🔍 parsing promo: "KOJE10K (-Rp10.000)" => { label: "KOJE10K", amount: 10000 }
-function parsePromo(promoRaw?: string): { label: string; amount: number } {
-  if (!promoRaw) return { label: "", amount: 0 };
-
-  const text = promoRaw.trim();
-  if (!text) return { label: "", amount: 0 };
-
-  // ambil kode (kata pertama huruf/angka)
-  const codeMatch = text.match(/^([A-Z0-9]+)/i);
-  const label = codeMatch ? codeMatch[1].toUpperCase() : text;
-
-  // ambil angka diskon (cari "- Rp10.000" dll)
+function parsePromo(raw?: string): { label: string; amount: number } {
+  if (!raw) return { label: "", amount: 0 };
+  const text = raw.trim();
+  const label = (text.match(/^([A-Z0-9]+)/i)?.[1] ?? "").toUpperCase();
   const amountMatch = text.match(/-?\s*Rp?\s*([\d\.]+)/i);
-  let amount = 0;
-  if (amountMatch && amountMatch[1]) {
-    const digits = amountMatch[1].replace(/\./g, "");
-    const parsed = Number(digits);
-    if (!Number.isNaN(parsed)) amount = parsed;
-  }
-
-  return { label, amount };
+  const amount = amountMatch ? Number(amountMatch[1].replace(/\./g, "")) : 0;
+  return { label, amount: isNaN(amount) ? 0 : amount };
 }
 
+/* =====================
+   COMPONENT
+===================== */
 export default function InvoicePage() {
   const params = useParams();
   const invoiceId = params?.id as string;
 
   const [invoice, setInvoice] = useState<InvoiceData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPdf, setIsPdf] = useState(false);
 
+  /* =====================
+     DETECT PDF MODE
+     (dipakai oleh html2pdf)
+  ===================== */
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const q = new URLSearchParams(window.location.search);
+      if (q.get("pdf") === "1") {
+        setIsPdf(true);
+      }
+    }
+  }, []);
+
+  /* =====================
+     LOAD INVOICE DATA
+  ===================== */
   useEffect(() => {
     const load = async () => {
       try {
         const res = await fetch(`/api/invoice/${invoiceId}`);
         const json = await res.json();
-        // asumsi API: { success: boolean, data: InvoiceData }
         if (json?.data) setInvoice(json.data);
       } finally {
         setLoading(false);
@@ -77,198 +87,256 @@ export default function InvoicePage() {
   if (!invoice)
     return <div className="p-10 text-red-600">Invoice tidak ditemukan.</div>;
 
+  /* =====================
+     PARSE ITEMS
+  ===================== */
   const rawItems = invoice.produkList.split(",").map((x) => x.trim());
   const items = rawItems.map((line) => {
-    const match = line.match(/(.+?)\s*\((\d+)x\)/);
-    return match
-      ? { name: match[1].trim(), qty: Number(match[2]) }
-      : { name: line.trim(), qty: 1 };
+    const m = line.match(/(.+?)\s*\((\d+)x\)/);
+    return m ? { name: m[1].trim(), qty: Number(m[2]) } : { name: line, qty: 1 };
   });
 
   const unitPrice =
-    invoice.qtyTotal > 0 ? invoice.subtotalCalc / invoice.qtyTotal : 0;
+    invoice.qtyTotal > 0
+      ? invoice.subtotalCalc / invoice.qtyTotal
+      : 0;
 
-  const calculateSubtotal = (name: string, qty: number) => {
+  const calcSubtotal = (name: string, qty: number) => {
     const isPaket = name.toLowerCase().includes("paket");
     if (unitPrice <= 0) return null;
-
     if (isPaket && qty === 1) return qty * unitPrice;
     if (!isPaket) return qty * unitPrice;
-    return null; // paket multi qty kita biarkan "—" (totalnya sudah masuk subtotal global)
+    return null;
   };
 
- // 🔥 promo (aman untuk TS & fleksibel untuk API)
-const rawPromo =
-  invoice.promoRaw ??
-  (invoice as any)?.promo ??
-  (invoice as any)?.promoLabel ??
-  "";
-
-const { label: promoLabel, amount: promoAmount } = parsePromo(rawPromo);
-const hasPromo = promoAmount > 0;
+  const { label: promoLabel, amount: promoAmount } = parsePromo(
+    invoice.promoRaw
+  );
+  const hasPromo = promoAmount > 0;
 
   return (
-    <div className="max-w-4xl mx-auto p-10 bg-white text-black invoice-paper">
-      {/* === DOWNLOAD BUTTON (web only) === */}
-      <div className="w-full flex justify-end mb-4 no-pdf">
-        <a
-          href={`/api/invoice-pdf/${invoice.invoiceId}`}
-          className="px-5 py-2 bg-[#C62828] text-white rounded shadow hover:bg-[#a71e1e] transition text-sm font-semibold"
-        >
-          ⬇ Download Invoice
-        </a>
-      </div>
+    <div className="invoice-wrapper">
+      <div className="max-w-4xl mx-auto p-10 bg-white text-black invoice-paper">
 
-      {/* ===== HEADER ===== */}
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <img
-            src="/image/logo-koje24.png"
-            alt="KOJE24"
-            className="h-16 w-auto mb-1"
-          />
-          <p className="text-sm leading-tight">
-            <strong>Healthy Juice for Everyday Energy</strong> <br />
-            Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi, Jawa Barat
-            17320
+        {/* =====================
+            DOWNLOAD PDF
+            (TIDAK MASUK PDF)
+        ===================== */}
+        {!isPdf && (
+          <div className="w-full flex justify-end mb-4">
+            <a
+              href={`/api/invoice-file/${invoiceId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-teal-600 text-white rounded-md"
+            >
+              Download PDF
+            </a>
+          </div>
+        )}
+
+       {/* =====================
+    HEADER
+===================== */}
+<div className="flex justify-between items-start mb-4">
+  {/* LEFT */}
+  <div>
+    <img
+      src={`${process.env.NEXT_PUBLIC_BASE_URL || "https://koje24.com"}/image/logo_koje24_hitam.webp`}
+      alt="KOJE24"
+      className="h-16 w-auto mb-1"
+    />
+
+    <p className="text-sm leading-tight select-none pointer-events-none">
+      <span className="text-xs text-gray-800 font-semibold tracking-wide">
+        PT KOJE NATURAL INDONESIA
+      </span>
+      <br />
+      <span className="italic text-xs text-gray-600">
+        Healthy Juice for Everyday Energy
+      </span>
+      <br />
+      <span className="not-address text-xs">
+        Jl. Sirsak, Cijengkol, Kec. Setu, Kabupaten Bekasi
+      </span>
+      <br />
+      <span className="font-medium text-xs">
+        WhatsApp: 0822-1313-9580
+      </span>
+    </p>
+  </div>
+
+  {/* RIGHT */}
+  <div className="text-right">
+  <p className="text-3xl font-bold">INVOICE</p>
+  <img
+    src={`https://barcode.tec-it.com/barcode.ashx?data=${invoice.invoiceId}&code=Code128&dpi=96`}
+    alt="barcode"
+    className="h-14 w-auto ml-auto"
+    onError={(e) => {
+      const target = e.target as HTMLImageElement;
+      target.src = `https://quickchart.io/barcode?text=${invoice.invoiceId}&format=png`;
+    }}
+  />
+  <p className="text-xs mt-1">
+    Tanggal: {invoice.timestamp.replace(",", " — ")}
+  </p>
+</div>
+</div>
+
+        <div className="border-t border-black mb-4" />
+
+        {/* =====================
+            INFO
+        ===================== */}
+        <div className="flex justify-between text-sm mb-6">
+          <p>
+            Pembayaran: <strong>{invoice.paymentLabel}</strong>
+          </p>
+          <p>
+            Status: <strong>{invoice.status.toUpperCase()}</strong>
           </p>
         </div>
 
-        <div className="text-right">
-          <p className="text-3xl font-bold mb-1 tracking-wide">INVOICE</p>
-          <img
-            src={`https://barcodeapi.org/api/128/${invoice.invoiceId}`}
-            alt="barcode"
-            className="h-14 w-auto mx-auto"
-          />
-          <p className="text-xs mt-1">
-            Tanggal: {invoice.timestamp.replace(",", " — ")}
-          </p>
-        </div>
-      </div>
+        <p className="text-sm font-bold">Invoice To:</p>
+        <p className="text-sm">Nama: {invoice.nama}</p>
+        <p className="text-sm">Alamat: {invoice.alamat}</p>
+        <p className="text-sm mb-4">Telp: {invoice.hp}</p>
 
-      <div className="border-t border-black mb-4" />
-
-      {/* ===== PAYMENT STATUS ===== */}
-      <div className="flex justify-between text-sm mb-6">
-        <p>
-          Pembayaran: <strong>{invoice.paymentLabel}</strong>
-        </p>
-        <p>
-          Status: <strong>{invoice.status.toUpperCase()}</strong>
-        </p>
-      </div>
-
-      {/* ===== CUSTOMER ===== */}
-      <p className="text-sm font-bold mb-1">Invoice To:</p>
-      <p className="text-sm">Nama: {invoice.nama}</p>
-      <p className="text-sm">Alamat: {invoice.alamat}</p>
-      <p className="text-sm mb-4">Telp: {invoice.hp}</p>
-
-      {/* ===== PRODUCT TABLE ===== */}
-      <table className="w-full text-sm border border-black" cellPadding={6}>
-        <thead>
-          <tr>
-            <th className="border border-black text-left">Deskripsi Produk</th>
-            <th className="border border-black w-28 text-right">Harga</th>
-            <th className="border border-black w-16 text-center">Qty</th>
-            <th className="border border-black w-32 text-right">Subtotal</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((p, idx) => {
-            const subtotal = calculateSubtotal(p.name, p.qty);
-            return (
-              <tr key={idx}>
-                <td className="border border-black">{p.name}</td>
-                <td className="border border-black text-right">
-                  {subtotal === null ? "—" : formatCurrency(unitPrice)}
-                </td>
-                <td className="border border-black text-center">{p.qty}</td>
-                <td className="border border-black text-right">
-                  {subtotal === null ? "—" : formatCurrency(subtotal)}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      {/* ===== TOTAL ===== */}
-      <div className="flex justify-end mt-5">
-        <table className="text-sm">
+        {/* =====================
+            TABLE
+        ===================== */}
+        <table className="w-full text-sm border border-black" cellPadding={6}>
+          <thead>
+            <tr>
+              <th className="border border-black text-left">Produk</th>
+              <th className="border border-black text-right">Harga</th>
+              <th className="border border-black text-center">Qty</th>
+              <th className="border border-black text-right">Subtotal</th>
+            </tr>
+          </thead>
           <tbody>
-            <tr>
-              <td className="py-1 pr-6">Subtotal Produk:</td>
-              <td className="text-right">
-                {formatCurrency(invoice.subtotalCalc)}
-              </td>
-            </tr>
-
-            {hasPromo && (
-              <tr>
-                <td className="py-1 pr-6">
-                  Promo{promoLabel ? ` (${promoLabel})` : ""}
-                </td>
-                <td className="text-right text-red-600">
-                  -{formatCurrency(promoAmount)}
-                </td>
-              </tr>
-            )}
-
-            <tr>
-              <td className="py-1 pr-6">Ongkir:</td>
-              <td className="text-right">
-                {formatCurrency(invoice.effectiveOngkir)}
-              </td>
-            </tr>
-            <tr className="font-bold text-lg border-t border-black">
-              <td className="py-2 pr-6">TOTAL DIBAYARKAN:</td>
-              <td className="text-right">
-                {formatCurrency(invoice.effectiveGrandTotal)}
-              </td>
-            </tr>
+            {items.map((p, i) => {
+              const sub = calcSubtotal(p.name, p.qty);
+              return (
+                <tr key={i}>
+                  <td className="border border-black">{p.name}</td>
+                  <td className="border border-black text-right">
+                    {sub ? formatCurrency(unitPrice) : "—"}
+                  </td>
+                  <td className="border border-black text-center">{p.qty}</td>
+                  <td className="border border-black text-right">
+                    {sub ? formatCurrency(sub) : "—"}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
-      </div>
 
-      {/* ===== QR CODE ===== */}
-      <div className="flex justify-center mt-8">
-        <QRCode value={invoice.invoiceUrl || window.location.href} size={110} />
-      </div>
+        {/* =====================
+            TOTAL
+        ===================== */}
+        <div className="flex justify-end mt-5">
+          <table className="text-sm">
+            <tbody>
+              <tr>
+                <td className="pr-6">Subtotal:</td>
+                <td className="text-right">
+                  {formatCurrency(invoice.subtotalCalc)}
+                </td>
+              </tr>
 
-      {/* ===== SYARAT & KETENTUAN ===== */}
-      <div className="text-[10px] text-gray-600 mt-6 leading-tight text-left">
-        — <strong>Syarat & Ketentuan:</strong>
-        <br />
-        1. Invoice ini otomatis & sah tanpa tanda tangan atau stempel.
-        <br />
-        2. Pembayaran dianggap sah setelah dana diterima oleh KOJE24.
-        <br />
-        3. Barang yang sudah dibeli tidak dapat dikembalikan kecuali terdapat
-        kerusakan.
-      </div>
+              {hasPromo && (
+                <tr>
+                  <td className="pr-6">
+                    Promo {promoLabel && `(${promoLabel})`}
+                  </td>
+                  <td className="text-right text-red-600">
+                    -{formatCurrency(promoAmount)}
+                  </td>
+                </tr>
+              )}
 
-      {/* ===== FOOTER ===== */}
-      <div className="border-t border-black text-center mt-4 pt-3 text-xs leading-tight">
-        Terima kasih telah berbelanja di <strong>KOJE24</strong>.
-      </div>
+              <tr>
+                <td className="pr-6">Ongkir:</td>
+                <td className="text-right">
+                  {formatCurrency(invoice.effectiveOngkir)}
+                </td>
+              </tr>
 
-      {/* ===== PRINT MODE ===== */}
-      <style jsx global>{`
-        @media print {
-          .invoice-paper {
-            margin: 0 !important;
-            padding: 0 !important;
-            zoom: 93%;
+              <tr className="font-bold border-t border-black">
+                <td className="pr-6 pt-2">TOTAL:</td>
+                <td className="text-right pt-2">
+                  {formatCurrency(invoice.effectiveGrandTotal)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* =====================
+            QR
+        ===================== */}
+        <div className="flex justify-center mt-8">
+          <QRCode
+            size={110}
+            value={
+              invoice.invoiceUrl ||
+              (typeof window !== "undefined" ? window.location.href : "")
+            }
+          />
+        </div>
+
+        {/* =====================
+    FOOTER
+===================== */}
+<div className="text-[10px] text-gray-600 mt-6 leading-relaxed">
+  <p>
+    Invoice ini dibuat secara otomatis oleh sistem KOJE24 dan sah tanpa tanda
+    tangan maupun stempel.
+  </p>
+
+  <p className="mt-1">
+    Terima kasih telah memilih hidup sehat bersama <strong>KOJE24</strong>.
+    Jangan lupa simpan produk di lemari pendingin untuk menjaga kualitas.
+  </p>
+
+  <p className="mt-1">
+    Untuk komplain produk, harap sertakan video unboxing maksimal 1x24 jam
+    setelah pesanan diterima.
+  </p>
+</div>
+         {/* =====================
+    HALAL CERTIFICATION
+===================== */}
+<div className="mt-6 flex flex-col items-center text-[9px] text-gray-500">
+  <img
+    src={`${process.env.NEXT_PUBLIC_BASE_URL || "https://koje24.com"}/image/halal-black.png`}
+    alt="Sertifikasi Halal Indonesia"
+    style={{
+      height: 44,
+      opacity: 0.9,
+      marginBottom: 4,
+    }}
+  />
+  <span className="text-center">
+    Diproduksi sesuai standar <b>Sertifikasi Halal Indonesia</b>
+  </span>
+</div>
+
+        {/* =====================
+            PRINT SAFETY
+        ===================== */}
+        <style jsx global>{`
+          @media print {
+            a,
+            button {
+              display: none !important;
+            }
           }
-          a,
-          button,
-          .no-pdf {
-            display: none !important;
-          }
-        }
-      `}</style>
+        `}</style>
+      </div>
     </div>
   );
 }

@@ -3,16 +3,17 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/stores/cartStore";
 import Script from "next/script";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 declare const google: any;
 
 type CheckoutState = "idle" | "submitting" | "error";
 
-const BASE_LAT = -6.2903238;
-const BASE_LNG = 107.087373;
+const BASE_LAT = -6.317905523078763;
+const BASE_LNG = 107.04266219924195;
 
-// hitung jarak km
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -24,61 +25,103 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function calcOngkir(distanceKm: number | null): number {
+function calcOngkir(distanceKm: number | null) {
   if (!distanceKm || distanceKm <= 0) return 15000;
   const base = 8000;
   const perKm = 3000;
-  const minPay = 10000;
   const raw = base + distanceKm * perKm;
   const rounded = Math.round(raw / 100) * 100;
-  return Math.max(minPay, rounded);
+  return Math.max(10000, rounded);
+}
+
+// 🔥 Fungsi reverse geocoding (koordinat → alamat)
+async function reverseGeocode(lat: number, lng: number) {
+  try {
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+    );
+    const data = await res.json();
+    if (data.results && data.results[0]) {
+      return data.results[0].formatted_address;
+    }
+    return null;
+  } catch (error) {
+    console.error("Reverse geocoding error:", error);
+    return null;
+  }
 }
 
 export default function CheckoutPage() {
   const router = useRouter();
+
   const items = useCartStore((s) => s.items);
   const clearCart = useCartStore((s) => s.clearCart);
-  const promoLabel = useCartStore((s) => s.promoLabel);
-  const promoAmount = useCartStore((s) => s.promoAmount);
+
+  const promo = useCartStore((s) => s.promo);
+  const getDiscount = useCartStore((s) => s.getDiscount);
 
   const [hydrated, setHydrated] = useState(false);
   const [nama, setNama] = useState("");
   const [hp, setHp] = useState("");
+  const [email, setEmail] = useState("");
   const [alamat, setAlamat] = useState("");
   const [catatan, setCatatan] = useState("");
 
   const [payment, setPayment] = useState<"transfer" | "qris" | "cod">("transfer");
   const [status, setStatus] = useState<CheckoutState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
-
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [ongkir, setOngkir] = useState<number>(15000);
-  const alamatRef = useRef<HTMLInputElement | null>(null);
   const [buktiBayarFile, setBuktiBayarFile] = useState<File | null>(null);
+  const alamatRef = useRef<HTMLInputElement | null>(null);
+
+  // 🔥 State untuk loading location
+  const [isLocating, setIsLocating] = useState(false);
 
   const subtotal = items.reduce((acc, it) => acc + it.price * it.qty, 0);
-  const total = Math.max(0, subtotal + (items.length ? ongkir : 0) - promoAmount);
+  const promoAmount = getDiscount();
+  const promoLabel = promo?.kode ?? "";
+  const total = Math.max(0, subtotal + ongkir - promoAmount);
+
+  // 🔥 Load data tersimpan dari localStorage
+  useEffect(() => {
+    const savedNama = localStorage.getItem("checkout_nama");
+    const savedHp = localStorage.getItem("checkout_hp");
+    const savedAlamat = localStorage.getItem("checkout_alamat");
+    if (savedNama) setNama(savedNama);
+    if (savedHp) setHp(savedHp);
+    if (savedAlamat) setAlamat(savedAlamat);
+  }, []);
+
+  // 🔥 Simpan data ke localStorage saat berubah
+  useEffect(() => {
+    if (nama) localStorage.setItem("checkout_nama", nama);
+    if (hp) localStorage.setItem("checkout_hp", hp);
+    if (alamat) localStorage.setItem("checkout_alamat", alamat);
+  }, [nama, hp, alamat]);
 
   useEffect(() => {
     setHydrated(true);
-    window.scrollTo({ top: 0 });
+    setTimeout(() => {
+      alamatRef.current?.focus();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 250);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
     if (items.length === 0) {
-      const t = setTimeout(() => router.push("/#produk"), 1600);
+      const t = setTimeout(() => router.push("/#produk"), 1500);
       return () => clearTimeout(t);
     }
   }, [items.length, hydrated, router]);
 
-  // GOOGLE AUTOCOMPLETE FIX (tanpa menimpa alamat user)
   useEffect(() => {
     const el = alamatRef.current;
     const w = window as any;
     if (!el || !w.google?.maps?.places) return;
-    if ((el as any)._autocomplete_inited) return;
-    (el as any)._autocomplete_inited = true;
+    if ((el as any)._autocomplete_done) return;
+    (el as any)._autocomplete_done = true;
 
     try {
       const auto = new google.maps.places.Autocomplete(el, {
@@ -91,53 +134,93 @@ export default function CheckoutPage() {
         if (!place?.geometry?.location) return;
         const lat = place.geometry.location.lat();
         const lng = place.geometry.location.lng();
-        const dKm = haversineDistance(BASE_LAT, BASE_LNG, lat, lng);
+        const dKm = haversine(BASE_LAT, BASE_LNG, lat, lng);
+
         setDistanceKm(dKm);
         setOngkir(calcOngkir(dKm));
-
-        // ⛔ Jangan timpa alamat user
         setAlamat((prev) => prev || place.formatted_address);
       });
     } catch {}
   }, []);
 
+  // 🔥 Upgrade fungsi handleDetectLocation dengan loading state, error handling, dan reverse geocoding
   const handleDetectLocation = () => {
-  if (!navigator.geolocation) {
-    alert("Perangkat tidak mendukung GPS lokasi.");
-    return;
-  }
+    if (!navigator.geolocation) {
+      setErrorMsg("Perangkat tidak mendukung GPS.");
+      return;
+    }
 
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const { latitude, longitude } = pos.coords;
-      const dKm = haversineDistance(BASE_LAT, BASE_LNG, latitude, longitude);
+    setIsLocating(true);
+    setErrorMsg("");
 
-      setDistanceKm(dKm);
-      setOngkir(calcOngkir(dKm));
-
-      // ❗ TIDAK menyentuh alamat lagi (alamat manual tetap sepenuhnya milik user)
-      alert("GPS berhasil! Ongkir sudah dihitung otomatis 🚚");
-    },
-    () => alert("Izin GPS ditolak. Aktifkan lokasi ya 🙏"),
-    { enableHighAccuracy: true }
-  );
-};
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const dKm = haversine(BASE_LAT, BASE_LNG, lat, lng);
+        
+        setDistanceKm(dKm);
+        setOngkir(calcOngkir(dKm));
+        
+        // 🔥 Reverse geocoding: dapetin alamat dari koordinat
+        const address = await reverseGeocode(lat, lng);
+        if (address) {
+          setAlamat(address);
+        }
+        
+        setIsLocating(false);
+      },
+      (error) => {
+        setIsLocating(false);
+        let errorMessage = "Gagal mendapatkan lokasi. ";
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage += "Izinkan akses lokasi di browser Anda.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage += "Lokasi tidak tersedia. Coba lagi.";
+            break;
+          case error.TIMEOUT:
+            errorMessage += "Waktu habis. Coba lagi.";
+            break;
+          default:
+            errorMessage += "Terjadi kesalahan.";
+            break;
+        }
+        setErrorMsg(errorMessage);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!items.length) return;
+    if (status === "submitting") return;
 
     if (!nama.trim() || !hp.trim() || !alamat.trim()) {
-  setErrorMsg("Lengkapi nama, nomor WhatsApp, dan alamat ya 🙏");
-  return;
-}
-if (!distanceKm) {
-  setErrorMsg("Klik tombol GPS dulu untuk menghitung ongkir 🚚");
-  return;
-}
+      setErrorMsg("Lengkapi nama, nomor WhatsApp, dan alamat ya 🙏");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
 
+    // Validasi nomor HP
+    const phoneClean = hp.replace(/\D/g, '');
+    if (phoneClean.length < 10 || phoneClean.length > 13) {
+      setErrorMsg("Nomor WhatsApp harus 10-13 digit angka 🙏");
+      return;
+    }
+
+    if (!email.trim() || !email.includes("@")) {
+      setErrorMsg("Masukkan email yang valid ya 🙏");
+      return;
+    }
+
+    if (!distanceKm) {
+      setDistanceKm(3);
+      setOngkir(calcOngkir(3));
+    }
     if (["transfer", "qris"].includes(payment) && !buktiBayarFile) {
-      setErrorMsg("Upload bukti pembayaran terlebih dahulu 🙏");
+      setErrorMsg("Upload bukti pembayaran dulu 🙏");
       return;
     }
 
@@ -145,17 +228,10 @@ if (!distanceKm) {
       setStatus("submitting");
       setErrorMsg("");
 
-      const cartMapped = items.map((x) => ({
-        id: x.id,
-        name: x.name,
-        qty: x.qty,
-        price: x.price,
-      }));
-
-      // Kirim FormData (supaya file ikut terkirim)
       const fd = new FormData();
       fd.append("nama", nama);
       fd.append("hp", hp);
+      fd.append("email", email);
       fd.append("alamat", alamat);
       fd.append("note", catatan);
       fd.append("payment", payment);
@@ -164,18 +240,26 @@ if (!distanceKm) {
       fd.append("promoAmount", String(promoAmount));
       fd.append("promoLabel", promoLabel);
       fd.append("grandTotal", String(total));
-      fd.append("cart", JSON.stringify(cartMapped));
+      fd.append(
+        "cart",
+        JSON.stringify(items.map((x) => ({ id: x.id, name: x.name, qty: x.qty, price: x.price })))
+      );
       if (buktiBayarFile) fd.append("buktiBayar", buktiBayarFile);
 
-      const res = await fetch("/api/order", { method: "POST", body: fd });
+      const res = await fetch(`${window.location.origin}/api/order`, {
+        method: "POST",
+        body: fd,
+      });
+
+      if (!res.ok) throw new Error("Bad response");
       const data = await res.json();
-      if (!res.ok || !data?.success) throw new Error(data?.message || "Gagal membuat invoice");
+      if (!data?.success) throw new Error("API failed");
 
       clearCart();
-      router.push(data.invoiceUrl || "/");
+      router.push("/");
     } catch {
       setStatus("error");
-      setErrorMsg("Ada kendala saat membuat invoice — coba sebentar lagi 🙏");
+      setErrorMsg("Ada gangguan sistem — coba sebentar lagi 🙏");
     }
   };
 
@@ -183,39 +267,128 @@ if (!distanceKm) {
 
   return (
     <>
+      <Header />
+      
       <Script
         src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
         strategy="lazyOnload"
       />
 
-      <main className="min-h-screen bg-[#F4FAFA] text-[#0B4B50] py-10 px-4 flex justify-center">
-        <div className="w-full max-w-5xl">
-          <div className="mb-8">
+      <main className="min-h-screen bg-[#F4FAFA] text-[#0B4B50] py-10 px-4 flex justify-center pt-24">
+        <div className="w-full max-w-6xl space-y-6">
+          <div>
             <p className="text-xs tracking-[0.25em] text-[#0FA3A8]">KOJE24 • CHECKOUT</p>
             <h1 className="text-3xl md:text-4xl font-playfair font-semibold">Selesaikan Pesanan Kamu</h1>
+            <button
+              onClick={() => router.back()}
+              className="text-[#0FA3A8] text-sm hover:underline mt-2 inline-block"
+            >
+              ← Kembali ke Keranjang
+            </button>
           </div>
 
           {hydrated && items.length === 0 ? (
             <p className="text-center text-gray-500">Keranjang kosong. Mengarahkan kembali…</p>
           ) : (
-            <div className="grid gap-8 md:grid-cols-[1.15fr_0.85fr]">
+            <div className="grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
+              
+              {/* RINGKASAN PESANAN */}
+              <aside className="bg-white border rounded-3xl shadow p-6 space-y-4 h-fit">
+                <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
+
+                <div className="space-y-3">
+                  {items.map((it) => (
+                    <div
+                      key={it.id}
+                      className="flex justify-between items-start border-b pb-2 text-sm gap-3"
+                    >
+                      <div className="w-11 h-11 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                        <img
+                          src={it.img || "/placeholder-product.jpg"}
+                          alt={it.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium">{it.name}</p>
+                        <p className="text-[12px] text-gray-500">
+                          {it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs
+                        </p>
+                      </div>
+                      <div className="font-semibold whitespace-nowrap">
+                        Rp{(it.qty * it.price).toLocaleString("id-ID")}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="text-[11px] text-gray-500 pt-2">
+                  *Catatan tambahan dapat diisi di bawah
+                </p>
+              </aside>
+
               {/* FORM */}
-              <section className="bg-white border rounded-3xl shadow p-6 md:p-7">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nama lengkap" value={nama} onChange={(e) => setNama(e.target.value)} />
-                  <input className="border rounded-lg px-3 py-2 w-full" placeholder="Nomor WhatsApp" value={hp} onChange={(e) => setHp(e.target.value)} />
-                  <input ref={alamatRef} className="border rounded-lg px-3 py-2 w-full" placeholder="Alamat lengkap" value={alamat} onChange={(e) => setAlamat(e.target.value)} />
+              <section className="bg-white border rounded-3xl shadow p-6 md:p-8 space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <input
+                    className="border rounded-lg px-3 py-2 w-full"
+                    placeholder="Nama lengkap"
+                    value={nama}
+                    onChange={(e) => setNama(e.target.value)}
+                  />
+                  <input
+                    className="border rounded-lg px-3 py-2 w-full"
+                    placeholder="Nomor WhatsApp"
+                    value={hp}
+                    onChange={(e) => setHp(e.target.value)}
+                  />
+                  <input
+                    className="border rounded-lg px-3 py-2 w-full"
+                    placeholder="Email (untuk menerima invoice)"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  <input
+                    ref={alamatRef}
+                    className="border rounded-lg px-3 py-2 w-full"
+                    placeholder="Alamat lengkap"
+                    value={alamat}
+                    onChange={(e) => setAlamat(e.target.value)}
+                  />
 
-                  <button type="button" onClick={handleDetectLocation} className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm font-medium">
-                    📍 Hitung Ongkir Pakai Lokasi Saya
+                  {/* 🔥 Tombol dengan loading state */}
+                  <button
+                    type="button"
+                    onClick={handleDetectLocation}
+                    disabled={isLocating}
+                    className="w-full bg-[#0FA3A8] text-white py-2 rounded-lg text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isLocating ? (
+                      <>
+                        <span className="animate-spin">⏳</span> Mendeteksi lokasi...
+                      </>
+                    ) : (
+                      "📍 Hitung Ongkir Pakai Lokasi Saya"
+                    )}
                   </button>
-                  {distanceKm && <p className="text-[12px] text-gray-500">Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}</p>}
 
-                  <textarea className="border rounded-lg px-3 py-2 w-full h-16 resize-none" placeholder="Catatan (opsional)" value={catatan} onChange={(e) => setCatatan(e.target.value)} />
+                  {distanceKm ? (
+                    <p className="text-[13px] text-gray-600">
+                      Jarak {distanceKm.toFixed(1)} km • Ongkir Rp{ongkir.toLocaleString("id-ID")}
+                    </p>
+                  ) : (
+                    <p className="text-[12px] text-gray-500">Ongkir sementara Rp15.000</p>
+                  )}
 
-                  {/* PEMBAYARAN */}
+                  <textarea
+                    className="border rounded-lg px-3 py-2 w-full h-18 resize-none"
+                    placeholder="Catatan (opsional)"
+                    value={catatan}
+                    onChange={(e) => setCatatan(e.target.value)}
+                  />
+
                   <h2 className="font-playfair text-xl">Metode Pembayaran</h2>
-
                   <div className="rounded-xl bg-[#f7fbfb] border p-4 space-y-3">
                     {(["transfer", "qris", "cod"] as const).map((p) => (
                       <label
@@ -224,14 +397,13 @@ if (!distanceKm) {
                           payment === p ? "bg-white border border-[#0FA3A8]" : ""
                         }`}
                       >
-                        <input type="radio" checked={payment === p} onChange={() => { setPayment(p); setBuktiBayarFile(null); setErrorMsg(""); }} />
+                        <input type="radio" checked={payment === p} onChange={() => setPayment(p)} />
                         <span className="capitalize">{p === "cod" ? "COD (Bayar di tempat)" : p}</span>
                       </label>
                     ))}
 
-                    {/* Transfer */}
                     {payment === "transfer" && (
-                      <div className="bg-white border rounded-xl p-4 mt-3 space-y-2">
+                      <div className="bg-white border rounded-xl p-4 mt-3 space-y-3">
                         <p className="text-sm font-medium">Rekening Transfer:</p>
                         <div className="text-sm flex justify-between">
                           <span>BCA — 5350429695 (KOJE)</span>
@@ -243,77 +415,72 @@ if (!distanceKm) {
                             Copy
                           </button>
                         </div>
-
-                        <label className="block text-sm font-medium mt-2">Upload Bukti Transfer</label>
+                        <label className="block text-sm font-medium">Upload Bukti Transfer</label>
                         <input
                           type="file"
                           accept="image/*,.pdf"
                           onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)}
-                          className="border rounded-lg px-3 py-2 w-full text-sm bg-white cursor-pointer"
+                          className="border rounded-lg px-3 py-2 w-full text-sm cursor-pointer"
                         />
                       </div>
                     )}
 
-                    {/* QRIS */}
                     {payment === "qris" && (
                       <div className="bg-white border rounded-xl p-4 mt-3 space-y-3">
                         <p className="text-sm font-medium">Scan QRIS untuk pembayaran:</p>
                         <img src="/qris-static.jpg" className="w-full rounded-lg" alt="QRIS" />
-
-                        <label className="block text-sm font-medium mt-2">Upload Bukti Pembayaran</label>
+                        <label className="block text-sm font-medium">Upload Bukti Pembayaran</label>
                         <input
                           type="file"
                           accept="image/*,.pdf"
                           onChange={(e) => setBuktiBayarFile(e.target.files?.[0] || null)}
-                          className="border rounded-lg px-3 py-2 w-full text-sm bg-white cursor-pointer"
+                          className="border rounded-lg px-3 py-2 w-full text-sm cursor-pointer"
                         />
                       </div>
                     )}
                   </div>
 
+                  {/* TOTAL PEMBAYARAN */}
+                  <div className="border-t pt-4 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span>Rp{subtotal.toLocaleString("id-ID")}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span>Ongkir</span>
+                      <span>Rp{ongkir.toLocaleString("id-ID")}</span>
+                    </div>
+
+                    {promoAmount > 0 && promoLabel && (
+                      <div className="flex justify-between text-green-600 font-medium">
+                        <span>{promoLabel}</span>
+                        <span>- Rp{promoAmount.toLocaleString("id-ID")}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between font-semibold text-lg pt-2">
+                      <span>Total Pembayaran</span>
+                      <span>Rp{total.toLocaleString("id-ID")}</span>
+                    </div>
+                  </div>
+
                   {errorMsg && <p className="text-red-500 text-sm pt-1">{errorMsg}</p>}
 
-                  <button disabled={disabled} className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold disabled:opacity-50">
-                    {status === "submitting" ? "Memproses pesanan..." : "Buat Pesanan"}
+                  <button
+                    disabled={disabled}
+                    className="w-full bg-[#0FA3A8] text-white py-3 rounded-full font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {status === "submitting" ? (
+                      <>
+                        <span className="animate-spin">⏳</span> Memproses pesanan...
+                      </>
+                    ) : (
+                      "Buat Pesanan"
+                    )}
                   </button>
                 </form>
               </section>
-
-              {/* SIDEBAR */}
-              <aside className="bg-white border rounded-3xl shadow p-6 flex flex-col gap-4">
-                <h2 className="font-playfair text-xl">Ringkasan Pesanan</h2>
-
-                <div className="max-h-[260px] overflow-y-auto space-y-3 pr-1">
-                  {items.map((it) => (
-                    <div key={it.id} className="flex justify-between items-start border-b pb-2 text-sm gap-3">
-                      <div className="flex-1">
-                        <p className="font-medium">{it.name}</p>
-                        <p className="text-[12px] text-gray-500">{it.qty}x • Rp{it.price.toLocaleString("id-ID")}/pcs</p>
-                      </div>
-                      <div className="font-semibold whitespace-nowrap">
-                        Rp{(it.qty * it.price).toLocaleString("id-ID")}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t pt-3 space-y-1 text-sm">
-                  <div className="flex justify-between"><span>Subtotal</span><span>Rp{subtotal.toLocaleString("id-ID")}</span></div>
-                  <div className="flex justify-between"><span>Ongkir</span><span>Rp{ongkir.toLocaleString("id-ID")}</span></div>
-
-                  {promoAmount > 0 && (
-                    <div className="flex justify-between text-green-600 font-medium">
-                      <span>{promoLabel}</span>
-                      <span>- Rp{promoAmount.toLocaleString("id-ID")}</span>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between font-semibold text-lg pt-1">
-                    <span>Total</span>
-                    <span>Rp{total.toLocaleString("id-ID")}</span>
-                  </div>
-                </div>
-              </aside>
             </div>
           )}
         </div>

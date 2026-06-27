@@ -3,52 +3,91 @@ import { google } from "googleapis";
 
 export const dynamic = "force-dynamic";
 
+// 🔐 ENV
 const SHEET_ID = process.env.GOOGLE_SHEET_ID ?? "";
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL ?? "";
 const PRIVATE_KEY_RAW = process.env.GOOGLE_PRIVATE_KEY ?? "";
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? "";
+
+// 🛠 Fix Private Key
 const PRIVATE_KEY = PRIVATE_KEY_RAW.replace(/\\n/g, "\n").replace(/\\\\n/g, "\n");
+
+// 📌 Nama Sheet
+const SHEET_NAME = "Transaksi";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const form = await req.formData();
 
-    const {
-      nama, hp, alamat, note, catatan,
-      payment, cart, shippingCost,
-      grandTotal, subtotal, ongkir,
-      promoAmount, promoLabel,
-    } = body;
+    const nama = String(form.get("nama") ?? "").trim();
+    const hp = String(form.get("hp") ?? "").trim();
+    const email = String(form.get("email") ?? "").trim();
+    const alamat = String(form.get("alamat") ?? "").trim();
+    const note = String(form.get("note") ?? "").trim();
+    const payment = String(form.get("payment") ?? "");
+    const distanceKm = Number(form.get("distanceKm") ?? 0);
+    const shippingCost = Number(form.get("shippingCost") ?? 0);
+    const promoAmount = Number(form.get("promoAmount") ?? 0);
+    const promoLabel = String(form.get("promoLabel") ?? "");
 
-    if (!nama || !hp || !alamat)
-      throw new Error("Data customer belum lengkap");
+    const cartJson = String(
+      form.get("cart") ||
+        form.get("items") ||
+        form.get("keranjang") ||
+        "[]"
+    );
+
+    let cart: any[] = [];
+    try {
+      cart = JSON.parse(cartJson);
+    } catch {
+      cart = [];
+    }
+
+    if (!nama || !hp || !alamat || !email)
+      throw new Error("Data belum lengkap");
     if (!Array.isArray(cart) || cart.length === 0)
-      throw new Error("Cart kosong!");
+      throw new Error("Keranjang kosong");
 
     const produkList = cart.map((x: any) => `${x.name} (${x.qty}x)`).join(", ");
-    const qtyTotal = cart.reduce((a: number, x: any) => a + Number(x.qty || 0), 0);
+    const qtyTotal = cart.reduce((a, x) => a + Number(x.qty), 0);
+    const subtotalCalc = cart.reduce(
+      (a, x) => a + Number(x.price) * Number(x.qty),
+      0
+    );
 
-    const subtotalCalc = typeof subtotal === "number"
-      ? subtotal
-      : cart.reduce((a: number, x: any) => a + Number(x.price || 0) * Number(x.qty || 0), 0);
+    const effectiveOngkir = shippingCost > 0 ? shippingCost : 15000;
+    const safePromoAmount = promoAmount > 0 ? promoAmount : 0;
+    const effectiveGrandTotal = Math.max(
+      0,
+      subtotalCalc + effectiveOngkir - safePromoAmount
+    );
 
-    const effectiveOngkir = typeof ongkir === "number"
-      ? ongkir
-      : typeof shippingCost === "number"
-      ? shippingCost
-      : 15000;
+    const invoiceId =
+      "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-    const safePromoAmount = typeof promoAmount === "number" && promoAmount > 0 ? promoAmount : 0;
-    const effectiveGrandTotal = Math.max(0, subtotalCalc + effectiveOngkir - safePromoAmount);
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL || req.nextUrl.origin;
 
-    const invoiceId = "INV-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-    const invoiceUrl = `${req.nextUrl.origin}/invoice/${invoiceId}`;
+    const invoiceUrl = `${baseUrl}/invoice/${invoiceId}`;
 
-    const paymentLabel = payment === "qris" ? "QRIS" : payment === "cod" ? "COD" : "Transfer";
-    const promoText = safePromoAmount > 0 ? promoLabel || "Promo" : promoLabel || "-";
+    const paymentLabel =
+      payment === "qris"
+        ? "QRIS"
+        : payment === "cod"
+        ? "COD"
+        : "Transfer";
 
-    // google sheets write
+    const promoText = safePromoAmount > 0 ? promoLabel : "-";
+
+    // =========================
+    // GOOGLE SHEET AUTH
+    // =========================
+    if (!SHEET_ID || !CLIENT_EMAIL || !PRIVATE_KEY) {
+      throw new Error("Google Sheet ENV belum lengkap");
+    }
+
     const auth = new google.auth.JWT({
       email: CLIENT_EMAIL,
       key: PRIVATE_KEY,
@@ -57,62 +96,150 @@ export async function POST(req: NextRequest) {
 
     const sheets = google.sheets({ version: "v4", auth });
 
-    await sheets.spreadsheets.values.append({
+    // =========================
+    // APPEND DATA (A–Q)
+    // =========================
+    const appendRes = await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: "Sheet2!A:N",
+      range: `${SHEET_NAME}!A:Q`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          invoiceId,
-          new Date().toLocaleString("id-ID"),
-          nama,
-          hp,
-          alamat,
-          produkList,
-          qtyTotal,
-          subtotalCalc,
-          effectiveOngkir,
-          effectiveGrandTotal,
-          promoText,
-          paymentLabel,
-          "Pending",
-          invoiceUrl,
+          invoiceId,                         // A
+          new Date().toLocaleString("id-ID"),// B
+          nama,                              // C
+          hp,                                // D
+          alamat,                            // E
+          produkList,                        // F
+          qtyTotal,                          // G
+          subtotalCalc,                      // H
+          effectiveOngkir,                   // I
+          effectiveGrandTotal,               // J
+          promoText,                         // K
+          paymentLabel,                      // L
+          "Pending",                         // M
+          invoiceUrl,                        // N
+          email,                             // O
+          "",                                // P PaymentEmailSentAt
+          "",                                // Q InvoiceEmailSentAt
         ]],
       },
     });
 
-    // notify telegram
-    if (BOT_TOKEN && CHAT_ID) {
-      const esc = (t: string) => String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
+    // ambil nomor baris hasil append
+    const updatedRange = appendRes.data.updates?.updatedRange || "";
+    const rowNum = Number(updatedRange.match(/\d+/)?.[0]);
 
-      const msg =
-        `🛒 *ORDER BARU KOJE24*\n#${invoiceId}\n\n` +
-        `👤 *${esc(nama)}*\n📞 ${esc(hp)}\n📍 ${esc(alamat)}\n\n` +
-        `🍹 *Pesanan:* ${esc(produkList)}\n` +
+    // =========================
+// TELEGRAM (NON BLOCKING + INLINE BUTTON)
+// =========================
+if (BOT_TOKEN && CHAT_ID) {
+  const esc = (t: string) =>
+    String(t).replace(/[_*[\]()~>`#+\-=|{}.!]/g, "\\$&");
+
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: CHAT_ID,
+      parse_mode: "Markdown",
+      text:
+        `🛒 *ORDER BARU KOJE24*\n\n` +
+        `📄 *Invoice:* ${invoiceId}\n` +
+        `👤 *Nama:* ${esc(nama)}\n` +
+        `📞 ${esc(hp)}\n` +
+        `📍 ${esc(alamat)}\n\n` +
+        `🍹 *Produk:* ${esc(produkList)}\n` +
         `💳 *Metode:* ${paymentLabel}\n` +
-        `💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}\n` +
-        `🏷 Promo: ${esc(promoText)}\n\n` +
-        `📝 Catatan: ${esc(catatan || note || "-")}\n` +
-        `🔗 ${invoiceUrl}`;
+        `💰 *Total:* Rp${effectiveGrandTotal.toLocaleString("id-ID")}\n\n` +
+        `📝 Catatan: ${esc(note || "-")}\n` +
+        `🔗 ${invoiceUrl}\n\n` +
+        `📌 Status: *PENDING*`,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "✅ Tandai PAID",
+              callback_data: `set:PAID:${invoiceId}`,
+            },
+            {
+              text: "🚚 COD",
+              callback_data: `set:COD:${invoiceId}`,
+            },
+          ],
+        ],
+      },
+    }),
+  }).catch(() => {});
+}
 
-      fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: CHAT_ID, text: msg, parse_mode: "Markdown" }),
-      }).catch(() => {});
-    }
+    // =========================
+    // EMAIL PAYMENT REQUEST
+    // =========================
+    fetch(`${baseUrl}/api/send-payment-request-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        nama,
+        invoiceId,
+        invoiceUrl,
+        total: effectiveGrandTotal,
+        paymentLabel,
+      }),
+    })
+      .then(async () => {
+        if (!rowNum) return;
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SHEET_ID,
+          range: `${SHEET_NAME}!P${rowNum}`,
+          valueInputOption: "RAW",
+          requestBody: {
+            values: [[new Date().toLocaleString("id-ID")]],
+          },
+        });
+      })
+      .catch(() => {});
+
+    // =========================
+    // WHATSAPP & SUBSCRIBE (IGNORE ERROR)
+    // =========================
+    fetch(`${baseUrl}/api/whatsapp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        invoiceId,
+        invoiceUrl,
+        name: nama,
+        phone: hp,
+        address: alamat,
+        note,
+        order: cart,
+        subtotal: subtotalCalc,
+        ongkir: effectiveOngkir,
+        promoLabel,
+        promoAmount: safePromoAmount,
+        grandTotal: effectiveGrandTotal,
+        paymentLabel,
+      }),
+    }).catch(() => {});
+
+    fetch(`${baseUrl}/api/subscribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, source: "checkout" }),
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,
       invoiceId,
       invoiceUrl,
-      grandTotal: effectiveGrandTotal,
     });
   } catch (err: any) {
-    console.error("❌ ERROR ORDER:", err.message);
+    console.error("❌ ERROR ORDER:", err);
     return NextResponse.json(
-      { success: false, message: err?.message || "Order gagal" },
-      { status: 200 } // biar FE tetap aman dan tidak muncul alert merah JSON <...
+      { success: false, message: err?.message ?? "Order gagal" },
+      { status: 400 }
     );
   }
 }

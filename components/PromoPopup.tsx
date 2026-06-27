@@ -9,10 +9,21 @@ export default function PromoPopup() {
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
 
-  const addPromo = useCartStore((s: any) => s.addPromo);
-  const currentPromoLabel = useCartStore((s: any) => s.promoLabel);
+  const promoAktif = useCartStore((s) => s.promo);
+  const setPromo = useCartStore((s) => s.setPromo);
 
-  // event listener dari tombol "lihat promo"
+  // AUTO OPEN 1x SAAT FIRST VISIT
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const KEY = "koje24_promo_seen";
+    const seen = localStorage.getItem(KEY);
+    if (!seen) {
+      localStorage.setItem(KEY, "1");
+      setOpen(true);
+    }
+  }, []);
+
+  // OPEN MANUAL VIA EVENT
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handler = () => setOpen(true);
@@ -20,17 +31,16 @@ export default function PromoPopup() {
     return () => window.removeEventListener("open-promo-popup", handler);
   }, []);
 
-  // load promo hanya sekali
+  // LOAD PROMO DARI API
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await fetchPromos(); // sudah hanya promo aktif
-        if (Array.isArray(data) && data.length > 0) {
-          setPromos(data);
-          setOpen(true);
+        const data = await fetchPromos();
+        if (Array.isArray(data)) {
+          setPromos(data.filter(Boolean));
         }
       } catch (err) {
-        console.error("PROMO POPUP – fetch failed:", err);
+        console.error("PROMO POPUP – FETCH ERROR:", err);
       }
     };
     load();
@@ -40,36 +50,60 @@ export default function PromoPopup() {
 
   const p = promos[index];
 
-  const next = () => {
-    setIndex((i) => (i + 1) % promos.length);
+  const close = () => setOpen(false);
+  const next = () => setIndex((i) => (i + 1) % promos.length);
+
+  // NORMALIZE TIPE PROMO
+  const normalizeType = (
+    tipe: string
+  ): "percent" | "flat" | "free_shipping" | "cashback" => {
+    const t = String(tipe || "").toLowerCase();
+
+    if (t.includes("percent") || t.includes("diskon") || t.includes("%")) return "percent";
+    if (t.includes("flat") || t.includes("potongan") || t.includes("rp")) return "flat";
+    if (t.includes("free") || t.includes("ongkir") || t.includes("shipping")) return "free_shipping";
+    if (t.includes("cashback")) return "cashback";
+
+    return "flat";
   };
 
-  const close = () => setOpen(false);
-
+  // APPLY PROMO KE CART STORE
   const apply = () => {
-    // cegah promo dobel di cart
-    if (currentPromoLabel && currentPromoLabel === p.kode) {
-      next();                      // lanjut promo lain kalau ada
-      if (promos.length === 1) setOpen(false);
+    const { totalPrice } = useCartStore.getState()
+    const minimal = Number(p.minimal || 0)
+    
+    // CEK MINIMAL BELANJA
+    if (minimal > 0 && totalPrice < minimal) {
+      alert(`Minimal belanja Rp ${minimal.toLocaleString("id-ID")} untuk menggunakan promo ini`)
+      return
+    }
+    
+    // Jika promo yang sama sudah aktif → tutup saja
+    if (promoAktif?.kode && promoAktif.kode === p.kode) {
+      close();
       return;
     }
 
-    addPromo({
-      label: p.kode,
-      tipe: p.tipe,
-      nilai: p.nilai,
-      minimal: p.minimal,
-      maxDiskon: p.maxDiskon,
+    setPromo({
+      kode: String(p.kode || "").toUpperCase(),
+      tipe: normalizeType(p.tipe),
+      nilai: Number(p.nilai || 0),
+      minimal: Number(p.minimal || 0),
+      maxDiskon: p.maxDiskon === null || p.maxDiskon === undefined ? null : Number(p.maxDiskon || 0),
     });
 
-    next();
-    if (promos.length === 1) setOpen(false);
+    close();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[99999]">
-      <div className="bg-white rounded-3xl p-7 max-w-sm mx-auto shadow-2xl relative">
-
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[99999]"
+      onClick={close}
+    >
+      <div
+        className="bg-white rounded-3xl p-7 max-w-sm mx-auto shadow-2xl relative"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 className="font-playfair text-xl font-semibold text-[#0B4B50] mb-3 text-center">
           Promo Spesial Untuk Kamu 🎁
         </h2>
@@ -77,11 +111,18 @@ export default function PromoPopup() {
         <div className="text-center mb-4">
           <p className="text-sm text-gray-600 mb-1">Gunakan kode:</p>
           <div className="text-2xl font-bold tracking-wide text-[#0FA3A8]">
-            {p.kode}
+            {String(p.kode || "").toUpperCase()}
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            {p.tipe} — {p.nilai}
+            {p.tipe} • {Number(p.nilai || 0).toLocaleString("id-ID")}
           </p>
+          
+          {/* Minimal Belanja */}
+          {Number(p.minimal || 0) > 0 && (
+            <p className="text-xs text-gray-400 mt-1">
+              Min. belanja Rp {Number(p.minimal || 0).toLocaleString("id-ID")}
+            </p>
+          )}
         </div>
 
         <button

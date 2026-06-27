@@ -2,7 +2,6 @@
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
 
-// ================== TYPE CART ==================
 export type CartItem = {
   id: string
   name: string
@@ -13,135 +12,113 @@ export type CartItem = {
 
 export type Promo = {
   kode: string
-  tipe: string // "persen" | "nominal"
-  nilai: string // contoh "20" atau "15000"
+  tipe: "percent" | "flat" | "free_shipping" | "cashback"
+  nilai: number
   minimal: number
   maxDiskon: number | null
+  expiresAt?: Date
 }
 
-// ================== STATE INTERFACE ==================
-export interface CartState {
+interface CartState {
   items: CartItem[]
+  promo: Promo | null
+  shippingCost: number
   totalQty: number
   totalPrice: number
-
-  // PROMO LIST (jika mau lebih dari satu yang disimpan user)
-  promos: Promo[]
-
-  // PROMO AKTIF (yang dipakai untuk perhitungan)
-  promoLabel: string
-  promoAmount: number
 
   addItem: (item: Omit<CartItem, "qty">) => void
   removeItem: (id: string) => void
   clearCart: () => void
-  getQty: (id: string) => number
-  getTotalForItem: (id: string) => number
-
-  addPromo: (promo: Promo) => void
-  removePromo: (kode: string) => void
-  clearPromos: () => void
-
-  setPromo: (label: string, amount: number) => void
+  setPromo: (promo: Promo) => void
   clearPromo: () => void
+  setShippingCost: (cost: number) => void
+  getDiscount: () => number
+  getFinalTotal: () => number
 }
 
-// ======================================================
-// 🧠 STORE
-// ======================================================
+const calculateTotals = (items: CartItem[]) => ({
+  totalQty: items.reduce((sum, i) => sum + i.qty, 0),
+  totalPrice: items.reduce((sum, i) => sum + i.qty * i.price, 0),
+})
+
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      promo: null,
+      shippingCost: 0,
       totalQty: 0,
       totalPrice: 0,
 
-      promos: [],
-
-      // PROMO AKTIF YANG DIPAKAI DI CHECKOUT
-      promoLabel: "",
-      promoAmount: 0,
-
-      // ======================
-      // CART CORE
-      // ======================
       addItem: (item) => {
         const items = [...get().items]
         const exist = items.find((i) => i.id === item.id)
-
         if (exist) exist.qty += 1
         else items.push({ ...item, qty: 1 })
-
-        const totalQty = items.reduce((s, i) => s + i.qty, 0)
-        const totalPrice = items.reduce((s, i) => s + i.qty * i.price, 0)
+        const { totalQty, totalPrice } = calculateTotals(items)
         set({ items, totalQty, totalPrice })
       },
 
       removeItem: (id) => {
         let items = [...get().items]
         const exist = items.find((i) => i.id === id)
-
         if (!exist) return
         if (exist.qty > 1) exist.qty -= 1
         else items = items.filter((i) => i.id !== id)
-
-        const totalQty = items.reduce((s, i) => s + i.qty, 0)
-        const totalPrice = items.reduce((s, i) => s + i.qty * i.price, 0)
-        set({ items, totalQty, totalPrice })
+        const { totalQty, totalPrice } = calculateTotals(items)
+        const shippingCost = items.length === 0 ? 0 : get().shippingCost
+        set({ 
+          items, 
+          totalQty, 
+          totalPrice, 
+          promo: items.length === 0 ? null : get().promo,
+          shippingCost
+        })
       },
 
-      clearCart: () =>
-        set({
-          items: [],
-          totalQty: 0,
-          totalPrice: 0,
-          promos: [],
-          promoLabel: "",
-          promoAmount: 0,
-        }),
+      clearCart: () => set({ 
+        items: [], 
+        totalQty: 0, 
+        totalPrice: 0, 
+        promo: null, 
+        shippingCost: 0 
+      }),
 
-      getQty: (id) => {
-        const item = get().items.find((i) => i.id === id)
-        return item?.qty || 0
+      setPromo: (promo) => {
+        if (promo.expiresAt && new Date() > promo.expiresAt) {
+          console.warn("Promo expired")
+          return
+        }
+        set({ promo })
       },
 
-      getTotalForItem: (id) => {
-        const item = get().items.find((i) => i.id === id)
-        return item ? item.qty * item.price : 0
+      clearPromo: () => set({ promo: null }),
+      
+      setShippingCost: (cost) => set({ shippingCost: cost }),
+
+      getDiscount: () => {
+        const { promo, shippingCost, totalPrice } = get()
+        if (!promo || totalPrice < promo.minimal) return 0
+        
+        let discount = 0
+        switch (promo.tipe) {
+          case "percent": discount = (totalPrice * promo.nilai) / 100; break
+          case "flat": discount = promo.nilai; break
+          case "free_shipping": discount = shippingCost; break
+          case "cashback": discount = promo.nilai; break
+        }
+        
+        if (promo.maxDiskon) discount = Math.min(discount, promo.maxDiskon)
+        discount = Math.min(discount, totalPrice)
+        
+        return Math.floor(discount)
       },
 
-      // ======================
-      // PROMO LIST SYSTEM
-      // ======================
-      addPromo: (promo) =>
-        set((s) =>
-          s.promos.find((p) => p.kode === promo.kode)
-            ? s
-            : { promos: [...s.promos, promo] }
-        ),
-
-      removePromo: (kode) =>
-        set((s) => ({
-          promos: s.promos.filter((p) => p.kode !== kode),
-        })),
-
-      clearPromos: () => set({ promos: [] }),
-
-      // ======================
-      // PROMO AKTIF UTAMA
-      // ======================
-      setPromo: (label, amount) =>
-        set({ promoLabel: label, promoAmount: amount }),
-
-      clearPromo: () =>
-        set({ promoLabel: "", promoAmount: 0 }),
+      getFinalTotal: () => Math.max(get().totalPrice - get().getDiscount(), 0),
     }),
     {
       name: "koje24-cart",
-      storage:
-        typeof window !== "undefined"
-          ? createJSONStorage(() => localStorage)
-          : undefined,
+      storage: typeof window !== "undefined" ? createJSONStorage(() => localStorage) : undefined,
     }
   )
 )

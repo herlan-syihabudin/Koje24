@@ -1,28 +1,53 @@
-/* === FONT IMPORT === */
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/600.css";
-@import "@fontsource/inter/700.css";
-@import "@fontsource/playfair-display/700.css";
-
-/* === TAILWIND CORE === */
+/* ===============================
+   TAILWIND CORE
+=============================== */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* === THEME VARIABLE === */
+/* ===============================
+   THEME VARIABLES
+=============================== */
 :root {
   --brand: #0FA3A8;
   --brand-2: #0B4B50;
+  --brand-accent: #E8C46B;
   --font-heading: "Playfair Display", serif;
   --font-body: "Inter", sans-serif;
+  
+  /* Z-INDEX SYSTEM */
+  --z-header: 200;
+  --z-modal: 1000;
+  --z-tooltip: 1100;
+  --z-toast: 1200;
 }
 
-/* === BASE RESET === */
+/* ===============================
+   BASE RESET
+=============================== */
 @layer base {
   html {
     scroll-behavior: smooth;
     overscroll-behavior: none;
-    scroll-padding-top: 80px;
+    scroll-padding-top: 90px;
+  }
+
+  /* Responsive scroll padding */
+  @media (max-width: 640px) {
+    html {
+      scroll-padding-top: 70px;
+    }
+  }
+
+  @media (max-width: 375px) {
+    html {
+      scroll-padding-top: 65px;
+    }
+  }
+
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   body {
@@ -37,13 +62,8 @@
     line-height: 1.25;
   }
 
-  h2 {
-    font-size: clamp(1.75rem, 2.2vw, 2.3rem);
-  }
-
   p {
     line-height: 1.7;
-    color: inherit;
   }
 
   ::selection {
@@ -52,7 +72,9 @@
   }
 }
 
-/* === COMPONENTS === */
+/* ===============================
+   COMPONENTS
+=============================== */
 @layer components {
   .btn-primary {
     position: relative;
@@ -62,315 +84,304 @@
     padding: 0.7rem 1.5rem;
     border-radius: 0.6rem;
     font-weight: 600;
-    transition: all 0.25s ease;
+    transition: background 0.25s ease, transform 0.25s ease;
     box-shadow: 0 4px 10px rgba(15, 163, 168, 0.2);
   }
 
   .btn-primary:hover {
     background: var(--brand-2);
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(15, 163, 168, 0.25);
   }
-
-  .btn-primary::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.25) 50%,
-      rgba(255, 255, 255, 0) 100%
-    );
-    transition: left 0.5s ease;
-  }
-
-  .btn-primary:hover::after {
-    left: 100%;
+  
+  /* SKELETON LOADING */
+  .skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
   }
 }
 
-/* === UTILITIES === */
+/* ===============================
+   UTILITIES
+=============================== */
 @layer utilities {
-  .img-zoom {
-    transition: transform 0.5s ease, filter 0.3s ease;
+  .hide-scroll::-webkit-scrollbar {
+    width: 0;
   }
-  .img-zoom:hover {
-    transform: scale(1.03);
-    filter: brightness(1.05);
+  .hide-scroll {
+    scrollbar-width: none;
   }
-
-  .animate-on-scroll {
-    opacity: 0;
-    transform: translateY(25px);
-    transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+  
+  /* iPhone SE & small devices utilities */
+  .text-xs-min {
+    font-size: clamp(11px, 3.5vw, 12px);
   }
-  .animate-on-scroll.show {
-    opacity: 1;
-    transform: translateY(0);
+  
+  .padding-safe-min {
+    padding-left: clamp(8px, 4vw, 16px);
+    padding-right: clamp(8px, 4vw, 16px);
   }
-
-  button {
-    transition: all 0.25s ease;
-    letter-spacing: 0.02em;
+  
+  .gap-safe-min {
+    gap: clamp(12px, 4vw, 20px);
   }
-  button:active {
-    transform: scale(0.96);
-  }
-  a,
-  button {
-    cursor: pointer;
-    will-change: transform, background-color, box-shadow;
+  
+  @media (max-width: 360px) {
+    .hide-on-min {
+      display: none;
+    }
+    .stack-on-min {
+      flex-direction: column;
+    }
+    .text-smaller-on-min {
+      font-size: 90%;
+    }
   }
 }
 
-/* === FOOTER GLOW === */
-footer {
-  position: relative;
-  overflow: hidden;
-}
-footer::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at top, rgba(15, 163, 168, 0.1) 0%, transparent 80%);
-  opacity: 0.6;
-  z-index: 0;
-}
-footer > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* ===========================================================
-   BODY LOCK — fix modal scroll leak
-=========================================================== */
-.body-lock {
+/* ===============================
+   BODY LOCK (DISATUKAN)
+=============================== */
+.body-lock,
+.body-menu-lock {
   overflow: hidden !important;
   height: 100vh !important;
   width: 100% !important;
   position: fixed !important;
 }
 
-/* ===========================================================
-   KOJE24 MODAL — FIX FINAL PREMIUM
-=========================================================== */
-
-/* Overlay modal */
+/* ===============================
+   MODAL (Z-INDEX PAKAI VARIABLE)
+=============================== */
 .koje-modal-overlay {
-  position: fixed !important;
-  inset: 0 !important;
-  background: rgba(0, 0, 0, 0.55);
-  z-index: 999999999 !important;
-
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-
-  padding: 0 !important;
-  pointer-events: auto !important;
-}
-
-/* Modal box */
-.koje-modal-box {
-  position: relative !important;
-  z-index: 1000000000 !important;
-  max-width: 420px;
-  width: 92%;
-  max-height: 85vh !important;
-  overflow-y: auto !important;
-  border-radius: 22px;
-  background: white;
-}
-
-/* Saat modal terbuka → matikan klik semua elemen lain */
-.body-lock *:not(.koje-modal-overlay):not(.koje-modal-overlay *){
-  pointer-events: none !important;
-}
-
-/* Modal tetap bisa diklik */
-.koje-modal-overlay,
-.koje-modal-overlay * {
-  pointer-events: auto !important;
-}
-
-/* Desktop center */
-@media (min-width: 768px) {
-  .koje-modal-overlay {
-    align-items: center !important;
-    padding-top: 0 !important;
-  }
-
-  .koje-modal-box {
-    max-height: 80vh !important;
-  }
-}
-
-/* ===========================================================
-   🔥 OPTIMASI RESPONSIVE + HILANGIN GARIS SCROLL ABU-ABU
-=========================================================== */
-
-/* Wajib: biar layout nggak sempit dan nggak overscroll ke samping */
-html,
-body {
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-/* Hilangin scrollbar tapi tetap bisa scroll */
-body::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
-body::-webkit-scrollbar-track,
-body::-webkit-scrollbar-thumb {
-  background: transparent;
-}
-body {
-  scrollbar-width: none; /* Firefox hide */
-}
-
-/* Prevent objek bikin overflow di HP */
-img,
-video,
-iframe {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* Scroll dalam CartPopup mulus & tanpa garis scrollbar */
-.hide-scroll::-webkit-scrollbar {
-  width: 0;
-}
-.hide-scroll {
-  scrollbar-width: none;
-}
-
-/* Body lock aman — tidak mengganggu scroll dalam popup */
-.body-cart-lock {
-  overflow: hidden !important;
-  height: 100vh !important;
-}
-/* === CART POPUP ANIMASI & OVERLAY === */
-.cart-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(6px);
+  background: rgba(0,0,0,0.55);
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 9999;
-  animation: fadeIn 0.25s ease;
+  justify-content: center;
+  z-index: var(--z-modal);
 }
 
-.cart-box {
+.koje-modal-box {
   background: #fff;
-  border-radius: 18px;
-  animation: slideUp 0.28s cubic-bezier(0.17, 0.55, 0.32, 1.2);
+  border-radius: 22px;
+  max-width: 420px;
+  width: 92%;
+  max-height: 85vh;
+  overflow-y: auto;
+  z-index: calc(var(--z-modal) + 1);
 }
 
-/* Lock scroll saat popup aktif */
-.body-cart-lock {
-  overflow: hidden !important;
-  height: 100vh !important;
+/* Modal responsive untuk iPhone SE */
+@media (max-width: 375px) {
+  .koje-modal-box {
+    width: 95%;
+    max-height: 90vh;
+    border-radius: 18px;
+  }
 }
 
-/* Animasi */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+/* ===============================
+   ANIMATIONS
+=============================== */
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(40px); }
-  to   { opacity: 1; transform: translateY(0); }
+
+/* ===============================
+   SAFARI ADDRESS FIX
+=============================== */
+.not-address {
+  unicode-bidi: plaintext !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
-/* ===== DEFAULT STATE UNTUK NO-PDF ===== */
-.no-pdf {
+
+/* ===============================
+   INVOICE WEB + PDF FIX
+=============================== */
+.invoice-wrapper {
+  width: 100%;
+  background: #fff;
+}
+
+.invoice-paper {
+  background: #ffffff;
+}
+
+/* ===============================
+   PDF / PRINT (FINAL & BERSIH)
+=============================== */
+.no-pdf,
+.no-print {
   display: block;
 }
 
-/* ===== SAAT DICETAK ATAU DIEXPORT PDF ===== */
 @media print {
-  .no-pdf {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-}
-
-/* === PRINT FIX — INVOICE A4 TANPA KEKROP === */
-@media print {
-  body {
+  html, body {
     background: #ffffff !important;
   }
-  .no-print {
-    display: none !important;
-  }
-  .invoice-container {
-    box-shadow: none !important;
-    border: none !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 20px !important;
-  }
-}
 
-@page {
-  size: A4;
-  margin: 0;
-}
-/* ==========================
-   🔥 INVOICE FIX (WEB + PDF)
-=========================== */
-
-/* 1️⃣ Hilangkan background abu & bayangan saat PDF */
-@media print {
-  body, html {
-    background: #ffffff !important;
-  }
-  .invoice-paper {
-    background: #ffffff !important;
-    box-shadow: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-  }
-}
-
-/* 2️⃣ Sembunyikan tombol download & elemen selain konten invoice */
-@media print {
-  .no-print,
+  /* sembunyikan semua elemen non-invoice */
   .no-pdf,
-  a[href*="invoice-pdf"],
-  button {
+  .no-print,
+  button,
+  a {
     display: none !important;
     visibility: hidden !important;
   }
-}
+  
+  /* reset transform untuk print */
+  button, button:active {
+    transform: none !important;
+  }
 
-/* 3️⃣ Biar selalu 1 halaman A4, tidak kepotong jadi 2 */
-@media print {
+  /* invoice bersih */
+  .invoice-wrapper,
+  .invoice-paper {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  /* A4 fix */
   @page {
     size: A4;
-    margin: 8mm;  /* nyaman & standar industri */
+    margin: 8mm;
   }
-  .invoice-paper {
-    zoom: 92%; /* biar muat 1 halaman */
+
+  /* warna aman */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
-}
-.invoice-paper h1,
-.invoice-paper .title {
-  font-weight: 800 !important;
-  letter-spacing: 0.02em;
 }
 
+/* ===============================
+   BUTTON (WEB ONLY)
+=============================== */
+@media screen {
+  button {
+    transition: all 0.25s ease;
+  }
+  button:active {
+    transform: scale(0.96);
+  }
+}
+
+/* ===============================
+   MOBILE SAFE AREA
+=============================== */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ===============================
+   NOTCH & HOME INDICATOR SAFETY
+=============================== */
+@supports (padding: max(0px)) {
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+  
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+  
+  .safe-left {
+    padding-left: max(env(safe-area-inset-left), 0px);
+  }
+  
+  .safe-right {
+    padding-right: max(env(safe-area-inset-right), 0px);
+  }
+}
+
+.safe-area-inset {
+  padding-top: constant(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top);
+}
+
+/* ===============================
+   IPHONE SE & SMALL DEVICES FIX
+=============================== */
+@media (max-width: 375px) {
+  /* Header adjustments */
+  header {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  
+  /* Smaller logo */
+  .logo-text, 
+  header h1,
+  [class*="font-playfair"] {
+    font-size: 18px !important;
+  }
+  
+  /* Mobile menu items */
+  button[class*="text-3xl"],
+  .mobile-menu-item {
+    font-size: 22px !important;
+    padding: 8px 0 !important;
+  }
+  
+  /* Chat button mobile */
+  .mobile-chat-btn,
+  button:has(svg.lucide-message-circle) {
+    padding: 8px 20px !important;
+    font-size: 16px !important;
+  }
+  
+  /* Close button position */
+  .mobile-close-btn,
+  button:has(svg.lucide-x) {
+    top: 12px !important;
+    right: 12px !important;
+  }
+  
+  /* Reduce gaps */
+  .mobile-menu-gap,
+  div:has(> button[class*="text-3xl"]) {
+    gap: 20px !important;
+  }
+  
+  /* Shopping cart icon */
+  button:has(svg.lucide-shopping-cart) {
+    transform: scale(0.9);
+  }
+}
+
+/* Khusus iPhone SE 1-3 (320px) */
+@media (max-width: 320px) {
+  .mobile-menu-item,
+  button[class*="text-3xl"] {
+    font-size: 20px !important;
+  }
+  
+  .mobile-chat-btn,
+  button:has(svg.lucide-message-circle) {
+    padding: 6px 16px !important;
+    font-size: 14px !important;
+  }
+  
+  button:has(svg.lucide-menu) svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+}
+
+/* ===============================
+   DARK MODE (OPTIONAL)
+=============================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand: #0FA3A8;
+    --brand-2: #0B4B50;
+    --brand-accent: #E8C46B;
+  }
+}

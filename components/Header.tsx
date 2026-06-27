@@ -1,279 +1,414 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { ShoppingCart, Menu, X, MessageCircle } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCartStore } from "@/stores/cartStore";
 import { useRouter } from "next/navigation";
 
-export default function Header() {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [shrink, setShrink] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuAnimate, setMenuAnimate] = useState(false);
+// Constants
+const NAV_ITEMS = [
+  { label: "Produk", href: "#produk" },
+  { label: "Tentang KOJE24", href: "#about" },
+  { label: "Langganan", href: "#langganan" },
+  { label: "Testimoni", href: "#testimoni" },
+  { label: "Bantuan", href: "/pusat-bantuan" },
+] as const;
 
+const SCROLL = {
+  SCROLLED: 20,
+  SHRINK: 80,
+  MOBILE_SHRINK: 65,
+  DESKTOP_SHRINK: 110,
+};
+
+const dispatchEvent = (eventName: string, detail?: any) => {
+  if (typeof window === 'undefined') return;
+  try {
+    const event = detail 
+      ? new CustomEvent(eventName, { detail })
+      : new Event(eventName);
+    window.dispatchEvent(event);
+  } catch (error) {
+    console.warn(`Failed to dispatch ${eventName}:`, error);
+  }
+};
+
+const debounce = (fn: Function, ms: number) => {
+  let timer: NodeJS.Timeout;
+  return (...args: any[]) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  };
+};
+
+export default function Header() {
+  const pathname = usePathname();
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
 
-  /* ===========================
-     SMART SCROLL LISTENER
-  ============================ */
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [shrink, setShrink] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [activeLink, setActiveLink] = useState("");
+
+  // ✅ HALAMAN DENGAN BACKGROUND GELAP DI ATAS (Cuma Homepage)
+  // Ubah sesuai kebutuhan jika halaman 'tentang' atau 'manfaat' aslinya background putih di atas.
+  const isDarkPage = useMemo(() => {
+    return pathname === '/';
+  }, [pathname]);
+
+  // ✅ HALAMAN DENGAN BACKGROUND TERANG/PUTIH DI ATAS 
+  // (Halaman Bantuan dan Tentang dipaksa header-nya warna gelap/text-gray-800)
+  const isLightPageAtTop = useMemo(() => {
+    return pathname.startsWith('/pusat-bantuan') || 
+           pathname.startsWith('/tentang') || 
+           pathname.startsWith('/about');
+  }, [pathname]);
+
+  // Mounted state
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Prefetch
+  useEffect(() => {
+    if (mounted) {
+      router.prefetch('/pusat-bantuan');
+    }
+  }, [router, mounted]);
+
+  // Check user motion preference
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+    
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  // ✅ SET ACTIVE LINK BERDASARKAN PATHNAME
+  useEffect(() => {
+    if (pathname.startsWith('/pusat-bantuan')) setActiveLink('Bantuan');
+    else if (pathname.startsWith('/tentang-koje24') || pathname.startsWith('/about')) setActiveLink('Tentang KOJE24');
+    else if (pathname === '/') {
+      const hash = window.location.hash;
+      if (hash === '#produk') setActiveLink('Produk');
+      else if (hash === '#about') setActiveLink('Tentang KOJE24');
+      else if (hash === '#langganan') setActiveLink('Langganan');
+      else if (hash === '#testimoni') setActiveLink('Testimoni');
+      else setActiveLink('');
+    } else {
+      setActiveLink('');
+    }
+  }, [pathname]);
+
+  // Scroll handler
   useEffect(() => {
     if (menuOpen) return;
 
-    const handleScroll = () => {
+    const handleScroll = debounce(() => {
       const y = window.scrollY;
-      setIsScrolled(y > 20);
-      setShrink(y > 80);
-    };
+      setIsScrolled(y > SCROLL.SCROLLED);
+      setShrink(y > SCROLL.SHRINK);
+    }, 16);
 
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [menuOpen]);
 
-  /* ===========================
-     BODY LOCK FIX (IOS SAFE)
-     — tidak ganggu popup lainnya
-  ============================ */
-  const lockBody = () => document.body.classList.add("body-menu-lock");
-  const unlockBody = () => document.body.classList.remove("body-menu-lock");
+  // Body lock
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.classList.add("body-menu-lock");
+    } else {
+      document.body.classList.remove("body-menu-lock");
+    }
+    return () => document.body.classList.remove("body-menu-lock");
+  }, [menuOpen]);
 
-  /* ===========================
-     OPEN MENU FIX
-  ============================ */
-  const openMenu = () => {
-    setMenuOpen(true);
-    requestAnimationFrame(() => setMenuAnimate(true));
-    window.scrollTo({ top: 0 });
-    lockBody();
-  };
+  const openMenu = useCallback(() => setMenuOpen(true), []);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
-  /* ===========================
-     CLOSE MENU FIX
-  ============================ */
-  const closeMenu = () => {
-    setMenuAnimate(false);
-    unlockBody();
-    setTimeout(() => setMenuOpen(false), 180);
-  };
-
-  /* ===========================
-     SCROLL TO SECTION
-  ============================ */
-  const scrollToSection = (href: string) => {
+  const scrollToSection = useCallback((href: string) => {
     const target = document.querySelector(href);
     if (!target) return;
-    const offset = shrink ? 65 : 110;
-    const y = target.getBoundingClientRect().top + window.scrollY - offset;
-    window.scrollTo({ top: y, behavior: "smooth" });
-  };
+    
+    const headerHeight = shrink ? SCROLL.MOBILE_SHRINK : SCROLL.DESKTOP_SHRINK;
+    const y = target.getBoundingClientRect().top + window.scrollY - headerHeight;
+    
+    window.scrollTo({ 
+      top: y, 
+      behavior: prefersReducedMotion ? 'auto' : 'smooth' 
+    });
+  }, [shrink, prefersReducedMotion]);
 
-  const navClick = (href: string) => {
-    window.dispatchEvent(new CustomEvent("close-testimoni-modal"));
+  const navClick = useCallback((href: string, label: string) => {
+    dispatchEvent("close-testimoni-modal");
     closeMenu();
+    setActiveLink(label);
 
     if (href.startsWith("#")) {
-      setTimeout(() => scrollToSection(href), 240);
+      if (pathname === '/') {
+        setTimeout(() => scrollToSection(href), 100);
+        return;
+      }
+      router.push('/');
+      setTimeout(() => scrollToSection(href), 300);
       return;
     }
 
     router.push(href);
-  };
+  }, [closeMenu, router, scrollToSection, pathname]);
 
-  const navItems = [
-    { label: "Produk", href: "#produk" },
-    { label: "Tentang KOJE24", href: "#about" },
-    { label: "Langganan", href: "#langganan" },
-    { label: "Testimoni", href: "#testimoni" },
-    { label: "Bantuan", href: "/pusat-bantuan" },
-  ];
+  // ✅ HEADER CLASSES
+  const headerClasses = useMemo(() => {
+    if (!mounted) return "fixed top-0 w-full z-[200] bg-white py-5 shadow-sm";
+    if (menuOpen) return "fixed top-0 w-full z-[200] bg-white py-5 shadow-md";
+    
+    // ✅ HALAMAN GELAP (Hanya Homepage saat belum di-scroll)
+    if (isDarkPage) {
+      return `
+        fixed top-0 w-full z-[200]
+        transition-all duration-300
+        ${isScrolled 
+          ? 'bg-white/95 backdrop-blur-md shadow-md' 
+          : 'bg-transparent'
+        }
+        ${shrink ? "py-2" : "py-5"}
+      `;
+    }
+    
+    // ✅ HALAMAN TERANG/PUTIH (Bantuan, Tentang, dll) → selalu background putih
+    return `
+      fixed top-0 w-full z-[200]
+      transition-all duration-300
+      bg-white/95 backdrop-blur-md shadow-sm
+      ${shrink ? "py-2" : "py-5"}
+    `;
+  }, [menuOpen, isScrolled, shrink, isDarkPage, mounted]);
+
+  // ✅ LOGO CLASSES
+  const logoClasses = useMemo(() => {
+    if (!mounted || menuOpen) return "font-playfair font-bold text-2xl text-gray-800";
+    
+    if (isDarkPage) {
+      return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} ${isScrolled ? "text-gray-800" : "text-white"}`;
+    }
+    
+    return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} text-gray-800`;
+  }, [menuOpen, shrink, isDarkPage, isScrolled, mounted]);
+
+  const logoSpanClasses = useMemo(() => {
+    if (!mounted || menuOpen) return "text-[#0FA3A8]";
+    if (isDarkPage && !isScrolled) return "text-[#E8C46B]";
+    return "text-[#0FA3A8]";
+  }, [menuOpen, isDarkPage, isScrolled, mounted]);
+
+  // ✅ TEXT COLOR
+  const getTextColor = useCallback(() => {
+    if (!mounted || menuOpen) return "text-gray-800";
+    
+    // ✅ HALAMAN GELAP: putih saat transparan, hitam saat scroll
+    if (isDarkPage) {
+      return isScrolled ? "text-gray-800" : "text-white";
+    }
+    
+    // ✅ HALAMAN TERANG/PUTIH: selalu hitam
+    return "text-gray-800";
+  }, [menuOpen, isScrolled, isDarkPage, mounted]);
+
+  // ✅ BUTTON BACKGROUND
+  const getButtonBg = useCallback(() => {
+    if (!mounted || menuOpen) return "bg-[#0FA3A8] text-white";
+    
+    if (isDarkPage && !isScrolled) {
+      return "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30";
+    }
+    
+    return "bg-[#0FA3A8] text-white hover:bg-[#0DC1C7]";
+  }, [menuOpen, isScrolled, isDarkPage, mounted]);
+
+  // ✅ CART ICON COLOR
+  const getCartColor = useCallback(() => {
+    if (!mounted || menuOpen) return "text-gray-800";
+    if (isDarkPage && !isScrolled) return "text-white";
+    return "text-gray-800";
+  }, [menuOpen, isDarkPage, isScrolled, mounted]);
+
+  if (!mounted) return null;
 
   return (
-    <header
-      className={`
-        fixed top-0 w-full z-[200]
-        ${
-          menuOpen
-            ? "bg-transparent py-5"
-            : isScrolled
-            ? "backdrop-blur-xl bg-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.05)] transition-all duration-700"
-            : "bg-transparent transition-all duration-700"
-        }
-        ${menuOpen ? "" : shrink ? "py-2" : "py-5"}
-      `}
-    >
-      {isScrolled && !menuOpen && (
-        <div className="absolute bottom-0 left-0 h-[1.5px] w-full bg-gradient-to-r from-[#0FA3A8]/40 via-[#0B4B50]/40 to-[#0FA3A8]/40" />
-      )}
+    <header className={headerClasses}>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-white text-gray-800 px-4 py-2 rounded-lg z-[10000] shadow-lg">
+        Langsung ke konten utama
+      </a>
 
       <div
-        className={`max-w-7xl mx-auto flex items-center justify-between px-5 md:px-10
-        ${shrink && !menuOpen ? "h-[60px]" : "h-[82px]"}
-        transition-all duration-700
-      `}
+        className={`
+          max-w-7xl mx-auto flex items-center justify-between px-4 md:px-10
+          ${shrink && !menuOpen ? "h-[52px]" : "h-[70px]"}
+          transition-all duration-300
+        `}
       >
         {/* LOGO */}
         <Link
           href="/"
-          onClick={(e) => {
-            e.preventDefault();
-            window.dispatchEvent(new CustomEvent("close-testimoni-modal"));
+          onClick={() => {
+            dispatchEvent("close-testimoni-modal");
             closeMenu();
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            setActiveLink('');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className={`
-            font-playfair font-bold transition-all duration-700
-            ${shrink && !menuOpen ? "text-xl" : "text-2xl"}
-            ${
-              menuOpen
-                ? "text-white"
-                : isScrolled
-                ? "text-[#0B4B50]"
-                : "text-white"
-            }
-          `}
+          className="group relative"
         >
-          KOJE
-          <span
-            className={`
-              ${
-                menuOpen
-                  ? "text-[#E8C46B]"
-                  : isScrolled
-                  ? "text-[#0FA3A8]"
-                  : "text-[#E8C46B]"
-              }
-            `}
-          >
-            24
+          <span className={logoClasses}>
+            KOJE
+            <span className={logoSpanClasses}>24</span>
           </span>
+          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-[#0FA3A8] to-[#E8C46B] transition-all duration-300 group-hover:w-full" />
         </Link>
 
         {/* DESKTOP MENU */}
-        <nav className="hidden md:flex items-center gap-8">
-          {navItems.map((item) => (
+        <nav className="hidden md:flex items-center gap-6 lg:gap-8">
+          {NAV_ITEMS.map((item) => (
             <button
               key={item.href}
-              onClick={() => navClick(item.href)}
+              onClick={() => navClick(item.href, item.label)}
               className={`
-                font-medium transition-all duration-300
-                ${
-                  menuOpen
-                    ? "text-white"
-                    : isScrolled
-                    ? "text-[#0B4B50] hover:text-[#0FA3A8]"
-                    : "text-white hover:text-[#E8C46B]"
-                }
+                text-sm lg:text-base font-medium transition-all duration-300
+                ${getTextColor()}
+                ${activeLink === item.label ? 'text-[#0FA3A8] font-semibold' : ''}
+                hover:text-[#0FA3A8]
               `}
             >
               {item.label}
             </button>
           ))}
 
+          {/* Cart Button - Desktop */}
           <button
-            onClick={() =>
-              window.dispatchEvent(new CustomEvent("open-cart"))
-            }
-            className="relative"
+            onClick={() => dispatchEvent("open-cart")}
+            className="relative p-2 rounded-full hover:bg-gray-100 transition-all"
+            aria-label={`Cart with ${totalQty} items`}
           >
-            <ShoppingCart
-              size={24}
-              className={
-                menuOpen
-                  ? "text-white"
-                  : isScrolled
-                  ? "text-[#0B4B50]"
-                  : "text-white"
-              }
-            />
+            <ShoppingCart size={20} className={getCartColor()} />
             {totalQty > 0 && (
-              <span className="absolute -top-2 -right-2 bg-[#E8C46B] text-[#0B4B50] text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
-                {totalQty}
+              <span className="absolute -top-1 -right-1 bg-[#0FA3A8] text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg">
+                {totalQty > 9 ? '9+' : totalQty}
               </span>
             )}
           </button>
 
-          <a
-            href="https://wa.me/6282213139580"
-            target="_blank"
-            rel="noopener noreferrer"
+          {/* Chat Button */}
+          <button
+            onClick={() => dispatchEvent("open-chat")}
             className={`
-              ml-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm shadow-md transition-all
-              ${
-                menuOpen
-                  ? "bg-white/20 text-white"
-                  : isScrolled
-                  ? "bg-[#0FA3A8] text-white hover:bg-[#0B4B50]"
-                  : "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30"
-              }
+              flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
+              transition-all duration-300
+              ${getButtonBg()}
             `}
           >
-            <MessageCircle size={20} /> Chat
-          </a>
+            <MessageCircle size={16} />
+            <span className="hidden lg:inline">Chat</span>
+          </button>
         </nav>
 
-        {/* MOBILE ICON */}
-        <button
-          onClick={openMenu}
-          className={`
-            md:hidden text-2xl
-            ${
-              menuOpen
-                ? "text-white"
-                : isScrolled
-                ? "text-[#0B4B50]"
-                : "text-white"
-            }
-          `}
-        >
-          <Menu size={26} />
-        </button>
+        {/* MOBILE: Cart & Menu Buttons */}
+        <div className="flex items-center gap-2 md:hidden">
+          <button
+            onClick={() => dispatchEvent("open-cart")}
+            className="relative p-2 rounded-full hover:bg-gray-100 transition-all"
+            aria-label={`Cart with ${totalQty} items`}
+          >
+            <ShoppingCart size={22} className={getCartColor()} />
+            {totalQty > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#0FA3A8] text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-lg">
+                {totalQty > 9 ? '9+' : totalQty}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={openMenu}
+            className="p-2 rounded-full hover:bg-gray-100 transition-all"
+            aria-label="Open menu"
+          >
+            <Menu size={24} className={getCartColor()} />
+          </button>
+        </div>
       </div>
 
       {/* MOBILE MENU */}
       {menuOpen && (
-        <div
-          className={`
-            fixed inset-0 z-[300] flex flex-col items-center justify-center gap-8
-            bg-white/95 backdrop-blur-xl transition-all duration-300
-            ${
-              menuAnimate
-                ? "opacity-100 translate-y-0 pointer-events-auto"
-                : "opacity-0 translate-y-4 pointer-events-none"
-            }
-          `}
-        >
-          <button
-            onClick={closeMenu}
-            className="absolute top-6 right-6 text-3xl text-[#0B4B50] hover:text-[#0FA3A8]"
+        <>
+          <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={closeMenu} />
+          
+          <div
+            className={`
+              fixed bottom-0 left-0 right-0 z-[9999] bg-white rounded-t-3xl
+              transition-all duration-300 ease-out transform
+            `}
+            style={{
+              transform: menuOpen ? 'translateY(0)' : 'translateY(100%)',
+              opacity: menuOpen ? 1 : 0,
+            }}
           >
-            <X size={32} />
-          </button>
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <span className="font-playfair text-xl font-bold text-gray-800">
+                KOJE<span className="text-[#0FA3A8]">24</span>
+              </span>
+              <button
+                onClick={closeMenu}
+                className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition"
+                aria-label="Close menu"
+              >
+                <X size={20} className="text-gray-600" />
+              </button>
+            </div>
 
-          {navItems.map((item) => (
-            <button
-              key={item.href}
-              onClick={() => navClick(item.href)}
-              className="text-3xl font-semibold text-[#0B4B50] hover:text-[#0FA3A8] transition-all"
-            >
-              {item.label}
-            </button>
-          ))}
+            <div className="p-5">
+              {NAV_ITEMS.map((item) => (
+                <button
+                  key={item.href}
+                  onClick={() => navClick(item.href, item.label)}
+                  className={`
+                    w-full text-left px-4 py-4 rounded-xl text-lg font-medium
+                    transition-all duration-200
+                    ${activeLink === item.label 
+                      ? 'bg-gradient-to-r from-[#0FA3A8]/10 to-[#0B4B50]/10 text-[#0FA3A8] font-semibold' 
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-[#0FA3A8]'
+                    }
+                  `}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
 
-          <a
-            href="https://wa.me/6282213139580"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-10 flex items-center justify-center gap-3 px-10 py-3 bg-[#0FA3A8] text-white rounded-full text-xl hover:bg-[#0B4B50] transition-all shadow-xl"
-          >
-            <MessageCircle size={28} /> Chat Sekarang
-          </a>
+            <div className="p-5 pt-0">
+              <button
+                onClick={() => {
+                  closeMenu();
+                  dispatchEvent("open-chat");
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-[#0FA3A8] to-[#0B4B50] text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all"
+              >
+                <MessageCircle size={20} />
+                Chat Customer Service
+              </button>
+            </div>
 
-          <div className="absolute bottom-8 text-sm text-gray-500">
-            © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
+            <div className="p-5 pt-0 pb-8 text-center text-xs text-gray-400">
+              © 2025 <span className="text-[#0FA3A8] font-semibold">KOJE24</span>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </header>
   );
