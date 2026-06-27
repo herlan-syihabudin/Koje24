@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { ShoppingCart, Menu, X, MessageCircle } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation"; // ✅ TAMBAHKAN INI
 import { useCartStore } from "@/stores/cartStore";
 import { useRouter } from "next/navigation";
 
@@ -21,14 +22,6 @@ const SCROLL = {
   MOBILE_SHRINK: 65,
   DESKTOP_SHRINK: 110,
 };
-
-// ✅ DAFTAR HALAMAN YANG BACKGROUNDNYA GELAP (HEADER TRANSPARAN + TEKS PUTIH)
-// Halaman dengan hero/background gelap di bagian atas
-const DARK_PAGES = ['/', '/tentang-koje24', '/manfaat'];
-
-// ✅ DAFTAR HALAMAN YANG BACKGROUNDNYA PUTIH (HEADER TETAP PUTIH + TEKS HITAM)
-// Halaman dengan background putih di bagian atas
-const LIGHT_PAGES = ['/produk', '/testimoni', '/pusat-bantuan'];
 
 const dispatchEvent = (eventName: string, detail?: any) => {
   if (typeof window === 'undefined') return;
@@ -51,25 +44,28 @@ const debounce = (fn: Function, ms: number) => {
 };
 
 export default function Header() {
+  const pathname = usePathname(); // ✅ PAKAI HOOK INI
+  const router = useRouter();
+  const totalQty = useCartStore((state) => state.totalQty);
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [shrink, setShrink] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [pathname, setPathname] = useState('/');
   const [mounted, setMounted] = useState(false);
   const [activeLink, setActiveLink] = useState("");
 
-  const router = useRouter();
-  const totalQty = useCartStore((state) => state.totalQty);
-
-  // ✅ CEK JENIS HALAMAN
+  // ✅ CEK APAKAH HALAMAN MEMPUNYAI BACKGROUND GELAP
   const isDarkPage = useMemo(() => {
-    return DARK_PAGES.some(page => pathname === page || pathname.startsWith(page));
+    // Homepage, tentang, manfaat → background gelap di hero
+    return pathname === '/' || 
+           pathname.startsWith('/tentang') || 
+           pathname.startsWith('/manfaat');
   }, [pathname]);
 
-  // ✅ HALAMAN DENGAN BACKGROUND PUTIH (header selalu putih)
-  const isLightPage = useMemo(() => {
-    return LIGHT_PAGES.some(page => pathname === page || pathname.startsWith(page));
+  // ✅ CEK APAKAH HALAMAN BANTUAN (background putih)
+  const isHelpPage = useMemo(() => {
+    return pathname === '/pusat-bantuan' || pathname.startsWith('/pusat-bantuan');
   }, [pathname]);
 
   // Mounted state
@@ -94,30 +90,22 @@ export default function Header() {
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // ✅ DETEKSI PATHNAME
+  // ✅ SET ACTIVE LINK BERDASARKAN PATHNAME
   useEffect(() => {
-    const checkPage = () => {
-      const path = window.location.pathname;
+    if (pathname === '/pusat-bantuan') setActiveLink('Bantuan');
+    else if (pathname === '/tentang-koje24') setActiveLink('Tentang KOJE24');
+    else if (pathname === '/') {
+      // Cek hash
       const hash = window.location.hash;
-      setPathname(path);
-      
-      if (path === '/pusat-bantuan') setActiveLink('Bantuan');
-      else if (path === '/tentang-koje24') setActiveLink('Tentang KOJE24');
-      else if (hash === '#produk') setActiveLink('Produk');
+      if (hash === '#produk') setActiveLink('Produk');
       else if (hash === '#about') setActiveLink('Tentang KOJE24');
       else if (hash === '#langganan') setActiveLink('Langganan');
       else if (hash === '#testimoni') setActiveLink('Testimoni');
       else setActiveLink('');
-    };
-    
-    checkPage();
-    window.addEventListener('popstate', checkPage);
-    window.addEventListener('hashchange', checkPage);
-    return () => {
-      window.removeEventListener('popstate', checkPage);
-      window.removeEventListener('hashchange', checkPage);
-    };
-  }, []);
+    } else {
+      setActiveLink('');
+    }
+  }, [pathname]);
 
   // Scroll handler
   useEffect(() => {
@@ -178,12 +166,12 @@ export default function Header() {
     router.push(href);
   }, [closeMenu, router, scrollToSection, pathname]);
 
-  // ✅ HEADER CLASSES - DIPERBAIKI
+  // ✅ HEADER CLASSES
   const headerClasses = useMemo(() => {
     if (!mounted) return "fixed top-0 w-full z-[200] bg-white py-5";
     if (menuOpen) return "fixed top-0 w-full z-[200] bg-white py-5 shadow-md";
     
-    // ✅ HALAMAN GELAP (transparan → putih saat scroll)
+    // ✅ HALAMAN GELAP (Home, tentang, manfaat) → transparan, teks putih
     if (isDarkPage) {
       return `
         fixed top-0 w-full z-[200]
@@ -196,7 +184,7 @@ export default function Header() {
       `;
     }
     
-    // ✅ HALAMAN PUTIH (selalu putih)
+    // ✅ HALAMAN PUTIH (produk, testimoni, pusat-bantuan) → selalu putih
     return `
       fixed top-0 w-full z-[200]
       transition-all duration-300
@@ -210,12 +198,10 @@ export default function Header() {
     if (!mounted) return "font-playfair font-bold text-2xl text-gray-800";
     if (menuOpen) return "font-playfair font-bold text-2xl text-gray-800";
     
-    // ✅ HALAMAN GELAP: putih saat transparan, hitam saat scroll
     if (isDarkPage) {
       return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} ${isScrolled ? "text-gray-800" : "text-white"}`;
     }
     
-    // ✅ HALAMAN PUTIH: selalu hitam
     return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} text-gray-800`;
   }, [menuOpen, shrink, isScrolled, isDarkPage, mounted]);
 
@@ -226,7 +212,7 @@ export default function Header() {
     return "text-[#0FA3A8]";
   }, [menuOpen, isDarkPage, isScrolled, mounted]);
 
-  // ✅ TEXT COLOR
+  // ✅ TEXT COLOR - PASTIKAN INI
   const getTextColor = useCallback(() => {
     if (!mounted) return "text-gray-800";
     if (menuOpen) return "text-gray-800";
@@ -236,7 +222,7 @@ export default function Header() {
       return isScrolled ? "text-gray-800" : "text-white";
     }
     
-    // ✅ HALAMAN PUTIH: selalu hitam (TERMASUK BANTUAN!)
+    // ✅ HALAMAN PUTIH: selalu hitam
     return "text-gray-800";
   }, [menuOpen, isScrolled, isDarkPage, mounted]);
 
@@ -259,6 +245,17 @@ export default function Header() {
     if (isDarkPage && !isScrolled) return "text-white";
     return "text-gray-800";
   }, [menuOpen, isDarkPage, isScrolled, mounted]);
+
+  // ✅ ADDITIONAL: TAMBAHKAN CONSOLE LOG UNTUK DEBUG
+  useEffect(() => {
+    console.log("Header state:", {
+      pathname,
+      isDarkPage,
+      isScrolled,
+      menuOpen,
+      activeLink
+    });
+  }, [pathname, isDarkPage, isScrolled, menuOpen, activeLink]);
 
   if (!mounted) return null;
 
@@ -363,7 +360,7 @@ export default function Header() {
         </div>
       </div>
 
-      {/* MOBILE MENU - BOTTOM SHEET */}
+      {/* MOBILE MENU */}
       {menuOpen && (
         <>
           <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={closeMenu} />
