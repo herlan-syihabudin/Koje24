@@ -47,7 +47,6 @@ export default function SubscriptionSection() {
           return
         }
         
-        // ✅ FILTER PAKET SAJA
         const packageItems = productsData
           .filter((p: ProductFromAPI) => {
             return p.isPackage === true || 
@@ -125,10 +124,9 @@ export default function SubscriptionSection() {
         </p>
       </div>
 
-      {/* ✅ PAKAI flex DENGAN items-stretch AGAR SEJAJAR */}
-      <div className="relative z-10 flex flex-wrap justify-center gap-8 max-w-[1024px] mx-auto">
+      {/* ✅ PAKAI GRID DENGAN items-stretch */}
+      <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-[1200px] mx-auto">
         {packages.map((pkg, index) => {
-          // Tentukan paket favorit (yang di tengah)
           const isPopular = index === 1 || pkg.nama?.toLowerCase().includes("favorit")
           
           return (
@@ -141,8 +139,7 @@ export default function SubscriptionSection() {
                 hover:shadow-[0_10px_35px_rgba(15,163,168,0.25)]
                 transition-all duration-500
                 flex flex-col p-6 text-center relative overflow-hidden
-                w-full sm:w-[280px] md:w-[300px] lg:w-[300px]
-                flex-1 min-w-[250px] max-w-[320px]
+                h-full
               "
             >
               {/* BADGE POPULAR */}
@@ -173,7 +170,8 @@ export default function SubscriptionSection() {
                 </p>
               )}
 
-              <p className="font-inter text-sm text-gray-700 mb-5 flex-1 leading-relaxed px-2">
+              {/* ✅ DESKRIPSI DENGAN MIN-HEIGHT AGAR KONSISTEN */}
+              <p className="font-inter text-sm text-gray-700 mb-5 flex-1 leading-relaxed px-2 min-h-[60px]">
                 {pkg.desc || "Paket hemat untuk gaya hidup sehat"}
               </p>
 
@@ -212,9 +210,9 @@ function SubscriptionSkeleton() {
         <div className="h-10 w-64 bg-gray-200 rounded mx-auto mb-3 animate-pulse" />
         <div className="h-6 w-96 max-w-full bg-gray-200 rounded mx-auto animate-pulse" />
       </div>
-      <div className="flex flex-wrap justify-center gap-8 max-w-[1024px] mx-auto">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white rounded-3xl p-6 shadow animate-pulse w-full sm:w-[280px] md:w-[300px] flex-1 min-w-[250px] max-w-[320px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-[1200px] mx-auto">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-white rounded-3xl p-6 shadow animate-pulse h-full">
             <div className="h-6 w-3/4 bg-gray-200 rounded mx-auto mb-3" />
             <div className="h-4 w-full bg-gray-200 rounded mx-auto mb-5" />
             <div className="h-6 w-1/2 bg-gray-200 rounded mx-auto mb-6" />
