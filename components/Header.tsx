@@ -22,6 +22,9 @@ const SCROLL = {
   DESKTOP_SHRINK: 110,
 };
 
+// ✅ DAFTAR HALAMAN YANG BACKGROUNDNYA GELAP
+const DARK_PAGES = ['/', '/tentang-koje24', '/manfaat'];
+
 const dispatchEvent = (eventName: string, detail?: any) => {
   if (typeof window === 'undefined') return;
   try {
@@ -34,7 +37,6 @@ const dispatchEvent = (eventName: string, detail?: any) => {
   }
 };
 
-// Debounce utility
 const debounce = (fn: Function, ms: number) => {
   let timer: NodeJS.Timeout;
   return (...args: any[]) => {
@@ -48,12 +50,17 @@ export default function Header() {
   const [shrink, setShrink] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [isHomePage, setIsHomePage] = useState(true);
+  const [pathname, setPathname] = useState('/');
   const [mounted, setMounted] = useState(false);
   const [activeLink, setActiveLink] = useState("");
 
   const router = useRouter();
   const totalQty = useCartStore((state) => state.totalQty);
+
+  // ✅ CEK APAKAH HALAMAN MEMPUNYAI BACKGROUND GELAP
+  const isDarkPage = useMemo(() => {
+    return DARK_PAGES.includes(pathname) || pathname.startsWith('/tentang') || pathname.startsWith('/manfaat');
+  }, [pathname]);
 
   // Mounted state
   useEffect(() => {
@@ -77,12 +84,12 @@ export default function Header() {
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // Deteksi halaman & active link
+  // ✅ DETEKSI PATHNAME & ACTIVE LINK
   useEffect(() => {
     const checkPage = () => {
       const path = window.location.pathname;
       const hash = window.location.hash;
-      setIsHomePage(path === '/');
+      setPathname(path);
       
       if (path === '/pusat-bantuan') setActiveLink('Bantuan');
       else if (hash === '#produk') setActiveLink('Produk');
@@ -101,7 +108,7 @@ export default function Header() {
     };
   }, []);
 
-  // Scroll handler with debounce for performance
+  // Scroll handler
   useEffect(() => {
     if (menuOpen) return;
 
@@ -129,7 +136,6 @@ export default function Header() {
   const openMenu = useCallback(() => setMenuOpen(true), []);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
-  // Scroll to section
   const scrollToSection = useCallback((href: string) => {
     const target = document.querySelector(href);
     if (!target) return;
@@ -143,14 +149,13 @@ export default function Header() {
     });
   }, [shrink, prefersReducedMotion]);
 
-  // Navigation handler
   const navClick = useCallback((href: string, label: string) => {
     dispatchEvent("close-testimoni-modal");
     closeMenu();
     setActiveLink(label);
 
     if (href.startsWith("#")) {
-      if (window.location.pathname === '/') {
+      if (pathname === '/') {
         setTimeout(() => scrollToSection(href), 100);
         return;
       }
@@ -160,75 +165,86 @@ export default function Header() {
     }
 
     router.push(href);
-  }, [closeMenu, router, scrollToSection]);
+  }, [closeMenu, router, scrollToSection, pathname]);
 
-  // Header classes
+  // ✅ HEADER CLASSES - DIPERBAIKI
   const headerClasses = useMemo(() => {
     if (!mounted) return "fixed top-0 w-full z-[200] bg-white py-5";
     if (menuOpen) return "fixed top-0 w-full z-[200] bg-white py-5 shadow-md";
     
-    if (!isHomePage) {
+    // ✅ UNTUK HALAMAN GELAP
+    if (isDarkPage) {
       return `
         fixed top-0 w-full z-[200]
         transition-all duration-300
-        bg-white shadow-md
+        ${isScrolled 
+          ? 'bg-white/95 backdrop-blur-md shadow-md' 
+          : 'bg-transparent'
+        }
         ${shrink ? "py-2" : "py-5"}
       `;
     }
     
+    // ✅ UNTUK HALAMAN PUTIH (produk, testimoni, dll)
     return `
       fixed top-0 w-full z-[200]
       transition-all duration-300
-      ${isScrolled
-        ? "bg-white shadow-md" 
-        : "bg-transparent"
-      }
+      bg-white shadow-sm
       ${shrink ? "py-2" : "py-5"}
     `;
-  }, [menuOpen, isScrolled, shrink, isHomePage, mounted]);
+  }, [menuOpen, isScrolled, shrink, isDarkPage, mounted]);
 
-  // Logo classes
+  // ✅ LOGO CLASSES - DIPERBAIKI
   const logoClasses = useMemo(() => {
     if (!mounted) return "font-playfair font-bold text-2xl text-gray-800";
     if (menuOpen) return "font-playfair font-bold text-2xl text-gray-800";
     
-    if (!isHomePage) {
-      return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} text-gray-800`;
+    // ✅ UNTUK HALAMAN GELAP
+    if (isDarkPage) {
+      return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} ${isScrolled ? "text-gray-800" : "text-white"}`;
     }
     
-    return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} ${isScrolled ? "text-gray-800" : "text-white"}`;
-  }, [menuOpen, shrink, isScrolled, isHomePage, mounted]);
+    // ✅ UNTUK HALAMAN PUTIH
+    return `font-playfair font-bold transition-all duration-300 ${shrink ? "text-xl" : "text-2xl"} text-gray-800`;
+  }, [menuOpen, shrink, isScrolled, isDarkPage, mounted]);
 
   const logoSpanClasses = useMemo(() => {
     if (!mounted) return "text-[#0FA3A8]";
     if (menuOpen) return "text-[#0FA3A8]";
-    if (!isHomePage) return "text-[#0FA3A8]";
-    if (isScrolled) return "text-[#0FA3A8]";
-    return "text-[#E8C46B]";
-  }, [menuOpen, isHomePage, isScrolled, mounted]);
+    if (isDarkPage && !isScrolled) return "text-[#E8C46B]";
+    return "text-[#0FA3A8]";
+  }, [menuOpen, isDarkPage, isScrolled, mounted]);
 
-  // Text color
+  // ✅ TEXT COLOR - DIPERBAIKI
   const getTextColor = useCallback(() => {
     if (!mounted) return "text-gray-800";
     if (menuOpen) return "text-gray-800";
-    if (!isHomePage) return "text-gray-800";
-    if (isScrolled) return "text-gray-800";
-    return "text-white";
-  }, [menuOpen, isScrolled, isHomePage, mounted]);
+    
+    // ✅ UNTUK HALAMAN GELAP
+    if (isDarkPage) {
+      return isScrolled ? "text-gray-800" : "text-white";
+    }
+    
+    // ✅ UNTUK HALAMAN PUTIH
+    return "text-gray-800";
+  }, [menuOpen, isScrolled, isDarkPage, mounted]);
 
   const getButtonBg = useCallback(() => {
     if (!mounted) return "bg-[#0FA3A8] text-white";
     if (menuOpen) return "bg-[#0FA3A8] text-white";
-    if (!isHomePage) return "bg-[#0FA3A8] text-white";
-    if (isScrolled) return "bg-[#0FA3A8] text-white";
-    return "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30";
-  }, [menuOpen, isScrolled, isHomePage, mounted]);
+    
+    // ✅ UNTUK HALAMAN GELAP
+    if (isDarkPage && !isScrolled) {
+      return "bg-white/20 text-white backdrop-blur-sm hover:bg-white/30";
+    }
+    
+    return "bg-[#0FA3A8] text-white hover:bg-[#0DC1C7]";
+  }, [menuOpen, isScrolled, isDarkPage, mounted]);
 
   if (!mounted) return null;
 
   return (
     <header className={headerClasses}>
-      {/* Skip to main content - Accessibility */}
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-white text-gray-800 px-4 py-2 rounded-lg z-[10000] shadow-lg">
         Langsung ke konten utama
       </a>
@@ -328,7 +344,7 @@ export default function Header() {
         </div>
       </div>
 
-      {/* MOBILE MENU - BOTTOM SHEET */}
+      {/* MOBILE MENU */}
       {menuOpen && (
         <>
           <div className="fixed inset-0 bg-black/50 z-[9998]" onClick={closeMenu} />
