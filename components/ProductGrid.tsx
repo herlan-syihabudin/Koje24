@@ -60,7 +60,7 @@ const ProductCard = memo(({
 
         <Image
           data-id={`product-${p.id}`}
-          src={p.img || "/placeholder.png"}
+          src={p.img || "/image/logo-koje24-putih-removebg-preview.png"}
           alt={p.nama}
           fill
           priority={parseInt(p.id) < 4}
