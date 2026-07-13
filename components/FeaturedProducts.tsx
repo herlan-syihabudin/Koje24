@@ -330,7 +330,7 @@ export default function FeaturedProducts() {
                 ? db.harga
                 : Number(p.harga)
 
-            const img = db?.img || p.img || "/images/placeholder.jpg"
+            const img = db?.img || p.img || "/image/logo-koje24-putih-removebg-preview.png"
 
             return (
               <motion.div
