@@ -11,7 +11,7 @@ import InstallPWAButton from "@/components/InstallPWAButton";
 import ChatWidget from "@/components/ChatWidget";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-// ✅ TAMBAHKAN PRECONNECT UNTUK FONT
+// ✅ METADATA GLOBAL
 export const metadata = {
   metadataBase: new URL('https://koje24.com'),
   title: {
@@ -63,7 +63,7 @@ export const metadata = {
   category: "food",
 };
 
-// ✅ OPTIMASI SCHEMA ORGANIZATION
+// ✅ SCHEMA ORGANIZATION
 const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
@@ -87,7 +87,7 @@ const organizationSchema = {
   ],
 };
 
-// ✅ OPTIMASI SCHEMA LOCAL BUSINESS
+// ✅ SCHEMA LOCAL BUSINESS
 const localBusinessSchema = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
@@ -108,7 +108,7 @@ const localBusinessSchema = {
   ],
 };
 
-// ✅ TAMBAHKAN BREADCRUMB SCHEMA
+// ✅ SCHEMA BREADCRUMB
 const breadcrumbSchema = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
@@ -122,13 +122,101 @@ const breadcrumbSchema = {
   ],
 };
 
+// ✅ SCHEMA FAQ (TAMBAHAN)
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Apa itu cold pressed juice?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Cold pressed juice adalah jus yang dibuat dengan teknologi cold-press (tekanan dingin) tanpa panas, sehingga nutrisi dan enzim alami tetap terjaga maksimal. KOJE24 menggunakan metode ini untuk menghasilkan jus yang lebih sehat dan segar."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Apa manfaat minum jus detox setiap hari?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Minum jus detox setiap hari membantu membersihkan racun dalam tubuh, meningkatkan energi, memperbaiki pencernaan, mencerahkan kulit, dan memperkuat sistem imun. KOJE24 dibuat tanpa gula tambahan sehingga aman untuk konsumsi harian."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Berapa harga cold pressed juice di Bekasi?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Harga cold pressed juice di Bekasi mulai dari Rp18.000 per botol untuk produk reguler, dan paket hemat mulai dari Rp120.000 untuk 7 hari. KOJE24 menawarkan harga terjangkau dengan kualitas premium."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Apakah KOJE24 aman untuk diet?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Ya, KOJE24 sangat aman untuk diet karena tanpa gula tambahan, rendah kalori, dan kaya serat. Sangat cocok untuk program detoks dan menjaga berat badan ideal."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Apakah KOJE24 bisa dikirim ke luar kota?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Saat ini pengiriman rutin tersedia untuk area Jabodetabek. Untuk area di luar kota, silakan hubungi kami via WhatsApp agar tim kami bisa bantu atur pengiriman khusus dengan pendingin."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Berapa lama masa simpan jus KOJE24?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Disarankan dikonsumsi maksimal 2–3 hari setelah produksi dan disimpan di dalam kulkas pada suhu ≤4°C. Kocok perlahan sebelum diminum untuk menjaga rasa dan kualitas alami."
+      }
+    }
+  ]
+};
+
+// ✅ SCHEMA WEBSITE + SEARCH (TAMBAHAN)
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "url": "https://koje24.com",
+  "name": "KOJE24 - Cold Pressed Juice Bekasi & Jakarta",
+  "description": "Cold-pressed juice segar 100% alami tanpa gula tambahan. Delivery Bekasi & Jakarta.",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://koje24.com/search?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+};
+
+// ✅ SCHEMA GEOLOCATION (TAMBAHAN)
+const geoLocationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Place",
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": "-6.350",
+    "longitude": "107.050"
+  },
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Bekasi",
+    "addressRegion": "Jawa Barat",
+    "addressCountry": "ID"
+  }
+};
+
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      {/* ✅ TAMBAHKAN PRECONNECT UNTUK FONT */}
+      {/* ✅ PRECONNECT UNTUK FONT */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
 
+      {/* ✅ SKIP TO CONTENT (ACCESSIBILITY) */}
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-[#0FA3A8] focus:text-white focus:p-4 focus:rounded-lg"
@@ -139,22 +227,35 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <Header />
       <TestimonialSchemaSEO />
 
-      {/* ✅ SCHEMA ORGANIZATION */}
+      {/* ✅ ALL SCHEMA MARKUPS */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
       />
       
-      {/* ✅ SCHEMA LOCAL BUSINESS */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
       />
       
-      {/* ✅ SCHEMA BREADCRUMB */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(geoLocationSchema) }}
       />
 
       <main id="main-content" className="min-h-screen">
@@ -162,6 +263,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       </main>
       <Footer />
 
+      {/* ✅ TOASTER */}
       <Toaster
         position="top-center"
         richColors
@@ -176,6 +278,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         }}
       />
 
+      {/* ✅ SUSPENSE COMPONENTS */}
       <Suspense fallback={null}>
         <ChatWidget />
       </Suspense>
