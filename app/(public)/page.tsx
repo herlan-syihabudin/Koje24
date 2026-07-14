@@ -15,7 +15,7 @@ import CartPopup from "@/components/CartPopup"
 import PackagePopup from "@/components/PackagePopup"
 import RatingPopup from "@/components/RatingPopup"
 
-// ⭐ METADATA UNTUK HOME PAGE (OPTIMASI SEO)
+// ⭐ METADATA UNTUK HOME PAGE (OPTIMASI SEO KILLER)
 export const metadata: Metadata = {
   title: "KOJE24 - Cold Pressed Juice Bekasi & Jakarta - 100% Natural",
   description: "Cold-pressed juice segar 100% alami tanpa gula tambahan. Detox harian, booster imun, dan energi alami. Delivery Bekasi & Jakarta. Pesan sekarang!",
@@ -28,6 +28,9 @@ export const metadata: Metadata = {
     "cold pressed juice Jakarta",
     "jus segar Bekasi",
     "minuman sehat alami",
+    "cold pressed juice Indonesia",
+    "jus detox Jakarta",
+    "jus sehat Bekasi",
   ],
   robots: {
     index: true,
@@ -41,7 +44,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "KOJE24 - Cold Pressed Juice Bekasi & Jakarta",
+    title: "KOJE24 - Cold Pressed Juice Bekasi & Jakarta - 100% Natural",
     description: "Jus detox tanpa gula, cold-pressed, fresh daily. Delivery Bekasi & Jakarta. 100% Natural, No Sugar Added!",
     url: "https://koje24.com",
     siteName: "KOJE24",
@@ -67,57 +70,97 @@ export const metadata: Metadata = {
   },
 };
 
-// ✅ PRODUCT SCHEMA DENGAN HARGA DINAMIS
-// Idealnya data ini diambil dari API, tapi karena ini Server Component, kita hardcode dulu
-const productSchemas = [
-  {
-    id: "red-vitality",
-    name: "Red Vitality",
-    description: "Natural Strength from Within. Bit • Nanas • Apel. Booster stamina alami.",
-    price: 18000,
-    image: "https://koje24.com/images/red-vitality.webp",
-  },
-  {
-    id: "golden-detox",
-    name: "Golden Detox",
-    description: "Clean Your Body, Boost Your Day. Kunyit • Wortel • Jahe • Jeruk • Lemon.",
-    price: 18000,
-    image: "https://koje24.com/images/golden-detox.webp",
-  },
-  {
-    id: "green-revive",
-    name: "Green Revive",
-    description: "Fresh Green Energy in Every Sip. Pakcoy • Nanas • Timun.",
-    price: 18000,
-    image: "https://koje24.com/images/green-revive.webp",
-  },
-  {
-    id: "sunrise-boost",
-    name: "Sunrise Boost",
-    description: "Start Your Day with Natural Power. Wortel • Apel • Tomat.",
-    price: 18000,
-    image: "https://koje24.com/images/sunrise-boost.webp",
-  },
-  {
-    id: "lemongrass-fresh",
-    name: "Lemongrass Fresh",
-    description: "Calm. Fresh. Naturally Bright. Lemon • Serai.",
-    price: 18000,
-    image: "https://koje24.com/images/lemongrass-fresh.webp",
-  },
-  {
-    id: "yellow-immunity",
-    name: "Yellow Immunity",
-    description: "Stronger Immunity, Brighter Day. Nanas • Lemon.",
-    price: 18000,
-    image: "https://koje24.com/images/yellow-immunity.webp",
-  },
-];
+// ✅ PRODUCT SCHEMA - Ambil dari API agar dinamis
+// Fungsi ini dijalankan di server saat build
+async function getProductsFromAPI() {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://koje24.com"
+    const res = await fetch(`${baseUrl}/api/master-produk`, { 
+      cache: "force-cache",
+      next: { revalidate: 3600 } // Revalidate tiap 1 jam
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data?.success ? data.products : []
+  } catch (error) {
+    console.error("Error fetching products for schema:", error)
+    return []
+  }
+}
 
-export default function HomePage() {
+// ✅ BUILD TIME: Generate product schemas dari API
+async function generateProductSchemas() {
+  const products = await getProductsFromAPI()
+  
+  // Filter hanya produk aktif dan bukan paket
+  const activeProducts = products.filter((p: any) => 
+    p.aktif === "YES" && !p.isPackage
+  )
+  
+  return activeProducts.map((product: any) => ({
+    id: product.id,
+    name: product.nama,
+    description: product.desc || product.slogan || "",
+    price: product.harga,
+    image: product.img,
+  }))
+}
+
+export default async function HomePage() {
+  // ✅ Ambil product schemas dari API
+  const productSchemas = await generateProductSchemas()
+  
+  // ✅ Fallback jika API gagal
+  const fallbackSchemas = [
+    {
+      id: "red-vitality",
+      name: "Red Vitality",
+      description: "Natural Strength from Within. Bit • Nanas • Apel. Booster stamina alami.",
+      price: 18000,
+      image: "https://koje24.com/images/red-vitality.webp",
+    },
+    {
+      id: "golden-detox",
+      name: "Golden Detox",
+      description: "Clean Your Body, Boost Your Day. Kunyit • Wortel • Jahe • Jeruk • Lemon.",
+      price: 18000,
+      image: "https://koje24.com/images/golden-detox.webp",
+    },
+    {
+      id: "green-revive",
+      name: "Green Revive",
+      description: "Fresh Green Energy in Every Sip. Pakcoy • Nanas • Timun.",
+      price: 18000,
+      image: "https://koje24.com/images/green-revive.webp",
+    },
+    {
+      id: "sunrise-boost",
+      name: "Sunrise Boost",
+      description: "Start Your Day with Natural Power. Wortel • Apel • Tomat.",
+      price: 18000,
+      image: "https://koje24.com/images/sunrise-boost.webp",
+    },
+    {
+      id: "lemongrass-fresh",
+      name: "Lemongrass Fresh",
+      description: "Calm. Fresh. Naturally Bright. Lemon • Serai.",
+      price: 18000,
+      image: "https://koje24.com/images/lemongrass-fresh.webp",
+    },
+    {
+      id: "yellow-immunity",
+      name: "Yellow Immunity",
+      description: "Stronger Immunity, Brighter Day. Nanas • Lemon.",
+      price: 18000,
+      image: "https://koje24.com/images/yellow-immunity.webp",
+    },
+  ]
+
+  const schemas = productSchemas.length > 0 ? productSchemas : fallbackSchemas
+
   return (
     <>
-      {/* ⭐ SCHEMA ITEMLIST UNTUK PRODUK */}
+      {/* ⭐ SCHEMA ITEMLIST UNTUK PRODUK (Dinamis dari API) */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -126,8 +169,8 @@ export default function HomePage() {
             "@type": "ItemList",
             name: "Produk KOJE24",
             description: "Daftar produk cold pressed juice alami",
-            numberOfItems: productSchemas.length,
-            itemListElement: productSchemas.map((product, index) => ({
+            numberOfItems: schemas.length,
+            itemListElement: schemas.map((product: any, index: number) => ({
               "@type": "ListItem",
               position: index + 1,
               item: {
@@ -193,5 +236,5 @@ export default function HomePage() {
         <RatingPopup />
       </Suspense>
     </>
-  );
+  )
 }
